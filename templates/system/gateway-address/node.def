@@ -1,0 +1,17 @@
+type: txt
+help: "Configure default gateway"
+create: "sh -c \"echo \
+'static_routes/static_routes/0.1/add_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=$(@)&metric:u32=1' \
+>> /tmp/cli.log && \
+/opt/vyatta/libexec/xorp/call_xrl 'static_routes/static_routes/0.1/add_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=$(@)&metric:u32=1' >> /tmp/cli.log ; \
+echo \\$? >> /tmp/cli.log\" "
+update: "sh -c \"echo \
+'static_routes/static_routes/0.1/replace_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=$(@)&metric:u32=1' \
+>> /tmp/cli.log && \
+/opt/vyatta/libexec/xorp/call_xrl 'static_routes/static_routes/0.1/replace_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=$(@)&metric:u32=1' >> /tmp/cli.log ; \
+echo \\$? >> /tmp/cli.log\" "
+delete: "sh -c \"echo \
+'static_routes/static_routes/0.1/delete_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=0.0.0.0' \
+>> /tmp/cli.log && \
+/opt/vyatta/libexec/xorp/call_xrl 'static_routes/static_routes/0.1/delete_route4?unicast:bool=true&multicast:bool=false&network:ipv4net=0.0.0.0/0&nexthop:ipv4=0.0.0.0' >> /tmp/cli.log ; \
+echo \\$? >> /tmp/cli.log\" "

@@ -1,0 +1,5 @@
+multi:
+type: ipv4net
+help: "Set IPv4 address and prefix for this interface"
+create: "ip addr add $(@) dev $(../../@)"; "error setting address $(@) on dev $(../../@)"
+delete: "ip addr del $(@) dev $(../../@)"; "error deleteing address $(@) on dev $(../../@)"

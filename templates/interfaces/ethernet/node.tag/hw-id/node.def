@@ -1,0 +1,2 @@
+type: macaddr
+help: "set the original MAC address for this interface"

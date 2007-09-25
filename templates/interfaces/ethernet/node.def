@@ -1,0 +1,8 @@
+tag:
+type: txt
+help: "Ethernet interface name"
+syntax: exec " \
+        if [ -z \"`ip addr | grep $(@) `\" ]; then \
+          echo ethernet interface $(@) doesn\\'t exist on this system ; \
+          exit 1 ; \
+        fi ; "

@@ -1,0 +1,9 @@
+cli_parse.tab.c
+cli_parse.tab.h
+cli_def.lex.c
+cli_def.tab.c
+cli_def.tab.h
+cli_val.lex.c
+delete
+my_*
+show

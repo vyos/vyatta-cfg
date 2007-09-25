@@ -1,0 +1,4 @@
+type: macaddr
+help: "set the MAC address for this interface"
+create: "ip link set $(../@) address $(@)"; "error setting MAC address on dev $(../@)"
+delete: "ip link set $(../@) address $(../hw-id/@)"; "error setting MAC address on dev $(../@) to $(../hw-id/@)"

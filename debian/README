@@ -1,0 +1,8 @@
+The Debian Package vyatta-cfg
+----------------------------
+
+This package has the Vyatta configuration system, including the configuration
+back-end, the base configuration templates, and the config-mode CLI completion
+mechanism.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 24 Sep 2007

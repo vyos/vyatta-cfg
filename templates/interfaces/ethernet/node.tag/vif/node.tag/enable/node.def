@@ -1,0 +1,3 @@
+help: "enable interface"
+create: "ip link set $(../../@) up"; "error enabling dev $(../../@)"
+delete: "ip link set $(../../@) down"; "error disabling dev $(../../@)"
