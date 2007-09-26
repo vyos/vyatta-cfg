@@ -6,7 +6,7 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigLoad;
 
-my $etcdir = $ENV{ofr_sysconfdir};
+my $etcdir = $ENV{vyatta_sysconfdir};
 my $bootpath = '';
 if (-r "$etcdir/bootfile_path") {
   $bootpath = `cat $etcdir/bootfile_path`;

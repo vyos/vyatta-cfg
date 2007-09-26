@@ -4,8 +4,8 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigOutput;
 
-my $sbindir = $ENV{ofr_sbindir};
-my $etcdir = $ENV{ofr_sysconfdir};
+my $sbindir = $ENV{vyatta_sbindir};
+my $etcdir = $ENV{vyatta_sysconfdir};
 my $bootfile = '';
 if (-r "$etcdir/bootfile_path") {
   $bootfile = `cat $etcdir/bootfile_path`;
