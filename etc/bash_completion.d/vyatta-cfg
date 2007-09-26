@@ -138,7 +138,7 @@ edit ()
   declare -a path_arr
   path_str2arr VYATTA_EDIT_LEVEL path_arr
   local path_str="${path_arr[*]}"
-  set_config_ps1 $path_str
+  set_config_ps1 "$path_str"
 }
 
 really_exit()
