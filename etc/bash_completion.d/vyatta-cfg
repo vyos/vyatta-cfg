@@ -52,11 +52,6 @@ save ()
   eval "${vyatta_sbindir}/vyatta-save-config.pl $@"
 }
 
-load ()
-{
-  eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
-}
-
 declare vyatta_cfg_prompt_level=''
 set_config_ps1 ()
 {
@@ -68,6 +63,21 @@ set_config_ps1 ()
     export PS1="[edit $level]\n\u@\h# "
     vyatta_cfg_prompt_level="$level"
   fi
+}
+
+load ()
+{
+  # don't load if there are uncommitted changes.
+  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+    echo "Cannot load: configuration modified."
+    echo "Commit or discard the changes before loading a config file."
+    return 1
+  fi
+  # return to top level.
+  export VYATTA_EDIT_LEVEL="/"
+  export VYATTA_TEMPLATE_LEVEL="/"
+  set_config_ps1 ''
+  eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
 }
 
 edit ()
