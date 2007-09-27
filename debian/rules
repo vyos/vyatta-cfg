@@ -34,7 +34,7 @@ else
 	CFLAGS += -O2
 endif
 
-configure:
+configure: configure.ac Makefile.am
 	chmod +x debian/autogen.sh
 	debian/autogen.sh
 
