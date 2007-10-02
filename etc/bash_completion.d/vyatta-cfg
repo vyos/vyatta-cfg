@@ -528,7 +528,7 @@ ENDCOMMENT
 
   if (( do_help )); then
     echo -en $vyatta_help_text
-    COMPREPLY=( $(compgen -W "=_=_=_=_=_=_=_ _=_=_=_=_=_=_=") )
+    COMPREPLY=( $(compgen -W "______________ ...") )
   else
     COMPREPLY=( $(compgen -W "${vyatta_completions[*]}" \
                   -- ${COMP_WORDS[COMP_CWORD]}) )
