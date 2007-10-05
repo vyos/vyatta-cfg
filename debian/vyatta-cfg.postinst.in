@@ -1,0 +1,12 @@
+#!/bin/bash
+
+prefix=@prefix@
+sysconfdir=@sysconfdir@
+
+# make sure config dir and config file dir are usable
+for d in {$prefix,$sysconfdir}/config; do
+  mkdir -p $d
+  chgrp -R quaggavty $d
+  chmod -R g+w $d
+done
+
