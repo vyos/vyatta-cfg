@@ -776,9 +776,9 @@ fi
 set -o ignoreeof 1
 
 set_config_ps1 ''
-alias commit=my_commit
-alias set=my_set
-alias delete=my_delete
+alias commit=/opt/vyatta/sbin/my_commit
+alias set=/opt/vyatta/sbin/my_set
+alias delete=/opt/vyatta/sbin/my_delete
 
 export VYATTA_COMP_LINE=""
 
