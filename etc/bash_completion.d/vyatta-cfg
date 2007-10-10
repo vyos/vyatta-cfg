@@ -36,7 +36,7 @@ declare -a comp_words=()
 
 # commands to unalias
 declare -a unalias_cmds=( clear configure date debug edit exit load \
-                          no show save terminal undebug )
+                          no set show save terminal undebug )
 for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
 done
