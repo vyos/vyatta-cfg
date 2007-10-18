@@ -1,0 +1,172 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          ofr
+# Required-Start:    $syslog $time $local_fs
+# Required-Stop:     $syslog $time $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      S 0 1 6
+# Short-Description: Vyatta Router
+# Description:       Debian init script for the Vyatta Router
+### END INIT INFO
+# **** License ****
+# Version: VPL 1.0
+#
+# The contents of this file are subject to the Vyatta Public License
+# Version 1.0 ("License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+# http://www.vyatta.com/vpl
+#
+# Software distributed under the License is distributed on an "AS IS"
+# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+# the License for the specific language governing rights and limitations
+# under the License.
+#
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2007 Vyatta, Inc.
+# All Rights Reserved.
+#
+# Author:	Tom Grennan <tgrennan@vyatta.com>
+# **** End License ****
+
+. /lib/lsb/init-functions
+
+: ${vyatta_env:=/etc/default/vyatta}
+source $vyatta_env
+
+declare progname=${0##*/}
+declare action=$1; shift
+
+declare -x BOOTFILE=$vyatta_sysconfdir/config/config.boot
+
+declare -a subinit
+declare -a all_subinits=(
+    rl-system
+    sysklogd
+    firewall
+    dhcpd
+    dhcrelay
+    lighttpd
+    ntpd
+    sshd
+    telnetd )
+
+if [ $# -gt 0 ] ; then
+    for s in $@ ; do
+	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
+    done
+else
+    for s in ${all_subinits[@]} ; do
+	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
+    done
+#   NOTE: rtrmgr (i.e. xorp) is mutually exclusive of quagga
+    if [ -x /etc/init.d/quagga ] ; then
+        # quagga should already be started.
+	GROUP=quagga
+    elif [ -x ${vyatta_sbindir}/rtrmgr.init ] ; then
+	subinit[${#subinit}]=rtrmgr
+	GROUP=xorp
+    fi
+fi
+
+
+have_rl_system () {
+    test -x $vyatta_sbindir/rl-system.init
+}
+
+try_floppy () {
+    _fd_=/media/floppy
+    _fd_config_=$_fd_/config/config.boot
+    _fd_rc_local_=$_fd_/rc.local
+
+    if have_rl_system ; then
+##	only do this if we have the rl-system package
+##	if we donot discover an fd device, try loading the floppy module
+	grep -q fd /proc/devices || modprobe -q floppy 2>/dev/null
+	if grep -q fd /proc/devices ; then
+	    if  awk -- '$1 ~ /\/dev\/fd/ { exit 1 }' /proc/mounts
+	    then
+		mkdir -p $_fd_
+		mount -t ext2 /dev/fd0 $_fd_ -o sync 2>/dev/null
+		test $? -eq 32 && mount -t vfat /dev/fd0 $_fd_ 2>/dev/null
+	    fi
+	fi
+	test -x $_fd_rc_local_ && $_fd_rc_local_ start
+	test -f $_fd_config_ && BOOTFILE=$_fd_config_
+    fi
+}
+
+# if necessary, provide initial config
+init_bootfile () {
+    if [ ! -f $BOOTFILE ] ; then
+        if [ ! -d $vyatta_sysconfdir/config ]; then
+            mkdir -p $vyatta_sysconfdir/config
+        fi
+	cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
+    fi
+    chgrp ${GROUP} $BOOTFILE 
+    chmod 660 $BOOTFILE
+    ## remove the unnecessary and potentially conflicting
+    ## config-directory statement (i.e. /mnt/floppy vs. /media/floppy
+    sed -i '/^rtrmgr {$/,/^}$/d' $BOOTFILE
+}
+
+# if necessary, migrate initial config
+migrate_bootfile ()
+{
+    if [ -x $vyatta_sbindir/vyatta_config_migrate.pl ]; then
+        log_progress_msg migrate
+        $vyatta_sbindir/vyatta_config_migrate.pl $BOOTFILE
+    fi
+}
+
+# load the initial config
+load_bootfile ()
+{
+  if [ -x $vyatta_sbindir/vyatta-config-loader.pl ]; then
+    log_progress_msg configure
+    $vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE
+  fi
+}
+
+start ()
+{
+    log_daemon_msg "Starting Vyatta Router"
+    try_floppy
+    init_bootfile
+    migrate_bootfile
+    for s in ${subinit[@]} ; do
+	log_progress_msg $s
+	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
+    done
+    load_bootfile
+    echo -n $BOOTFILE > ${vyatta_sysconfdir}/bootfile_path
+    log_end_msg $?
+}
+
+stop()
+{
+    local -i status=0
+    log_daemon_msg "Stopping Vyatta Router"
+    for ((i=${#sub_inits[@]} - 1; i >= 0; i--)) ; do
+	s=${subinit[$i]}
+	log_progress_msg $s
+	${vyatta_sbindir}/${s}.init stop
+	let status\|=$?
+    done
+    log_end_msg $status
+}
+
+case "$action" in
+    start) start ;;
+    stop)  stop ;;
+    restart|force-reload) stop && start ;;
+    *)	log_failure_msg "usage: $progname [ start|stop|restart ] [ subinit ... ]" ;
+	false ;;
+esac
+
+exit $?
+
+# Local Variables:
+# mode: shell-script
+# sh-indentation: 4
+# End:

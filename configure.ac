@@ -31,7 +31,8 @@ AC_ARG_ENABLE([nostrip],
 
 AC_CONFIG_FILES(
 	[Makefile]
-  [debian/vyatta-cfg.postinst])
+  [debian/vyatta-cfg.postinst]
+  [debian/vyatta-cfg.postrm])
 
 AC_SUBST(NOSTRIP)
 

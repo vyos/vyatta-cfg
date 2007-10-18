@@ -1,12 +1,15 @@
 cfgdir = $(datadir)/vyatta-cfg/templates
 share_perl5dir = /opt/vyatta/share/perl5
 completiondir	 = /etc/bash_completion.d
+initddir	 = /etc/init.d
 
 AM_CFLAGS = -I src -Wall
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 completion_DATA	= etc/bash_completion.d/vyatta-cfg
+initd_SCRIPTS	= etc/init.d/vyatta-ofr
+sysconf_DATA = etc/config.boot.default
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
