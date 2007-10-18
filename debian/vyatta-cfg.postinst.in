@@ -10,6 +10,6 @@ for d in {$prefix,$sysconfdir}/config; do
   chmod -R g+w $d
 done
 
-update-rc.d vyatta-ofr defaults >/dev/null
+update-rc.d vyatta-ofr defaults 99 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
 
