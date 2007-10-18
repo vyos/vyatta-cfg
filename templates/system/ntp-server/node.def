@@ -1,16 +1,17 @@
 multi:
 type: txt
-help: "IP address of NTP server"
-# should help be "domain name" instead of "ip address", or change type to ipv4?
-create: "sh -c \"touch /etc/ntp/ntp.conf && \
-if ! grep -q 'server.*$(@)' /etc/ntp/ntp.conf; then \
-echo \\\"server $(@)\\\" >> /etc/ntp/ntp.conf && \
-/opt/vyatta/sbin/ntpd.init restart; fi\" "
-update: "sh -c \"touch /etc/ntp/ntp.conf && \
-if ! grep -q 'server.*$(@)' /etc/ntp/ntp.conf; then \
-echo \\\"server $(@)\\\" >> /etc/ntp/ntp.conf && \
-/opt/vyatta/sbin/ntpd.init restart; fi\" "
-delete: "sh -c \"touch /etc/ntp/ntp.conf && \
-if grep -q 'server.*$(@)' /etc/ntp/ntp.conf; then \
-sed -i '/server $(@)/d' /etc/ntp/ntp.conf && \
-/opt/vyatta/sbin/ntpd.init restart; fi\" "
+help: "Name or IP address of NTP server"
+update: "touch /etc/ntp.conf && \
+if ! grep -q 'server.*$(@)' /etc/ntp.conf; then \
+  echo \"server $(@)\" >> /etc/ntp.conf && \
+  /usr/sbin/invoke-rc.d ntp restart; \
+fi"
+delete: "touch /etc/ntp.conf && \
+if grep -q 'server.*$(@)' /etc/ntp.conf; then \
+  sed -i '/server $(@)/d' /etc/ntp.conf && \
+  if grep -q '^server ' /etc/ntp.conf; then \
+    /usr/sbin/invoke-rc.d ntp restart; \
+  else \
+    /usr/sbin/invoke-rc.d ntp stop; \
+  fi; \
+fi"

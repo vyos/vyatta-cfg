@@ -43,12 +43,7 @@ if ($update_line ne "") {
 close OUT;
 
 sleep 1;
-# XXX somehow starting syslogd with 'start-stop-daemon --start...' here fails
-# with SEGV (?). just start syslogd directly.
-#if (system("/opt/vyatta/sbin/sysklogd.init restart")) {
-system("/opt/vyatta/sbin/sysklogd.init stop");
-sleep 1;
-if (system(". /etc/default/syslogd ; /sbin/syslogd \$SYSLOGD")) {
+if (system("/usr/sbin/invoke-rc.d sysklogd restart")) {
   exit 5;
 }
 
