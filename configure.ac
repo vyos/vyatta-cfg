@@ -22,8 +22,6 @@ AC_PROG_LIBTOOL
 AC_PROG_LEX
 AC_PROG_YACC
 
-AC_CHECK_LIB(crypt, crypt, [ LIBS="$LIBS -lcrypt" ])
-
 AC_ARG_ENABLE([nostrip],
 	AC_HELP_STRING([--enable-nostrip],
 	[include -nostrip option during packaging]),
