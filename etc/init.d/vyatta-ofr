@@ -95,6 +95,32 @@ try_floppy () {
     fi
 }
 
+get_config () {
+  declare config_mount=/opt/vyatta/etc/config-mnt
+  declare -a boot_args=($( cat /proc/cmdline ))
+  declare config_dev=''
+  declare config_path=''
+  for arg in ${boot_args[@]}; do
+    case "$arg" in
+      config_dev=*) eval "$arg";;
+      config_path=*) eval "$arg";;
+      *) ;;
+    esac
+  done
+  if [ -z "$config_dev" ]; then
+    return 1
+  fi
+  [ -n "$config_path" ] || config_path='/config.boot'
+  mkdir -p $config_mount
+  mount -t ext2 /dev/$config_dev $config_mount -o sync 2>/dev/null
+  test $? -eq 32 && mount -t vfat /dev/$config_dev $config_mount 2>/dev/null
+  if [ ! -f ${config_mount}${config_path} ]; then
+    return 1
+  fi
+  BOOTFILE=${config_mount}${config_path}
+  return 0
+}
+
 # if necessary, provide initial config
 init_bootfile () {
     if [ ! -f $BOOTFILE ] ; then
@@ -131,7 +157,9 @@ load_bootfile ()
 start ()
 {
     log_daemon_msg "Starting Vyatta Router"
-    try_floppy
+    if ! get_config; then
+      try_floppy
+    fi
     init_bootfile
     migrate_bootfile
     for s in ${subinit[@]} ; do
