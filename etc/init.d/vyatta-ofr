@@ -61,7 +61,7 @@ else
 #   NOTE: rtrmgr (i.e. xorp) is mutually exclusive of quagga
     if [ -x /etc/init.d/quagga ] ; then
         # quagga should already be started.
-	GROUP=quagga
+	GROUP=quaggavty
     elif [ -x ${vyatta_sbindir}/rtrmgr.init ] ; then
 	subinit[${#subinit}]=rtrmgr
 	GROUP=xorp
