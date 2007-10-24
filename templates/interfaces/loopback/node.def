@@ -6,4 +6,4 @@ syntax: exec " \
           echo loopback interface $(@) doesn\\'t exist on this system ; \
           exit 1 ; \
         fi ; "
-update: "ip link set $(@) up"
+update: "sudo ip link set $(@) up"
