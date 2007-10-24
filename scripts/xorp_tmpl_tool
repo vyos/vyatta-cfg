@@ -84,7 +84,7 @@ case "$1" in
     rm -rf $XORP_LOCK >&/dev/null
     ;;
   test)
-    "${@:2}" >>${XORPLOGFILE} 2>>${MYCMDERRLOGFILE}
+    "${@:2}"
     RET_STATUS=$?
     ;;
   cleanup)
