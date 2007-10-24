@@ -127,7 +127,11 @@ init_bootfile () {
         if [ ! -d $vyatta_sysconfdir/config ]; then
             mkdir -p $vyatta_sysconfdir/config
         fi
-	cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
+	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
+	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
+        else
+          $vyatta_sbindir/vyatta_current_conf_ver.pl > $BOOTFILE
+        fi
     fi
     chgrp ${GROUP} $BOOTFILE 
     chmod 660 $BOOTFILE

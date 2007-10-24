@@ -9,7 +9,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 completion_DATA	= etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-ofr
-sysconf_DATA = etc/config.boot.default
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
