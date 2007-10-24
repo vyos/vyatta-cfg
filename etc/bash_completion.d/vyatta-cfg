@@ -473,6 +473,7 @@ vyatta_escape ()
   # $1: \$original
   # $2: \$escaped
   eval "$2=\${$1//\%/%25}"
+  eval "$2=\${$2//\*/%2A}"
   eval "$2=\${$2//\//%2F}"
 }
 
@@ -481,6 +482,7 @@ vyatta_unescape ()
   # $1: \$escaped
   # $2: \$original
   eval "$2=\${$1//\%2F/\/}"
+  eval "$2=\${$2//\%2A/*}"
   eval "$2=\${$2//\%25/%}"
 }
 
