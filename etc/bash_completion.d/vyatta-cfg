@@ -26,6 +26,8 @@ if [ "$_OFR_CONFIGURE" != "ok" ]; then
   return 0
 fi
 
+umask 0002
+
 if [ -r /etc/default/vyatta ]; then
   source /etc/default/vyatta
 fi
@@ -143,8 +145,9 @@ edit ()
 
 really_exit()
 {
-  umount $VYATTA_TEMP_CONFIG_DIR
-  rm -rf $VYATTA_TEMP_CONFIG_DIR $VYATTA_CHANGES_ONLY_DIR $VYATTA_CONFIG_TMP
+  sudo umount $VYATTA_TEMP_CONFIG_DIR
+  sudo rm -rf $VYATTA_TEMP_CONFIG_DIR $VYATTA_CHANGES_ONLY_DIR \
+              $VYATTA_CONFIG_TMP
   unset _OFR_CONFIGURE
   builtin exit 0
 }
@@ -764,11 +767,18 @@ vyatta_config_complete ()
   fi
 }
 
-mkdir -p $VYATTA_ACTIVE_CONFIGURATION_DIR
-mkdir -p $VYATTA_CHANGES_ONLY_DIR
-mkdir -p $VYATTA_CONFIG_TMP
+DEF_GROUP=quaggavty
+make_vyatta_config_dir ()
+{
+  sudo mkdir -m 0775 -p $1
+  sudo chgrp ${DEF_GROUP} $1
+}
+
+make_vyatta_config_dir $VYATTA_ACTIVE_CONFIGURATION_DIR
+make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
+make_vyatta_config_dir $VYATTA_CONFIG_TMP
 if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]; then
-  mkdir -p $VYATTA_TEMP_CONFIG_DIR
+  make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
   sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro unionfs ${VYATTA_TEMP_CONFIG_DIR}
 fi
 

@@ -1,10 +1,11 @@
 #!/bin/bash
 
-UMASK_SAVE=`umask`
+UMASK_SAVE_G=`umask`
 umask 0111
 XORPLOGFILE=/tmp/xorp_tmpl_tool.log
 touch ${XORPLOGFILE}
-umask ${UMASK_SAVE}
+
+umask 0002
 
 #need to pass in value to change... as part of set command...
 ## cli ENV_EDIT_LEVEL
@@ -146,5 +147,6 @@ fi
 #echo "<=========ConfigDirectories AFTER" >> ${XORPLOGFILE}
 
 echo "ret=${RET_STATUS}" >> ${XORPLOGFILE}
+umask ${UMASK_SAVE_G}
 exit $RET_STATUS
 

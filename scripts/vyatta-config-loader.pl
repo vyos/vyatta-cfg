@@ -6,6 +6,8 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigLoad;
 
+umask 0002;
+
 # get a list of all config statement in the startup config file
 # (sorted by rank).
 my @all_nodes = VyattaConfigLoad::getStartupConfigStatements($ARGV[0]);

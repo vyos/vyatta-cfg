@@ -150,13 +150,21 @@ load_bootfile ()
 {
   if [ -x $vyatta_sbindir/vyatta-config-loader.pl ]; then
     log_progress_msg configure
-    $vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE
+    sg ${GROUP} -c "$vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE"
   fi
+}
+
+setup_config_dir ()
+{
+  [ -d ${vyatta_configdir} ] || mkdir -p ${vyatta_configdir}
+  chgrp ${GROUP} ${vyatta_configdir}
+  chmod 0775 ${vyatta_configdir}
 }
 
 start ()
 {
     log_daemon_msg "Starting Vyatta Router"
+    setup_config_dir
     if ! get_config; then
       try_floppy
     fi
