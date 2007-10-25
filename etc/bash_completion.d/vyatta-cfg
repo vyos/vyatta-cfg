@@ -290,11 +290,31 @@ get_prefix_filtered_list ()
   done
 }
 
+vyatta_parse_tmpl_comp_fields ()
+{
+  # $1: tmpl
+  # $2: field name
+  sed -n '
+  /^#'"$2"':/,$ {
+    s/^#'"$2"'://
+    h
+    :b
+    $ { x; p; q }
+    n
+    /^#[a-z]\+:/ { x; p; q }
+    s/^#//
+    H
+    bb
+  }
+  ' $1
+}
+
 declare vyatta_cfg_help=""
 declare vyatta_cfg_type=""
 declare vyatta_cfg_tag=0
 declare vyatta_cfg_multi=0
 declare -a vyatta_cfg_allowed=()
+declare vyatta_cfg_comp_help=""
 vyatta_parse_tmpl ()
 {
   # $1: tmpl
@@ -303,6 +323,7 @@ vyatta_parse_tmpl ()
   vyatta_cfg_tag=0
   vyatta_cfg_multi=0
   vyatta_cfg_allowed=()
+  vyatta_cfg_comp_help=''
   if [ ! -r $1 ]; then
     return
   fi
@@ -320,6 +341,13 @@ vyatta_parse_tmpl ()
   s/^multi:/vyatta_cfg_multi=1/p
   s/^type:[ 	]\+\([^ 	]\+\)$/vyatta_cfg_type=\1/p
   ' $1`
+  
+  local acmd=$(vyatta_parse_tmpl_comp_fields $1 "allowed")
+  vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
+ 
+  if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
+    vyatta_cfg_allowed=($(eval "$acmd"))
+  fi
   if [ -z "$vyatta_cfg_help" ]; then
     vyatta_cfg_help='<No help text available>'
   fi
@@ -335,6 +363,10 @@ generate_help_text ()
   eval "items=( \"\${$1[@]}\" )"
   eval "helps=( \"\${$2[@]}\" )"
   vyatta_help_text="\\nPossible completions:"
+  if [ -n "$vyatta_cfg_comp_help" ]; then
+    vyatta_help_text="${vyatta_help_text}\\n${vyatta_cfg_comp_help}"
+    return 0
+  fi
   for (( idx = 0; idx < ${#items[@]}; idx++ )); do
     vyatta_help_text="${vyatta_help_text}\\n\\x20\\x20"
     if [ ${#items[$idx]} -lt 6 ]; then
@@ -532,7 +564,7 @@ vyatta_do_complete ()
 ENDCOMMENT
 
   if (( do_help )); then
-    echo -en $vyatta_help_text
+    printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
     COMPREPLY=( $(compgen -W "${vyatta_completions[*]}" \
@@ -543,6 +575,9 @@ ENDCOMMENT
 
 vyatta_config_complete ()
 {
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=''
     vyatta_do_help=1
@@ -767,6 +802,8 @@ vyatta_config_complete ()
     vyatta_do_complete
     return
   fi
+
+  eval $restore_shopts
 }
 
 DEF_GROUP=quaggavty

@@ -6,3 +6,6 @@ syntax: exec " \
           echo ethernet interface $(@) doesn\\'t exist on this system ; \
           exit 1 ; \
         fi ; "
+#allowed: local -a array ;
+# array=( /sys/class/net/{eth,vmnet}* ) ;
+# echo -n ${array[@]##*/}
