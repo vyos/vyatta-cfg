@@ -194,13 +194,13 @@ push_path_arr ()
 {
   # $1: \@path_arr
   # $2: component
-  eval "$1=( \${$1[@]} '$2' )"
+  eval "$1=( \"\${$1[@]}\" '$2' )"
 }
 
 pop_path_arr ()
 {
   # $1: \@path_arr
-  eval "$1=( \${$1[@]:0:((\${#$1[@]}-1))} )"
+  eval "$1=( \"\${$1[@]:0:((\${#$1[@]}-1))}\" )"
 }
 
 path_arr2str ()
@@ -264,7 +264,7 @@ filter_existing_nodes ()
   # $2: \@orig
   # $3: \@filtered
   declare -a orig
-  eval "orig=( \${$2[@]} )"
+  eval "orig=( \"\${$2[@]}\" )"
   for node in "${orig[@]}"; do
     if [ -d "$1/$node" ]; then
       eval "$3[\${#$3[@]}]=$node"
@@ -278,14 +278,16 @@ get_prefix_filtered_list ()
   # $2: \@list
   # $3: \@filtered
   declare -a olist
+  local pfx=$1
+  pfx=${pfx#\"}
   eval "olist=( \"\${$2[@]}\" )"
   local idx=0
   for elem in "${olist[@]}"; do
-    local sub=${elem#$1}
-    if [ "$elem" == "$sub" ]; then
+    local sub=${elem#$pfx}
+    if [ "$elem" == "$sub" ] && [ -n "$pfx" ]; then
       continue
     fi
-    eval "$3[$idx]=$elem"
+    eval "$3[$idx]=\"$elem\""
     (( idx++ ))
   done
 }
@@ -301,7 +303,7 @@ vyatta_parse_tmpl_comp_fields ()
     :b
     $ { x; p; q }
     n
-    /^#[a-z]\+:/ { x; p; q }
+    /^#[-_a-z]\+:/ { x; p; q }
     s/^#//
     H
     bb
@@ -346,7 +348,8 @@ vyatta_parse_tmpl ()
   vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
  
   if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
-    vyatta_cfg_allowed=($(eval "$acmd"))
+    local ares=$(eval "$acmd")
+    eval "vyatta_cfg_allowed=( $ares )"
   fi
   if [ -z "$vyatta_cfg_help" ]; then
     vyatta_cfg_help='<No help text available>'
@@ -362,11 +365,11 @@ generate_help_text ()
   declare -a helps
   eval "items=( \"\${$1[@]}\" )"
   eval "helps=( \"\${$2[@]}\" )"
-  vyatta_help_text="\\nPossible completions:"
   if [ -n "$vyatta_cfg_comp_help" ]; then
-    vyatta_help_text="${vyatta_help_text}\\n${vyatta_cfg_comp_help}"
+    vyatta_help_text="\\n${vyatta_cfg_comp_help}"
     return 0
   fi
+  vyatta_help_text="\\nPossible completions:"
   for (( idx = 0; idx < ${#items[@]}; idx++ )); do
     vyatta_help_text="${vyatta_help_text}\\n\\x20\\x20"
     if [ ${#items[$idx]} -lt 6 ]; then
@@ -386,7 +389,7 @@ get_tmpl_subdir_help ()
   # $1: path
   # $2: \@subdirs
   declare -a subdirs
-  eval "subdirs=( \${$2[@]} )"
+  eval "subdirs=( \"\${$2[@]}\" )"
   if [ ${#subdirs[@]} == 0 ]; then
     vyatta_help_text=""
     return
@@ -398,6 +401,9 @@ get_tmpl_subdir_help ()
       vyatta_cfg_help="<No help text available>"
     else
       vyatta_parse_tmpl "$1/$subdir/node.def"
+      # comp_help overrides the current help, so we reset it here since
+      # it is from the subdir.
+      vyatta_cfg_comp_help=''
     fi
     hitems[${#hitems[@]}]=$subdir
     hstrs[${#hstrs[@]}]=$vyatta_cfg_help
@@ -412,7 +418,7 @@ item_in_list ()
   # $2: \@list
   declare -a olist
   local item
-  eval "olist=( \${$2[@]} )"
+  eval "olist=( \"\${$2[@]}\" )"
   for item in "${olist[@]}"; do
     if [ "$1" == "$item" ]; then
       return 0
@@ -431,8 +437,8 @@ append_allowed_values ()
   vyatta_parse_tmpl "$1/node.def"
   local item
   for item in "${vyatta_cfg_allowed[@]}"; do
-    if ! item_in_list $item $2; then
-      eval "$2=( \${$2[@]} \"$item\" )"
+    if ! item_in_list "$item" $2; then
+      eval "$2[\${#$2[@]}]=\"$item\""
     fi
   done
 }
@@ -496,7 +502,8 @@ get_value_list ()
     return
   fi
   declare -a listing=()
-  eval `sed 's/^\(.*\)$/listing[\\${#listing[@]}]='\''\1'\''/' $vfile`
+  local cmd=$(sed 's/^\(.*\)$/listing[\${#listing[@]}]='\''\1'\''/' $vfile)
+  eval "$cmd"
   eval "$2=( \"\${listing[@]}\" )"
 }
 
@@ -567,8 +574,15 @@ ENDCOMMENT
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
-    COMPREPLY=( $(compgen -W "${vyatta_completions[*]}" \
-                  -- ${COMP_WORDS[COMP_CWORD]}) )
+    local -a f_comps=()
+    get_prefix_filtered_list "${COMP_WORDS[COMP_CWORD]}" \
+                             vyatta_completions f_comps
+    local estr="COMPREPLY=( "
+    for w in "${f_comps[@]}"; do
+      estr="$estr\"$w\" "
+    done
+    estr="${estr})"
+    eval "$estr"
   fi
   vyatta_help_text="\\nNo help text available"
 }
@@ -678,13 +692,13 @@ vyatta_config_complete ()
     # node.def in each dir, or values in _mpath/node.val)
     declare -a fmatches
     if [ -f $_mpath/node.val ]; then
-      decho [1a]
+      decho {1a}
       get_value_list $_mpath matches
       get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
       append_allowed_values $_tpath fmatches
       get_node_value_help $_tpath fmatches
     else
-      decho [1b]
+      decho {1b}
       # see if the last component is a new leaf node
       fmatches=()
       if is_setting_new_leaf $_tpath; then
@@ -704,7 +718,7 @@ vyatta_config_complete ()
         get_tmpl_subdir_help $_tpath fmatches
       fi
     fi
-    vyatta_completions=( ${fmatches[@]} )
+    vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
     return
   fi
@@ -713,7 +727,7 @@ vyatta_config_complete ()
     # if not "set", check _mpath (last component is the tag) is valid
     # generate possible matches (dirs in _tpath, and "help" from node.def
     # in each dir)
-    decho [2]
+    decho {2}
     if [ $is_set == 1 -o -d $_mpath ]; then
       if (( ! is_set )); then
         # not "set". only complete existing nodes.
@@ -724,7 +738,7 @@ vyatta_config_complete ()
         get_filtered_dir_listing $_tpath matches
       fi
       get_tmpl_subdir_help $_tpath matches
-      vyatta_completions=( ${matches[@]} )
+      vyatta_completions=( "${matches[@]}" )
       vyatta_do_complete
       return
     fi
@@ -734,7 +748,7 @@ vyatta_config_complete ()
   if (( last_tag && !end_space )); then
     # generate possible matches (dirs in _mpath, and "help" from node.def
     # in dirs in _tpath)
-    decho [3]
+    decho {3}
     pop_path _mpath
     pop_path _tpath
     get_filtered_dir_listing $_mpath matches
@@ -742,7 +756,7 @@ vyatta_config_complete ()
     get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
     append_allowed_values $_tpath fmatches
     get_node_value_help $_tpath fmatches
-    vyatta_completions=( ${fmatches[@]} )
+    vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
     return
   fi
@@ -754,18 +768,18 @@ vyatta_config_complete ()
     # 3. dirs in _mpath (only if _tpath/node.def is "tag:")
     if [ -d $_tpath/node.tag ]; then
       # last component is a "tag name". look for tag values.
-      decho [4a]
+      decho {4a}
       get_filtered_dir_listing $_mpath matches
       append_allowed_values $_tpath matches
       get_node_value_help $_tpath matches
     elif [ -f $_mpath/node.val ]; then
       # last component is a leaf node. look for values.
-      decho [4b]
+      decho {4b}
       get_value_list $_mpath matches
       append_allowed_values $_tpath matches
       get_node_value_help $_tpath matches
     else
-      decho [4c]
+      decho {4c}
       # see if the last component is a new leaf node
       matches=()
       if is_setting_new_leaf $_tpath; then
@@ -784,7 +798,7 @@ vyatta_config_complete ()
         get_tmpl_subdir_help $_tpath matches
       fi
     fi
-    vyatta_completions=( ${matches[@]} )
+    vyatta_completions=( "${matches[@]}" )
     vyatta_do_complete
     return
   fi
@@ -792,13 +806,13 @@ vyatta_config_complete ()
   if (( !last_tag && !end_space )); then
     # generate possible matches (dirs in _tpath, and "help" from node.def
     # in each dir)
-    decho [5]
+    decho {5}
     pop_path _tpath
     get_filtered_dir_listing $_tpath matches
     declare -a fmatches
     get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
     get_tmpl_subdir_help $_tpath fmatches
-    vyatta_completions=( ${fmatches[@]} )
+    vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
     return
   fi
