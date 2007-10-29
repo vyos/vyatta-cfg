@@ -203,4 +203,13 @@ extern boolean get_config_lock(const char* adirp, const char* lock_name);
 
 #define INTERNAL  internal_error(__LINE__, __FILE__)
 
+/*** output ***/
+#define LOGFILE_STDOUT "/tmp/cfg-stdout.log"
+#define LOGFILE_STDERR "/tmp/cfg-stderr.log"
+
+extern int out_fd;
+extern FILE *out_stream;
+
+extern int initialize_output();
+
 #endif

@@ -94,6 +94,10 @@ int main(int argc, char **argv)
   boolean       need_mod = FALSE, not_new = FALSE;
   boolean       empty_val = FALSE;
 
+  if (initialize_output() == -1) {
+    exit(-1);
+  }
+
   dump_log( argc, argv);
   init_edit();
   last_tag = FALSE;

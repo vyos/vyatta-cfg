@@ -257,7 +257,11 @@ int main(int argc, char **argv)
   struct stat    statbuf;
   int st;
   boolean update_pending = FALSE;
-  
+ 
+  if (initialize_output() == -1) {
+    exit(-1);
+  }
+
   set_in_commit(TRUE);
   dump_log( argc, argv);
   init_paths(TRUE);

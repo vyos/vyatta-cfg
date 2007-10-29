@@ -884,6 +884,8 @@ static int change_var_value(const char* var_reference,const char* value, int act
   return ret;
 }
 
+int system_out(const char *command);
+
 /****************************************************
  check_syn:
    evaluate syntax tree;
@@ -908,10 +910,8 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     ret = check_syn(cur->vtw_node_left);
     if (ret <= 0){
       if (expand_string(cur->vtw_node_right->vtw_node_string) == VTWERR_OK) {
-	fprintf(stderr, exe_string);
-	fprintf(stderr, "\n");
-	printf(exe_string);
-	printf("\n");
+	fprintf(out_stream, exe_string);
+	fprintf(out_stream, "\n");
       }
     }
     return ret;
@@ -967,7 +967,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
 	  set_at_string(save_at);
 	  return FALSE;
 	}
-	ret = system(exe_string);
+	ret = system_out(exe_string);
 	if (ret) {
 	  set_at_string(save_at);
 	  return FALSE;
@@ -981,7 +981,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     if (status != VTWERR_OK) {
       return FALSE;
     }
-    ret = system(exe_string);
+    ret = system_out(exe_string);
     return !ret;
     
   case PATTERN_OP:  /* left to var, right to pattern */
@@ -1933,6 +1933,87 @@ static int set_reference_environment(const char* var_reference,
     return -1;
 
   }
+}
+
+/*** output ***/
+
+int out_fd = -1;
+FILE *out_stream = NULL;
+
+int err_fd = -1;
+FILE *err_stream = NULL;
+int new_out_fd = -1;
+int new_err_fd = -1;
+
+int
+initialize_output()
+{
+  if ((out_fd = dup(STDOUT_FILENO)) == -1) {
+    return -1;
+  }
+  if ((out_stream = fdopen(out_fd, "a")) == NULL) {
+    return -1;
+  }
+  if ((err_fd = dup(STDOUT_FILENO)) == -1) {
+    return -1;
+  }
+  if ((err_stream = fdopen(err_fd, "a")) == NULL) {
+    return -1;
+  }
+
+  new_out_fd = open(LOGFILE_STDOUT, O_WRONLY | O_CREAT, 0660);
+  new_err_fd = open(LOGFILE_STDERR, O_WRONLY | O_CREAT, 0660);
+  if (new_out_fd == -1 || new_err_fd == -1) {
+    return -1;
+  }
+  if ((lseek(new_out_fd, 0, SEEK_END) == ((off_t) -1))
+      || (lseek(new_err_fd, 0, SEEK_END) == ((off_t) -1))) {
+    return -1;
+  }
+  if ((dup2(new_out_fd, STDOUT_FILENO) == -1)
+      || (dup2(new_err_fd, STDERR_FILENO) == -1)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+redirect_output()
+{
+  if ((dup2(new_out_fd, STDOUT_FILENO) == -1)
+      || (dup2(new_err_fd, STDERR_FILENO) == -1)) {
+    return -1;
+  }
+  return 0;
+}
+
+int
+restore_output()
+{
+  if ((dup2(out_fd, STDOUT_FILENO) == -1)
+      || (dup2(err_fd, STDERR_FILENO) == -1)) {
+    return -1;
+  }
+  return 0;
+}
+
+/* system_out:
+ * call system() with output re-enabled.
+ * output is again redirected before returning from here.
+ */
+int
+system_out(const char *command)
+{
+  int ret = -1;
+  if (restore_output() == -1) {
+    return -1;
+  }
+  ret = system(command);
+  if (redirect_output() == -1) {
+    return -1;
+  }
+  return ret;
 }
 
 /**********************************************************/

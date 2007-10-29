@@ -70,6 +70,10 @@ int main(int argc, char **argv)
   char          *cp, *delp, *endp;
   boolean        do_umount;
 
+  if (initialize_output() == -1) {
+    exit(-1);
+  }
+
   if (argc < 2) {
     fprintf(stderr, "Need to specify the config node to delete\n");
     exit(1);
