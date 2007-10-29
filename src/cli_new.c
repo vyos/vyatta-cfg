@@ -557,13 +557,14 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
 	  if (def->def_type_help){
 	    set_at_string(value);
 	    (void)expand_string(def->def_type_help);
-	    printf("%s\n", exe_string);
-	    fprintf(stderr, "%s\n", exe_string);
+            fprintf(out_stream, "%s\n", exe_string);
 	  } else {
 	    print_msg("Wrong type of value in %s, "
 		       "need %s\n", 
 		       m_path.path_buf + m_path.print_offset, 
 		       type_to_name(my_type)); 
+            fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
+                    value, type_to_name(my_type));
 	  }
 	  return -1;
 	}
@@ -573,13 +574,14 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
 	if (def->def_type_help){
 	  set_at_string(value);
 	  (void)expand_string(def->def_type_help);
-	  printf("%s\n", exe_string);
-	  fprintf(stderr, "%s\n", exe_string);
+          fprintf(out_stream, "%s\n", exe_string);
 	} else {
 	  print_msg("Wrong type of value in %s, "
 		     "need %s\n", 
 		     m_path.path_buf + m_path.print_offset,
 		     type_to_name(my_type));
+          fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
+                  value, type_to_name(my_type));
 	}
 	my_free(get_cli_value_ptr()->val);
 	if (first)
@@ -910,8 +912,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     ret = check_syn(cur->vtw_node_left);
     if (ret <= 0){
       if (expand_string(cur->vtw_node_right->vtw_node_string) == VTWERR_OK) {
-	fprintf(out_stream, exe_string);
-	fprintf(out_stream, "\n");
+	fprintf(out_stream, "%s\n", exe_string);
       }
     }
     return ret;
@@ -1730,11 +1731,10 @@ boolean validate_value(vtw_def *def, char *cp)
       (validate_value_val.val_type != def->def_type)) {
     if (def->def_type_help){
       (void)expand_string(def->def_type_help);
-      printf("%s\n", exe_string);
-      fprintf(stderr, "%s\n", exe_string);
+      fprintf(out_stream, "%s\n", exe_string);
     } else {
-      printf("Incorrect type of %s, need %s\n",
-	     cp, type_to_name(def->def_type));
+      fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
+	      cp, type_to_name(def->def_type));
     }
     ret = FALSE;
     goto  validate_value_free_and_return;
