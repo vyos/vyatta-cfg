@@ -47,6 +47,7 @@ boolean set_validate(vtw_def *defp, char *valp)
   push_path(&t_path, DEF_NAME);
   if (lstat(t_path.path, &statbuf) < 0 || 
       (statbuf.st_mode & S_IFMT) != S_IFREG) {
+    fprintf(out_stream, "The specified configuration node is not valid\n");
     bye("Can not set value (2), no definition for %s", m_path.path);
   }
   /* defniition present */
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
   }
 
   if (argc < 2) {
-    fprintf(stderr, "Need to specify the config node to delete\n");
+    fprintf(out_stream, "Need to specify the config node to delete\n");
     exit(1);
   }
 
@@ -129,8 +130,10 @@ int main(int argc, char **argv)
       struct dirent *dirp;
       DIR           *dp;
 
-      if (lstat(m_path.path, &statbuf) < 0)
+      if (lstat(m_path.path, &statbuf) < 0) {
+        fprintf(out_stream, "Nothing to delete\n");
 	bye("Nothing to delete at %s", m_path.path);
+      }
       remove_rf(FALSE);
       pop_path(&m_path);
       if ((dp = opendir(m_path.path)) == NULL){
@@ -183,6 +186,7 @@ int main(int argc, char **argv)
     exit(0);
   } 
   if(ai < argc -1 || last_tag) {
+    fprintf(out_stream, "The specified configuration node is not valid\n");
     bye("There is no appropriate template for %s", 
 	  m_path.path + strlen(get_mdirp()));
   }
@@ -190,8 +194,10 @@ int main(int argc, char **argv)
   pop_path(&m_path); /*it was value, not path segment */
   push_path(&m_path, VAL_NAME);
   /* set value */
-  if (lstat(m_path.path, &statbuf) < 0) 
+  if (lstat(m_path.path, &statbuf) < 0) {
+    fprintf(out_stream, "Nothing to delete\n");
     bye("Nothing to delete at %s", m_path.path);
+  }
   if ((statbuf.st_mode & S_IFMT) != S_IFREG)
     bye("Not a regular file %s", m_path.path);
   /* get definition to deal with potential multi */
@@ -199,6 +205,7 @@ int main(int argc, char **argv)
   push_path(&t_path, DEF_NAME);
   if (lstat(t_path.path, &statbuf) < 0 || 
       (statbuf.st_mode & S_IFMT) != S_IFREG) {
+    fprintf(out_stream, "The specified configuration node is not valid\n");
     bye("Can not delete value, no definition for %s", m_path.path);
   }
   /* defniition present */
@@ -254,9 +261,10 @@ int main(int argc, char **argv)
     remove_rf(FALSE);
     return 0;
   }
+  fprintf(out_stream, "The specified configuration node is not valid\n");
   bye("There is no appropriate template for %s", 
       m_path.path + strlen(get_mdirp()));
 
-  return 0;
+  return 1;
 }
 

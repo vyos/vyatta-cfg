@@ -270,11 +270,12 @@ int main(int argc, char **argv)
   st = lstat(mod, &statbuf);
   my_free(mod);
   if (st < 0 ) {
+    fprintf(out_stream, "No configuration changes to commit\n");
     bye("No configuration changes to commit\n");
-    exit(-1);
   }
 
   if(!get_config_lock(get_adirp(), LOCK_NAME)) {
+    fprintf(out_stream, "Cannot commit: Configuration is locked\n");
     bye("Configuration is locked\n");
   }
 
@@ -1325,7 +1326,7 @@ static int fin_commit(boolean ok)
   int a_len = strlen(get_adirp()); 
   set_echo(TRUE);
   if (!ok){
-    printf("Commit FAILED!\n");
+    fprintf(out_stream, "Commit failed\n");
     return -1;
   }
   command = my_malloc(strlen(format1) + m_len + t_len, "");

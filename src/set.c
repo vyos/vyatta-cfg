@@ -35,8 +35,8 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
 
     for (i = 0; i < val_len; i++) {
       if (valp[i] == '\'') {
-        fprintf(stderr, "Cannot use the \"'\" (single quote) character "
-                        "in a value string\n");
+        fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
+                            "in a value string\n");
         exit(1);
       }
     }
@@ -55,8 +55,9 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
   push_path(&t_path, DEF_NAME);
   if (lstat(t_path.path, &statbuf) < 0 || 
       (statbuf.st_mode & S_IFMT) != S_IFREG) {
+    fprintf(out_stream, "The specified configuration node is not valid\n");
     bye("Can not set value (4), no definition for %s, template %s", 
-	m_path.path,t_path.path);
+        m_path.path,t_path.path);
   }
   /* defniition present */
   memset(defp, 0, sizeof(vtw_def));
@@ -71,6 +72,7 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
   if (empty_val) {
     if (defp->def_type != TEXT_TYPE || defp->tag || defp->multi){
       printf("Empty string may be assigned only to TEXT type leaf node\n");
+      fprintf(out_stream, "Empty value is not allowed\n");
       return FALSE;
     }
     return TRUE;
@@ -107,6 +109,8 @@ int main(int argc, char **argv)
   for (ai = 1; ai < argc; ++ai) {
     if (!*argv[ai]) { /* empty string */
       if (ai < argc -1) {
+        fprintf(out_stream, "Empty value is not allowed after \"%s\"\n",
+                argv[ai - 1]);
 	bye("empty string in argument list \n");
       }
       empty_val = TRUE;
@@ -144,8 +148,9 @@ int main(int argc, char **argv)
     /* every tag match validated already */
     /* non tag matches are OK by definition */
     /* do we already have it? */
-    if (lstat(m_path.path, &statbuf) >= 0) 
+    if (lstat(m_path.path, &statbuf) >= 0) {
       bye("Already exists %s", m_path.path + strlen(get_mdirp()));
+    }
     /* else */
     /* prevent value node without actual value */
     push_path(&t_path, DEF_NAME);
@@ -153,8 +158,11 @@ int main(int argc, char **argv)
       memset(&def, 0, sizeof(vtw_def));
       if ((status = parse_def(&def, t_path.path, FALSE)))
 	exit(status);
-      if (def.def_type != ERROR_TYPE && !def.tag)
+      if (def.def_type != ERROR_TYPE && !def.tag) {
+        fprintf(out_stream,
+                "The specified configuration node requires a value\n");
 	bye("Must provide actual value\n");
+      }
       if (def.def_type == ERROR_TYPE && !def.tag) {
 	pop_path(&t_path);
 	if(!validate_value(&def, "")) {
@@ -172,6 +180,7 @@ int main(int argc, char **argv)
   if(ai < argc -1 || last_tag) {
     fprintf(stderr, "There is no appropriate template for %s",
             m_path.path + strlen(get_mdirp()));
+    fprintf(out_stream, "The specified configuration node is not valid\n");
     exit(1);
   }
   /*ai == argc -1, must be actual value */

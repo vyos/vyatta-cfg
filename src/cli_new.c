@@ -105,7 +105,7 @@ void bye(char *msg, ...)
   va_list ap;
 
   if (is_silent_msg())
-    exit(0);
+    exit(-1);
   va_start(ap, msg);
   if (is_echo())
     printf("echo \"");
@@ -113,7 +113,7 @@ void bye(char *msg, ...)
   printf(is_echo()? "\";":"\n");
   va_end(ap);
 
-  exit(0);
+  exit(-1);
 }
 
 /* msg:
