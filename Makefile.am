@@ -33,6 +33,7 @@ sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl
 sbin_SCRIPTS  += scripts/vyatta-output-config.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
 sbin_SCRIPTS  += scripts/vyatta-load-config.pl
+sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 
 share_perl5_DATA = scripts/VyattaConfig.pm
 share_perl5_DATA += scripts/VyattaConfigDOMTree.pm

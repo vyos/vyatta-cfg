@@ -1360,6 +1360,9 @@ static int fin_commit(boolean ok)
   system(command);
   my_free(command);
 
+  /* notify other users in config mode */
+  system("/opt/vyatta/sbin/vyatta-cfg-notify");
+
   return 0;
 }  
 

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+declare cur_tty=$(ps -o tty= |head -n1)
+declare cur_uid=($(ps -o ruser= n |head -n1))
+declare cur_user=$(grep "[^:]\+:[^:]*:${cur_uid[0]}:" /etc/passwd \
+                   | cut -d ':' -f 1)
+declare -a ulist=( $(ps -a -o args,tty,ruser n \
+                     | grep '^newgrp quaggavty' | cut -c 29-) )
+
+for (( i = 0; i < ${#ulist[@]}; i += 2 )); do
+  utty=${ulist[i]}
+  if [ "$utty" == "$cur_tty" ]; then
+    continue
+  fi
+  user=$(grep "[^:]\+:[^:]*:${ulist[i+1]}:" /etc/passwd | cut -d ':' -f 1)
+  sudo write $user $utty <<EOF
+Active configuration has been changed by user '$cur_user' on '$cur_tty'.
+Please make sure you do not have conflicting changes. You can also discard
+the current changes by issuing 'exit discard'.
+EOF
+done
+

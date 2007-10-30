@@ -215,7 +215,7 @@ void di(vtw_sorted *srtp)
     printf("%u %u\n", i, *(unsigned int *)(srtp->ptrs[i]));
 }
 
-#define LOCK_FILE "/var/lock/vyatta_cfg_lock"
+#define LOCK_FILE "/opt/vyatta/config/.lock"
 
 static void
 release_config_lock()
