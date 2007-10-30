@@ -215,35 +215,31 @@ void di(vtw_sorted *srtp)
     printf("%u %u\n", i, *(unsigned int *)(srtp->ptrs[i]));
 }
 
-static char _lock_file_[1025] = {0};
-static int _lock_fd_=-1;
+#define LOCK_FILE "/var/lock/vyatta_cfg_lock"
 
-static void clean_lock_file(void) {
-  if(_lock_file_[0]) {
-    unlink(_lock_file_);
-    _lock_file_[0]=0;
-  }
-  if(_lock_fd_!=-1) {
-    close(_lock_fd_);
-    _lock_fd_=-1;
-  }
+static void
+release_config_lock()
+{
+  unlink(LOCK_FILE);
+  /* error ignored */
 }
 
-boolean get_config_lock(const char* adirp, const char* lock_name) {
-
-  boolean ret = TRUE;
-
-  sprintf(_lock_file_, "%s/%s", adirp, lock_name);
-
-  _lock_fd_ = open(_lock_file_, O_WRONLY | O_CREAT | O_EXCL, 0644);
-
-  ret = (_lock_fd_!=-1);
-
-  if(ret) {
-    atexit(clean_lock_file);
+int
+get_config_lock()
+{
+  int fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
+  if (fd == -1) {
+    return -1;
   }
-
-  return ret;
+  if (close(fd) == -1) {
+    release_config_lock();
+    return -1;
+  }
+  if (atexit(release_config_lock) != 0) {
+    release_config_lock();
+    return -1;
+  }
+  return 0;
 }
 
 void internal_error(int line, char *file)

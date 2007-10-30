@@ -117,7 +117,6 @@ static boolean validate_dir_for_commit()
       if (strcmp(dirp->d_name, ".") == 0 ||
 	  strcmp(dirp->d_name, "..") == 0 ||
 	  strcmp(dirp->d_name, MOD_NAME) == 0 ||
-	  strcmp(dirp->d_name, LOCK_NAME) == 0 ||
 	  strcmp(dirp->d_name, opaque_name) == 0 ||
 	  strncmp(dirp->d_name, ".wh.", 4) == 0) {
 	continue; /*ignore dot and dot-dot*/
@@ -274,7 +273,7 @@ int main(int argc, char **argv)
     bye("No configuration changes to commit\n");
   }
 
-  if(!get_config_lock(get_adirp(), LOCK_NAME)) {
+  if (get_config_lock() == -1) {
     fprintf(out_stream, "Cannot commit: Configuration is locked\n");
     bye("Configuration is locked\n");
   }
@@ -387,7 +386,6 @@ boolean commit_update_child(vtw_def *pdefp, char *child,
     if (strcmp(child, ".") == 0 ||
 	strcmp(child, "..") == 0 ||
 	strcmp(child, MOD_NAME) == 0 ||
-	strcmp(child, LOCK_NAME) == 0 ||
 	strcmp(child, opaque_name) == 0)
       return TRUE;
     
@@ -931,7 +929,6 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
     if (strcmp(child, ".") == 0 ||
 	strcmp(child, "..") == 0 ||
 	strcmp(child, MOD_NAME) == 0 ||
-	strcmp(child, LOCK_NAME) == 0 ||
 	strcmp(child, OPQ_NAME) == 0)
       continue;
     uename = clind_unescape(child);
@@ -1020,7 +1017,6 @@ static boolean commit_update_children(vtw_def *defp, boolean creating,
     if (strcmp(child, ".") == 0 ||
 	strcmp(child, "..") == 0 ||
 	strcmp(child, MOD_NAME) == 0 ||
-	strcmp(child, LOCK_NAME) == 0 ||
 	strcmp(child, OPQ_NAME) == 0)
       continue;
     cp = uename = clind_unescape(child);

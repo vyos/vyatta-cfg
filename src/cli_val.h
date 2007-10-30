@@ -190,7 +190,7 @@ extern void touch_dir(const char *dp);
 void mark_paths(vtw_mark *markp);
 void restore_paths(vtw_mark *markp);
 
-extern boolean get_config_lock(const char* adirp, const char* lock_name);
+extern int get_config_lock();
 
 #define    VTWERR_BADPATH  -2 
 #define    VTWERR_OK     0
@@ -199,7 +199,6 @@ extern boolean get_config_lock(const char* adirp, const char* lock_name);
 #define    VAL_NAME "node.val"
 #define    MOD_NAME ".modified"
 #define    OPQ_NAME ".wh.__dir_opaque"
-#define    LOCK_NAME ".commit.lck"
 
 #define INTERNAL  internal_error(__LINE__, __FILE__)
 

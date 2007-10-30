@@ -274,7 +274,6 @@ static void handle_defaults()
     if (strcmp(dirp->d_name, ".")==0 ||
 	strcmp(dirp->d_name, "..")==0 ||
 	strcmp(dirp->d_name, MOD_NAME) == 0 ||
-	strcmp(dirp->d_name, LOCK_NAME) == 0 ||
 	strcmp(dirp->d_name, DEF_NAME)==0)
       continue;
     uename = clind_unescape(dirp->d_name);

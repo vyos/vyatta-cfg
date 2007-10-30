@@ -144,7 +144,6 @@ int main(int argc, char **argv)
 	if (strcmp(dirp->d_name, ".") &&
 	    strcmp(dirp->d_name, "..") &&
 	    strcmp(dirp->d_name, MOD_NAME)  && /* XXX */
-	    strcmp(dirp->d_name, LOCK_NAME)  && /* XXX */
 	    strncmp(dirp->d_name, ".wh.", 4) )
 	  break; 
       }
