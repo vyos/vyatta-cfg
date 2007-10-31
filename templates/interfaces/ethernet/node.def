@@ -6,6 +6,8 @@ syntax: exec " \
           echo ethernet interface $(@) doesn\\'t exist on this system ; \
           exit 1 ; \
         fi ; "
+update: "sudo ip link set $(@) up" ; "Error enabling dev $(@)"
+delete: "sudo ip link set $(@) down" ; "Error disabling dev $(@)"
 #allowed: local -a array ;
 # array=( /sys/class/net/{eth,vmnet}* ) ;
 # echo -n ${array[@]##*/}
