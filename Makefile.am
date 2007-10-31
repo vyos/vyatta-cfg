@@ -7,7 +7,7 @@ AM_CFLAGS = -I src -Wall
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
-completion_DATA	= etc/bash_completion.d/vyatta-cfg
+completion_DATA	= etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-ofr
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
