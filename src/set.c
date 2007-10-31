@@ -69,6 +69,12 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
     free(path_end);
     path_end=NULL;
   }
+  if (defp->def_type == ERROR_TYPE) {
+    /* no type in def. setting value not allowed. */
+    fprintf(out_stream, "The specified configuration node is not valid\n");
+    bye("Can not set value: no type for %s, template %s", 
+        m_path.path, t_path.path);
+  }
   if (empty_val) {
     if (defp->def_type != TEXT_TYPE || defp->tag || defp->multi){
       printf("Empty string may be assigned only to TEXT type leaf node\n");
