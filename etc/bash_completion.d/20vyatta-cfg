@@ -360,7 +360,7 @@ vyatta_parse_tmpl ()
   }
   s/^tag:/vyatta_cfg_tag=1/p
   s/^multi:/vyatta_cfg_multi=1/p
-  s/^type:[ 	]\+\([^ 	]\+\)$/vyatta_cfg_type=\1/p
+  s/^type:[ 	]\+\([^ 	]\+\)/vyatta_cfg_type=\1/p
   ' $1`
   
   local acmd=$(vyatta_parse_tmpl_comp_fields $1 "allowed")
