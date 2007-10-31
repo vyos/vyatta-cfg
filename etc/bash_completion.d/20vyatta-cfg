@@ -38,7 +38,7 @@ declare -a comp_words=()
 
 # commands to unalias
 declare -a unalias_cmds=( clear configure date debug edit exit load \
-                          no set show save terminal undebug )
+                          no run set show save terminal undebug )
 for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
 done
@@ -180,6 +180,25 @@ exit ()
   export VYATTA_EDIT_LEVEL="/"
   export VYATTA_TEMPLATE_LEVEL="/"
   set_config_ps1 ''
+}
+
+# run op mode commands
+run ()
+{
+  _vyatta_op_run $@
+}
+
+# do op mode completion
+vyatta_run_complete ()
+{
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+
+  COMP_WORDS=( "${COMP_WORDS[@]:1}" )
+  (( COMP_CWORD -= 1 ))
+  _vyatta_op_expand
+  
+  eval $restore_shopts
 }
 
 declare v_cfg_completion_debug=0
@@ -859,4 +878,5 @@ complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
 complete -F vyatta_config_complete edit
 complete -F vyatta_config_complete exit
+complete -F vyatta_run_complete run
 
