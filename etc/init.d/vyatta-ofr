@@ -41,14 +41,10 @@ declare -x BOOTFILE=$vyatta_sysconfdir/config/config.boot
 declare -a subinit
 declare -a all_subinits=(
     rl-system
-    sysklogd
     firewall
     dhcpd
     dhcrelay
-    lighttpd
-    ntpd
-    sshd
-    telnetd )
+    lighttpd )
 
 if [ $# -gt 0 ] ; then
     for s in $@ ; do
