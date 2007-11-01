@@ -207,7 +207,6 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	struct stat    statbuf;
 
 	/* Directory reference: */
-	
 	if(!check_existence || (lstat(cfg_path_string, &statbuf) == 0)) {
 	  ret=(char**)realloc(ret,sizeof(char*)*1);
 	  ret[0]=clind_unescape(cfg_end);
@@ -708,7 +707,6 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 	if(config_paths[i]) {
 
 	  int vallen=0;
-	  
 	  char** valarr=clind_get_current_value(config_paths[i],
 						tmpl_path,
 						check_existence,

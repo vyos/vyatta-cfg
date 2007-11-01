@@ -49,8 +49,14 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
       clind_path_destruct(&tp);
     }
 
-    pop_path(&t_path); /* it was tag or real value */
-
+    if (strcmp(path_end, TAG_NAME) == 0) {
+      /* it was a tag, so the def is at 1 level up */
+      pop_path(&t_path);
+    } else {
+      /* it's actual value, so the tmpl path is fine */
+      free(path_end);
+      path_end = NULL;
+    }
   }
   push_path(&t_path, DEF_NAME);
   if (lstat(t_path.path, &statbuf) < 0 || 
@@ -190,8 +196,10 @@ int main(int argc, char **argv)
     exit(1);
   }
   /*ai == argc -1, must be actual value */
-  if (!empty_val)
-    pop_path(&m_path); /*it was value, not path segment */
+  if (!empty_val) {
+    pop_path(&m_path); /* pop the actual value at the end */
+    pop_path(&t_path); /* pop the "node.tag" */
+  }
 
   if(!set_validate(&def, argv[argc-1], empty_val)) {
     exit(1);
