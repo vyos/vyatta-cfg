@@ -1,3 +1,0 @@
-help: "enable interface"
-update: "sudo ip link set $(../../@) up"; "error enabling dev $(../../@)"
-delete: "sudo ip link set $(../../@) down"; "error disabling dev $(../../@)"

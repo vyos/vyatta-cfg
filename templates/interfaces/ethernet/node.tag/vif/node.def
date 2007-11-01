@@ -2,6 +2,7 @@ tag:
 type: u32
 help: "vlan ID"
 syntax: $(@) >= 0 && $(@) <= 4095; "vlan ID must be between 0 and 4095"
-update: "sudo modprobe 8021q"; "error loading 802.1q driver"
-update: "sudo vconfig add $(../@) $(@)"; "error adding vlan id $(@) to dev $(../@)"
-delete: "sudo vconfig rem $(../@).$(@)"; "error removing vlan id $(@) from dev $(../@)"
+update: "sudo modprobe 8021q"; "Error loading 802.1q driver"
+update: "sudo vconfig add $(../@) $(@)"; "Error adding vlan id $(@) to dev $(../@)"
+update: "sudo ip link set $(../@).$(@) up"; "Error enabing vlan id $(@) on dev $(../@)"
+delete: "sudo vconfig rem $(../@).$(@)"; "Error removing vlan id $(@) from dev $(../@)"
