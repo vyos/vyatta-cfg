@@ -200,6 +200,7 @@ int main(int argc, char **argv)
     pop_path(&m_path); /* pop the actual value at the end */
     pop_path(&t_path); /* pop the "node.tag" */
   }
+  handle_defaults();
 
   if(!set_validate(&def, argv[argc-1], empty_val)) {
     exit(1);
@@ -226,10 +227,12 @@ int main(int argc, char **argv)
     res = val_cmp(&new_value, &old_value, IN_COND);
     if (res) {
       if (def.multi) {
-        bye("Already in multivalue");
+        printf("Already in multivalue\n");
       } else {
-        bye("The same value \"%s\" for path \"%s\"\n", cp, m_path.path);
+        printf("The same value \"%s\" for path \"%s\"\n", cp, m_path.path);
       }
+      /* not treating as error */
+      exit(0);
     }
   } else {
     pop_path(&m_path);
@@ -262,75 +265,137 @@ int main(int argc, char **argv)
   }
   return 0;
 }
-/**********************************************
-   handle_defaults:
-     now deal with defaults for children 
-     if child has definition and not tag, nor multi, and 
-     has type, and has default, and not have value 
-     already, make a default value
-*/
-    
 
-static void handle_defaults()
+static char *
+last_path_segment(const char *path)
 {
-  DIR    *dp;
-  int     status;
-  struct dirent *dirp;
-  struct stat statbuf;
-  FILE          *fp;
-  vtw_def        def;
-  char     *uename;
+  char *tmp = strrchr(path, '/');
+  return ((tmp) ? (tmp + 1) : tmp);
+}
 
-  if ((dp = opendir(t_path.path)) == NULL){
-    INTERNAL;
+/* handle_default(mpath, tpath, exclude)
+ *  create any nodes with default values at the current level.
+ *  mpath: working path
+ *  tpath: template path
+ *  exclude: path to exclude
+ */
+static void
+handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
+{
+  DIR *dp;
+  struct dirent *dirp;
+  char *uename = NULL;
+  struct stat statbuf;
+  vtw_def def;
+  int status;
+  FILE *fp;
+
+  if ((dp = opendir(tpath->path)) == NULL) {
+    perror("handle_default: opendir");
+    exit(-1);
   }
+
   while ((dirp = readdir(dp)) != NULL) {
-    if (strcmp(dirp->d_name, ".")==0 ||
-	strcmp(dirp->d_name, "..")==0 ||
-	strcmp(dirp->d_name, MOD_NAME) == 0 ||
-	strcmp(dirp->d_name, DEF_NAME)==0)
+    if (strcmp(dirp->d_name, ".") == 0
+        || strcmp(dirp->d_name, "..") == 0
+        || strcmp(dirp->d_name, MOD_NAME) == 0
+        || strcmp(dirp->d_name, DEF_NAME) == 0
+        || strcmp(dirp->d_name, TAG_NAME) == 0
+        || strcmp(dirp->d_name, exclude) == 0) {
       continue;
+    }
+    if (uename) {
+      free(uename);
+      uename = NULL;
+    }
     uename = clind_unescape(dirp->d_name);
-    push_path(&t_path, uename);
-    if (lstat(t_path.path, &statbuf) < 0) {
-      bye("Cannot stat template directory %s\n", 
-	  t_path.path);
+    push_path(tpath, uename);
+    if (lstat(tpath->path, &statbuf) < 0) {
+      fprintf(stderr, "no template directory [%s]\n", tpath->path);
+      pop_path(tpath);
+      continue;
     }
     if ((statbuf.st_mode & S_IFMT) != S_IFDIR) {
-      bye("Non directory file %s\n", t_path.path);
+      fprintf(stderr, "non-directory [%s]\n", tpath->path);
+      pop_path(tpath);
+      continue;
     }
-    push_path(&t_path, DEF_NAME);
-    if (lstat(t_path.path, &statbuf) < 0) {
+    push_path(tpath, DEF_NAME);
+    if (lstat(tpath->path, &statbuf) < 0) {
       /* no definition */
-      pop_path(&t_path); /* definition */
-      pop_path(&t_path); /* child */
+      pop_path(tpath); /* definition */
+      pop_path(tpath); /* child */
       continue;
     }
     memset(&def, 0, sizeof(def));
-    if ((status = parse_def(&def, t_path.path, 
-			    FALSE)))
-      exit(status);
+    if ((status = parse_def(&def, tpath->path, FALSE))) {
+      fprintf(stderr, "parse error in [%s]\n", tpath->path);
+      pop_path(tpath); /* definition */
+      pop_path(tpath); /* child */
+      continue;
+    }
     if (def.def_default) {
-      push_path(&m_path, uename);
-      push_path(&m_path, VAL_NAME);
-      if (lstat(m_path.path, &statbuf) < 0) {
-	/* no value, write one */
-	pop_path(&m_path);
-	make_dir();/* make sure directory exist */
-	push_path(&m_path, VAL_NAME);
-	fp = fopen(m_path.path, "w");
-	if (fp == NULL)
-	  bye("Can not open value file %s", m_path.path);
-	if (fputs(def.def_default, fp) < 0 || 
-	    fputc('\n',fp) < 0)
-	  bye("Error writing file %s", m_path.path);
-	fclose(fp);
+      push_path(mpath, uename);
+      push_path(mpath, VAL_NAME);
+      if (lstat(mpath->path, &statbuf) < 0) {
+        /* no value. add the default */
+        pop_path(mpath);
+        touch_dir(mpath->path); /* make sure directory exist */
+        push_path(mpath, VAL_NAME);
+        fp = fopen(mpath->path, "w");
+        if (fp == NULL) {
+          bye("Can not open value file %s", mpath->path);
+        }
+        if (fputs(def.def_default, fp) < 0
+            || fputc('\n',fp) < 0) {
+          bye("Error writing file %s", mpath->path);
+        }
+        fclose(fp);
       }
-      pop_path(&m_path); /* value */
-      pop_path(&m_path); /* child */
+      pop_path(mpath); /* value */
+      pop_path(mpath); /* child */
     }
     free_def(&def);
-    pop_path(&t_path); /* definition */
-    pop_path(&t_path); /* child */
+    pop_path(tpath); /* definition */
+    pop_path(tpath); /* child */
   }
+  if (uename) {
+    free(uename);
+  }
+  closedir(dp);
 }
+
+/* handle_defaults()
+ *  create any nodes with default values along the current "global"
+ *  configuration/template path (m_path/t_path).
+ */
+static void
+handle_defaults()
+{
+  vtw_path mpath;
+  vtw_path tpath;
+  char *path_end = strdup("");
+
+  memset(&mpath, 0, sizeof(mpath));
+  memset(&tpath, 0, sizeof(tpath));
+  copy_path(&mpath, &m_path);
+  copy_path(&tpath, &t_path);
+
+  while (mpath.path_lev > 0) {
+    handle_default(&mpath, &tpath, path_end);
+   
+    if (mpath.path_lev == 1) {
+      break;
+    }
+
+    free(path_end);
+    path_end = strdup(last_path_segment(tpath.path));
+    pop_path(&mpath);
+    pop_path(&tpath);
+  }
+  
+  free(path_end);
+  free_path(&mpath);
+  free_path(&tpath);
+}
+
