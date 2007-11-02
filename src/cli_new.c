@@ -73,13 +73,13 @@ static valstruct validate_value_val;  /* value being validated
 static int check_comp(vtw_node *cur);
 static boolean check_syn_func(vtw_node *cur,const char* func,int line);
 #define check_syn(cur) check_syn_func((cur),__FUNCTION__,__LINE__)
-static void copy_path(vtw_path *to, vtw_path *from);
+void copy_path(vtw_path *to, vtw_path *from);
 static int eval_va(valstruct *res, vtw_node *node);
 static int expand_string(char *p);
 static void free_node(vtw_node *node);
 static void free_node_tree(vtw_node *node);
 static void free_reuse_list(void);
-static void free_path(vtw_path *path);
+void free_path(vtw_path *path);
 static void free_string(char *str);
 static vtw_node * get_node(void);
 
@@ -1048,7 +1048,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     copy path
     if destination path owns memory, free it
 **************************************************/
-static void copy_path(vtw_path *to, vtw_path *from)
+void copy_path(vtw_path *to, vtw_path *from)
 {
   if (to->path_buf)
     my_free(to->path_buf);
@@ -1371,7 +1371,7 @@ static void free_node_tree(vtw_node *node)
   free_node(node);
 }
 
-static void free_path(vtw_path *path)
+void free_path(vtw_path *path)
 {
   if (path->path_ends)
     my_free(path->path_ends);
@@ -1910,7 +1910,8 @@ static int set_reference_environment(const char* var_reference,
 	active_path.path = active_path.path_buf + get_f_seg_a_ptr()->f_segoff;
 	
 	*n_cfg_path=clind_path_construct(active_path.path);
-
+        
+        free_path(&active_path);
       } else {
 	
 	*n_cfg_path=clind_path_construct(n_vt_path.path);
@@ -1920,6 +1921,7 @@ static int set_reference_environment(const char* var_reference,
       *n_tmpl_path=clind_path_construct(t_path.path);
       *n_cmd_path=clind_path_construct(var_reference);
       
+      free_path(&n_vt_path);
     }
 
     return 0;

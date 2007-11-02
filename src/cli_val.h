@@ -187,6 +187,9 @@ extern char *type_to_name(vtw_type_e type);
 extern boolean execute_list(vtw_node *cur, vtw_def *def);
 extern void touch_dir(const char *dp);
 
+extern void copy_path(vtw_path *to, vtw_path *from);
+extern void free_path(vtw_path *path);
+
 void mark_paths(vtw_mark *markp);
 void restore_paths(vtw_mark *markp);
 
