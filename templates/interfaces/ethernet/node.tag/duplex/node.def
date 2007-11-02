@@ -4,5 +4,6 @@ syntax: $(@) in "half", "full"; "duplex must be half or full"
 commit: $(../speed) != ""; "if duplex is hardcoded, speed must also be hardcoded"
 update: "sudo ethtool -s $(../@) speed $(../speed/@) duplex $(@) autoneg off"
 delete: "sudo ethtool -s $(../@) autoneg on"
-#comp_help:  half\t\tHalf duplex
+#comp_help:Possible completions:
+#  half\t\tHalf duplex
 #  full\t\tFull duplex
