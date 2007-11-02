@@ -7,6 +7,7 @@ use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigLoad;
 
 my $etcdir = $ENV{vyatta_sysconfdir};
+my $sbindir = $ENV{vyatta_sbindir};
 my $bootpath = '';
 if (-r "$etcdir/bootfile_path") {
   $bootpath = `cat $etcdir/bootfile_path`;
@@ -38,27 +39,27 @@ my @set_list = @{$cfg_diff{'set'}};
 
 foreach (@delete_list) {
   my ($cmd_ref, $rank) = @{$_};
-  my @cmd = ( 'my_delete', @{$cmd_ref} );
+  my @cmd = ( "$sbindir/my_delete", @{$cmd_ref} );
   my $cmd_str = join ' ', @cmd;
   system("$cmd_str");
   if ($? >> 8) {
-    $cmd_str =~ s/^my_//;
+    $cmd_str =~ s/^$sbindir\/my_//;
     print "\"$cmd_str\" failed\n";
   }
 }
 
 foreach (@set_list) {
   my ($cmd_ref, $rank) = @{$_};
-  my @cmd = ( 'my_set', @{$cmd_ref} );
+  my @cmd = ( "$sbindir/my_set", @{$cmd_ref} );
   my $cmd_str = join ' ', @cmd;
   system("$cmd_str");
   if ($? >> 8) {
-    $cmd_str =~ s/^my_//;
+    $cmd_str =~ s/^$sbindir\/my_//;
     print "\"$cmd_str\" failed\n";
   }
 }
 
-system("my_commit");
+system("$sbindir/my_commit");
 if ($? >> 8) {
   print "Load failed (commit failed)\n";
   exit 1;
