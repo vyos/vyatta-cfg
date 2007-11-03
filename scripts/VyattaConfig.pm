@@ -463,7 +463,7 @@ sub hasTmplChildren {
 sub parseTmpl {
   my $self = shift;
   my $cfg_path_ref = shift;
-  my ($is_multi, $is_text) = (0, 0);
+  my ($is_multi, $is_text, $default) = (0, 0, undef);
   my $tpath = $self->getTmplPath($cfg_path_ref);
   if (! -r "$tpath/node.def") {
     return ($is_multi, $is_text);
@@ -476,9 +476,12 @@ sub parseTmpl {
     if (/^type:\s+txt\s*$/) {
       $is_text = 1;
     }
+    if (/^default:\s+(\S+)\s*$/) {
+      $default = $1;
+    }
   }
   close TMPL;
-  return ($is_multi, $is_text);
+  return ($is_multi, $is_text, $default);
 }
 
 ###### misc functions ######

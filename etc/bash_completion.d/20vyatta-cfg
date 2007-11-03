@@ -45,13 +45,22 @@ done
 
 show ()
 {
-  eval "${vyatta_sbindir}/vyatta-output-config.pl \
-        \${VYATTA_EDIT_LEVEL//\// } $@"
+  local show_all=''
+  local -a args=()
+  for arg in "$@"; do
+    if [ "$arg" == "-all" ]; then
+      show_all='-all'
+    else
+      args[${#args[@]}]="$arg"
+    fi
+  done
+  eval "${vyatta_sbindir}/vyatta-output-config.pl ${show_all}\
+        \${VYATTA_EDIT_LEVEL//\// } ${args[@]}"
 }
 
 save ()
 {
-  eval "${vyatta_sbindir}/vyatta-save-config.pl $@"
+  eval "sudo ${vyatta_sbindir}/vyatta-save-config.pl $@"
 }
 
 declare vyatta_cfg_prompt_level=''

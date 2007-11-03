@@ -4,8 +4,7 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigOutput;
 
-my $sbindir = $ENV{vyatta_sbindir};
-my $etcdir = $ENV{vyatta_sysconfdir};
+my $etcdir = "/opt/vyatta/etc";
 my $bootfile = '';
 if (-r "$etcdir/bootfile_path") {
   $bootfile = `cat $etcdir/bootfile_path`;
@@ -35,6 +34,7 @@ if (! open(SAVE, ">$save_file")) {
 
 print "Saving configuration to '$save_file'...";
 select SAVE;
+VyattaConfigOutput::set_show_all(1);
 VyattaConfigOutput::outputActiveConfig();
 my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
 print SAVE $version_str;

@@ -13,6 +13,14 @@ use strict;
 use lib '/opt/vyatta/share/perl5/';
 use VyattaConfig;
 
+# whether to show default values
+my $show_all = 0;
+sub set_show_all {
+  if (shift) {
+    $show_all = 1;
+  }
+}
+
 my $config = undef;
 
 # $0: array ref for path
@@ -25,7 +33,7 @@ sub displayValues {
   my $prefix = $_[1];
   my $name = $_[2];
   my $simple_show = $_[3];
-  my ($is_multi, $is_text) = $config->parseTmpl(\@cur_path);
+  my ($is_multi, $is_text, $default) = $config->parseTmpl(\@cur_path);
   $config->setLevel(join ' ', @cur_path);
   if ($is_multi) {
     my @ovals = $config->returnOrigValues('');
@@ -74,7 +82,9 @@ sub displayValues {
       }
     }
     if (defined($simple_show)) {
-      print "$prefix$name: $oval\n";
+      if (!defined($default) || $default ne $oval || $show_all) {
+        print "$prefix$name: $oval\n";
+      }
       return;
     }
     my $value = $nval;
@@ -90,7 +100,9 @@ sub displayValues {
         $diff = '>';
       }
     }
-    print "$diff$prefix$name: $value\n";
+    if (!defined($default) || $default ne $value || $show_all) {
+      print "$diff$prefix$name: $value\n";
+    }
   }
 }
 
