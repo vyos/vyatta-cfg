@@ -1,2 +1,2 @@
 type: macaddr
-help: "set the original MAC address for this interface"
+help: "Specify the MAC address of this interface"

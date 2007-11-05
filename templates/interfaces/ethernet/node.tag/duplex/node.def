@@ -1,5 +1,5 @@
 type: txt
-help: "set the duplex for this interface"
+help: "Set the duplex mode for this interface"
 syntax: $(@) in "half", "full"; "duplex must be half or full"
 commit: $(../speed) != ""; "if duplex is hardcoded, speed must also be hardcoded"
 update: "sudo ethtool -s $(../@) speed $(../speed/@) duplex $(@) autoneg off"

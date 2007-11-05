@@ -1,6 +1,6 @@
 tag:
 type: txt
-help: "loopback interface name"
+help: "Loopback interface name"
 syntax: exec " \
         if [ -z \"`ip addr | grep $(@) `\" ]; then \
           echo loopback interface $(@) doesn\\'t exist on this system ; \

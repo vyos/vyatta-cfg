@@ -1,5 +1,5 @@
 type: txt
-help: "set the speed for this interface"
+help: "Set the speed for this interface"
 syntax: $(@) in "10", "100", "1000"; "Speed must be 10, 100, or 1000"
 commit: $(../duplex) != ""; "if speed is hardcoded, duplex must also be hardcoded"
 update: "sudo ethtool -s $(../@) speed $(@) duplex $(../duplex/@) autoneg off"

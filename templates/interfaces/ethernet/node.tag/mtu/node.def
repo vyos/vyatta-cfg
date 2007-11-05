@@ -1,5 +1,5 @@
 type: u32
-help: "set the MTU address for this interface"
+help: "Set the MTU for this interface"
 syntax: $(@) >= 1 && $(@) <= 1500; "MTU must be between 1 and 1500"
-update: "sudo ip link set $(../@) mtu $(@)"; "error setting MAC address on dev $(../@)"
-delete: "sudo ip link set $(../@) mtu 1500"; "error deleteing MAC address on dev $(../@)"
+update: "sudo ip link set $(../@) mtu $(@)"; "error setting MTU on dev $(../@)"
+delete: "sudo ip link set $(../@) mtu 1500"; "error deleting MTU on dev $(../@)"
