@@ -69,10 +69,8 @@ have_rl_system () {
     test -x $vyatta_sbindir/rl-system.init
 }
 
-try_floppy () {
+use_floppy () {
     _fd_=/media/floppy
-    _fd_config_=$_fd_/config/config.boot
-    _fd_rc_local_=$_fd_/rc.local
 
     if have_rl_system ; then
 ##	only do this if we have the rl-system package
@@ -86,43 +84,28 @@ try_floppy () {
 		test $? -eq 32 && mount -t vfat /dev/fd0 $_fd_ 2>/dev/null
 	    fi
 	fi
-	test -x $_fd_rc_local_ && $_fd_rc_local_ start
-	test -f $_fd_config_ && BOOTFILE=$_fd_config_
     fi
+    test -d ${_fd_}/config
 }
 
-get_config () {
-  declare config_mount=/opt/vyatta/etc/config-mnt
-  declare -a boot_args=($( cat /proc/cmdline ))
-  declare config_dev=''
-  declare config_path=''
-  for arg in ${boot_args[@]}; do
-    case "$arg" in
-      config_dev=*) eval "$arg";;
-      config_path=*) eval "$arg";;
-      *) ;;
-    esac
-  done
-  if [ -z "$config_dev" ]; then
-    return 1
-  fi
-  [ -n "$config_path" ] || config_path='/config.boot'
-  mkdir -p $config_mount
-  mount -t ext2 /dev/$config_dev $config_mount -o sync 2>/dev/null
-  test $? -eq 32 && mount -t vfat /dev/$config_dev $config_mount 2>/dev/null
-  if [ ! -f ${config_mount}${config_path} ]; then
-    return 1
-  fi
-  BOOTFILE=${config_mount}${config_path}
-  return 0
+setup_configdir() {
+    [ -f $BOOTFILE ] && return 0
+    mkdir -m 0775 -p ${vyatta_sysconfdir}/config
+    chgrp ${GROUP} ${vyatta_sysconfdir}/config
+    if [ -d ~root/vyatta/config ] ; then
+	mount -o bind ~root/vyatta/config $vyatta_sysconfdir/config
+    elif use_floppy ; then
+	mount -o bind /media/floppy/config $vyatta_sysconfdir/config
+    else
+	mkdir -m 0775 -p ~root/vyatta/config
+	chgrp ${GROUP} ~root/vyatta ~root/vyatta/config
+	mount -o bind ~root/vyatta/config $vyatta_sysconfdir/config
+    fi
 }
 
 # if necessary, provide initial config
 init_bootfile () {
     if [ ! -f $BOOTFILE ] ; then
-        if [ ! -d $vyatta_sysconfdir/config ]; then
-            mkdir -p $vyatta_sysconfdir/config
-        fi
 	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
 	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
         else
@@ -154,20 +137,10 @@ load_bootfile ()
   fi
 }
 
-setup_config_dir ()
-{
-  [ -d ${vyatta_configdir} ] || mkdir -p ${vyatta_configdir}
-  chgrp ${GROUP} ${vyatta_configdir}
-  chmod 0775 ${vyatta_configdir}
-}
-
 start ()
 {
     log_daemon_msg "Starting Vyatta Router"
-    setup_config_dir
-    if ! get_config; then
-      try_floppy
-    fi
+    setup_configdir
     init_bootfile
     migrate_bootfile
     for s in ${subinit[@]} ; do
