@@ -2,5 +2,5 @@ multi:
 type: ipv4net
 help: "Set IPv4 address and prefix for this interface"
 # TODO make sure 127.0.0.0/8 not in here.
-update: "sudo ip addr add $(@) dev $(../@)"; "error setting address $(@) on dev $(../@)"
-delete: "sudo ip addr del $(@) dev $(../@)"; "error deleteing address $(@) on dev $(../@)"
+update: "sudo ip addr add $(@) dev $(../@)"; "Error setting address $(@) on dev $(../@)"
+delete: "sudo ip addr del $(@) dev $(../@)"; "Error deleting address $(@) on dev $(../@)"

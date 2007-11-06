@@ -2,4 +2,4 @@ multi:
 type: ipv4net
 help: "Set IPv4 address and prefix for this interface"
 update: "sudo ip addr add $(@) dev $(../../@).$(../@)"; "Error setting address $(@) on dev $(../../@).$(../@)"
-delete: "sudo ip addr del $(@) dev $(../../@).$(../@)"; "Error deleteing address $(@) on dev $(../../@).$(../@)"
+delete: "sudo ip addr del $(@) dev $(../../@).$(../@)"; "Error deleting address $(@) on dev $(../../@).$(../@)"
