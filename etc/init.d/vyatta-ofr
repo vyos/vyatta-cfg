@@ -137,10 +137,27 @@ load_bootfile ()
   fi
 }
 
+# this handles the "config dir" (/opt/vyatta/config), which is different
+# from the directory for config files (/opt/vyatta/etc/config).
+mount_cfg_dir ()
+{
+    if [ ! -d ${vyatta_configdir} ] ; then
+	mkdir -m 0775 -p ${vyatta_configdir}
+	chgrp ${GROUP} ${vyatta_configdir}
+    fi
+    mount -o nosuid,nodev -t tmpfs none ${vyatta_configdir}
+}
+
+unmount_cfg_dir ()
+{
+    umount ${vyatta_configdir}
+}
+
 start ()
 {
     log_daemon_msg "Starting Vyatta Router"
     setup_configdir
+    mount_cfg_dir
     init_bootfile
     migrate_bootfile
     for s in ${subinit[@]} ; do
@@ -162,6 +179,7 @@ stop()
 	${vyatta_sbindir}/${s}.init stop
 	let status\|=$?
     done
+    unmount_cfg_dir
     log_end_msg $status
 }
 

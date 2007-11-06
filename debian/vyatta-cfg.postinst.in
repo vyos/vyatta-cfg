@@ -3,13 +3,6 @@
 prefix=@prefix@
 sysconfdir=@sysconfdir@
 
-# make sure config dir and config file dir are usable
-for d in {$prefix,$sysconfdir}/config; do
-  mkdir -p $d
-  chgrp -R quaggavty $d
-  chmod -R g+w $d
-done
-
 update-rc.d vyatta-ofr defaults 99 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
 
