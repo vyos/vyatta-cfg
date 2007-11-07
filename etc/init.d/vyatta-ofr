@@ -103,6 +103,19 @@ setup_configdir() {
     fi
 }
 
+setup_rclocal () {
+    [ -f /etc/rc.local ] || touch /etc/rc.local
+    if [ -f ~root/vyatta/rc.local ]; then
+	mount -o bind ~root/vyatta/rc.local /etc/rc.local
+    elif [ -f /media/floppy/rc.local ]; then
+	mount -o bind /media/floppy/rc.local /etc/rc.local
+    fi
+}
+
+restore_rclocal () {
+    umount /etc/rc.local >& /dev/null
+}
+
 # if necessary, provide initial config
 init_bootfile () {
     if [ ! -f $BOOTFILE ] ; then
@@ -157,6 +170,7 @@ start ()
 {
     log_daemon_msg "Starting Vyatta Router"
     setup_configdir
+    setup_rclocal
     mount_cfg_dir
     init_bootfile
     migrate_bootfile
@@ -180,6 +194,7 @@ stop()
 	let status\|=$?
     done
     unmount_cfg_dir
+    restore_rclocal
     log_end_msg $status
 }
 

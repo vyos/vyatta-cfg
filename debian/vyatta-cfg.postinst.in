@@ -3,6 +3,6 @@
 prefix=@prefix@
 sysconfdir=@sysconfdir@
 
-update-rc.d vyatta-ofr defaults 99 >/dev/null
+update-rc.d vyatta-ofr defaults 90 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
 
