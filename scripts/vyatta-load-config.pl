@@ -28,8 +28,13 @@ if (!($load_file =~ /^\//)) {
 print "Loading config file $load_file...\n";
 my %cfg_hier = VyattaConfigLoad::loadConfigHierarchy($load_file);
 if (scalar(keys %cfg_hier) == 0) {
-  print "Load failed\n";
-  exit 1;
+  print "The specified file does not contain any configuration.\n";
+  print "Do you want to remove everything in the running configuration? [no] ";
+  my $resp = <STDIN>;
+  if (!($resp =~ /^yes$/i)) {
+    print "Configuration not loaded\n";
+    exit 1;
+  }
 }
 
 my %cfg_diff = VyattaConfigLoad::getConfigDiff(\%cfg_hier);
