@@ -60,7 +60,8 @@ show ()
 
 save ()
 {
-  eval "sudo ${vyatta_sbindir}/vyatta-save-config.pl $@"
+  eval "sudo sg quaggavty \
+        \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
 declare vyatta_cfg_prompt_level=''
