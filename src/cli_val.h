@@ -99,6 +99,7 @@ typedef enum {
 typedef struct {
   vtw_type_e def_type;
   char      *def_type_help;
+  char      *def_node_help;
   char      *def_default;
   boolean    tag;
   boolean    multi;

@@ -1340,6 +1340,9 @@ void free_def(vtw_def *defp)
       free_node_tree(defp->actions[act].vtw_list_head);
   if (defp->def_type_help)
     my_free(defp->def_type_help);
+  if (defp->def_node_help) {
+    my_free(defp->def_node_help);
+  }
   if (defp->def_default)
     my_free(defp->def_default);
 }

@@ -103,7 +103,7 @@ cause:		help_cause
 		;
 
 help_cause:	HELP STRING 
-                { parse_defp->def_type_help = $2; /* no semantics for now */ 
+                { parse_defp->def_node_help = $2; /* no semantics for now */ 
                 }
 
 default_cause:  DEFAULT VALUE 
