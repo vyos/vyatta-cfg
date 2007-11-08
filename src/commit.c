@@ -666,7 +666,7 @@ boolean commit_update_child(vtw_def *pdefp, char *child,
 static boolean commit_delete_child(vtw_def *pdefp,  char *child, 
 		  boolean deleting, boolean in_txn)
 {
-  boolean        do_children, multi_tag = FALSE;
+  boolean        multi_tag = FALSE;
   struct stat    statbuf;
   int            status;
   vtw_def        def;
@@ -845,14 +845,19 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
     }
     /* else not a value */
     /* regular */
-    do_children = TRUE;
+    
+    /* children */
+    ok = commit_delete_children(my_defp, deleting, in_txn);
+    if (!ok) {
+      goto restore;
+    }
+
     /* do not do anything for tag itself, all action belong to values */
     if (!multi_tag) {
       set_at_string(child); /* for expand inside actions */
       if (deleting) {
 	if (act_defp && 
 	    act_defp->actions[delete_act].vtw_list_head){
-	  do_children = FALSE;
 	  set_in_delete_action(TRUE);
 	  status = execute_list(act_defp->actions[delete_act].
 				vtw_list_head, act_defp);
@@ -867,12 +872,7 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
 	}
       }
     }
-    /* children */
-    if (do_children){
-      ok = commit_delete_children(my_defp, deleting, in_txn);
-      if (!ok)
-	goto restore;
-    }
+
     if (deleting) {
       if (do_txn && act_defp && 
 	  act_defp->actions[end_act].vtw_list_head) {
