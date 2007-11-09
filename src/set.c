@@ -10,6 +10,8 @@
 #include "cli_objects.h"
 #include "cli_path_utils.h"
 
+extern char *cli_operation_name;
+
 static void make_dir(void);
 static void handle_defaults(void);
 
@@ -37,7 +39,7 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
       if (valp[i] == '\'') {
         fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
                             "in a value string\n");
-        exit(1);
+        bye("single quote in value string\n");
       }
     }
 
@@ -67,8 +69,9 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
   }
   /* defniition present */
   memset(defp, 0, sizeof(vtw_def));
-  if ((status = parse_def(defp, t_path.path, FALSE)))
-    exit(status);
+  if ((status = parse_def(defp, t_path.path, FALSE))) {
+    bye("parse error: %d\n", status);
+  }
   pop_path(&t_path);
   if(path_end) {
     push_path(&t_path,path_end);
@@ -108,8 +111,10 @@ int main(int argc, char **argv)
   boolean       need_mod = FALSE, not_new = FALSE;
   boolean       empty_val = FALSE;
 
+  cli_operation_name = "Set";
+
   if (initialize_output() == -1) {
-    exit(-1);
+    bye("can't initialize output\n");
   }
 
   dump_log( argc, argv);
@@ -147,7 +152,7 @@ int main(int argc, char **argv)
       last_tag = TRUE;
       /* every time tag match, need to verify*/
       if(!set_validate(&def, argv[ai], FALSE)) {
-	exit(1);
+	bye("value \"%s\" is not valid\n", argv[ai]);
       }
       continue;
     } 
@@ -168,8 +173,9 @@ int main(int argc, char **argv)
     push_path(&t_path, DEF_NAME);
     if (lstat(t_path.path, &statbuf) >= 0) {
       memset(&def, 0, sizeof(vtw_def));
-      if ((status = parse_def(&def, t_path.path, FALSE)))
-	exit(status);
+      if ((status = parse_def(&def, t_path.path, FALSE))) {
+	bye("parse error: %d\n", status);
+      }
       if (def.def_type != ERROR_TYPE && !def.tag) {
         fprintf(out_stream,
                 "The specified configuration node requires a value\n");
@@ -178,7 +184,7 @@ int main(int argc, char **argv)
       if (def.def_type == ERROR_TYPE && !def.tag) {
 	pop_path(&t_path);
 	if(!validate_value(&def, "")) {
-	  exit(1);
+	  bye("validate_value failed\n");
 	}
 	push_path(&t_path, DEF_NAME);
       }
@@ -190,10 +196,9 @@ int main(int argc, char **argv)
     exit(0); 
   }
   if(ai < argc -1 || last_tag) {
-    fprintf(stderr, "There is no appropriate template for %s",
-            m_path.path + strlen(get_mdirp()));
     fprintf(out_stream, "The specified configuration node is not valid\n");
-    exit(1);
+    bye("There is no appropriate template for %s",
+        m_path.path + strlen(get_mdirp()));
   }
   /*ai == argc -1, must be actual value */
   if (!empty_val) {
@@ -203,7 +208,7 @@ int main(int argc, char **argv)
   handle_defaults();
 
   if(!set_validate(&def, argv[argc-1], empty_val)) {
-    exit(1);
+    bye("value \"%s\" is not valid\n", argv[argc - 1]);
   }
     push_path(&m_path, VAL_NAME);
   /* set value */
@@ -292,7 +297,7 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
 
   if ((dp = opendir(tpath->path)) == NULL) {
     perror("handle_default: opendir");
-    exit(-1);
+    bye("opendir failed\n");
   }
 
   while ((dirp = readdir(dp)) != NULL) {

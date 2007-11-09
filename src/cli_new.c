@@ -94,6 +94,9 @@ static int set_reference_environment(const char* var_reference,
 /*************************************************
      GLOBAL FUNCTIONS
 ***************************************************/
+
+char *cli_operation_name = NULL;
+
 /* it is executed as "eval `my_set` in order to be able to 
    modify BASH env
    therefore, all error will be reported as
@@ -103,6 +106,9 @@ static int set_reference_environment(const char* var_reference,
 void bye(char *msg, ...)
 {
   va_list ap;
+            
+  fprintf(out_stream, "%s failed\n",
+          (cli_operation_name) ? cli_operation_name : "Operation");
 
   if (is_silent_msg())
     exit(-1);
@@ -323,8 +329,7 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
     }
     break;
   default:
-    printf("Unknown value in switch on line %d\n", __LINE__);
-    exit(-5);
+    bye("Unknown value in switch on line %d\n", __LINE__);
   }
   if (sortp->num < 2) 
     return;
@@ -685,6 +690,8 @@ boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond)
 	rval = right->val;
       else
 	rval = right->vals[rcur];
+      
+      parts_num = 0;
       switch (val_type) {
       case IPV6_TYPE:
 	parts_num = 8;
@@ -713,8 +720,7 @@ boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond)
 	res = strcmp(lval, rval);
 	goto done_comp;
       default:
-	printf("Unknown value in switch on line %d\n", __LINE__);
-	exit(-5);
+	bye("Unknown value in switch on line %d\n", __LINE__);
       }
       /* here to do a multistep int compare */
       for (step = 0; step < parts_num; ++ step) {
@@ -1032,15 +1038,14 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     return ret;
       
   case VAL_OP:
-    printf("VAL op in check_syn\n");
-    exit(-4);
+    bye("VAL op in check_syn\n");
   case VAR_OP:
-    printf("VAR op in check_syn\n");
-    exit(-4);
+    bye("VAR op in check_syn\n");
   default:
-    printf("unknown op %d in check_syn\n", cur->vtw_node_oper);
-    exit(-4);
+    bye("unknown op %d in check_syn\n", cur->vtw_node_oper);
   }
+  /* not reachable */
+  return FALSE;
 }
 
 /*************************************************
@@ -1526,8 +1531,7 @@ int get_value_to_at_string(vtw_path *pathp) {
 *****************************************************/
 void out_of_memory()
 {
-  printf("\n\t!!! OUT OF MEMORY !!!\n");
-  exit(-1);
+  bye("\n\t!!! OUT OF MEMORY !!!\n");
 }
 
 /*************************************************

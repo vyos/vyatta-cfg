@@ -483,8 +483,7 @@ char *clind_unescape(const char *name)
       else if (*cp >='0' && *cp<='9')
 	*rcp = (*cp-'0')*16;
       else {
-	printf("Bad escape in |%s|\n", name);
-	exit(-1);
+	bye("Bad escape in |%s|\n", name);
       }
       ++cp;
       if (*cp >='a' && *cp<='f')
@@ -494,8 +493,7 @@ char *clind_unescape(const char *name)
       else if (*cp >='0' && *cp<='9')
 	*rcp += (*cp-'0');
       else {
-	printf("Bad escape in |%s|\n", name);
-	exit(-1);
+	bye("Bad escape in |%s|\n", name);
       }
     }else
       *rcp = *cp;

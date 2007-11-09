@@ -8,6 +8,8 @@
 #include "cli_val.h"
 #include "cli_objects.h"
 
+extern char *cli_operation_name;
+
 static void remove_rf(boolean do_umount)
 {
     char *command;
@@ -52,8 +54,9 @@ boolean set_validate(vtw_def *defp, char *valp)
   }
   /* defniition present */
   memset(defp, 0, sizeof(vtw_def));
-  if ((status = parse_def(defp, t_path.path, FALSE)))
-    exit(status);
+  if ((status = parse_def(defp, t_path.path, FALSE))) {
+    bye("parse error: %d\n", status);
+  }
   res = validate_value(defp, valp);
   pop_path(&t_path);
   return res;
@@ -71,13 +74,15 @@ int main(int argc, char **argv)
   char          *cp, *delp, *endp;
   boolean        do_umount;
 
+  cli_operation_name = "Delete";
+
   if (initialize_output() == -1) {
-    exit(-1);
+    bye("can't initialize output\n");
   }
 
   if (argc < 2) {
     fprintf(out_stream, "Need to specify the config node to delete\n");
-    exit(1);
+    bye("nothing to delete\n");
   }
 
   dump_log( argc, argv);
@@ -160,8 +165,9 @@ int main(int argc, char **argv)
 	(statbuf.st_mode & S_IFMT) == S_IFREG) {
       /* defniition present */
       memset(&def, 0, sizeof(vtw_def));
-      if ((status = parse_def(&def, t_path.path, FALSE)))
-	exit(status);
+      if ((status = parse_def(&def, t_path.path, FALSE))) {
+	bye("parse error: %d\n", status);
+      }
       if (!def.tag && !def.multi && def.def_type!= ERROR_TYPE) {
 	/* signgle value */
 	/* is it modified ==
@@ -209,8 +215,9 @@ int main(int argc, char **argv)
   }
   /* defniition present */
   memset(&def, 0, sizeof(vtw_def));
-  if ((status = parse_def(&def, t_path.path, FALSE)))
-    exit(status);
+  if ((status = parse_def(&def, t_path.path, FALSE))) {
+    bye("parse error: %d\n", status);
+  }
   if (def.multi) {
     /* delete from multivalue */
     valstruct new_value, old_value;

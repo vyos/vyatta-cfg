@@ -32,6 +32,8 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
 static boolean commit_update_children(vtw_def *defp, boolean creating, 
 				      boolean in_txn, boolean *parent_update);
 
+extern char *cli_operation_name;
+
 #if BITWISE
 static void make_dir()
 {
@@ -94,7 +96,7 @@ static boolean validate_dir_for_commit()
       
       if ((status = parse_def(&def, t_path.path, 
 			      FALSE))) {
-	exit(status);
+	bye("parse error: %d\n", status);
       }
 
     }
@@ -257,8 +259,10 @@ int main(int argc, char **argv)
   int st;
   boolean update_pending = FALSE;
  
+  cli_operation_name = "Commit";
+
   if (initialize_output() == -1) {
-    exit(-1);
+    bye("can't initialize output\n");
   }
 
   set_in_commit(TRUE);
@@ -421,9 +425,9 @@ boolean commit_update_child(vtw_def *pdefp, char *child,
 #ifdef DEBUG1
 	printf("Parsing definition\n");
 #endif
-	if ((status = parse_def(&def, t_path.path, 
-				FALSE)))
-	  exit(status);
+	if ((status = parse_def(&def, t_path.path, FALSE))) {
+	  bye("parse error: %d\n", status);
+        }
 	my_defp = act_defp = &def;
 	if (def.tag)
 	  multi_tag = TRUE;
@@ -754,9 +758,9 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
 #ifdef DEBUG1
 	printf("Parsing definition\n");
 #endif
-	if ((status = parse_def(&def, t_path.path, 
-				FALSE)))
-	  exit(status);
+	if ((status = parse_def(&def, t_path.path, FALSE))) {
+	  bye("parse error: %d\n", status);
+        }
 	my_defp = act_defp = &def;
 	if (def.tag)
 	  multi_tag = TRUE;  /* tag node itself*/ 
