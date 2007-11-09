@@ -122,6 +122,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 				      int *ret_size) {
   
   char** ret=NULL;
+  int value_ref = 0;
   *ret_size=0;
 
   if(val_type) *val_type=TEXT_TYPE;
@@ -149,6 +150,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
       if(strcmp(cfg_end,VALUE_FILE)==0) {
 
 	/* Value reference: */
+        value_ref = 1;
 
 	if(return_value_file_name) {
 	  
@@ -216,13 +218,15 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	
       if(ret) {  
 	if(tmpl_end && (strcmp(tmpl_end,NODE_TAG)==0)) {
+          /* since it's a tag, it should be treated as a value */
+          value_ref = 1;
 	  clind_path_pop(tmpl_path_clone);
 	  tmpl_path_string = clind_path_get_path_string(tmpl_path_clone);
 	  tmpl_end = clind_path_last_string(tmpl_path_clone);
 	}
       }
 	  
-      if(ret && tmpl_path_string && !return_value_file_name) {
+      if(ret && tmpl_path_string && value_ref && !return_value_file_name) {
 	  
 	vtw_def def;
 	struct stat    statbuf;
