@@ -726,6 +726,9 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 	  if(valarr) {
 	    
 	    int k=0;
+   
+            /* set the type */
+            res->val_type = val_type;
 
 	    for(k=0;k<vallen;k++) {
 
