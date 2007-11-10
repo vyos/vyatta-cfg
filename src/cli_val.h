@@ -215,4 +215,12 @@ extern FILE *out_stream;
 
 extern int initialize_output();
 
+/*** debug ***/
+#undef CLI_DEBUG
+#ifdef CLI_DEBUG
+#define DPRINT(...) printf(__VA_ARGS__)
+#else
+#define DPRINT(...)
+#endif
+
 #endif

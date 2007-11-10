@@ -680,6 +680,8 @@ boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond)
   else
     rstop = 1;
   
+  DPRINT("val_cmp: type=%d count=(%d,%d) val=(%s,%s)\n",
+         val_type, lstop, rstop, left->val, right->val);
   for(lcur = 0; lcur < lstop; ++lcur) {
     if (!lcur && !left->cnt)
       lval = left->val;
@@ -774,9 +776,13 @@ static boolean check_comp(vtw_node *cur)
   memset(&right, 0 , sizeof(right));
   ret = FALSE; /* in case of status */
   status = eval_va(&left, cur->vtw_node_left);
+  DPRINT("check_comp left status=%d type=%d cnt=%d val=[%s]\n",
+         status, left.val_type, left.cnt, left.val); 
   if (status) 
     goto free_and_return;
   status = eval_va(&right, cur->vtw_node_right);
+  DPRINT("check_comp right status=%d type=%d cnt=%d val=[%s]\n",
+         status, right.val_type, right.cnt, right.val); 
   if (status)
     goto free_and_return;
   if(left.val_type != right.val_type) {
@@ -1092,6 +1098,7 @@ static int eval_va(valstruct *res, vtw_node *node)
       clind_path_ref n_cmd_path=NULL;
       
       pathp = node->vtw_node_string;
+      DPRINT("eval_va var[%s]\n", pathp);
       
       assert(pathp[0]=='$' && pathp[1]=='(');
       pathp += 2;
@@ -1117,7 +1124,6 @@ static int eval_va(valstruct *res, vtw_node *node)
 				   &n_tmpl_path,
 				   &n_cmd_path,
 				   is_in_delete_action())==0) {
-	
 	clind_val cv;
 	
 	memset(&cv,0,sizeof(cv));
@@ -1150,6 +1156,7 @@ static int eval_va(valstruct *res, vtw_node *node)
     }
 
   case VAL_OP:
+    DPRINT("eval_va val[%s]\n", res->val);
     *res = node->vtw_node_val;
     res->free_me = FALSE; 
     return 0;

@@ -125,6 +125,10 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
   int value_ref = 0;
   *ret_size=0;
 
+  DPRINT("get_current_value cfg[%s] tmpl[%s] chkexist=%d\n",
+         clind_path_get_path_string(cfg_path),
+         clind_path_get_path_string(tmpl_path),
+         check_existence);
   if(val_type) *val_type=TEXT_TYPE;
   
   if(cfg_path && (clind_path_get_size(cfg_path)>0)) {
@@ -213,7 +217,14 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	  ret=(char**)realloc(ret,sizeof(char*)*1);
 	  ret[0]=clind_unescape(cfg_end);
 	  *ret_size=1;
-	}
+	} else {
+          /* we are checking existence, and it doesn't exist */
+          /* return empty string */
+	  ret = (char**) realloc(ret, (sizeof(char *) * 1));
+	  ret[0] = malloc(1);
+          ret[0][0] = 0;
+          *ret_size = 1;
+        }
       }
 	
       if(ret) {  
@@ -357,6 +368,9 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
 							 int *result_len) {
   clind_path_ref* ret=NULL;
 
+  DPRINT("eng_apply_cmd cfg=[%s] tmpl=[%s] type=%d\n",
+         clind_path_get_path_string(cfg_path),
+         clind_path_get_path_string(tmpl_path), cmd->type);
   if(cfg_path && tmpl_path && result_len && cmd) {
     
     /*
@@ -595,6 +609,12 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 	 clind_path_get_path_string(cmd_path),
 	 root_tmpl_path);
   */
+  DPRINT("eng_apply_cmd_path cfg=[%s] tmpl=[%s] cmd=[%s] "
+         "rcfg=[%s] rtmpl=[%s]\n",
+         clind_path_get_path_string(cfg_path_orig),
+         clind_path_get_path_string(tmpl_path_orig),
+         clind_path_get_path_string(cmd_path),
+         root_cfg_path, root_tmpl_path);
 
   if(cfg_path_orig && tmpl_path_orig && cmd_path && res) {
 
