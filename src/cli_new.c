@@ -271,8 +271,14 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
   void *curp, *parp;
 
   sortp->num = valp->cnt?valp->cnt : 1; 
+#ifdef CLI_DEBUG
+  printf("vtw_sort type=%d num=%d\n", type, sortp->num); 
+  for (i = 0; i < sortp->num; i++) {
+    printf("  [%s]\n", (valp->cnt) ? valp->vals[i] : valp->val);
+  }
+#endif
   sortp->ptrs =  my_malloc(sortp->num * sizeof(void *), "sort_ptrs");
-  sortp->partnum = cond_format_lens[type];
+  sortp->partnum = (type < DOMAIN_TYPE) ? cond_format_lens[type] : 0;
   if (sortp->partnum) {
     sortp->parts = my_malloc(sortp->partnum * sortp->num * sizeof(void *), 
 			     "sort_parts");
@@ -333,6 +339,23 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
   }
   if (sortp->num < 2) 
     return;
+#ifdef CLI_DEBUG
+  if (sortp->parts) {
+    int i, j;
+    printf("sortp parts:\n");
+    for (i = 0; i < sortp->num; i++) {
+      printf("  ");
+      unsigned int *parts = (unsigned int *) sortp->ptrs[i];
+      for (j = 0; j < sortp->partnum; j++) {
+        printf("%u ", parts[j]);
+      }
+      printf("\n");
+    }
+  }
+#endif
+  /* the following sort throws away the input ordering. */
+  /* NOT doing this for now */
+#if 0
   /* now do a heap sort */
   /* build heap */
   /* from left to right, we start with the heap of only one (first) element*/
@@ -448,6 +471,7 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
       }
     }
   }
+#endif
 }
 
 /* returns FALSE if execution returns non-null,
