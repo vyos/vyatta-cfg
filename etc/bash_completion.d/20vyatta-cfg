@@ -321,6 +321,33 @@ get_prefix_filtered_list ()
   done
 }
 
+get_prefix_filtered_list2 ()
+{
+  # $1: prefix
+  # $2: \@list
+  # $3: \@filtered
+  # $4: \@list2
+  # $5: \@filtered2
+  declare -a olist
+  local pfx=$1
+  pfx=${pfx#\"}
+  eval "olist=( \"\${$2[@]}\" )"
+  eval "local orig_len=\${#$2[@]}"
+  local orig_idx=0
+  local idx=0
+  for (( orig_idx = 0; orig_idx < orig_len; orig_idx++ )); do
+    eval "local elem=\${$2[$orig_idx]}"
+    eval "local elem2=\${$4[$orig_idx]}"
+    local sub=${elem#$pfx}
+    if [ "$elem" == "$sub" ] && [ -n "$pfx" ]; then
+      continue
+    fi
+    eval "$3[$idx]=\"$elem\""
+    eval "$5[$idx]=\"$elem2\""
+    (( idx++ ))
+  done
+}
+
 vyatta_parse_tmpl_comp_fields ()
 {
   # $1: tmpl
@@ -629,6 +656,40 @@ vyatta_config_complete ()
     vyatta_do_help=0
   fi
 
+  if (( ${#COMP_WORDS[@]} < 2 )); then
+    declare -a hitems=( "commit" \
+                        "delete" \
+                        "edit" \
+                        "exit" \
+                        "load" \
+                        "run" \
+                        "save" \
+                        "set" \
+                        "show" )
+    declare -a hstrs=( \
+      "Commit the current set of changes" \
+      "Delete a configuration element" \
+      "Edit a sub-element" \
+      "Exit from this configuration level" \
+      "Load configuration from a file" \
+      "Run an operational-mode command" \
+      "Save configuration to a file" \
+      "Set the value of a parameter or create a new element" \
+      "Show the configuration (default values may be suppressed)" \
+    )
+    if (( ${#COMP_WORDS[@]} == 1 )); then
+      declare -a fitems=()
+      declare -a fstrs=()
+      get_prefix_filtered_list2 "${COMP_WORDS[0]}" hitems fitems hstrs fstrs
+      hitems=( "${fitems[@]}" )
+      hstrs=( "${fstrs[@]}" )
+    fi
+    generate_help_text hitems hstrs
+    vyatta_completions=( "${hitems[@]}" )
+    vyatta_do_complete
+    return
+  fi
+
   local command=${COMP_WORDS[0]}
   # completion for "set" is different from other commands
   is_set=0
@@ -883,6 +944,7 @@ if ! bind -p |grep -q '\\C-x\\C-o'; then
   bind '"\C-x\C-o": copy-region-as-kill'
 fi
 
+complete -F vyatta_config_complete ''
 complete -F vyatta_config_complete set
 complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
