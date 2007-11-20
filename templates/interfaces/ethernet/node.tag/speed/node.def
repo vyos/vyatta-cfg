@@ -1,6 +1,19 @@
 type: txt
 help: "Set the speed for this interface"
-syntax: $(@) in "10", "100", "1000"; "Speed must be 10, 100, or 1000"
-commit: $(../duplex) != ""; "if speed is hardcoded, duplex must also be hardcoded"
-update: "sudo ethtool -s $(../@) speed $(@) duplex $(../duplex/@) autoneg off"
+default: "auto"
+syntax: $(@) in "auto", "10", "100", "1000"; "Speed must be auto, 10, 100, or 1000"
+commit: exec "if [ x$(@) != xauto ]; then \
+	         if [ x$(../duplex/@) == xauto ]; then \
+                    exit 1; \
+                 fi; \
+              else \
+                 if [ x$(../duplex/@) != xauto ]; then \
+                    exit 1; \
+                 fi; \
+              fi;"; "if speed is hardcoded, duplex must also be hardcoded"
+update: "if [ x$(@) != xauto ]; then \
+          sudo ethtool -s $(../@) speed $(@) duplex $(../duplex/@) autoneg off; \
+         else \
+	  sudo ethtool -s $(../@) autoneg on; \
+         fi; "
 delete: "sudo ethtool -s $(../@) autoneg on"

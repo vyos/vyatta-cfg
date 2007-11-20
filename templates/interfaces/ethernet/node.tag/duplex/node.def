@@ -1,9 +1,23 @@
 type: txt
 help: "Set the duplex mode for this interface"
-syntax: $(@) in "half", "full"; "duplex must be half or full"
-commit: $(../speed) != ""; "if duplex is hardcoded, speed must also be hardcoded"
-update: "sudo ethtool -s $(../@) speed $(../speed/@) duplex $(@) autoneg off"
+default: "auto"
+syntax: $(@) in "auto", "half", "full"; "duplex must be auto, half or full"
+commit: exec "if [ x$(@) != xauto ]; then \
+                 if [ x$(../speed/@) == xauto ]; then \
+                    exit 1; \
+                 fi; \
+              else \
+                 if [ x$(../speed/@) != xauto ]; then \
+                    exit 1; \
+                 fi; \
+              fi; " ; "if duplex is hardcoded, speed must also be hardcoded"
+update: "if [ x$(@) != xauto ]; then \
+           sudo ethtool -s $(../@) speed $(../speed/@) duplex $(@) autoneg off; \
+         else \
+           sudo ethtool -s $(../@) autoneg on; \
+         fi; "
 delete: "sudo ethtool -s $(../@) autoneg on"
 #comp_help:Possible completions:
+#  auto\t\tAuto negotiation
 #  half\t\tHalf duplex
 #  full\t\tFull duplex
