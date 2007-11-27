@@ -631,8 +631,11 @@ ENDCOMMENT
     COMPREPLY=( "" " " )
   else
     local -a f_comps=()
-    get_prefix_filtered_list "${COMP_WORDS[COMP_CWORD]}" \
-                             vyatta_completions f_comps
+    local cword=
+    if (( ${#COMP_WORDS[@]} > 0 )); then
+      cword=${COMP_WORDS[COMP_CWORD]}
+    fi
+    get_prefix_filtered_list "$cword" vyatta_completions f_comps
     local estr="COMPREPLY=( "
     for w in "${f_comps[@]}"; do
       estr="$estr\"$w\" "
