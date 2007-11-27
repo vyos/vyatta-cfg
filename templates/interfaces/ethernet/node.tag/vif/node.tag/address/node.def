@@ -1,5 +1,6 @@
 multi:
-type: ipv4net
-help: "Set IPv4 address and prefix for this interface"
-update: "sudo ip addr add $(@) dev $(../../@).$(../@)"; "Error setting address $(@) on dev $(../../@).$(../@)"
-delete: "sudo ip addr del $(@) dev $(../../@).$(../@)"; "Error deleting address $(@) on dev $(../../@).$(../@)"
+type: txt
+help: "Set IPv4 address and prefix for this vif interface"
+syntax: exec "/opt/vyatta/sbin/vyatta-interfaces.pl --valid-addr $(@) --dev $(../../@).$(../@) "
+create: "sudo /opt/vyatta/sbin/vyatta-interfaces.pl --eth-addr-update $(@) --dev $(../../@).$(../@) "; "Error setting address $(@) on dev $(../../@) $(../@) "
+delete: "sudo /opt/vyatta/sbin/vyatta-interfaces.pl --eth-addr-delete $(@) --dev $(../../@).$(../@) "; "Error deleting address $(@) on dev $(../../@).$(../@) "

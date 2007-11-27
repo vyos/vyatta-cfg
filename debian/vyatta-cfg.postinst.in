@@ -6,3 +6,11 @@ sysconfdir=@sysconfdir@
 update-rc.d vyatta-ofr defaults 90 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
 
+if [ "$sysconfdir" != "/etc" ]; then
+  # remove the config files and replace with blank ones
+  for conf in dhcp3/dhclient.conf 
+  do
+    [ -f /etc/$conf ] && mv -f /etc/$conf /etc/$conf.vyatta-save
+    touch /etc/$conf
+  done
+fi
