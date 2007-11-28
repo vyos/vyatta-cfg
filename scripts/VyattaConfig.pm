@@ -220,6 +220,20 @@ sub exists {
   }
 }
 
+## existsOrig("node")
+# Returns true if the "original node" exists. 
+sub existsOrig {
+  my ( $self, $node ) = @_;
+  $node =~ s/\//%2F/g;
+  $node =~ s/\s+/\//g;
+
+  if ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" ) {
+    return 1;
+  } else {
+    return undef;
+  }
+}
+
 ## isDeleted("node")
 # is the "node" deleted. node is relative.  returns true or false
 sub isDeleted {

@@ -250,7 +250,12 @@ sub outputNewConfig {
   if (scalar(keys %rnodes) > 0) {
     displayChildren(\%rnodes, [ @_ ], '');
   } else {
-    print "Current configuration is empty\n";
+    if (defined($config->existsOrig())) {
+      # this is a deleted node
+      print 'Configuration under "' . (join ' ', @_) . "\" has been deleted\n";
+    } else {
+      print "Current configuration is empty\n";
+    }
   }
 }
 
