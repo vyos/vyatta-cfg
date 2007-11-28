@@ -89,7 +89,7 @@ sub listOrigNodes {
   my @nodes = ();
 
   if (defined $path) { 
-    $path =~ s/%2F/\//g;
+    $path =~ s/\//%2F/g;
     $path =~ s/\s+/\//g;
     $path = $self->{_active_dir_base} . $self->{_current_dir_level} . "/"
             . $path;
