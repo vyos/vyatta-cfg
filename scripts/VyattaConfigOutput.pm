@@ -248,7 +248,13 @@ sub outputNewConfig {
   $config->setLevel(join ' ', @_);
   my %rnodes = $config->listNodeStatus();
   if (scalar(keys %rnodes) > 0) {
-    displayChildren(\%rnodes, [ @_ ], '');
+    my @rn = keys %rnodes;
+    if ($#rn == 0 && $rn[0] eq 'node.val') {
+      # this is a leaf value-node
+      displayValues([ @_ ], '', $_[$#_]);
+    } else {
+      displayChildren(\%rnodes, [ @_ ], '');
+    }
   } else {
     if (defined($config->existsOrig())) {
       # this is a deleted node
