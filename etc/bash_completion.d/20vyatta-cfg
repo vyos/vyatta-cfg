@@ -54,8 +54,8 @@ show ()
       args[${#args[@]}]="$arg"
     fi
   done
-  eval "${vyatta_sbindir}/vyatta-output-config.pl ${show_all}\
-        \${VYATTA_EDIT_LEVEL//\// } ${args[@]}"
+  ${vyatta_sbindir}/vyatta-output-config.pl ${show_all} \
+    ${VYATTA_EDIT_LEVEL//\// } ${args[@]}
 }
 
 save ()
@@ -705,6 +705,20 @@ vyatta_config_complete ()
     end_space=1
     (( num_comp -= 1 ))
   fi
+
+  # handle pipe
+  if [ "${COMP_WORDS[$num_comp]}" == "|" ]; then
+    declare -a hitems=( "more" \
+                      )
+    declare -a hstrs=( \
+      "Paginate the output" \
+    )
+    generate_help_text hitems hstrs
+    vyatta_completions=( "${hitems[@]}" )
+    vyatta_do_complete
+    return
+  fi
+
   (( last_idx = num_comp - 1 ))
   comp_words=( ${COMP_WORDS[@]:1:$num_comp} )
 
