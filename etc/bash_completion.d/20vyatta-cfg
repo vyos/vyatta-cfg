@@ -55,7 +55,8 @@ show ()
     fi
   done
   ${vyatta_sbindir}/vyatta-output-config.pl ${show_all} \
-    ${VYATTA_EDIT_LEVEL//\// } ${args[@]}
+    ${VYATTA_EDIT_LEVEL//\// } ${args[@]} \
+  | eval "${VYATTA_PAGER:-cat}"
 }
 
 save ()
