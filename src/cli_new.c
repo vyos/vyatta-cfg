@@ -261,14 +261,11 @@ void internal_error(int line, char *file)
 */
 void vtw_sort(valstruct *valp, vtw_sorted *sortp)
 {
-  int i, unsorted, left, child, right;
-  void *leftp, *rightp, *childp;
+  int i;
   const char * format;
   unsigned int *parts;
   vtw_type_e type = valp->val_type;
   char *cp;
-  int cur=0, par=0, partnum=0, res=0;
-  void *curp, *parp;
 
   sortp->num = valp->cnt?valp->cnt : 1; 
 #ifdef CLI_DEBUG
