@@ -274,7 +274,7 @@ int main(int argc, char **argv)
   my_free(mod);
   if (st < 0 ) {
     fprintf(out_stream, "No configuration changes to commit\n");
-    bye("No configuration changes to commit\n");
+    return 0;
   }
 
   if (get_config_lock() == -1) {
