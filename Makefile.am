@@ -2,6 +2,8 @@ cfgdir = $(datadir)/vyatta-cfg/templates
 share_perl5dir = /opt/vyatta/share/perl5
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
+defaultdir = /etc/default
+etc_shell_leveldir = $(sysconfdir)/shell/level
 
 AM_CFLAGS = -I src -Wall
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
@@ -43,9 +45,13 @@ share_perl5_DATA += scripts/VyattaConfigLoad.pm
 share_perl5_DATA += scripts/VyattaMisc.pm
 share_perl5_DATA += scripts/VyattaTypeChecker.pm
 
+default_DATA = etc/default/vyatta-cfg
+
 cpiop = find  . ! -regex '\(.*~\|.*\.bak\|.*\.swp\|.*\#.*\#\)' -print0 | \
 	cpio -0pd
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(cfgdir)
 	cd templates; $(cpiop) $(DESTDIR)$(cfgdir)
+	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
+	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
