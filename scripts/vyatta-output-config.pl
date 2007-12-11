@@ -8,6 +8,11 @@ if ($ARGV[0] eq '-all') {
   shift;
   VyattaConfigOutput::set_show_all(1);
 }
-VyattaConfigOutput::outputNewConfig(@ARGV);
+if ($ARGV[0] eq '-active') {
+  shift;
+  VyattaConfigOutput::outputActiveConfig(@ARGV);
+} else {
+  VyattaConfigOutput::outputNewConfig(@ARGV);
+}
 exit 0;
 

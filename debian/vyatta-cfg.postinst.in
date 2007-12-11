@@ -14,3 +14,7 @@ if [ "$sysconfdir" != "/etc" ]; then
     touch /etc/$conf
   done
 fi
+
+# add group for configure
+addgroup --system vyattacfg
+
