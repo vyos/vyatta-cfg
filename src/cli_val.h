@@ -171,6 +171,7 @@ extern void dump_tree(vtw_node *node, int lev);
 extern void dump_def(vtw_def *defp);
 extern boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond);
 extern void out_of_memory(void);
+extern void subtract_values(char **lhs, const char *rhs);
 extern boolean validate_value(vtw_def *def, 
 			      char *value);
 extern void internal_error(int line, char *file);
