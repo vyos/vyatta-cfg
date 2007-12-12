@@ -37,6 +37,7 @@ sbin_SCRIPTS  += scripts/vyatta-save-config.pl
 sbin_SCRIPTS  += scripts/vyatta-load-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-interfaces.pl
+sbin_SCRIPTS  += scripts/vyatta-irqaffin
 
 share_perl5_DATA = scripts/VyattaConfig.pm
 share_perl5_DATA += scripts/VyattaConfigDOMTree.pm
