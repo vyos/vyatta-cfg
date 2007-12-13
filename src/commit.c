@@ -91,7 +91,7 @@ static boolean validate_dir_for_commit()
       def_present = TRUE;
       memset(&def, 0, sizeof(def));
 #ifdef DEBUG1
-      printf("Parsing definition\n");
+   printf("Parsing definition %s\n", t_path.path);
 #endif
       
       if ((status = parse_def(&def, t_path.path, 
@@ -102,7 +102,7 @@ static boolean validate_dir_for_commit()
     }
 #ifdef DEBUG1
     else
-      printf("No definition\n");
+      printf("No definition %s\n", t_path.path);
 #endif
     pop_path(&t_path);  /* for PUSH 1 */
 
@@ -156,11 +156,27 @@ static boolean validate_dir_for_commit()
 	/* read it */
 	cp = NULL;
 	status = get_value(&cp, &m_path);
-	if (status == VTWERR_OK){
+	if (status == VTWERR_OK) {
 #ifdef DEBUG1
 	  printf("Validating value |%s|\n"
 		 "for path %s\n", cp, m_path.path);
 #endif
+
+          // multivalue has to be diff-ed with the pre-existing value.
+	  // only the difference should be ran through the validation.
+	  // Bug #2509
+          if (def.multi) {
+	    char *old_value = NULL;
+            switch_path(APATH);   // temporarily switching to the active config path
+	    status = get_value(&old_value, &m_path);
+	    if (status == VTWERR_OK) {
+	      subtract_values(&cp, old_value);
+	    }
+	    switch_path(CPATH);
+	    if (old_value)
+	      my_free(old_value);
+	  }
+	
 	  status = validate_value(&def, cp);
 	  ret = ret && status; 
 	}
@@ -232,7 +248,7 @@ static boolean validate_dir_for_commit()
     }
 
     if (def_present && def.tag)
-      pop_path(&t_path);  /* for PUSH 3a */
+      pop_path(&t_path);  /* for PUSH 2a */
     if (def_present)
       free_def(&def);
 #ifdef DEBUG
