@@ -240,19 +240,44 @@ release_config_lock()
 int
 get_config_lock()
 {
-  int fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
-  if (fd == -1) {
-    return -1;
-  }
-  if (close(fd) == -1) {
+  int fd = -1;
+  FILE *lfile = NULL;
+  int ret = -1;
+
+  do {
+    /* create lock file */
+    fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
+    if (fd == -1) {
+      break;
+    }
+
+    /* write pid into lock file */
+    if ((lfile = fdopen(fd, "w")) == NULL) {
+      break;
+    }
+    if (fprintf(lfile, "%u", getpid()) < 0) {
+      break;
+    }
+    /* fclose also closes fd */
+    if (fclose(lfile) != 0) {
+      break;
+    }
+    /* clean up on exit */
+    if (atexit(release_config_lock) != 0) {
+      break;
+    }
+    ret = 0;
+  } while (0);
+ 
+  if (ret == -1) {
+    if (lfile) {
+      fclose(lfile);
+    } else if (fd != -1) {
+      close(fd);
+    }
     release_config_lock();
-    return -1;
   }
-  if (atexit(release_config_lock) != 0) {
-    release_config_lock();
-    return -1;
-  }
-  return 0;
+  return ret;
 }
 
 void internal_error(int line, char *file)
