@@ -307,7 +307,7 @@ sub getSubNodesNumber {
 
 	    my @subs = $node->getSubNodes();
 
-	    if(defined @subs) {
+	    if(@subs) {
 		$ret = $#subs + 1;
 	    }
 	}

@@ -647,6 +647,17 @@ ENDCOMMENT
   vyatta_help_text="\\nNo help text available"
 }
 
+generate_pipe_help ()
+{
+  local -a hcomps=( "${_vyatta_pipe_completions[@]}" \
+                    "${_vyatta_pipe_noncompletions[@]}" )
+  local -a hstrs=()
+  for comp in "${hcomps[@]}"; do
+    hstrs+=("$(_vyatta_pipe_help "$comp")")
+  done
+  generate_help_text hcomps hstrs
+}
+
 vyatta_config_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
@@ -658,6 +669,14 @@ vyatta_config_complete ()
   else
     VYATTA_COMP_LINE=$COMP_LINE
     vyatta_do_help=0
+  fi
+
+  # handle pipe
+  if _vyatta_pipe_completion "${COMP_WORDS[@]}"; then
+    generate_pipe_help
+    vyatta_completions=( "${_vyatta_pipe_completions[@]}" )
+    vyatta_do_complete
+    return
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
@@ -705,19 +724,6 @@ vyatta_config_complete ()
   if [ -z "${COMP_WORDS[$COMP_CWORD]}" ]; then
     end_space=1
     (( num_comp -= 1 ))
-  fi
-
-  # handle pipe
-  if [ "${COMP_WORDS[$num_comp]}" == "|" ]; then
-    declare -a hitems=( "more" \
-                      )
-    declare -a hstrs=( \
-      "Paginate the output" \
-    )
-    generate_help_text hitems hstrs
-    vyatta_completions=( "${hitems[@]}" )
-    vyatta_do_complete
-    return
   fi
 
   (( last_idx = num_comp - 1 ))

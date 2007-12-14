@@ -334,7 +334,7 @@ void init_paths(boolean for_commit)
     init_path(&m_path, startp);
     switch_path(get_f_seg_c_ptr());
     m_path.print_offset = max_len;
-  }else
+  } else
     init_path(&m_path, mdirp);
 
   init_path(&t_path, tdirp);
