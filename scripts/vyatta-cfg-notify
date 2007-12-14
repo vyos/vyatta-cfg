@@ -1,11 +1,13 @@
 #!/bin/bash
 
+[ -r /etc/default/vyatta ] && source /etc/default/vyatta
+
 declare cur_tty=$(ps -o tty= |head -n1)
 declare cur_uid=($(ps -o ruser= n |head -n1))
 declare cur_user=$(grep "[^:]\+:[^:]*:${cur_uid[0]}:" /etc/passwd \
                    | cut -d ':' -f 1)
 declare -a ulist=( $(ps -a -o args,tty,ruser n \
-                     | grep '^newgrp quaggavty' | cut -c 29-) )
+                     | grep "^newgrp $VYATTA_CFG_GROUP_NAME" | cut -c 29-) )
 
 for (( i = 0; i < ${#ulist[@]}; i += 2 )); do
   utty=${ulist[i]}
