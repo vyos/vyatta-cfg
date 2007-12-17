@@ -157,6 +157,7 @@ static boolean validate_dir_for_commit()
 	cp = NULL;
 	status = get_value(&cp, &m_path);
 	if (status == VTWERR_OK) {
+	  size_t value_size = 0;
 #ifdef DEBUG1
 	  printf("Validating value |%s|\n"
 		 "for path %s\n", cp, m_path.path);
@@ -167,6 +168,7 @@ static boolean validate_dir_for_commit()
 	  // Bug #2509
           if (def.multi) {
 	    char *old_value = NULL;
+	    value_size = strlen(cp);
             switch_path(APATH);   // temporarily switching to the active config path
 	    status = get_value(&old_value, &m_path);
 	    if (status == VTWERR_OK) {
@@ -176,8 +178,10 @@ static boolean validate_dir_for_commit()
 	    if (old_value)
 	      my_free(old_value);
 	  }
-	
-	  status = validate_value(&def, cp);
+	  if (strlen(cp) > 0 || value_size == 0)
+	    status = validate_value(&def, cp);
+	  else
+	    status = TRUE;
 	  ret = ret && status; 
 	}
 	if (cp) 
@@ -238,7 +242,7 @@ static boolean validate_dir_for_commit()
       if (!def_present || !def.tag)
 	pop_path(&t_path);  /* for PUSH 2b */
 
-    }
+    } // while
     status = closedir(dp);
     if (status)
       bye("Cannot close dir %s\n", m_path.path);
