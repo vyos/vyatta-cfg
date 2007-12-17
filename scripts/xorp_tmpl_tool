@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if grep -q union=aufs /proc/cmdline || grep -q aufs /proc/filesystems ; then
+    export UNIONFS=aufs
+else
+    export UNIONFS=unionfs
+fi
+
 UMASK_SAVE_G=`umask`
 umask 0111
 XORPLOGFILE=/tmp/xorp_tmpl_tool.log
@@ -36,7 +42,7 @@ export VYATTA_TEMP_CONFIG_DIR=/opt/vyatta/config/tmp/new_config_$VTID;
 if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]
 then
 	mkdir -p $VYATTA_TEMP_CONFIG_DIR
-	sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro unionfs ${VYATTA_TEMP_CONFIG_DIR}
+	sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
 fi
 
 ## cli ENV_TMP_DIR
@@ -110,7 +116,7 @@ case "$1" in
 
     sudo umount ${VYATTA_TEMP_CONFIG_DIR}
     sudo rm -rf $VYATTA_CHANGES_ONLY_DIR/* $VYATTA_CHANGES_ONLY_DIR/.modified
-    sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro unionfs ${VYATTA_TEMP_CONFIG_DIR}
+    sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
     RET_STATUS=0
     ;;
   end_loading)
@@ -150,3 +156,7 @@ echo "ret=${RET_STATUS}" >> ${XORPLOGFILE}
 umask ${UMASK_SAVE_G}
 exit $RET_STATUS
 
+# Local Variables:
+# mode: shell-script
+# sh-indentation: 4
+# End:

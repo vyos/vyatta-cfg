@@ -284,7 +284,7 @@ sub listDeleted {
   if (! -d "$filepath") { return undef; }
   else {
     opendir DIR, "$filepath" or return undef;
-    @nodes = grep /^\.wh./, readdir DIR;
+    @nodes = grep !/^\.wh\.\.wh\./, grep /^\.wh./, readdir DIR;
     closedir DIR;
   }
 

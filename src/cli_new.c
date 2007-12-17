@@ -14,6 +14,8 @@
 #include "cli_val.h"
 #include "cli_parse.h"
 #include <regex.h>
+#include <errno.h>
+#include <time.h>
 
 #include "cli_objects.h"
 #include "cli_val_engine.h"
@@ -229,6 +231,7 @@ void di(vtw_sorted *srtp)
 }
 
 #define LOCK_FILE "/opt/vyatta/config/.lock"
+#define COMMIT_CMD "/opt/vyatta/sbin/my_commit"
 
 static void
 release_config_lock()
@@ -237,22 +240,133 @@ release_config_lock()
   /* error ignored */
 }
 
+/* try to clean up orphaned lock file. return -1 if failed */
+static int
+try_lock_cleanup()
+{
+  char buf[128];
+  char proc[128];
+  FILE *f = NULL;
+  int ret = -1;
+  struct stat statb;
+
+  do {
+    /* get the proc entry */ 
+    if ((f = fopen(LOCK_FILE, "r")) == NULL) {
+      break;
+    }
+    if (fgets(proc, 128, f) == NULL) {
+      break;
+    }
+    /* read the proc entry */
+    if (stat(proc, &statb) == -1) {
+      if (errno == ENOENT) {
+        /* proc entry doesn't exist. can clean up the lock now */
+        ret = 0;
+        break;
+      }
+    }
+    fclose(f);
+    if ((f = fopen(proc, "r")) == NULL) {
+      /* can't open proc entry. assume we can't clean up */
+      break;
+    }
+    if (fgets(buf, 128, f) == NULL) {
+      /* can't read proc entry. assume we can't clean up */
+      break;
+    }
+    /* check if the process is commit */
+    if (strcmp(buf, COMMIT_CMD) == 0) {
+      /* it is commit. can't clean up */
+      break;
+    }
+    /* can clean up the lock */
+    ret = 0;
+  } while (0);
+  if (f) {
+    fclose(f);
+  }
+  if (ret == 0) {
+    unlink(LOCK_FILE);
+    if (stat(LOCK_FILE, &statb) != -1 || errno != ENOENT) {
+      /* proc entry still exists. cleanup failed */
+      ret = -1;
+    }
+  }
+  return ret;
+}
+
+static int
+create_lock_file(int try_cleanup)
+{
+  int fd = -1;
+  int i = 0;
+  struct timespec req;
+
+#define LOCK_WAIT_TIME 2
+#define LOCK_NUM_RETRIES 5
+  req.tv_sec = LOCK_WAIT_TIME;
+  req.tv_nsec = 0;
+  fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
+  if (fd == -1) {
+    for (i = 0; i < LOCK_NUM_RETRIES; i++) {
+      nanosleep(&req, NULL);
+      fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
+      if (fd >= 0) {
+        break;
+      }
+    }
+  }
+  if (fd == -1 && try_cleanup) {
+    if (try_lock_cleanup() != -1) {
+      /* cleanup succeeded */
+      fd = create_lock_file(0);
+    }
+  }
+  return fd; 
+}
+
 int
 get_config_lock()
 {
-  int fd = open(LOCK_FILE, O_WRONLY | O_CREAT | O_EXCL, 0660);
-  if (fd == -1) {
-    return -1;
-  }
-  if (close(fd) == -1) {
+  int fd = -1;
+  FILE *lfile = NULL;
+  int ret = -1;
+
+  do {
+    /* create lock file */
+    fd = create_lock_file(1);
+    if (fd == -1) {
+      break;
+    }
+
+    /* write pid into lock file */
+    if ((lfile = fdopen(fd, "w")) == NULL) {
+      break;
+    }
+    if (fprintf(lfile, "/proc/%u/cmdline", getpid()) < 0) {
+      break;
+    }
+    /* fclose also closes fd */
+    if (fclose(lfile) != 0) {
+      break;
+    }
+    /* clean up on exit */
+    if (atexit(release_config_lock) != 0) {
+      break;
+    }
+    ret = 0;
+  } while (0);
+ 
+  if (ret == -1) {
+    if (lfile) {
+      fclose(lfile);
+    } else if (fd != -1) {
+      close(fd);
+    }
     release_config_lock();
-    return -1;
   }
-  if (atexit(release_config_lock) != 0) {
-    release_config_lock();
-    return -1;
-  }
-  return 0;
+  return ret;
 }
 
 void internal_error(int line, char *file)

@@ -1338,8 +1338,8 @@ static int fin_commit(boolean ok)
   static char format4[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
   static char format5[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*adirp*/
   static char format6[]="mv -f %s/* -t %s";/*tmpp, adirp*/
-  static char format7[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro" 
-    " unionfs %s"; /*cdirp, adirp, mdirp*/
+  static char format7[]="sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
+    " $UNIONFS %s"; /*cdirp, adirp, mdirp*/
   int m_len = strlen(get_mdirp()); 
   int t_len = strlen(get_tmpp()); 
   int c_len = strlen(get_cdirp()); 

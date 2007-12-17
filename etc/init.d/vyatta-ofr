@@ -69,53 +69,6 @@ have_rl_system () {
     test -x $vyatta_sbindir/rl-system.init
 }
 
-use_floppy () {
-    _fd_=/media/floppy
-
-    if have_rl_system ; then
-##	only do this if we have the rl-system package
-##	if we donot discover an fd device, try loading the floppy module
-	grep -q fd /proc/devices || modprobe -q floppy 2>/dev/null
-	if grep -q fd /proc/devices ; then
-	    if  awk -- '$1 ~ /\/dev\/fd/ { exit 1 }' /proc/mounts
-	    then
-		mkdir -p $_fd_
-		mount -t ext2 /dev/fd0 $_fd_ -o sync 2>/dev/null
-		test $? -eq 32 && mount -t vfat /dev/fd0 $_fd_ 2>/dev/null
-	    fi
-	fi
-    fi
-    test -d ${_fd_}/config
-}
-
-setup_configdir() {
-    [ -f $BOOTFILE ] && return 0
-    mkdir -m 0775 -p ${vyatta_sysconfdir}/config
-    chgrp ${GROUP} ${vyatta_sysconfdir}/config
-    if [ -d ~root/vyatta/config ] ; then
-	mount -o bind ~root/vyatta/config $vyatta_sysconfdir/config
-    elif use_floppy ; then
-	mount -o bind /media/floppy/config $vyatta_sysconfdir/config
-    else
-	mkdir -m 0775 -p ~root/vyatta/config
-	chgrp ${GROUP} ~root/vyatta ~root/vyatta/config
-	mount -o bind ~root/vyatta/config $vyatta_sysconfdir/config
-    fi
-}
-
-setup_rclocal () {
-    [ -f /etc/rc.local ] || touch /etc/rc.local
-    if [ -f ~root/vyatta/rc.local ]; then
-	mount -o bind ~root/vyatta/rc.local /etc/rc.local
-    elif [ -f /media/floppy/rc.local ]; then
-	mount -o bind /media/floppy/rc.local /etc/rc.local
-    fi
-}
-
-restore_rclocal () {
-    umount /etc/rc.local >& /dev/null
-}
-
 # if necessary, provide initial config
 init_bootfile () {
     if [ ! -f $BOOTFILE ] ; then
@@ -150,28 +103,11 @@ load_bootfile ()
   fi
 }
 
-# this handles the "config dir" (/opt/vyatta/config), which is different
-# from the directory for config files (/opt/vyatta/etc/config).
-mount_cfg_dir ()
-{
-    if [ ! -d ${vyatta_configdir} ] ; then
-	mkdir -m 0775 -p ${vyatta_configdir}
-	chgrp ${GROUP} ${vyatta_configdir}
-    fi
-    mount -o nosuid,nodev -t tmpfs none ${vyatta_configdir}
-}
-
-unmount_cfg_dir ()
-{
-    umount ${vyatta_configdir}
-}
-
 start ()
 {
     log_daemon_msg "Starting Vyatta Router"
-    setup_configdir
-    setup_rclocal
-    mount_cfg_dir
+    mount -o nosuid,nodev,mode=775 -t tmpfs none ${vyatta_configdir}
+    chgrp ${GROUP} ${vyatta_configdir}
     init_bootfile
     migrate_bootfile
     for s in ${subinit[@]} ; do
@@ -179,7 +115,6 @@ start ()
 	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
     done
     load_bootfile
-    echo -n $BOOTFILE > ${vyatta_sysconfdir}/bootfile_path
     log_end_msg $?
 }
 
@@ -193,8 +128,7 @@ stop()
 	${vyatta_sbindir}/${s}.init stop
 	let status\|=$?
     done
-    unmount_cfg_dir
-    restore_rclocal
+    umount ${vyatta_configdir}
     log_end_msg $status
 }
 

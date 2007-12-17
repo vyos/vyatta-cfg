@@ -1,15 +1,18 @@
 # Vyatta shell environment variables for config mode
 # should be sourced from /etc/default/vyatta
 
-export VYATTA_ACTIVE_CONFIGURATION_DIR=${vyatta_configdir}/active
-export VYATTA_CHANGES_ONLY_DIR=${vyatta_configdir}/tmp/changes_only_$$
-export VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
-export VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
-export VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates
-export VYATTA_EDIT_LEVEL=/
-export VYATTA_TEMPLATE_LEVEL=/
-export VYATTA_TAG_NAME=node.tag
-export VYATTA_MOD_NAME=.modified
+{
+declare -x -r VYATTA_ACTIVE_CONFIGURATION_DIR=${vyatta_configdir}/active
+declare -x -r VYATTA_CHANGES_ONLY_DIR=${vyatta_configdir}/tmp/changes_only_$$
+declare -x -r VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
+declare -x -r VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
+declare -x -r VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates
+declare -x -r VYATTA_EDIT_LEVEL=/
+declare -x -r VYATTA_TEMPLATE_LEVEL=/
+declare -x -r VYATTA_TAG_NAME=node.tag
+declare -x -r VYATTA_MOD_NAME=.modified
+declare -x -r VYATTA_CFG_GROUP_NAME=vyattacfg
+} 2>/dev/null || :
 
 # don't set level if already set
 if [ -n "$VYATTA_USER_LEVEL_DIR" ]; then
