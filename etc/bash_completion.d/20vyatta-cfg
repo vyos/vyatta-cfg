@@ -941,12 +941,18 @@ make_vyatta_config_dir ()
   sudo chgrp ${DEF_GROUP} $1
 }
 
+if grep -q union=aufs /proc/cmdline || grep -q aufs /proc/filesystems ; then
+    export UNIONFS=aufs
+else
+    export UNIONFS=unionfs
+fi
+
 make_vyatta_config_dir $VYATTA_ACTIVE_CONFIGURATION_DIR
 make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
 make_vyatta_config_dir $VYATTA_CONFIG_TMP
 if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]; then
   make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
-  sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro unionfs ${VYATTA_TEMP_CONFIG_DIR}
+  sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
 fi
 
 # disallow 'Ctrl-D' exit, since we need special actions on 'exit'
@@ -976,3 +982,7 @@ complete -F vyatta_config_complete edit
 complete -F vyatta_config_complete exit
 complete -F vyatta_run_complete run
 
+# Local Variables:
+# mode: shell-script
+# sh-indentation: 4
+# End:

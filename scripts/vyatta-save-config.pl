@@ -5,19 +5,14 @@ use lib "/opt/vyatta/share/perl5/";
 use VyattaConfigOutput;
 
 my $etcdir = "/opt/vyatta/etc";
-my $bootfile = '';
-if (-r "$etcdir/bootfile_path") {
-  $bootfile = `cat $etcdir/bootfile_path`;
-}
-my $bootpath = $bootfile;
-$bootpath =~ s/\/[^\/]+$//;
+my $bootpath = $etcdir . "/config";
+my $save_file = $bootpath . "/config.boot";
 
 if ($#ARGV > 0) {
   print "Usage: save [config_file_name]\n";
   exit 1;
 }
 
-my $save_file = "$bootfile";
 if (defined($ARGV[0])) {
   $save_file = $ARGV[0];
   if (!($save_file =~ /^\//)) {

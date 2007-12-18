@@ -8,11 +8,7 @@ use VyattaConfigLoad;
 
 my $etcdir = $ENV{vyatta_sysconfdir};
 my $sbindir = $ENV{vyatta_sbindir};
-my $bootpath = '';
-if (-r "$etcdir/bootfile_path") {
-  $bootpath = `cat $etcdir/bootfile_path`;
-}
-$bootpath =~ s/\/[^\/]+$//;
+my $bootpath = $etcdir . "/config";
 
 if ($#ARGV != 0) {
   print "Usage: load <config_file_name>\n";

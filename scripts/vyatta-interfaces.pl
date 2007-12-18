@@ -287,6 +287,10 @@ sub is_valid_addr {
     my ($addr_net, $intf) = @_;
 
     if ($addr_net eq "dhcp") { 
+	if ($intf eq "lo") {
+	    print "Error: can't use dhcp client on loopback interface\n";
+	    exit 1;
+	}
 	if (is_dhcp_enabled($intf)) {
 	    print "Error: dhcp already configured for $intf\n";
 	    exit 1;

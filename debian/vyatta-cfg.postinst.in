@@ -3,6 +3,9 @@
 prefix=@prefix@
 sysconfdir=@sysconfdir@
 
+mkdir -m 0775 -p $sysconfdir/config $prefix/config
+chgrp quaggavty $sysconfdir/config $prefix/config
+
 update-rc.d vyatta-ofr defaults 90 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
 
