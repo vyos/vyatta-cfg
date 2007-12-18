@@ -58,12 +58,6 @@ static int cond_format_lens[DOMAIN_TYPE] =
     6 /* MACADDR_TYPE */
   };
 
-struct __slist_t;
-
-typedef struct __slist_t {
-  struct __slist_t *next;
-} slist_t;
-
 static int cli_val_len;
 static char *cli_val_ptr;
 
@@ -1901,85 +1895,59 @@ boolean validate_value(vtw_def *def, char *cp)
   return ret;
 }
 
-typedef struct __value_list {
-  slist_t link;
-  const char *value;
-} value_list;
-
-static void delete_list(slist_t *head)
-{
-  while (head != NULL) {
-    slist_t *elem = head;
-    head = head->next;
-    my_free(elem);
-  }
-}
-
 void subtract_values(char **lhs, const char *rhs)
 {
-  size_t length = 0;
+  size_t length = 0, lhs_cnt = 0, rhs_cnt = 0, i;
   const char *line = NULL;
   char *rhs_copy = NULL, *res = NULL;
-  slist_t *head = NULL, *ptr = NULL;
-  slist_t *new_head = NULL, *new_ptr = NULL;
+  const char **head = NULL, **ptr = NULL;
+  const char **new_head = NULL, **new_ptr = NULL;
 
   if (lhs == NULL || *lhs == NULL || **lhs == '\0' || rhs == NULL || *rhs == '\0')
     return;
 
-  rhs_copy = my_malloc(strlen(rhs), "subtract_values rhs_copy");
-  strcpy(rhs_copy, rhs);
-
-  head = ptr = my_malloc(sizeof(slist_t), "subtract_values list1");
-  memset(head, 0, sizeof(slist_t));
+  rhs_copy = strdup(rhs);
+  length = strlen(rhs) / 2;
+  head = ptr = my_malloc(length, "subtract_values list1");
+  memset(head, 0, length);
 
   line = strtok(rhs_copy, "\n\r");
   while (line != NULL && *line != '\0') {
-    value_list *elem = NULL;
-    
-    elem = (value_list *) my_malloc(sizeof(value_list), "subtract_values elem1");
-    memset(elem, 0, sizeof(value_list));
-    elem->value = line;
-    ptr->next = (slist_t *) elem;
-    ptr = ptr->next;
+    *ptr = line;
+    ptr++;
+    rhs_cnt++;
     line = strtok(NULL, "\n\r");
   }
 
-  new_head = new_ptr = my_malloc(sizeof(slist_t), "subtract_values list2");
-  memset(new_head, 0, sizeof(slist_t));
+  length = strlen(*lhs) / 2;
+  new_head = new_ptr = my_malloc(length, "subtract_values list2");
+  memset(new_head, 0, length);
 
+  length = 0;
   line = strtok(*lhs, "\n\r");
   while (line != NULL && *line != '\0') {
-    value_list *elem = NULL;
-
-    ptr = head;
-    while (ptr->next != NULL) {
-      elem = (value_list *) ptr->next;
-      if (strncmp(line, elem->value, strlen(line)) == 0)
+    for (i = 0; i < rhs_cnt; i++) {
+      if (strncmp(line, head[i], strlen(line)) == 0)
         break;
-      ptr = ptr->next;
     }
-    if (ptr->next == NULL) {
-      elem = (value_list *) my_malloc(sizeof(value_list), "subtract_values elem2");
-      memset(elem, 0, sizeof(value_list));
-      elem->value = line;
-      new_ptr->next = elem;
-      new_ptr = new_ptr->next;
+    if (i >= rhs_cnt) {
+      *new_ptr = line;
       length += strlen(line) + 1;
+      new_ptr++;
+      lhs_cnt++;
     }
     line = strtok(NULL, "\n\r");
   }
 
-  new_ptr = new_head->next;
   res = (char *) my_malloc(length + 1, "subtract_values result");
   *res = '\0';
-  while (new_ptr != NULL) {
-     strcat(res, ((value_list *) new_ptr)->value);
+  for (i = 0; i < lhs_cnt; i++) {
+     strcat(res, new_head[i]);
      strcat(res, "\n");
-     new_ptr = new_ptr->next;
   }
   
-  delete_list(head);
-  delete_list(new_head);
+  my_free(head);
+  my_free(new_head);
   if (rhs_copy != NULL)
     my_free(rhs_copy);
   my_free(*lhs);
