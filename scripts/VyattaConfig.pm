@@ -121,15 +121,15 @@ sub listOrigNodes {
 # for example
 sub returnParent {
   my ($self, $node) = @_;
-  my $x, my $tmp;
+  my @x, my $tmp;
 
   # split our hierarchy into vars on a stack
   my @level = split /\s+/, $self->{_level};
 
   # count the number of parents we need to lose
   # and then pop 1 less
-  $x = split /\s+/, $node;
-  for ($tmp = 1; $tmp < $x; $tmp++) {
+  @x = split /\s+/, $node;
+  for ($tmp = 1; $tmp < @x; $tmp++) {
     pop @level;
   }
 
@@ -190,7 +190,10 @@ sub returnOrigValue {
 # node is relative
 sub returnValues {
   my $val = returnValue(@_);
-  my @values = split("\n", $val);
+  my @values;
+  if ($val) {
+    @values = split("\n", $val);
+  }
   return @values;
 }
 
@@ -299,7 +302,7 @@ sub listDeleted {
   # get rid of the whiteout prefix
   my $dir_opq = 0;
   foreach $node (@nodes) {
-    $node =~ s/^\.wh\.(.+)/\1/;
+    $node =~ s/^\.wh\.(.+)/$1/;
     $_ = $node;
     if (! /__dir_opaque/) {
       push @return, $node; 
@@ -327,7 +330,7 @@ sub isChanged {
 
   # let's setup the filepath for the change_dir
   $node =~ s/\//%2F/g;
-  $node =~ s/\s+/\//g, $node;
+  $node =~ s/\s+/\//g;
   my $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
 
   # if the node exists in the change dir, it's modified.
@@ -344,20 +347,20 @@ sub isAdded {
   #print "DEBUG VyattaConfig->isAdded(): node $node\n";
   # let's setup the filepath for the modify dir
   $node =~ s/\//%2F/g;
-  $node =~ s/\s+/\//g, $node;
-  my $filepath = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+  $node =~ s/\s+/\//g;
+  my $filepathNewConfig = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
   
-  #print "DEBUG VyattaConfig->isAdded(): filepath $filepath\n";
+  #print "DEBUG VyattaConfig->isAdded(): filepath $filepathNewConfig\n";
 
   # if the node doesn't exist in the modify dir, it's not
   # been added.  so short circuit and return false.
-  if (! -e "$filepath") { return 0; }
+  if (! -e $filepathNewConfig) { return 0; }
  
   # now let's setup the path for the working dir
-  my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+  my $filepathActive = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
 
   # if the node is in the active_dir it's not new
-  if (-e "$filepath") { return 0; }
+  if (-e $filepathActive) { return 0; }
   else { return 1; }
 }
 
