@@ -209,7 +209,7 @@ sub findDeletedValues {
     # for "multi:" nodes, need to sort the values by the original order.
     my @nvals = getSortedMultiValues($new_ref, \@active_path);
     if ($is_text) {
-      @nvals = map { /^"(.*)"$/; $1; } @nvals;
+      @nvals = map { /^"(.*)"$/ ? $1 : $_ }@nvals;
     }
     my @ovals = $active_cfg->returnOrigValues('');
     my %comp_hash = $active_cfg->compareValueLists(\@ovals, \@nvals);
@@ -261,7 +261,7 @@ sub findSetValues {
     # for "multi:" nodes, need to sort the values by the original order.
     my @nvals = getSortedMultiValues($new_ref, \@active_path);
     if ($is_text) {
-      @nvals = map { /^"(.*)"$/; $1; } @nvals;
+      @nvals = map { /^"(.*)"$/ ? $1 : $_ } @nvals;
     }
     my @ovals = $active_cfg->returnOrigValues('');
     my %comp_hash = $active_cfg->compareValueLists(\@ovals, \@nvals);
