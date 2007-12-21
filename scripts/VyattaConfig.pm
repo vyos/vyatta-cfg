@@ -241,27 +241,18 @@ sub existsOrig {
 # is the "node" deleted. node is relative.  returns true or false
 sub isDeleted {
   my ($self, $node) = @_;
-  my $endnode = undef;
-  my $filepath = undef;
-  my @nodes = ();
-
-  # split the string into an array
-  (@nodes) = split /\s+/, $node;
-
-  # take the last node off the string
-  $endnode = pop @nodes;
-  # and modify it to match the whiteout name
-  $endnode = ".wh.$endnode";
-
-  # setup the path with the rest of the nodes
-  # use the change_dir
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
-  $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
 
-  # if the file exists, the node was deleted
-  if (-f "$filepath") { return 1; }
-  else  { return 0; }
+  my $filepathAct
+    = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+  my $filepathNew
+    = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+
+  if ((-e $filepathAct) && !(-e $filepathNew)) {
+    return 1;
+  }
+  return 0;
 }
 
 ## listDeleted("level")
