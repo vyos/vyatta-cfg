@@ -26,6 +26,11 @@
 #
 
 package VyattaMisc;
+require Exporter;
+@ISA	= qw(Exporter);
+@EXPORT	= qw(getNetAddIP isIpAddress);
+@EXPORT_OK = qw(getNetAddIP isIpAddress);
+
 
 use strict;
 
@@ -58,6 +63,28 @@ sub getNetAddrIP {
     use NetAddr::IP;  # This library is available via libnetaddr-ip-perl.deb
     my $naip = new NetAddr::IP($ip, $netmask);
     return $naip;
+}
+
+sub isIpAddress {
+  my $ip = shift;
+
+  $_ = $ip;
+  if ( ! /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) {
+    return 0;
+  }
+  else {
+    my @ips = split /\./, $ip;
+    my $octet = 0;
+    my $counter = 0;
+
+    foreach $octet (@ips) {
+      if (($octet < 0) || ($octet > 255)) { return 0; }
+      if (($counter == 0) && ($octet < 1)) { return 0; }
+      $counter++;
+    }
+  }
+
+  return 1;
 }
 
 sub isClusterIP {
