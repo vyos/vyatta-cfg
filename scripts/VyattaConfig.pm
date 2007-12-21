@@ -330,9 +330,9 @@ sub listNodeStatus {
   foreach $node (@nodes) {
     if ($node =~ /.+/) {
       #print "DEBUG VyattaConfig->listNodeStatus(): node $node\n";
+      # No deleted nodes -- added, changed, ot static only.
       if    ($self->isAdded("$path $node"))   { $nodehash{$node} = "added"; }
       elsif ($self->isChanged("$path $node")) { $nodehash{$node} = "changed"; }
-      elsif ($self->isDeleted("$path $node")) { $nodehash{$node} = "deleted"; }
       else { $nodehash{$node} = "static"; }
     }
   }
