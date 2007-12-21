@@ -190,8 +190,8 @@ sub returnOrigValue {
 # node is relative
 sub returnValues {
   my $val = returnValue(@_);
-  my @values;
-  if ($val) {
+  my @values = ();
+  if (defined($val)) {
     @values = split("\n", $val);
   }
   return @values;
@@ -241,85 +241,30 @@ sub existsOrig {
 # is the "node" deleted. node is relative.  returns true or false
 sub isDeleted {
   my ($self, $node) = @_;
-  my $endnode = undef;
-  my $filepath = undef;
-  my @nodes = ();
-
-  # split the string into an array
-  (@nodes) = split /\s+/, $node;
-
-  # take the last node off the string
-  $endnode = pop @nodes;
-  # and modify it to match the whiteout name
-  $endnode = ".wh.$endnode";
-
-  # setup the path with the rest of the nodes
-  # use the change_dir
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
-  $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
 
-  # if the file exists, the node was deleted
-  if (-f "$filepath") { return 1; }
-  else  { return 0; }
+  my $filepathAct
+    = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+  my $filepathNew
+    = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+
+  if ((-e $filepathAct) && !(-e $filepathNew)) {
+    return 1;
+  }
+  return 0;
 }
 
 ## listDeleted("level")
 # return array of deleted nodes in the "level"
 # "level" defaults to current
 sub listDeleted {
-  my ($self, $node) = @_;
-  my @return = ();
-  my $filepath = undef;
-  my $curpath = undef;
-  my @nodes = ();
-  my @curnodes = ();
-
-  # setup the entire path with the new level
-  # use the change_dir
-  $node =~ s/\//%2F/g;
-  $node =~ s/\s+/\//g;
-  $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node/";
-  
-  $curpath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node/";
-
-  # let's see if the directory exists and find the the whiteout files
-  if (! -d "$filepath") { return undef; }
-  else {
-    opendir DIR, "$filepath" or return undef;
-    @nodes = grep !/^\.wh\.\.wh\./, grep /^\.wh./, readdir DIR;
-    closedir DIR;
-  }
-
-  if (! -d "$curpath") {
-    return undef;
-  } else {
-    opendir DIR, "$curpath" or return undef;
-    @curnodes = grep !/^\./, readdir DIR;
-    closedir DIR;
-  }
-
-  # get rid of the whiteout prefix
-  my $dir_opq = 0;
-  foreach $node (@nodes) {
-    $node =~ s/^\.wh\.(.+)/$1/;
-    $_ = $node;
-    if (! /__dir_opaque/) {
-      push @return, $node; 
-    } else {
-      $dir_opq = 1;
-    }
-  }
-
-  if ($dir_opq) {
-    # if this node is "dir_opaque", it has been deleted and re-added.
-    # add all nodes in "active" to the return list (so that they will be
-    # marked "deleted"). note that if a node is also re-added, its status
-    # will be changed after the listDeleted call.
-    push @return, @curnodes;
-  }
-
-  return @return;
+  my ($self, $path) = @_;
+  my @new_nodes = $self->listNodes("$path");
+  my @orig_nodes = $self->listOrigNodes("$path");
+  my %new_hash = map { $_ => 1 } @new_nodes;
+  my @deleted = grep { !defined($new_hash{$_}) } @orig_nodes;
+  return @deleted;
 }
 
 ## isChanged("node")
@@ -336,6 +281,32 @@ sub isChanged {
   # if the node exists in the change dir, it's modified.
   if (-e "$filepath") { return 1; }
   else { return 0; }
+}
+
+## isChangedOrDeleted("node")
+# is the "node" changed or deleted. node is relative.  returns true or false
+sub isChangedOrDeleted {
+  my ($self, $node) = @_;
+
+  $node =~ s/\//%2F/g;
+  $node =~ s/\s+/\//g;
+
+  my $filepathChg
+    = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
+  if (-e $filepathChg) {
+    return 1;
+  }
+
+  my $filepathAct
+    = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+  my $filepathNew
+    = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+
+  if ((-e $filepathAct) && !(-e $filepathNew)) {
+    return 1;
+  }
+
+  return 0;
 }
 
 ## isAdded("node")
@@ -372,22 +343,21 @@ sub listNodeStatus {
   my ($self, $path) = @_;
   my @nodes = ();
   my %nodehash = ();
-  my $node = undef;
 
   # find deleted nodes first
   @nodes = $self->listDeleted("$path");
-  foreach $node (@nodes) {
+  foreach my $node (@nodes) {
     if ($node =~ /.+/) { $nodehash{$node} = "deleted" };
   }
 
   @nodes = ();
   @nodes = $self->listNodes("$path");
-  foreach $node (@nodes) {
+  foreach my $node (@nodes) {
     if ($node =~ /.+/) {
       #print "DEBUG VyattaConfig->listNodeStatus(): node $node\n";
+      # No deleted nodes -- added, changed, ot static only.
       if    ($self->isAdded("$path $node"))   { $nodehash{$node} = "added"; }
       elsif ($self->isChanged("$path $node")) { $nodehash{$node} = "changed"; }
-      elsif ($self->isDeleted("$path $node")) { $nodehash{$node} = "deleted"; }
       else { $nodehash{$node} = "static"; }
     }
   }
