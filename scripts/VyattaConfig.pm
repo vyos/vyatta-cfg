@@ -268,58 +268,12 @@ sub isDeleted {
 # return array of deleted nodes in the "level"
 # "level" defaults to current
 sub listDeleted {
-  my ($self, $node) = @_;
-  my @return = ();
-  my $filepath = undef;
-  my $curpath = undef;
-  my @nodes = ();
-  my @curnodes = ();
-
-  # setup the entire path with the new level
-  # use the change_dir
-  $node =~ s/\//%2F/g;
-  $node =~ s/\s+/\//g;
-  $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node/";
-  
-  $curpath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node/";
-
-  # let's see if the directory exists and find the the whiteout files
-  if (! -d "$filepath") { return undef; }
-  else {
-    opendir DIR, "$filepath" or return undef;
-    @nodes = grep !/^\.wh\.\.wh\./, grep /^\.wh./, readdir DIR;
-    closedir DIR;
-  }
-
-  if (! -d "$curpath") {
-    return undef;
-  } else {
-    opendir DIR, "$curpath" or return undef;
-    @curnodes = grep !/^\./, readdir DIR;
-    closedir DIR;
-  }
-
-  # get rid of the whiteout prefix
-  my $dir_opq = 0;
-  foreach $node (@nodes) {
-    $node =~ s/^\.wh\.(.+)/$1/;
-    $_ = $node;
-    if (! /__dir_opaque/) {
-      push @return, $node; 
-    } else {
-      $dir_opq = 1;
-    }
-  }
-
-  if ($dir_opq) {
-    # if this node is "dir_opaque", it has been deleted and re-added.
-    # add all nodes in "active" to the return list (so that they will be
-    # marked "deleted"). note that if a node is also re-added, its status
-    # will be changed after the listDeleted call.
-    push @return, @curnodes;
-  }
-
-  return @return;
+  my ($self, $path) = @_;
+  my @new_nodes = $self->listNodes("$path");
+  my @orig_nodes = $self->listOrigNodes("$path");
+  my %new_hash = map { $_ => 1 } @new_nodes;
+  my @deleted = grep { !defined($new_hash{$_}) } @orig_nodes;
+  return @deleted;
 }
 
 ## isChanged("node")
