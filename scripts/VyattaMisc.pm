@@ -80,68 +80,85 @@ sub isClusterIP {
     return 0;
 }
 
-sub isIPinInterfaces {
-    my ($vc, $interfaces, $local_ip) = @_;
+sub remove_ip_prefix {
+    my @addr_nets = @_;
 
-    if (!(defined($local_ip))) {
+    s/\/\d+$//  for @addr_nets;    
+    return @addr_nets;
+}
+
+sub is_ip_in_list {
+    my ($ip, @list) = @_;
+    
+    if (!defined($ip) || scalar(@list) == 0) {
 	return 0;
     }
 
-    my @ethernets = $vc->listNodes('interfaces ethernet');
-    foreach my $ethernet (@ethernets) {
-	if (defined($interfaces->{$ethernet})) {
-	    my @addresses = $vc->listNodes("interfaces ethernet $ethernet address");
-	    my %addresses_hash = map { $_ => 1 } @addresses;
-	    if (defined($addresses_hash{$local_ip})) {
-		return 1;
-	    }
-	    
-	    my @vifs = $vc->listNodes("interfaces ethernet $ethernet vif");
-	    foreach my $vif (@vifs) {
-		my @addresses_vif = $vc->listNodes("interfaces ethernet $ethernet vif $vif address");
-		my %addresses_vif_hash = map { $_ => 1 } @addresses_vif;
-		if (defined($addresses_vif_hash{$local_ip})) {
-		    return 1;
-		}
-		
-		my $virtual_address = $vc->returnValue("interfaces ethernet $ethernet vif $vif vrrp virtual-address");
-		if (defined($virtual_address) && $virtual_address eq $local_ip) {
-		    return 1;
-		}
-	    }
-	    
-	    my $virtual_address = $vc->returnValue("interfaces ethernet $ethernet vrrp virtual-address");
-	    if (defined($virtual_address) && $virtual_address eq $local_ip) {
+    @list = remove_ip_prefix(@list);
+    my %list_hash = map { $_ => 1 } @list;
+    if (defined($list_hash{$ip})) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+sub get_eth_ip_addrs {
+    my ($vc, $eth_path) = @_;
+
+    my @addrs      = ();
+    my @virt_addrs = ();
+
+    $vc->setLevel("interfaces ethernet $eth_path");
+    @addrs = $vc->returnValues("address");
+
+    #
+    # check for VIPs
+    #
+    $vc->setLevel("interfaces ethernet $eth_path vrrp vrrp-group");
+    my @vrrp_groups = $vc->listNodes();
+    foreach my $group (@vrrp_groups) {
+	$vc->setLevel("interfaces ethernet $eth_path vrrp vrrp-group $group");
+	@virt_addrs = $vc->returnValues("virtual-address");
+    }
+    return (@addrs, @virt_addrs);
+}
+
+sub get_serial_ip_addrs {
+    #
+    # Todo when serial is added
+    #
+}
+
+sub isIPinInterfaces {
+    my ($vc, $ip_addr, @interfaces) = @_;
+
+    if (!(defined($ip_addr))) {
+	return 0;
+    }
+
+    foreach my $intf (@interfaces) {
+	# regular ethernet
+	if ($intf =~ m/^eth\d+$/) {
+	    my @addresses = get_eth_ip_addrs($vc, $intf);
+	    if (is_ip_in_list($ip_addr, @addresses)) {
 		return 1;
 	    }
 	}
-    }
-    
-    my @serials = $vc->listNodes('interfaces serial');
-    foreach my $serial (@serials) {
-	if (defined($interfaces->{$serial})) {
-	    my @ppp_vifs = $vc->listNodes("interfaces serial $serial ppp vif");
-	    foreach my $ppp_vif (@ppp_vifs) {
-		my $local_address = $vc->returnValue("interfaces serial $serial ppp vif $ppp_vif address local-address");
-		if (defined($local_address) && $local_address eq $local_ip) {
-		    return 1;
-		}
+	# ethernet vlan
+	if ($intf =~ m/^eth(\d+).(\d+)$/) {
+	    my $eth = "eth$1";
+	    my $vif = $2;
+	    my @addresses = get_eth_ip_addrs($vc, "$eth vif $vif");
+	    if (is_ip_in_list($ip_addr, @addresses)) {
+		return 1;
 	    }
-	    
-	    my @cisco_hdlc_vifs = $vc->listNodes("interfaces serial $serial cisco-hdlc vif");
-	    foreach my $cisco_hdlc_vif (@cisco_hdlc_vifs) {
-		my $local_address = $vc->returnValue("interfaces serial $serial cisco-hdlc vif $cisco_hdlc_vif address local-address");
-		if (defined($local_address) && $local_address eq $local_ip) {
-		    return 1;
-		}
-	    }
-	    
-	    my @frame_relay_vifs = $vc->listNodes("interfaces serial $serial frame-relay vif");
-	    foreach my $frame_relay_vif (@frame_relay_vifs) {
-		my $local_address = $vc->returnValue("interfaces serial $serial frame-relay vif $frame_relay_vif address local-address");
-		if (defined($local_address) && $local_address eq $local_ip) {
-		    return 1;
-		}
+	}
+	# serial
+	if ($intf =~ m/^wan(\d+).(\d+)$/) {
+	    my @addresses = get_serial_ip_addrs($vc, $intf);
+	    if (is_ip_in_list($ip_addr, @addresses)) {
+		return 1;
 	    }
 	}
     }
