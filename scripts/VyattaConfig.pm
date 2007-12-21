@@ -190,8 +190,8 @@ sub returnOrigValue {
 # node is relative
 sub returnValues {
   my $val = returnValue(@_);
-  my @values;
-  if ($val) {
+  my @values = ();
+  if (defined($val)) {
     @values = split("\n", $val);
   }
   return @values;
@@ -317,17 +317,16 @@ sub listNodeStatus {
   my ($self, $path) = @_;
   my @nodes = ();
   my %nodehash = ();
-  my $node = undef;
 
   # find deleted nodes first
   @nodes = $self->listDeleted("$path");
-  foreach $node (@nodes) {
+  foreach my $node (@nodes) {
     if ($node =~ /.+/) { $nodehash{$node} = "deleted" };
   }
 
   @nodes = ();
   @nodes = $self->listNodes("$path");
-  foreach $node (@nodes) {
+  foreach my $node (@nodes) {
     if ($node =~ /.+/) {
       #print "DEBUG VyattaConfig->listNodeStatus(): node $node\n";
       # No deleted nodes -- added, changed, ot static only.
