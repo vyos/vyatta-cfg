@@ -283,6 +283,32 @@ sub isChanged {
   else { return 0; }
 }
 
+## isChangedOrDeleted("node")
+# is the "node" changed or deleted. node is relative.  returns true or false
+sub isChangedOrDeleted {
+  my ($self, $node) = @_;
+
+  $node =~ s/\//%2F/g;
+  $node =~ s/\s+/\//g;
+
+  my $filepathChg
+    = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
+  if (-e $filepathChg) {
+    return 1;
+  }
+
+  my $filepathAct
+    = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+  my $filepathNew
+    = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+
+  if ((-e $filepathAct) && !(-e $filepathNew)) {
+    return 1;
+  }
+
+  return 0;
+}
+
 ## isAdded("node")
 # will compare the new_config_dir to the active_dir to see if the "node" has 
 # been added.  returns true or false.
