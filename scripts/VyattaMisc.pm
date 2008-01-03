@@ -151,6 +151,27 @@ sub get_eth_ip_addrs {
     return (@addrs, @virt_addrs);
 }
 
+sub get_tun_ip_addrs {
+    my ($vc, $tun_path) = @_;
+
+    my @addrs      = ();
+    my @virt_addrs = ();
+
+    $vc->setLevel("interfaces tunnel $tun_path");
+    @addrs = $vc->returnValues("address");
+
+    #
+    # check for VIPs
+    #
+    $vc->setLevel("interfaces tunnel $tun_path vrrp vrrp-group");
+    my @vrrp_groups = $vc->listNodes();
+    foreach my $group (@vrrp_groups) {
+	$vc->setLevel("interfaces tunnel $tun_path vrrp vrrp-group $group");
+	@virt_addrs = $vc->returnValues("virtual-address");
+    }
+    return (@addrs, @virt_addrs);
+}
+
 sub get_serial_ip_addrs {
     #
     # Todo when serial is added
@@ -177,6 +198,13 @@ sub isIPinInterfaces {
 	    my $eth = "eth$1";
 	    my $vif = $2;
 	    my @addresses = get_eth_ip_addrs($vc, "$eth vif $vif");
+	    if (is_ip_in_list($ip_addr, @addresses)) {
+		return 1;
+	    }
+	}
+	# tunnel
+        if ($intf =~ m/^tun\d+$/) {
+	    my @addresses = get_tun_ip_addrs($vc, $intf);
 	    if (is_ip_in_list($ip_addr, @addresses)) {
 		return 1;
 	    }
