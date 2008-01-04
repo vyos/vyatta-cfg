@@ -7,12 +7,13 @@ declare -x -r VYATTA_CHANGES_ONLY_DIR=${vyatta_configdir}/tmp/changes_only_$$
 declare -x -r VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
 declare -x -r VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
 declare -x -r VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates
-declare -x -r VYATTA_EDIT_LEVEL=/
-declare -x -r VYATTA_TEMPLATE_LEVEL=/
 declare -x -r VYATTA_TAG_NAME=node.tag
 declare -x -r VYATTA_MOD_NAME=.modified
 declare -x -r VYATTA_CFG_GROUP_NAME=vyattacfg
 } 2>/dev/null || :
+
+declare -x VYATTA_EDIT_LEVEL=/
+declare -x VYATTA_TEMPLATE_LEVEL=/
 
 # don't set level if already set
 if [ -n "$VYATTA_USER_LEVEL_DIR" ]; then
