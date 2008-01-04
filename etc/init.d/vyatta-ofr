@@ -54,13 +54,11 @@ else
     for s in ${all_subinits[@]} ; do
 	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
     done
-#   NOTE: rtrmgr (i.e. xorp) is mutually exclusive of quagga
-    if [ -x /etc/init.d/quagga ] ; then
-        # quagga should already be started.
-	GROUP=quaggavty
-    elif [ -x ${vyatta_sbindir}/rtrmgr.init ] ; then
-	subinit[${#subinit}]=rtrmgr
+    if [ -x ${vyatta_sbindir}/rtrmgr.init ] ; then
+	subinit+=( rtrmgr )
 	GROUP=xorp
+    else
+	GROUP=quaggavty
     fi
 fi
 
