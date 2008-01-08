@@ -10,6 +10,7 @@ if ($ARGV[0] eq '-all') {
 }
 if ($ARGV[0] eq '-active') {
   shift;
+  VyattaConfigOutput::set_hide_password(1);
   VyattaConfigOutput::outputActiveConfig(@ARGV);
 } else {
   VyattaConfigOutput::outputNewConfig(@ARGV);
