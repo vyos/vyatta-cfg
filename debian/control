@@ -15,7 +15,7 @@ Depends: bash (>= 3.1),
  coreutils (>= 5.97-5.3),
  vyatta-op,
  vyatta-config-migrate, 
- dhcp3-client
+ vyatta-dhcp3-client
 Suggests: util-linux (>= 2.13-5),
  net-tools,
  ethtool,
