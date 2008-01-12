@@ -11,6 +11,8 @@ use VyattaConfig;
 my $default_rank = 0;
 my %config_rank = (
                     'interfaces' => 100,
+                    'interfaces bridge' => 99,
+                    'interfaces ethernet' => 98,
                     'system' => 90,
                   );
 
