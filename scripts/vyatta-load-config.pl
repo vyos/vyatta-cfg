@@ -21,6 +21,9 @@ if (!($load_file =~ /^\//)) {
   $load_file = "$bootpath/$load_file";
 }
 
+# do config migration
+system("$sbindir/vyatta_config_migrate.pl $load_file");
+
 print "Loading config file $load_file...\n";
 my %cfg_hier = VyattaConfigLoad::loadConfigHierarchy($load_file);
 if (scalar(keys %cfg_hier) == 0) {
