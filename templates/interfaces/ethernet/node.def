@@ -2,12 +2,12 @@ tag:
 type: txt
 help: "Ethernet interface name"
 syntax: exec " \
-        if [ -z \"`ip addr | grep $(@) `\" ]; then \
-          echo ethernet interface $(@) doesn\\'t exist on this system ; \
+        if [ -z \"`ip link | egrep -v 'eth[0-9]+[.]' | grep $(@)`\" ]; then \
+          echo Invalid ethernet interface [$(@)]; \
           exit 1 ; \
         fi ; "
 update: "sudo ip link set $(@) up" ; "Error enabling dev $(@)"
 delete: "sudo ip link set $(@) down" ; "Error disabling dev $(@)"
 #allowed: local -a array ;
-# array=( /sys/class/net/{eth,vmnet}* ) ;
+# array=( /sys/class/net/{eth,vmnet}[0-9]+[^.] ) ;
 # echo -n ${array[@]##*/}
