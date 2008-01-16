@@ -7,6 +7,8 @@ syntax: exec " \
           exit 1 ; \
         fi ; "
 update: "sudo ip link set $(@) up" ; "Error enabling dev $(@)"
+update: "\\${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" -c \"interface $(@)\" \
+          -c \"link-detect\"; "
 delete: "sudo ip link set $(@) down" ; "Error disabling dev $(@)"
 #allowed: local -a array ;
 # array=( /sys/class/net/{eth,vmnet}[0-9]+[^.] ) ;
