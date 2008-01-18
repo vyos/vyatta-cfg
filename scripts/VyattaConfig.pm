@@ -345,12 +345,19 @@ sub listNodeStatus {
   my %nodehash = ();
 
   # find deleted nodes first
+  if(!$self || !$path ) {
+     return %nodehash;
+  }
+
   @nodes = $self->listDeleted("$path");
+  if(!@nodes) {
+    return %nodehash;
+  }
+
   foreach my $node (@nodes) {
     if ($node =~ /.+/) { $nodehash{$node} = "deleted" };
   }
 
-  @nodes = ();
   @nodes = $self->listNodes("$path");
   foreach my $node (@nodes) {
     if ($node =~ /.+/) {
