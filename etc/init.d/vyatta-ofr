@@ -103,9 +103,10 @@ load_bootfile ()
 
 start ()
 {
-    log_daemon_msg "Mounting Vyatta Config"
-    mount -o nosuid,nodev,mode=775 -t tmpfs none ${vyatta_configdir}
-    chgrp ${GROUP} ${vyatta_configdir}
+    log_action_begin_msg "Mounting Vyatta Config"
+    mount -o nosuid,nodev,mode=775 -t tmpfs none ${vyatta_configdir} && \
+	chgrp ${GROUP} ${vyatta_configdir}
+    log_action_end_msg $?
     init_bootfile
     log_end_msg $?
     log_daemon_msg "Rescan Network Interfaces"
@@ -134,8 +135,10 @@ stop()
 	${vyatta_sbindir}/${s}.init stop
 	let status\|=$?
     done
-    umount ${vyatta_configdir}
     log_end_msg $status
+    log_action_begin_msg "Un-mounting Vyatta Config"
+    umount ${vyatta_configdir}
+    log_action_end_msg $?
 }
 
 case "$action" in
