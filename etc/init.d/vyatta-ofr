@@ -108,13 +108,6 @@ start ()
 	chgrp ${GROUP} ${vyatta_configdir}
     log_action_end_msg $?
     init_bootfile
-    log_end_msg $?
-    log_daemon_msg "Rescan Network Interfaces"
-    ( udevtrigger --verbose --subsystem-match=net && udevsettle ) | \
-	while read itf ; do
-	    log_progress_msg ${itf##*/}
-	done
-    log_end_msg $?
     log_daemon_msg "Starting Vyatta Router"
     migrate_bootfile
     for s in ${subinit[@]} ; do
