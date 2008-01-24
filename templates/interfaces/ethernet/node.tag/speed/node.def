@@ -1,7 +1,7 @@
 type: txt
 help: "Set the speed for this interface"
 default: "auto"
-syntax: $(@) in "auto", "10", "100", "1000"; "Speed must be auto, 10, 100, or 1000"
+syntax: $(@) in "auto", "10", "100", "1000", "2500", "10000"; "Speed must be auto, 10, 100, 1000, 2500, or 10000"
 commit: exec "if [ x$(@) != xauto ]; then \
 	         if [ x$(../duplex/@) == xauto ]; then \
                     exit 1; \
