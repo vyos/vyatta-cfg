@@ -1,23 +1,158 @@
+%x action
+%x str
+%option noyywrap
 %{
 #include "cli_val.h"
 #include "cli_parse.h"
-FILE *yy_cli_def_in;
-static void make_def_value(vtw_type_e type);
-static int cli_last_nl_returned=0;
-#define STR_DELTA 2
+
+#define YY_DECL int real_yy_cli_def_lex(void)
+
+#define BUF_INCREMENT 4096
+static int action_buflen = 0;
+static char *action_buf = NULL;
+static char *action_ptr = NULL;
+static int str_buflen = 0;
+static char *str_buf = NULL;
+static char *str_ptr = NULL;
+static char str_delim = 0;
+static int eof_seen = 0;
+
+static char *reg_fields[] = { "default", "tag", "type", "multi", NULL };
+static int reg_fields_t[] = { DEFAULT, TAG, TYPE, MULTI, 0 };
+static char *act_fields[] = { "help", "syntax", "commit",
+                              "delete", "update", "activate", "create",
+                              "begin", "end", NULL };
+static int act_fields_t[] = { HELP, SYNTAX, COMMIT,
+                              ACTION, ACTION, ACTION, ACTION,
+                              ACTION, ACTION, 0 };
+static int act_types[] = { -1, -1, -1,
+                           delete_act, update_act, activate_act, create_act,
+                           begin_act, end_act, -1 };
+
+static char *type_names[] = { "txt", "u32", "ipv4", "ipv4net",
+                              "ipv6", "ipv6net", "bool", "macaddr",
+                              NULL };
+static int type_t[] = { TEXT_TYPE, INT_TYPE, IPV4_TYPE, IPV4NET_TYPE,
+                        IPV6_TYPE, IPV6NET_TYPE, BOOL_TYPE, MACADDR_TYPE, 0 };
+
+static char *op_cond_strs[] = { "in", "==", "!=", "<", ">", "<=", ">=", NULL };
+static int op_cond_types[] = { IN_COND, EQ_COND, NE_COND, LT_COND,
+                               GT_COND, LE_COND, GE_COND, 0 };
+
+static char *op_strs[] = { "pattern", "exec", ",", "||", "&&", "=", "!",
+                           "(", ")", ";", NULL };
+static int op_types[] = { PATTERN, EXEC, COMMA, OR, AND, ASSIGN,
+                          NOT, LP, RP, SEMI, 0 };
+
+static void
+append_action(char *text)
+{
+  int tlen = strlen(text);
+  if (((action_ptr + tlen) - action_buf) >= action_buflen) {
+    action_buflen += BUF_INCREMENT;
+    action_buf = realloc(action_buf, action_buflen);
+    if (!action_buf) {
+      printf("Failed to allocate memory\n");
+      exit(-1);
+    }
+  }
+  strcpy(action_ptr, text);
+  action_ptr += tlen;
+}
+
+static void
+append_str(char *text)
+{
+  int tlen = strlen(text);
+  if (((str_ptr + tlen) - str_buf) >= str_buflen) {
+    str_buflen += BUF_INCREMENT;
+    str_buf = realloc(str_buf, str_buflen);
+    if (!str_buf) {
+      printf("Failed to allocate memory\n");
+      exit(-1);
+    }
+  }
+  strcpy(str_ptr, text);
+  str_ptr += tlen;
+}
+
+static int
+return_action()
+{
+  if (action_ptr != action_buf) {
+    *action_ptr = 0;
+    yy_cli_parse_lval.strp = strdup(action_buf);
+    action_ptr = action_buf;
+  }
+  return STRING;
+}
+
+static int
+return_str(char str_delim)
+{
+  *str_ptr = 0;
+  yy_cli_parse_lval.strp = strdup(str_buf);
+  str_ptr = str_buf;
+  return ((str_delim == '"') ? STRING : EX_STRING);
+}
+
+static int 
+return_act_field(char *name)
+{
+  int idx = 0, ret = 0;
+  char *fname = NULL;
+  char *dname = strdup(name);
+  char *ptr = strchr(dname, ':');
+  if (ptr) {
+    *ptr = 0;
+  }
+  while ((fname = act_fields[idx])) {
+    if (strcmp(dname, fname) == 0) {
+      if (act_types[idx] >= 0) {
+        yy_cli_parse_lval.action = act_types[idx];
+      }
+      ret = act_fields_t[idx];
+      break;
+    }
+    ++idx;
+  }
+  free(dname);
+  return ret;
+}
+
+static int 
+return_reg_field(char *name)
+{
+  int idx = 0, ret = 0;
+  char *fname = NULL;
+  char *dname = strdup(name);
+  char *ptr = strchr(dname, ':');
+  if (ptr) {
+    *ptr = 0;
+  }
+  while ((fname = reg_fields[idx])) {
+    if (strcmp(dname, fname) == 0) {
+      ret = reg_fields_t[idx];
+      break;
+    }
+    ++idx;
+  }
+  free(dname);
+  return ret;
+}
+
+static int 
+return_value(vtw_type_e type)
+{
+  yy_cli_parse_lval.val.free_me = TRUE;
+  yy_cli_parse_lval.val.val = strdup(yy_cli_def_text);
+  yy_cli_parse_lval.val.val_type = type;
+  return VALUE;
+}
+
 %}
-%x str
-%option noyywrap
-%option nounput
-%option never-interactive
 
-/*
- * Regular expressions of IP and MAC addresses, URLs, etc.
- */
-
-/*
- * IPv4 address representation.
- */
+/* IPv4 address representation. */
 RE_IPV4_BYTE	25[0-5]|2[0-4][0-9]|[01][0-9][0-9]|([0-9]{1,2})
 RE_IPV4		{RE_IPV4_BYTE}(\.{RE_IPV4_BYTE}){3}
 RE_IPV4_PREFIXLEN (3[012]|[12][0-9]|[0-9]) 
@@ -26,28 +161,8 @@ RE_IPV4NET	{RE_IPV4}"/"{RE_IPV4_PREFIXLEN}
 /*
  * IPv6 address representation in Augmented Backus-Naur Form (ABNF)
  * as defined in RFC-2234. 
- * IPv6 address representation taken from RFC-3986:
- *
- *  IPv6address   =                            6( h16 ":" ) ls32
- *                /                       "::" 5( h16 ":" ) ls32
- *                / [               h16 ] "::" 4( h16 ":" ) ls32
- *                / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
- *                / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
- *                / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
- *                / [ *4( h16 ":" ) h16 ] "::"              ls32
- *                / [ *5( h16 ":" ) h16 ] "::"              h16
- *                / [ *6( h16 ":" ) h16 ] "::"
- *
- *  h16           = 1*4HEXDIG
- *  ls32          = ( h16 ":" h16 ) / IPv4address
- *  IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
- *  dec-octet     = DIGIT                  ; 0-9
- *                 / %x31-39 DIGIT         ; 10-99
- *                 / "1" 2DIGIT            ; 100-199
- *                 / "2" %x30-34 DIGIT     ; 200-249
- *                 / "25" %x30-35          ; 250-255
+ * IPv6 address representation taken from RFC-3986.
  */
-
 RE_H16		[a-fA-F0-9]{1,4}
 RE_H16_COLON	{RE_H16}":"
 RE_LS32		(({RE_H16}":"{RE_H16})|{RE_IPV4})
@@ -64,14 +179,11 @@ RE_IPV6		{RE_IPV6_P1}|{RE_IPV6_P2}|{RE_IPV6_P3}|{RE_IPV6_P4}|{RE_IPV6_P5}|{RE_IP
 RE_IPV6_PREFIXLEN 12[0-8]|1[01][0-9]|[0-9][0-9]?
 RE_IPV6NET	{RE_IPV6}"/"{RE_IPV6_PREFIXLEN}
 
-/*
- * Ethernet MAC address representation.
- */
+/* Ethernet MAC address representation. */
 RE_MACADDR	[a-fA-F0-9]{1,2}(:[a-fA-F0-9]{1,2}){5}
 
 /*
  * URL-related regular expressions.
- *
  * Implementation is based on the BNF-like specification from:
  * - RFC-1738: HTTP, FTP, FILE
  * - RFC-3617: TFTP
@@ -79,22 +191,7 @@ RE_MACADDR	[a-fA-F0-9]{1,2}(:[a-fA-F0-9]{1,2}){5}
  */
 RE_URL		{RE_URL_FILE}|{RE_URL_FTP}|{RE_URL_HTTP}|{RE_URL_TFTP}
 
-/*
- * URL schemeparts for IP based protocols.
- * Representation taken from RFC-1738, and some of it is updated by RFC-3986.
- *
- * login          = [ user [ ":" password ] "@" ] hostport
- * hostport       = host [ ":" port ]
- * host           = hostname | hostnumber
- * hostname       = *[ domainlabel "." ] toplabel
- * domainlabel    = alphadigit | alphadigit *[ alphadigit | "-" ] alphadigit
- * toplabel       = alpha | alpha *[ alphadigit | "-" ] alphadigit
- * alphadigit     = alpha | digit
- * hostnumber     = digits "." digits "." digits "." digits
- * port           = digits
- * user           = *[ uchar | ";" | "?" | "&" | "=" ]
- * password       = *[ uchar | ";" | "?" | "&" | "=" ]
- */
+/* URL schemeparts for IP based protocols. */
 RE_URL_LOGIN	({RE_URL_USER}(":"{RE_URL_PASSWORD})?"@")?{RE_URL_HOSTPORT}
 RE_URL_HOSTPORT	{RE_URL_HOST}(":"{RE_URL_PORT})?
 RE_URL_HOST	{RE_URL_HOSTNAME}|{RE_IPV4}|{RE_URL_IP_LITERAL}
@@ -109,90 +206,27 @@ RE_URL_PORT	{RE_URL_DIGITS}
 RE_URL_USER	({RE_URL_UCHAR}|";"|"?"|"&"|"=")*
 RE_URL_PASSWORD	({RE_URL_UCHAR}|";"|"?"|"&"|"=")*
 
-/*
- * FILE URL regular expression.
- * Representation taken from RFC-1738.
- *
- * fileurl        = "file://" [ host | "localhost" ] "/" fpath
- */
+/* FILE URL regular expression. */
 RE_URL_FILE	"file://"({RE_URL_HOST}|"localhost")?"/"{RE_URL_FPATH}
 
-/*
- * FTP URL regular expression.
- * Representation taken from RFC-1738.
- *
- * ftpurl         = "ftp://" login [ "/" fpath [ ";type=" ftptype ] ]
- * fpath          = fsegment *[ "/" fsegment ]
- * fsegment       = *[ uchar | "?" | ":" | "@" | "&" | "=" ]
- * ftptype        = "A" | "I" | "D" | "a" | "i" | "d"
- */
+/* FTP URL regular expression. */
 RE_URL_FTP	"ftp://"{RE_URL_LOGIN}("/"{RE_URL_FPATH}(";type="{RE_URL_FTPTYPE})?)?
 RE_URL_FPATH	{RE_URL_FSEGMENT}("/"{RE_URL_FSEGMENT})*
 RE_URL_FSEGMENT	({RE_URL_UCHAR}|"?"|":"|"@"|"&"|"=")*
 RE_URL_FTPTYPE	"A"|"I"|"D"|"a"|"i"|"d"
 
-/*
- * HTTP URL regular expression.
- * Representation taken from RFC-1738.
- *
- * httpurl        = "http://" hostport [ "/" hpath [ "?" search ] ]
- * hpath          = hsegment *[ "/" hsegment ]
- * hsegment       = *[ uchar | ";" | ":" | "@" | "&" | "=" ]
- * search         = *[ uchar | ";" | ":" | "@" | "&" | "=" ]
- */
+/* HTTP URL regular expression. */
 RE_URL_HTTP	"http://"{RE_URL_HOSTPORT}("/"{RE_URL_HPATH}("?"{RE_URL_SEARCH})?)?
 RE_URL_HPATH	{RE_URL_HSEGMENT}("/"{RE_URL_HSEGMENT})*
 RE_URL_HSEGMENT	({RE_URL_UCHAR}|";"|":"|"@"|"&"|"=")*
 RE_URL_SEARCH	({RE_URL_UCHAR}|";"|":"|"@"|"&"|"=")*
 
-/*
- * TFTP URL regular expression.
- * Representation taken from RFC-3617.
- *
- * tftpURI         = "tftp://" host "/" file [ mode ]
- * mode            = ";"  "mode=" ( "netascii" / "octet" )
- * file            = *( unreserved / escaped )
- * host            = <as specified by RFC 2732 [3]>
- * unreserved      = <as specified in RFC 2396 [4]>
- * escaped         = <as specified in RFC 2396>
- */
+/* TFTP URL regular expression. */
 RE_URL_TFTP	"tftp://"{RE_URL_HOST}"/"{RE_URL_TFTP_FILE}({RE_URL_TFTP_MODE})?
 RE_URL_TFTP_MODE ";""mode="("netascii"|"octet")
 RE_URL_TFTP_FILE ({RE_URL_UNRESERVED}|{RE_URL_ESCAPE})*
 
-/*
- * URL-related miscellaneous definitions.
- * Representation taken from RFC-1738 and from RFC-3986.
- *
- * lowalpha       = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" |
- *                  "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" |
- *                  "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" |
- *                  "y" | "z"
- * hialpha        = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" |
- *                  "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" |
- *                  "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
- * alpha          = lowalpha | hialpha
- * digit          = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" |
- *                  "8" | "9"
- * safe           = "$" | "-" | "_" | "." | "+"
- * extra          = "!" | "*" | "'" | "(" | ")" | ","
- * national       = "{" | "}" | "|" | "\" | "^" | "~" | "[" | "]" | "`"
- * punctuation    = "<" | ">" | "#" | "%" | <">
- *
- *
- * reserved       = ";" | "/" | "?" | ":" | "@" | "&" | "="
- * hex            = digit | "A" | "B" | "C" | "D" | "E" | "F" |
- *                  "a" | "b" | "c" | "d" | "e" | "f"
- * escape         = "%" hex hex
- *
- * unreserved     = alpha | digit | safe | extra
- * uchar          = unreserved | escape
- * xchar          = unreserved | reserved | escape
- * digits         = 1*digit
- *
- * sub-delims     = "!" / "$" / "&" / "'" / "(" / ")"
- *                / "*" / "+" / "," / ";" / "="
- */
+/* URL-related miscellaneous definitions. */
 RE_URL_LOWALPHA	[a-z]
 RE_URL_HIALPHA	[A-Z]
 RE_URL_ALPHA	{RE_URL_LOWALPHA}|{RE_URL_HIALPHA}
@@ -210,215 +244,192 @@ RE_URL_XCHAR	{RE_URL_UNRESERVED}|{RE_URL_RESERVED}|{RE_URL_ESCAPE}
 RE_URL_DIGITS	{RE_URL_DIGIT}{1,}
 RE_URL_SUBDELIMS "!"|"$"|"&"|"'"|"("|")"|"*"|"+"|","|";"|"="
 
+/* type names */
+RE_TYPE_NAME (txt|u32|ipv4|ipv4net|ipv6|ipv6net|bool|macaddr)
+
+/* values */
+RE_VAL_U32 [0-9]+
+RE_VAL_BOOL (true|false)
+
+/* operators */
+RE_OP_COND (==|!=|<|>|<=|>=|in)
+RE_OP_OTHER (pattern|exec|,|\|\||&&|=|!|\(|\)|;)
+
+/* template fields */
+RE_REG_FIELD (default|tag|type|multi)
+RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end)
 
 %%
-  char *string_buf=NULL;
-  char *string_buf_ptr=NULL;
-  int   string_len=0, string_buf_len=0;
-  char  str_delim=0;
 
-#[^\n]*(\\[ \t]*\n[^\n]*)*\n  { /* comment */ }
-\n        {yy_cli_def_lineno++;return EOL;}
-<<EOF>>   { if(!cli_last_nl_returned) {cli_last_nl_returned=1;return EOL;} yyterminate(); }
-[\`\"]  {
-	  BEGIN(str);
-          str_delim = yy_cli_def_text[0];
-          string_buf_ptr = string_buf = my_malloc(STR_DELTA + 1, ""); 
-          string_len = STR_DELTA;
-          string_buf_len = STR_DELTA;
-	}
+#[^\n]*\n {
+    /* comment */
+  }
+
+\n {
+    return EOL;
+  }
+
+{RE_REG_FIELD}:[ \t]* {
+    return return_reg_field(yy_cli_def_text);
+  }
+
+[\`\"] {
+    BEGIN(str);
+    str_delim = yy_cli_def_text[0];
+  }
+
 <str>[\"\`] {
-            /* maybe a closing quote - all done */
-            if(str_delim == yy_cli_def_text[0]) {
-              BEGIN(INITIAL);
-              *string_buf_ptr = 0;
-              /* return string constant token type and
-               * value to parser
-              */
-              yy_cli_parse_lval.strp = string_buf;
-              return str_delim == '"'?STRING:EX_STRING;
-            }else{
-               *string_buf_ptr++ = yy_cli_def_text[0];
-               goto string_too_long;
-            } 
-        }
-
-<str>\n {
-        /* error - unterminated string constant */
-        yy_cli_def_lineno++;
-	}
-
-<str>\\n  {*string_buf_ptr++ = '\n';goto string_too_long;}
-<str>\\t  {*string_buf_ptr++ = '\t';goto string_too_long;}
-<str>\\r  {*string_buf_ptr++ = '\r';goto string_too_long;}
-<str>\\b  {*string_buf_ptr++ = '\b';goto string_too_long;}
-<str>\\f  {*string_buf_ptr++ = '\f';goto string_too_long;}
-<str>\\\n { yy_cli_def_lineno++; /* continuation => ignore */ }
-
-<str>\\. { 
-    *string_buf_ptr++ = yy_cli_def_text[1];
-string_too_long:
-    *string_buf_ptr = 0;
-    /* printf("Cur string |%s|\n", string_buf); */
-    if (!--string_len) {
-      string_buf = my_realloc(string_buf, 
-        string_buf_len + STR_DELTA + 1, 
-        "cli_def STRING");
-      string_buf_ptr = string_buf + string_buf_len;
-      string_buf_len += STR_DELTA;
-      string_len = STR_DELTA;
+    if (str_delim == yy_cli_def_text[0]) {
+      BEGIN(INITIAL);
+      return return_str(str_delim);
+    } else {
+      char tmp[2] = { yy_cli_def_text[0], 0 };
+      append_str(tmp);
     }
   }
-<str>[^\\\n\"\`]+        {
-        char *yptr = yy_cli_def_text;
-        
-        while ( *yptr ){
-          *string_buf_ptr++ = *yptr++;
-          if (!--string_len) {
-             string_buf = my_realloc(string_buf, 
-                string_buf_len + STR_DELTA + 1, 
-                "cli_def STRING");
-             string_buf_ptr = string_buf + string_buf_len;
-             string_buf_len += STR_DELTA;
-             string_len = STR_DELTA;
-          }
-        }
-        *string_buf_ptr = 0;
+
+<str>\\\n {
+    /* continuation */
+  }
+
+<str>\\. {
+    unsigned int i = 0;
+    unsigned char tbl[256];
+    unsigned char c = 0;
+    char tmp[2] = { 0, 0 };
+    for (i = 0; i < 256; i++) {
+      tbl[i] = i;
     }
+    c = 'n'; tbl[c] = '\n';
+    c = 't'; tbl[c] = '\t';
+    c = 'r'; tbl[c] = '\r';
+    c = 'b'; tbl[c] = '\b';
+    c = 'f'; tbl[c] = '\f';
+    /* note: can't have "[[" or "]]" (confuses m4) */
+    tmp[0] = tbl[ (int) yy_cli_def_text[1] ];
+    append_str(tmp);
+  }
 
-default: return DEFAULT;
-tag:	return TAG;
-type:	return TYPE;
-help:	return HELP;
-syntax: return SYNTAX;
-commit: return COMMIT;
-check:  yy_cli_parse_lval.action = syntax_act; return ACTION;
-delete:  yy_cli_parse_lval.action = delete_act; return ACTION;
-update:  yy_cli_parse_lval.action = update_act; return ACTION;
-activate:  yy_cli_parse_lval.action = activate_act; return ACTION;
-create:  yy_cli_parse_lval.action = create_act; return ACTION;
-begin:   yy_cli_parse_lval.action = begin_act; return ACTION;
-end:     yy_cli_parse_lval.action = end_act; return ACTION;
-multi:  return MULTI;
+<str>[^\"\`\\]+ {
+    append_str(yy_cli_def_text);
+  }
 
-::	{
-        make_def_value(IPV6_TYPE);
-	return VALUE;
-	}
-txt	{
-	yy_cli_parse_lval.type = TEXT_TYPE;
-	return TYPE_DEF;
-	}
+<str><<EOF>> {
+    BEGIN(INITIAL);
+    return return_str(str_delim);
+  }
 
-pattern   return PATTERN;
+{RE_ACT_FIELD}:expression: {
+    return return_act_field(yy_cli_def_text);
+  }
 
-exec   return EXEC;
+{RE_ACT_FIELD}: {
+    BEGIN(action);
+    return return_act_field(yy_cli_def_text);
+  }
 
-,         return COMMA;
-\|\|      return OR;
-\&\&     return AND;
-\=       return ASSIGN;
-\=\=     {yy_cli_parse_lval.cond = EQ_COND; return COND;}
-\!\=     {yy_cli_parse_lval.cond = NE_COND; return COND;}
-\<       {yy_cli_parse_lval.cond = LT_COND; return COND;}
-\>       {yy_cli_parse_lval.cond = GT_COND; return COND;}
-\<\=      {yy_cli_parse_lval.cond = LE_COND; return COND;}
-\>\=      {yy_cli_parse_lval.cond = GE_COND; return COND;}
-in        {yy_cli_parse_lval.cond = IN_COND; return COND;}
-\!      { return NOT; }
+<action>\n[^ \t] {
+    BEGIN(INITIAL);
+    unput( yy_cli_def_text[1] );
+    unput( yy_cli_def_text[0] );
+    return return_action();
+  }
+
+<action>(\n[ \t]+)?.* {
+    append_action(yy_cli_def_text);
+  }
+
+<action>\n {
+    append_action("\n");
+  }
+
+<action><<EOF>> {
+    BEGIN(INITIAL);
+    return return_action();
+  }
+
+<<EOF>> {
+    if (eof_seen) {
+      eof_seen = 0;
+      yyterminate();
+    }
+    eof_seen = 1;
+    return EOL;
+  }
+
+[ \t]+ { /* space */ }
+\\\n { /* continuation */ }
+
+{RE_TYPE_NAME} {
+    int i = 0;
+    while (type_names[i]) {
+      if (strcmp(type_names[i], yy_cli_def_text) == 0) {
+        yy_cli_parse_lval.type = type_t[i];
+        return TYPE_DEF;
+      }
+      i++;
+    }
+  }
+
+{RE_OP_COND} {
+    int i = 0;
+    while (op_cond_strs[i]) {
+      if (strcmp(op_cond_strs[i], yy_cli_def_text) == 0) {
+        yy_cli_parse_lval.cond = op_cond_types[i];
+        return COND;
+      }
+      i++;
+    }
+  }
+
+{RE_OP_OTHER} {
+    int i = 0;
+    while (op_strs[i]) {
+      if (strcmp(op_strs[i], yy_cli_def_text) == 0) {
+        return op_types[i];
+      }
+      i++;
+    }
+  }
+
 \$\([^)]+\) {
-        yy_cli_parse_lval.strp = my_strdup(yy_cli_def_text, "TEXT");
-        return VAR;
-	}
-true	{
-        make_def_value(BOOL_TYPE);
-	return VALUE;
-	}
+    yy_cli_parse_lval.strp = strdup(yy_cli_def_text);
+    return VAR;
+  }
 
-false	{
-        make_def_value(BOOL_TYPE);
-	return VALUE;
-	}
-
-[0-9]+	{
-        make_def_value(INT_TYPE);
-	return VALUE;
-	}
-
-{RE_IPV4}	{
-        make_def_value(IPV4_TYPE);
-	return VALUE;
-	}
-
-{RE_IPV4NET} {
-        make_def_value(IPV4NET_TYPE);
-	return VALUE;
-	}
-
-{RE_IPV6}	{
-        make_def_value(IPV6_TYPE);
-	return VALUE;
-	}
-
-{RE_IPV6NET} {
-        make_def_value(IPV6NET_TYPE);
-	return VALUE;
-	}
-
-{RE_MACADDR}	{
-        make_def_value(MACADDR_TYPE);
-	return VALUE;
-	}
-u32	{
-	yy_cli_parse_lval.type = INT_TYPE;
-	return TYPE_DEF;
-	}
-
-ipv4	{
-	yy_cli_parse_lval.type = IPV4_TYPE;
-	return TYPE_DEF;
-	}
-
-ipv4net	{
-	yy_cli_parse_lval.type = IPV4NET_TYPE;
-	return TYPE_DEF;
-	}
-ipv6	{
-	yy_cli_parse_lval.type = IPV6_TYPE;
-	return TYPE_DEF;
-	}
-
-ipv6net	{
-	yy_cli_parse_lval.type = IPV6NET_TYPE;
-	return TYPE_DEF;
-	}
-bool	{
-	yy_cli_parse_lval.type = BOOL_TYPE;
-	return TYPE_DEF;
-	}
-macaddr	{
-        yy_cli_parse_lval.type = MACADDR_TYPE;
-	return TYPE_DEF;
-	}
-\(       return LP;
-\)       return RP;
-;       return SEMI;
-
-\\\n    { yy_cli_def_lineno++; /*whitespace -- continuation => ignore */ }
-
-[ \t]+	/* whitespace */
-
-.	{
-	/* everything else is a syntax error */
-	return SYNTAX_ERROR;
-	}
+{RE_VAL_U32}  { return return_value(INT_TYPE); }
+{RE_IPV4}     { return return_value(IPV4_TYPE); }
+{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
+{RE_IPV6}     { return return_value(IPV6_TYPE); }
+{RE_IPV6NET}  { return return_value(IPV6NET_TYPE); }
+{RE_VAL_BOOL} { return return_value(BOOL_TYPE); }
+{RE_MACADDR}  { return return_value(MACADDR_TYPE); }
 
 %%
 
-static void make_def_value(vtw_type_e type)
+static void
+init_bufs()
 {
-   memset(&yy_cli_parse_lval.val.val, 0, sizeof(yy_cli_parse_lval.val.val));
-   yy_cli_parse_lval.val.free_me = TRUE;
-   yy_cli_parse_lval.val.val = my_strdup(yy_cli_def_text, "cli_parse.l");
-   yy_cli_parse_lval.val.val_type = type;
+  action_buf = malloc(BUF_INCREMENT);
+  action_ptr = action_buf;
+  action_buflen = BUF_INCREMENT;
+  
+  str_buf = malloc(BUF_INCREMENT);
+  str_ptr = str_buf;
+  str_buflen = BUF_INCREMENT;
+  
+  if (!action_buf || !str_buf) {
+    printf("Failed to allocate memory\n");
+    exit(-1);
+  }
 }
+
+int
+yy_cli_def_lex()
+{
+  if (!action_buf) {
+    init_bufs();
+  }
+  return real_yy_cli_def_lex();
+}
+
