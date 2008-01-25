@@ -334,14 +334,18 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return return_act_field(yy_cli_def_text);
   }
 
-<action>\n[^ \t] {
+<action>\n({RE_REG_FIELD}|{RE_ACT_FIELD}):.* {
+    int i = 0;
+    char *tmp = strdup(yy_cli_def_text);
     BEGIN(INITIAL);
-    unput( yy_cli_def_text[1] );
-    unput( yy_cli_def_text[0] );
+    for (i = yy_cli_def_leng - 1; i >= 0; --i) {
+      unput( tmp[i] );
+    }
+    free(tmp);
     return return_action();
   }
 
-<action>(\n[ \t]+)?.* {
+<action>\n?.* {
     append_action(yy_cli_def_text);
   }
 
