@@ -1,0 +1,19 @@
+
+# To enable this script set the following variable to "yes"
+RUN="yes"
+
+if [ "$RUN" = "yes" ]; then
+        LOG=/var/lib/dhcp3/dhclient_"$interface"_lease
+        echo `date` > $LOG
+
+        for i in reason interface new_expiry new_dhcp_lease_time medium \
+                        alias_ip_address new_ip_address new_broadcast_address \
+                        new_subnet_mask new_domain_name new_network_number \
+                        new_domain_name_servers new_routers new_static_routes \
+			new_dhcp_server_identifier new_dhcp_message_type \
+                        old_ip_address old_subnet_mask old_domain_name \
+                        old_domain_name_servers old_routers \
+                        old_static_routes; do
+                echo $i=\'${!i}\' >> $LOG
+        done
+fi
