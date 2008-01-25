@@ -354,14 +354,13 @@ vyatta_parse_tmpl_comp_fields ()
   # $1: tmpl
   # $2: field name
   sed -n '
-  /^#'"$2"':/,$ {
-    s/^#'"$2"'://
+  /^'"$2"':/,$ {
+    s/^'"$2"'://
     h
     :b
     $ { x; p; q }
     n
-    /^#[-_a-z]\+:/ { x; p; q }
-    s/^#//
+    /^[-_a-z]\+:/ { x; p; q }
     H
     bb
   }
@@ -387,12 +386,8 @@ vyatta_parse_tmpl ()
     return
   fi
   eval `sed -n '
-  /^help:[ 	]\+/,/^[a-z]\+:/ {
-    s/^help:[ 	]\+/vyatta_cfg_help=/p
-    /^ /p
-  }
-  /^syntax:[ 	]\+\$(@)[ 	]\+in[ 	]\+/ {
-    s/^syntax:[ 	]\+\$(@)[ 	]\+in[ 	]\+/vyatta_cfg_allowed=( /
+  /^syntax:expression:[ 	]\+\$(@)[ 	]\+in[ 	]\+/ {
+    s/^syntax:expression:[ 	]\+\$(@)[ 	]\+in[ 	]\+/vyatta_cfg_allowed=( /
     s/^\([^;]\+\);.*$/\1 )/
     s/[ 	]*,[ 	]*/ /gp
   }
@@ -400,6 +395,8 @@ vyatta_parse_tmpl ()
   s/^multi:/vyatta_cfg_multi=1/p
   s/^type:[ 	]\+\([^ 	;]\+\)\(;.*\)\?/vyatta_cfg_type=\1/p
   ' $1`
+  
+  vyatta_cfg_help=$(vyatta_parse_tmpl_comp_fields $1 "help")
   
   local acmd=$(vyatta_parse_tmpl_comp_fields $1 "allowed")
   vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")

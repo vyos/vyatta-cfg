@@ -34,6 +34,7 @@ static  void cli_deferror(const char *);
 %token SYNTAX
 %token COMMIT
 %token CHECK
+%token DUMMY
 %left SEMI
 %token <val>VALUE
 %token <type>TYPE_DEF
@@ -100,7 +101,11 @@ cause:		help_cause
 		| default_cause
 		| syntax_cause
                 | ACTION action { append(parse_defp->actions + $1, $2, 0);}
+                | dummy_stmt
 		;
+
+dummy_stmt:     DUMMY STRING { /* ignored */ }
+                ;
 
 help_cause:	HELP STRING 
                 { parse_defp->def_node_help = $2; /* no semantics for now */ 
