@@ -4,6 +4,7 @@ completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
+dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
 
 AM_CFLAGS = -I src -Wall
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
@@ -11,6 +12,7 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 completion_DATA	= etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-ofr
+dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0

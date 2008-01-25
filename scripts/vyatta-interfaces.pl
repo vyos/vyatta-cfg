@@ -277,6 +277,7 @@ sub delete_eth_addrs {
     if ($addr eq "dhcp") {
 	dhcp_release_addr($intf);
 	update_dhcp_client();
+	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease");
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
