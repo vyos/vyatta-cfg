@@ -325,11 +325,11 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return return_str(str_delim);
   }
 
-{RE_ACT_FIELD}:expression: {
+{RE_ACT_FIELD}:expression:[ \t]* {
     return return_act_field(yy_cli_def_text);
   }
 
-{RE_ACT_FIELD}: {
+{RE_ACT_FIELD}:[ \t]* {
     BEGIN(action);
     return return_act_field(yy_cli_def_text);
   }

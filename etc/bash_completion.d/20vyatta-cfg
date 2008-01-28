@@ -355,7 +355,7 @@ vyatta_parse_tmpl_comp_fields ()
   # $2: field name
   sed -n '
   /^'"$2"':/,$ {
-    s/^'"$2"'://
+    s/^'"$2"':[ 	]*//
     h
     :b
     $ { x; p; q }
