@@ -53,9 +53,18 @@ if (defined $eth_update)  { update_eth_addrs($eth_update, $dev); }
 if (defined $eth_delete)  { delete_eth_addrs($eth_delete, $dev);  }
 if (defined $addr)        { is_valid_addr($addr, $dev); }
 
+sub is_ip_configured {
+    my ($intf, $ip) = @_;
+    my $wc = `ip addr show $intf | grep $ip | wc -l`;
+    if (defined $wc and $wc > 0) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
 
 sub is_ip_duplicate {
-    my $ip = shift;
+    my ($intf, $ip) = @_;
 
     # 
     # get a list of all ipv4 and ipv6 addresses
@@ -65,6 +74,12 @@ sub is_ip_duplicate {
     my %ipaddrs_hash = map { $_ => 1 } @ipaddrs;
 
     if (defined $ipaddrs_hash{$ip}) {
+	#
+	# allow dup if it's the same interface
+	#
+	if (is_ip_configured($intf, $ip)) {
+	    return 0;
+	}
 	return 1;
     } else {
 	return 0;
@@ -260,6 +275,13 @@ sub update_eth_addrs {
     if (!defined $version) {
 	exit 1;
     }
+    if (is_ip_configured($intf, $addr)) {
+	#
+	# treat this as informational, don't fail
+	#
+	print "Address $addr already configured on $intf\n";
+	exit 0;
+    }
 
     if ($version == 4) {
 	return system("ip addr add $addr broadcast + dev $intf");
@@ -328,7 +350,7 @@ sub is_valid_addr {
 	print "Error: remove dhcp before adding static addresses for $intf\n";
 	exit 1;
     }
-    if (is_ip_duplicate($addr_net)) {
+    if (is_ip_duplicate($intf, $addr_net)) {
 	print "Error: duplicate address/prefix [$addr_net]\n";
 	exit 1;
     }
