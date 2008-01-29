@@ -27,7 +27,7 @@ print_usage()
 
 get_irqnum()
 {
-    irqnum=`find /proc/irq -name $1 -print | awk -F / '{ print $4 }'`
+    irqnum=`cat /sys/class/net/$1/device/irq`
     if [ -z "$irqnum" ]; then
 	echo "Invalid interface name: $1"
 	return 1
@@ -46,7 +46,7 @@ get_mask()
     fi
 
     # strip out all the hex digits
-    exmask=`echo $mask | sed -e s/[0-9a-f]//g`
+    exmask=`echo $mask | sed -e s/[0-9a-fA-F]//g`
 
     # if anything is left, its not hex
     if [ ! -z "$exmask" ]; then
