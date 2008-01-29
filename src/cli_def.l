@@ -85,11 +85,9 @@ append_str(char *text)
 static int
 return_action()
 {
-  if (action_ptr != action_buf) {
-    *action_ptr = 0;
-    yy_cli_parse_lval.strp = strdup(action_buf);
-    action_ptr = action_buf;
-  }
+  *action_ptr = 0;
+  yy_cli_parse_lval.strp = strdup(action_buf);
+  action_ptr = action_buf;
   return STRING;
 }
 
