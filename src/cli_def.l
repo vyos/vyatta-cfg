@@ -430,13 +430,13 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return VAR;
   }
 
-<expression>{RE_VAL_U32}  { return return_value(INT_TYPE); }
-<expression>{RE_IPV4}     { return return_value(IPV4_TYPE); }
-<expression>{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
-<expression>{RE_IPV6}     { return return_value(IPV6_TYPE); }
-<expression>{RE_IPV6NET}  { return return_value(IPV6NET_TYPE); }
-<expression>{RE_VAL_BOOL} { return return_value(BOOL_TYPE); }
-<expression>{RE_MACADDR}  { return return_value(MACADDR_TYPE); }
+<INITIAL,expression>{RE_VAL_U32}  { return return_value(INT_TYPE); }
+<INITIAL,expression>{RE_IPV4}     { return return_value(IPV4_TYPE); }
+<INITIAL,expression>{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
+<INITIAL,expression>{RE_IPV6}     { return return_value(IPV6_TYPE); }
+<INITIAL,expression>{RE_IPV6NET}  { return return_value(IPV6NET_TYPE); }
+<INITIAL,expression>{RE_VAL_BOOL} { return return_value(BOOL_TYPE); }
+<INITIAL,expression>{RE_MACADDR}  { return return_value(MACADDR_TYPE); }
 
 <*>. {
     return SYNTAX_ERROR;
