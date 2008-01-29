@@ -360,7 +360,7 @@ vyatta_parse_tmpl_comp_fields ()
     :b
     $ { x; p; q }
     n
-    /^[-_a-z]\+:/ { x; p; q }
+    /^\([-_a-z]\+:\|#\)/ { x; p; q }
     H
     bb
   }

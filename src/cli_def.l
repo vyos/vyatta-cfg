@@ -1,4 +1,5 @@
 %x action
+%x expression
 %x str
 %option noyywrap
 %{
@@ -16,6 +17,7 @@ static char *str_buf = NULL;
 static char *str_ptr = NULL;
 static char str_delim = 0;
 static int eof_seen = 0;
+static int pre_str_state = 0;
 
 static char *reg_fields[] = { "default", "tag", "type", "multi", NULL };
 static int reg_fields_t[] = { DEFAULT, TAG, TYPE, MULTI, 0 };
@@ -277,14 +279,21 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return return_reg_field(yy_cli_def_text);
   }
 
-[\`\"] {
+<INITIAL>[\`\"] {
     BEGIN(str);
+    pre_str_state = INITIAL;
+    str_delim = yy_cli_def_text[0];
+  }
+
+<expression>[\`\"] {
+    BEGIN(str);
+    pre_str_state = expression;
     str_delim = yy_cli_def_text[0];
   }
 
 <str>[\"\`] {
     if (str_delim == yy_cli_def_text[0]) {
-      BEGIN(INITIAL);
+      BEGIN(pre_str_state);
       return return_str(str_delim);
     } else {
       char tmp[2] = { yy_cli_def_text[0], 0 };
@@ -324,6 +333,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
   }
 
 {RE_ACT_FIELD}:expression:[ \t]* {
+    BEGIN(expression);
     return return_act_field(yy_cli_def_text);
   }
 
@@ -332,7 +342,25 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return return_act_field(yy_cli_def_text);
   }
 
-<action>\n({RE_REG_FIELD}|{RE_ACT_FIELD}):.* {
+<expression>\n(({RE_REG_FIELD}|{RE_ACT_FIELD}):|#).* {
+    int i = 0;
+    char *tmp = strdup(yy_cli_def_text);
+    BEGIN(INITIAL);
+    for (i = yy_cli_def_leng - 1; i >= 0; --i) {
+      unput( tmp[i] );
+    }
+    free(tmp);
+  }
+
+<expression>\n { /* skip the \n */ }
+
+<expression><<EOF>> {
+    BEGIN(INITIAL);
+    eof_seen = 1;
+    return EOL;
+  }
+
+<action>\n(({RE_REG_FIELD}|{RE_ACT_FIELD}):|#).* {
     int i = 0;
     char *tmp = strdup(yy_cli_def_text);
     BEGIN(INITIAL);
@@ -345,10 +373,6 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
 
 <action>\n?.* {
     append_action(yy_cli_def_text);
-  }
-
-<action>\n {
-    append_action("\n");
   }
 
 <action><<EOF>> {
@@ -365,8 +389,9 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return EOL;
   }
 
-[ \t]+ { /* space */ }
-\\\n { /* continuation */ }
+<INITIAL,expression>[ \t]+ { /* space */ }
+
+<expression>\\\n { /* continuation */ }
 
 {RE_TYPE_NAME} {
     int i = 0;
@@ -379,7 +404,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     }
   }
 
-{RE_OP_COND} {
+<expression>{RE_OP_COND} {
     int i = 0;
     while (op_cond_strs[i]) {
       if (strcmp(op_cond_strs[i], yy_cli_def_text) == 0) {
@@ -390,7 +415,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     }
   }
 
-{RE_OP_OTHER} {
+<expression>{RE_OP_OTHER} {
     int i = 0;
     while (op_strs[i]) {
       if (strcmp(op_strs[i], yy_cli_def_text) == 0) {
@@ -400,20 +425,20 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     }
   }
 
-\$\([^)]+\) {
+<expression>\$\([^)]+\) {
     yy_cli_parse_lval.strp = strdup(yy_cli_def_text);
     return VAR;
   }
 
-{RE_VAL_U32}  { return return_value(INT_TYPE); }
-{RE_IPV4}     { return return_value(IPV4_TYPE); }
-{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
-{RE_IPV6}     { return return_value(IPV6_TYPE); }
-{RE_IPV6NET}  { return return_value(IPV6NET_TYPE); }
-{RE_VAL_BOOL} { return return_value(BOOL_TYPE); }
-{RE_MACADDR}  { return return_value(MACADDR_TYPE); }
+<expression>{RE_VAL_U32}  { return return_value(INT_TYPE); }
+<expression>{RE_IPV4}     { return return_value(IPV4_TYPE); }
+<expression>{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
+<expression>{RE_IPV6}     { return return_value(IPV6_TYPE); }
+<expression>{RE_IPV6NET}  { return return_value(IPV6NET_TYPE); }
+<expression>{RE_VAL_BOOL} { return return_value(BOOL_TYPE); }
+<expression>{RE_MACADDR}  { return return_value(MACADDR_TYPE); }
 
-. {
+<*>. {
     return SYNTAX_ERROR;
   }
 
@@ -444,4 +469,25 @@ yy_cli_def_lex()
   }
   return real_yy_cli_def_lex();
 }
+
+#if 0
+#define STANDALONE_TEST
+#endif
+#ifdef STANDALONE_TEST
+/* build:
+   flex -d --prefix=yy_cli_def_ -o cli_def.c cli_def.l && gcc -o test_def
+     cli_def.c cli_parse.o cli_new.o cli_objects.o cli_path_utils.o
+     cli_val_engine.o cli_val.o
+ */
+int
+main(int argc, char *argv[])
+{
+  int token = 0;
+  yy_cli_def_in = fopen(argv[1], "r");
+  while((token = yy_cli_def_lex()) > 0) {
+    printf("token[%d]\n", token);
+  }
+  return 0;
+}
+#endif
 
