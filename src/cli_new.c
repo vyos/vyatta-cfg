@@ -1372,10 +1372,8 @@ static int expand_string(char *stringp)
        /* back in business */
     }
     if (*scanp != '$') {
-      if(*scanp == '\\' && scanp[1] == '$') {
-	/* escaped $, treat as regular char */
-	++scanp;
-      }
+      /* we don't check for '\''$' any more.
+       * only "$VAR(" is significant now */
       *resp++ = *scanp++;
       --left;
     } else if (strlen(scanp) < (VAR_REF_MARKER_LEN + 1 + 1)) {
