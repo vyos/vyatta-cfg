@@ -425,7 +425,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     }
   }
 
-<expression>\$\([^)]+\) {
+<expression>\$VAR\([^)]+\) {
     yy_cli_parse_lval.strp = strdup(yy_cli_def_text);
     return VAR;
   }

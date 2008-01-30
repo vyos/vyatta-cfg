@@ -25,8 +25,12 @@
 #define EXE_STRING_DELTA 512
 #define PATH_DELTA 1000
 #define ENDS_ALLOC 20
-#define PATH_CM_LOCATION 25 /* mcd vs. ccd location
-			       change when m_root changed */
+/* mcd vs. ccd location
+   change when m_root changed */
+#define PATH_CM_LOCATION 25
+
+#define VAR_REF_MARKER "$VAR("
+#define VAR_REF_MARKER_LEN 5
 
 /* Global vars: */
 vtw_path m_path, t_path;
@@ -1077,7 +1081,14 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
 	return FALSE;
       }
 
-      var_reference = strdup(cur->vtw_node_left->vtw_node_string+2);
+      if (strncmp(cur->vtw_node_left->vtw_node_string,
+                  VAR_REF_MARKER, VAR_REF_MARKER_LEN) != 0) {
+        /* bad reference. should not happen */
+        return FALSE;
+      }
+      /* point to char next to '(' */
+      var_reference = strdup(cur->vtw_node_left->vtw_node_string
+                             + VAR_REF_MARKER_LEN);
       
       {
 	int i=0;
@@ -1236,8 +1247,8 @@ static int eval_va(valstruct *res, vtw_node *node)
       pathp = node->vtw_node_string;
       DPRINT("eval_va var[%s]\n", pathp);
       
-      assert(pathp[0]=='$' && pathp[1]=='(');
-      pathp += 2;
+      assert(strncmp(pathp, VAR_REF_MARKER, VAR_REF_MARKER_LEN) == 0);
+      pathp += VAR_REF_MARKER_LEN;
 
       if(pathp[0] == '@' && pathp[1]!='@'){
 	/* this is why we passed at_val all around */
@@ -1367,17 +1378,26 @@ static int expand_string(char *stringp)
       }
       *resp++ = *scanp++;
       --left;
+    } else if (strlen(scanp) < (VAR_REF_MARKER_LEN + 1 + 1)) {
+      /* shorter than "$VAR(@)". cannot be a reference */
+      *resp++ = *scanp++;
+      --left;
+    } else if (strncmp(scanp, VAR_REF_MARKER, VAR_REF_MARKER_LEN) != 0) {
+      /* doesn't start with "$VAR(". not a reference */
+      *resp++ = *scanp++;
+      --left;
     } else {
-
+      /* the first char is '$'
+       * && remaining length is enough for a reference
+       * && starts with marker.
+       */
       char *cp=NULL;
       boolean my_cp=FALSE;
 
-      if (scanp[1] != '('){
+      /* advance scanp to 'R'. */
+      scanp += 3;
 
-	printf("Badly formed var reference in %s\n", stringp);
-	exit (VTWERR_BADPATH);
-
-      } else if(scanp[2] == '@' && scanp[3] == ')') {
+      if(scanp[2] == '@' && scanp[3] == ')') {
 
 	cp = get_at_string();
 	my_cp = FALSE;
