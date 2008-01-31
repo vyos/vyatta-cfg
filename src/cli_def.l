@@ -415,7 +415,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     }
   }
 
-<expression>{RE_OP_OTHER} {
+<INITIAL,expression>{RE_OP_OTHER} {
     int i = 0;
     while (op_strs[i]) {
       if (strcmp(op_strs[i], yy_cli_def_text) == 0) {
