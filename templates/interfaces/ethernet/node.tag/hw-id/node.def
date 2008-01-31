@@ -1,2 +1,2 @@
 type: macaddr
-help: "Specify the MAC address of this interface"
+help: Specify the MAC address of this interface

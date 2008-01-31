@@ -1,15 +1,15 @@
 tag:
 type: txt
-help: "Ethernet interface name"
-syntax: exec " \
-        if [ -z \"`ip link | egrep -v 'eth[0-9]+[.]' | grep $(@)`\" ]; then \
-          echo Invalid ethernet interface [$(@)]; \
+help: Ethernet interface name
+syntax:expression: exec " \
+        if [ -z \"`ip link | egrep -v 'eth[0-9]+[.]' | grep $VAR(@)`\" ]; then \
+          echo Invalid ethernet interface [$VAR(@)]; \
           exit 1 ; \
         fi ; "
-update: "sudo ip link set $(@) up" ; "Error enabling dev $(@)"
-update: "\\${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" -c \"interface $(@)\" \
+update:expression: "sudo ip link set $VAR(@) up" ; "Error enabling dev $VAR(@)"
+update:expression: "${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" -c \"interface $VAR(@)\" \
           -c \"link-detect\"; "
-delete: "sudo ip link set $(@) down" ; "Error disabling dev $(@)"
-#allowed: local -a array ;
-# array=( /sys/class/net/{eth,vmnet}[0-9]+[^.] ) ;
-# echo -n ${array[@]##*/}
+delete:expression: "sudo ip link set $VAR(@) down" ; "Error disabling dev $VAR(@)"
+allowed: local -a array ;
+ array=( /sys/class/net/{eth,vmnet}[0-9]+[^.] ) ;
+ echo -n ${array[@]##*/}

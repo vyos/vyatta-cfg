@@ -1,9 +1,9 @@
 tag:
 type: txt
-help: "Loopback interface name"
-syntax: exec " \
-        if [ -z \"`ip addr | grep $(@) `\" ]; then \
-          echo loopback interface $(@) doesn\\'t exist on this system ; \
+help: Loopback interface name
+syntax:expression: exec " \
+        if [ -z \"`ip addr | grep $VAR(@) `\" ]; then \
+          echo loopback interface $VAR(@) doesn\\'t exist on this system ; \
           exit 1 ; \
         fi ; "
-update: "sudo ip link set $(@) up"
+update:expression: "sudo ip link set $VAR(@) up"
