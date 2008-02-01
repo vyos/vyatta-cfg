@@ -166,7 +166,9 @@ int main(int argc, char **argv)
     /* non tag matches are OK by definition */
     /* do we already have it? */
     if (lstat(m_path.path, &statbuf) >= 0) {
-      bye("Already exists %s", m_path.path + strlen(get_mdirp()));
+      printf("Node [%s] already exists\n", m_path.path + strlen(get_mdirp()));
+      /* not an error */
+      exit(0);
     }
     /* else */
     /* prevent value node without actual value */
