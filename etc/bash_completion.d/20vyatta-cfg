@@ -99,6 +99,10 @@ edit ()
   local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
   local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
   local idx
+  if ! /opt/vyatta/sbin/my_set $* >&/dev/null 3>&1; then
+    echo "Invalid node \"$*\" for the 'edit' command"
+    return 1
+  fi
   for (( idx=1; idx <= num_comp; idx++ )); do
     local comp
     eval "comp=\$$idx"
@@ -711,9 +715,9 @@ vyatta_config_complete ()
   fi
 
   local command=${COMP_WORDS[0]}
-  # completion for "set" is different from other commands
+  # completion for "set"/"edit" is different from other commands
   is_set=0
-  if [ "$command" == "set" ]; then
+  if [ "$command" == "set" -o "$command" == "edit" ]; then
     is_set=1
   fi
   local end_space=0
