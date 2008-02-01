@@ -13,6 +13,7 @@ my %config_rank = (
                     'interfaces' => 100,
                     'interfaces bridge' => 99,
                     'interfaces ethernet' => 98,
+                    'interfaces tunnel' => 91,
                     'system' => 90,
                   );
 
