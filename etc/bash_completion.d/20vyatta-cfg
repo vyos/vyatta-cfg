@@ -423,8 +423,8 @@ vyatta_parse_tmpl ()
     return
   fi
   eval `sed -n '
-  /^syntax:expression:[ 	]\+\$(@)[ 	]\+in[ 	]\+/ {
-    s/^syntax:expression:[ 	]\+\$(@)[ 	]\+in[ 	]\+/vyatta_cfg_allowed=( /
+  /^syntax:expression:[ 	]\+\$VAR(@)[ 	]\+in[ 	]\+/ {
+    s/^syntax:expression:[ 	]\+\$VAR(@)[ 	]\+in[ 	]\+/vyatta_cfg_allowed=( /
     s/^\([^;]\+\);.*$/\1 )/
     s/[ 	]*,[ 	]*/ /gp
   }
