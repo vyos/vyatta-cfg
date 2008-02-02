@@ -142,16 +142,17 @@ sub validate_ipv6 {
 }
 
 sub validateType {
-  my ($type, $value) = @_;
+  my ($type, $value, $quiet) = @_;
   if (!defined($type) || !defined($value)) {
     return 0;
   }
   if (!defined($type_handler{$type})) {
-    print "type \"$type\" not defined\n";
+    print "type \"$type\" not defined\n" if (!defined($quiet));
     return 0;
   }
   if (!&{$type_handler{$type}}($value)) {
-    print "\"$value\" is not a valid value of type \"$type\"\n";
+    print "\"$value\" is not a valid value of type \"$type\"\n"
+      if (!defined($quiet));
     return 0;
   }
 
