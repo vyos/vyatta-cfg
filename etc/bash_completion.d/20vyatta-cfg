@@ -38,7 +38,7 @@ declare -a comp_words=()
 
 # commands to unalias
 declare -a unalias_cmds=( clear configure date debug edit exit load \
-                          no run set show save terminal undebug )
+                          no run set show save terminal undebug up top )
 for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
 done
@@ -91,6 +91,19 @@ load ()
   export VYATTA_TEMPLATE_LEVEL="/"
   set_config_ps1 ''
   eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
+}
+
+top ()
+{
+  if [ "$VYATTA_EDIT_LEVEL" == "/" ]; then
+    echo "Already at the top level"
+    return 0
+  fi
+
+  # go to the top level.
+  export VYATTA_EDIT_LEVEL="/"
+  export VYATTA_TEMPLATE_LEVEL="/"
+  set_config_ps1 ''
 }
 
 edit ()
@@ -152,6 +165,26 @@ edit ()
   export VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
   export VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
 
+  declare -a path_arr
+  path_str2arr VYATTA_EDIT_LEVEL path_arr
+  local path_str="${path_arr[*]}"
+  set_config_ps1 "$path_str"
+}
+
+up ()
+{
+  if [ "$VYATTA_EDIT_LEVEL" == "/" ]; then
+    echo "Already at the top level"
+    return 0
+  fi
+  if [[ $VYATTA_TEMPLATE_LEVEL == */node.tag/ ]]; then
+    export VYATTA_EDIT_LEVEL="${VYATTA_EDIT_LEVEL%/*/*/}/"
+    export VYATTA_TEMPLATE_LEVEL="${VYATTA_TEMPLATE_LEVEL%/*/*/}/"
+  else
+    export VYATTA_EDIT_LEVEL="${VYATTA_EDIT_LEVEL%/*/}/"
+    export VYATTA_TEMPLATE_LEVEL="${VYATTA_TEMPLATE_LEVEL%/*/}/"
+  fi
+  
   declare -a path_arr
   path_str2arr VYATTA_EDIT_LEVEL path_arr
   local path_str="${path_arr[*]}"
