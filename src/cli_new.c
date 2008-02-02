@@ -1050,9 +1050,10 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
 
   switch(cur->vtw_node_oper) {
   case LIST_OP:
-    ret = check_syn(cur->vtw_node_left);
-    if (!is_in_commit() && cur->vtw_node_aux)
-      ret = TRUE;
+    ret = TRUE;
+    if (is_in_commit() || !cur->vtw_node_aux) {
+      ret = check_syn(cur->vtw_node_left);
+    }
     if (!ret || !cur->vtw_node_right) /* or no right operand */
       return ret;
     return check_syn(cur->vtw_node_right);
