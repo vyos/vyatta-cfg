@@ -1,5 +1,5 @@
 type: u32
 help: Set the MTU for this interface
-syntax:expression: $VAR(@) >= 1 && $VAR(@) <= 1500; "MTU must be between 1 and 1500"
+syntax:expression: $VAR(@) >= 68 && $VAR(@) <= 9000; "MTU must be between 68 and 9000"
 update:expression: "sudo ip link set $VAR(../@) mtu $VAR(@)"; "Error setting MTU on dev $VAR(../@)"
 delete:expression: "sudo ip link set $VAR(../@) mtu 1500"; "Error deleting MTU on dev $VAR(../@)"
