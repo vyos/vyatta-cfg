@@ -402,8 +402,9 @@ sub createNewConfigDOMTree {
 
 ###### functions for templates ######
 
-# $1: array representing the config path (note that path must be present
-#     in current config)
+# $1: array representing the config node path.
+# returns the filesystem path to the template of the specified node,
+#   or undef if the specified node path is not valid.
 sub getTmplPath {
   my $self = shift;
   my @cfg_path = @{$_[0]};
@@ -417,8 +418,8 @@ sub getTmplPath {
       $tpath .= "/node.tag";
       next;
     }
-    # the path is not valid! not supposed to happen!
-    die "Node path \"" . (join ' ', @cfg_path) . "\" is not valid";
+    # the path is not valid!
+    return undef;
   }
   return $tpath
 }
@@ -427,6 +428,7 @@ sub isTagNode {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
+  return undef if (!defined($tpath));
   if (-d "$tpath/node.tag") {
     return 1;
   }
@@ -437,6 +439,7 @@ sub hasTmplChildren {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
+  return undef if (!defined($tpath));
   opendir(TDIR, $tpath) or return 0;
   my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir TDIR));
   closedir TDIR;
@@ -446,12 +449,15 @@ sub hasTmplChildren {
   return 0;
 }
 
-# returns ($is_multi, $is_text)
+# $cfg_path_ref: ref to array containing the node path.
+# returns ($is_multi, $is_text, $default),
+#   or undef if specified node is not valid.
 sub parseTmpl {
   my $self = shift;
   my $cfg_path_ref = shift;
   my ($is_multi, $is_text, $default) = (0, 0, undef);
   my $tpath = $self->getTmplPath($cfg_path_ref);
+  return undef if (!defined($tpath));
   if (! -r "$tpath/node.def") {
     return ($is_multi, $is_text);
   }

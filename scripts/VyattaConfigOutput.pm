@@ -283,8 +283,10 @@ sub outputNewConfig {
     if (defined($config->existsOrig()) && !defined($config->exists())) {
       # this is a deleted node
       print 'Configuration under "' . (join ' ', @_) . "\" has been deleted\n";
+    } elsif (!defined($config->getTmplPath(\@_))) {
+      print "Specified configuration path is not valid\n";
     } else {
-      print "Current configuration is empty\n";
+      print 'Configuration under "' . (join ' ', @_) . "\" is empty\n";
     }
   }
 }
