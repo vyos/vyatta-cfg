@@ -269,9 +269,11 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
 
 #[^\n]*\n {
     /* comment */
+    ++yy_cli_def_lineno;
   }
 
 \n {
+    ++yy_cli_def_lineno;
     return EOL;
   }
 
@@ -302,6 +304,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
   }
 
 <str>\\\n {
+    ++yy_cli_def_lineno;
     /* continuation */
   }
 
@@ -352,7 +355,10 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     free(tmp);
   }
 
-<expression>\n { /* skip the \n */ }
+<expression>\n {
+    /* skip the \n */
+    ++yy_cli_def_lineno;
+  }
 
 <expression><<EOF>> {
     BEGIN(INITIAL);
@@ -372,6 +378,9 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
   }
 
 <action>\n?.* {
+    if (yy_cli_def_text[0] == '\n') {
+      ++yy_cli_def_lineno;
+    }
     append_action(yy_cli_def_text);
   }
 
@@ -391,7 +400,10 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
 
 <INITIAL,expression>[ \t]+ { /* space */ }
 
-<expression>\\\n { /* continuation */ }
+<expression>\\\n {
+    /* continuation */
+    ++yy_cli_def_lineno;
+  }
 
 {RE_TYPE_NAME} {
     int i = 0;

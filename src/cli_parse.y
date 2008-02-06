@@ -7,6 +7,7 @@
 #include "cli_val.h"
 
 extern int yy_cli_def_lineno;
+extern char *yy_cli_def_text;
 static vtw_def *parse_defp;
 static int parse_status; 
 static boolean cli_def_type_only=0; /*{ if (cli_def_type_only) YYACCEPT;}*/
@@ -197,8 +198,8 @@ int parse_def(vtw_def *defp, char *path, boolean type_only)
 static void
 cli_deferror(const char *s)
 {
-  printf("Error: %s in file %s, line %d\n",s, parse_path, 
-	 yy_cli_def_lineno);
+  printf("Error: %s in file [%s], line %d, last token [%s]\n",s, parse_path, 
+	 yy_cli_def_lineno, yy_cli_def_text);
 }
 
 void yy_cli_parse_error(const char *s)
