@@ -78,6 +78,7 @@ otherinput:     type EOL
                 | otherinput type EOL 
                 | otherinput cause EOL
                 | otherinput EOL
+                | EOL
 		| syntax_error 
 		;
 
