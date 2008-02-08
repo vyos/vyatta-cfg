@@ -231,4 +231,73 @@ sub isClusteringEnabled {
     } 
 }
 
+# $str: string representing a port number
+# returns ($success, $err)
+# $success: 1 if success. otherwise undef
+# $err: error message if failure. otherwise undef
+sub isValidPortNumber {
+  my $str = shift;
+  return (undef, "\"$str\" is not a valid port number")
+    if (!($str =~ /^\d+$/));
+  return (undef, "invalid port \"$str\" (must be between 1 and 65535)")
+    if ($str < 1 || $str > 65535);
+  return (1, undef);
+}
+
+# $str: string representing a port range
+# $sep: separator for range
+# returns ($success, $err)
+# $success: 1 if success. otherwise undef
+# $err: error message if failure. otherwise undef
+sub isValidPortRange {
+  my $str = shift;
+  my $sep = shift;
+  return (undef, "\"$str\" is not a valid port range")
+    if (!($str =~ /^(\d+)$sep(\d+)$/));
+  my ($start, $end) = ($1, $2);
+  my ($success, $err) = isValidPortNumber($start);
+  return (undef, $err) if (!defined($success));
+  ($success, $err) = isValidPortNumber($end);
+  return (undef, $err) if (!defined($success));
+  return (undef, "invalid port range ($end is not greater than $start)")
+    if ($end <= $start);
+  return (1, undef);
+}
+
+my %port_name_hash_tcp = ();
+my %port_name_hash_udp = ();
+sub buildPortNameHash {
+  open(IF, "</etc/services") or return 0;
+  while (<IF>) {
+    s/#.*$//;
+    my $is_tcp = /\d\/tcp\s/;
+    my @names = grep (!/\//, (split /\s/));
+    foreach my $name (@names) {
+      if ($is_tcp) {
+        $port_name_hash_tcp{$name} = 1;
+      } else {
+        $port_name_hash_udp{$name} = 1;
+      }
+    }
+  }
+  close IF;
+  return 1;
+}
+
+# $str: string representing a port name
+# $proto: protocol to check
+# returns ($success, $err)
+# $success: 1 if success. otherwise undef
+# $err: error message if failure. otherwise undef
+sub isValidPortName {
+  my $str = shift;
+  my $proto = shift;
+  buildPortNameHash() if ((keys %port_name_hash_tcp) == 0);
+  return (1, undef) if ($proto eq 'tcp' && defined($port_name_hash_tcp{$str}));
+  return (1, undef) if ($proto eq '6' && defined($port_name_hash_tcp{$str}));
+  return (1, undef) if ($proto eq 'udp' && defined($port_name_hash_udp{$str}));
+  return (1, undef) if ($proto eq '17' && defined($port_name_hash_udp{$str}));
+  return (undef, "\"$str\" is not a valid port name for protocol \"$proto\"");
+}
+
 return 1;
