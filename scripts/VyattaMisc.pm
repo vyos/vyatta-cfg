@@ -292,12 +292,75 @@ sub buildPortNameHash {
 sub isValidPortName {
   my $str = shift;
   my $proto = shift;
+  return (undef, "\"\" is not a valid port name for protocol \"$proto\"")
+    if ($str eq '');
   buildPortNameHash() if ((keys %port_name_hash_tcp) == 0);
   return (1, undef) if ($proto eq 'tcp' && defined($port_name_hash_tcp{$str}));
   return (1, undef) if ($proto eq '6' && defined($port_name_hash_tcp{$str}));
   return (1, undef) if ($proto eq 'udp' && defined($port_name_hash_udp{$str}));
   return (1, undef) if ($proto eq '17' && defined($port_name_hash_udp{$str}));
   return (undef, "\"$str\" is not a valid port name for protocol \"$proto\"");
+}
+
+sub getPortRuleString {
+  my $port_str = shift;
+  my $can_use_port = shift;
+  my $prefix = shift;
+  my $proto = shift;
+  my $negate = '';
+  if ($port_str =~ /^!(.*)$/) {
+    $port_str = $1;
+    $negate = '! ';
+  }
+  $port_str =~ s/-/:/g;
+
+  my $num_ports = 0;
+  my @port_specs = split /,/, $port_str;
+  foreach my $port_spec (@port_specs) {
+    my ($success, $err) = (undef, undef);
+    if ($port_spec =~ /:/) {
+      ($success, $err) = isValidPortRange($port_spec, ':');
+      if (defined($success)) {
+        $num_ports += 2;
+        next;
+      } else {
+        return (undef, $err);
+      }
+    }
+    if ($port_spec =~ /^\d/) {
+      ($success, $err) = isValidPortNumber($port_spec);
+      if (defined($success)) {
+        $num_ports += 1;
+        next;
+      } else {
+        return (undef, $err);
+      }
+    }
+    ($success, $err) = isValidPortName($port_spec, $proto);
+    if (defined($success)) {
+      $num_ports += 1;
+      next;
+    } else {
+      return (undef, $err);
+    }
+  }
+
+  my $rule_str = '';
+  if (($num_ports > 0) && (!$can_use_port)) {
+    return (undef, "ports can only be specified when protocol is \"tcp\" "
+                   . "or \"udp\" (currently \"$proto\")");
+  }
+  if ($num_ports > 15) {
+    return (undef, "source/destination port specification only supports "
+                   . "up to 15 ports (port range counts as 2)");
+  }
+  if ($num_ports > 1) {
+    $rule_str = " -m multiport --${prefix}ports ${negate}${port_str}";
+  } elsif ($num_ports > 0) {
+    $rule_str = " --${prefix}port ${negate}${port_str}";
+  }
+
+  return ($rule_str, undef);
 }
 
 return 1;
