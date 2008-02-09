@@ -10,6 +10,10 @@ update:expression: "sudo ip link set $VAR(@) up" ; "Error enabling dev $VAR(@)"
 update:expression: "${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" -c \"interface $VAR(@)\" \
           -c \"link-detect\"; "
 delete:expression: "sudo ip link set $VAR(@) down" ; "Error disabling dev $VAR(@)"
-allowed: local -a array ;
- array=( /sys/class/net/{eth,vmnet}[0-9]+[^.] ) ;
- echo -n ${array[@]##*/}
+allowed: for dev in /sys/class/net/*; 
+         do if [[ -L $dev/device ]]
+            then if [[ $(cat $dev/type) -eq 1 ]]
+                 then echo -n ${dev##*/} " "
+                 fi
+            fi
+         done
