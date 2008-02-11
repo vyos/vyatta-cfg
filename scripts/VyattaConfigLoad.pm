@@ -15,6 +15,9 @@ my %config_rank = (
                     'interfaces ethernet' => 98,
                     'interfaces tunnel' => 91,
                     'system' => 90,
+                    'protocols static' => 85,
+                    'service ssh' => 84,
+                    'service telnet' => 83,
                   );
 
 my @all_nodes = ();
