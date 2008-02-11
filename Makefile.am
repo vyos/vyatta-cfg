@@ -47,6 +47,7 @@ share_perl5_DATA += scripts/VyattaConfigOutput.pm
 share_perl5_DATA += scripts/VyattaConfigLoad.pm
 share_perl5_DATA += scripts/VyattaMisc.pm
 share_perl5_DATA += scripts/VyattaTypeChecker.pm
+share_perl5_DATA += scripts/VyattaIpTablesAddressFilter.pm
 
 default_DATA = etc/default/vyatta-cfg
 
