@@ -28,6 +28,12 @@ sub set_hide_password {
   }
 }
 
+sub txt_need_quotes {
+  $_ = shift;
+  return 1 if (/^$/ || /[\s\*}{;]/);
+  return 0;
+}
+
 my $config = undef;
 
 # $0: array ref for path
@@ -41,6 +47,13 @@ sub displayValues {
   my $name = $_[2];
   my $simple_show = $_[3];
   my ($is_multi, $is_text, $default) = $config->parseTmpl(\@cur_path);
+  if ($is_text) {
+    $default =~ /^"(.*)"$/;
+    my $txt = $1;
+    if (!txt_need_quotes($txt)) {
+      $default = $txt;
+    }
+  }
   my $is_password = ($name =~ /^.*password$/);
   my $HIDE_PASSWORD = '****************';
   $config->setLevel(join ' ', @cur_path);
@@ -48,8 +61,8 @@ sub displayValues {
     my @ovals = $config->returnOrigValues('');
     my @nvals = $config->returnValues('');
     if ($is_text) {
-      @ovals = map { "\"$_\""; } @ovals;
-      @nvals = map { "\"$_\""; } @nvals;
+      @ovals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @ovals;
+      @nvals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @nvals;
     }
     my $idx = 0;
     my %ohash = map { $_ => ($idx++) } @ovals;
@@ -92,10 +105,10 @@ sub displayValues {
     my $oval = $config->returnOrigValue('');
     my $nval = $config->returnValue('');
     if ($is_text) {
-      if (defined($oval)) {
+      if (defined($oval) && txt_need_quotes($oval)) {
         $oval = "\"$oval\"";
       }
-      if (defined($nval)) {
+      if (defined($nval) && txt_need_quotes($nval)) {
         $nval = "\"$nval\"";
       }
     }
@@ -104,7 +117,7 @@ sub displayValues {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
-        print "$prefix$name: $oval\n";
+        print "$prefix$name $oval\n";
       }
       return;
     }
@@ -125,7 +138,7 @@ sub displayValues {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
-      print "$diff$prefix$name: $value\n";
+      print "$diff$prefix$name $value\n";
     }
   }
 }
