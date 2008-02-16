@@ -1,4 +1,14 @@
 type: macaddr
 help: Set the MAC address of this interface
-update:expression: "sudo ip link set $VAR(../@) address $VAR(@)"; "Error setting MAC address on dev $VAR(../@)"
-delete:expression: "sudo ip link set $VAR(../@) address $VAR(../hw-id/@)"; "Error setting MAC address on dev $VAR(../@) to $VAR(../hw-id/@)"
+
+update:expression: "sudo sh -c \"ip link set $VAR(../@) down &&            \
+                                 ip link set $VAR(../@) address $VAR(@) && \
+                                 ip link set $VAR(../@) up; \" ";          \
+                   "Error setting MAC address on dev $VAR(../@)"
+
+delete:expression: "sudo sh -c \"ip link set $VAR(../@) down &&            \
+                                 ip link set $VAR(../@) address            \
+                                   $VAR(../hw-id/@) &&                     \
+                                 ip link set $VAR(../@) up;\" ";           \
+                   "Error resetting MAC address on dev $VAR(../@) to       \
+                    $VAR(../hw-id/@)"
