@@ -42,16 +42,18 @@ my $dhcp_pid    = '/var/run/dhclient.pid';
 my $dhcp_leases = '/var/lib/dhcp3/dhclient.leases';
 
 
-my ($eth_update, $eth_delete, $addr, $dev);
+my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev);
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
 	   "valid-addr=s"      => \$addr,
+	   "restart-dhclient!" => \$restart_dhclient,
            "dev=s"             => \$dev,
 );
 
-if (defined $eth_update)  { update_eth_addrs($eth_update, $dev); }
-if (defined $eth_delete)  { delete_eth_addrs($eth_delete, $dev);  }
-if (defined $addr)        { is_valid_addr($addr, $dev); }
+if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
+if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
+if (defined $addr)             { is_valid_addr($addr, $dev); }
+if (defined $restart_dhclient) { dhcp_restart_daemon(); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
@@ -113,6 +115,16 @@ sub dhcp_stop_daemon {
 }
 
 sub dhcp_restart_daemon {
+    #
+    # check if vyatta has generated the config file, otherwise
+    # an empty config will try to get new addresses for all
+    # interfaces
+    #
+    my $grep = `grep vyatta-interfaces.pl $dhcp_conf | wc -l`;
+    chomp $grep;
+    if (!defined $grep or $grep != 1) {
+	die "DHCP client not configured\n";
+    }
     if (is_dhcp_running()) {
 	dhcp_stop_daemon();
     }
@@ -215,14 +227,26 @@ sub is_address_enabled {
     return 0;
 }
 
+sub get_hostname {
+    my $config = new VyattaConfig;
+    $config->setLevel("system");
+    my $hostname = $config->returnValue("host-name");
+    return $hostname;
+}
+
 sub dhcp_update_config {
     my $output = dhcp_conf_header();
+    my $hostname = get_hostname();
 
     my $config = new VyattaConfig;
     my $dhcp_instances = 0;
     my @dhcp_intfs = dhcp_get_interfaces();
     foreach my $intf (@dhcp_intfs) {
-	$output .= "interface \"$intf\" {\n}\n\n";
+	$output .= "interface \"$intf\" {\n";
+	if (defined($hostname)) {
+	    $output .= "\tsend host-name \"$hostname\";\n";
+	}
+        $output .= "}\n\n";
 	$dhcp_instances++;
     }
 
