@@ -336,10 +336,8 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
     }
     memset(&def, 0, sizeof(def));
     if ((status = parse_def(&def, tpath->path, FALSE))) {
-      fprintf(stderr, "parse error in [%s]\n", tpath->path);
-      pop_path(tpath); /* definition */
-      pop_path(tpath); /* child */
-      continue;
+      /* template parse error. abort. */
+      bye("Parse error in [%s]\n", tpath->path);
     }
     if (def.def_default) {
       push_path(mpath, uename);
