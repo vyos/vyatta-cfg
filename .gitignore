@@ -27,6 +27,7 @@ libtool
 /src/my_commit
 /src/my_set
 /src/my_delete
+/src/check_tmpl
 /src/cli_def.c
 /src/cli_parse.c
 /src/cli_parse.h

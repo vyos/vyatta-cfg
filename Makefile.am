@@ -25,9 +25,11 @@ LDADD = src/libvyatta-cfg.la
 sbin_PROGRAMS = src/my_commit
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
+sbin_PROGRAMS += src/check_tmpl
 src_my_commit_SOURCES = src/commit.c
 src_my_delete_SOURCES = src/delete.c
 src_my_set_SOURCES = src/set.c
+src_check_tmpl_SOURCES = src/check_tmpl.c
 
 sbin_SCRIPTS = scripts/xorp_tmpl_tool
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
