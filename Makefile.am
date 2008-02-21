@@ -31,7 +31,7 @@ src_my_delete_SOURCES = src/delete.c
 src_my_set_SOURCES = src/set.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
 
-sbin_SCRIPTS = scripts/xorp_tmpl_tool
+sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
 sbin_SCRIPTS += scripts/vyatta-find-type.pl
 sbin_SCRIPTS  += scripts/vyatta-config-loader.pl

@@ -8,16 +8,40 @@ use VyattaConfigLoad;
 
 umask 0002;
 
+if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
+    || !open(STDOUT, ">/var/log/config-boot.log")
+    || !open(STDERR, ">&STDOUT")) {
+  print STDERR "Cannot dup STDOUT/STDERR: $!\n";
+  exit 1;
+}
+
+sub restore_fds {
+  open(STDOUT, ">&OLDOUT");
+  open(STDERR, ">&OLDERR");
+}
+
 # get a list of all config statement in the startup config file
 # (sorted by rank).
 my @all_nodes = VyattaConfigLoad::getStartupConfigStatements($ARGV[0]);
 if (scalar(@all_nodes) == 0) {
   # no config statements
+  restore_fds();
   exit 1;
 }
 my $cur_rank = ${$all_nodes[0]}[1];
-my $commit_cmd = '/opt/vyatta/sbin/xorp_tmpl_tool commit';
-my $cleanup_cmd = '/opt/vyatta/sbin/xorp_tmpl_tool cleanup';
+
+# set up the config environment
+my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
+system("$CWRAPPER begin");
+if ($? >> 8) {
+  print OLDOUT "Cannot set up configuration environment\n";
+  print STDOUT "Cannot set up configuration environment\n";
+  restore_fds();
+  exit 1;
+}
+
+my $commit_cmd = "$CWRAPPER commit";
+my $cleanup_cmd = "$CWRAPPER cleanup";
 my $ret = 0;
 # higher-ranked statements committed before lower-ranked.
 foreach (@all_nodes) {
@@ -26,28 +50,33 @@ foreach (@all_nodes) {
     # commit all nodes with the same rank together.
     $ret = system("$commit_cmd");
     if ($ret >> 8) {
-      print STDERR "Commit failed at rank $cur_rank\n";
+      print OLDOUT "Commit failed at rank $cur_rank\n";
+      print STDOUT "Commit failed at rank $cur_rank\n";
       system("$cleanup_cmd");
       # continue after cleanup (or should we abort?)
     }
     $cur_rank = $rank;
   }
-  my $cmd = '/opt/vyatta/sbin/xorp_tmpl_tool set ' . (join ' ', @$path_ref);
+  my $cmd = "$CWRAPPER set " . (join ' ', @$path_ref);
   $ret = system("$cmd");
   if ($ret >> 8) {
     $cmd =~ s/^.*?set /set /;
-    print STDERR "[[$cmd]] failed\n";
+    print OLDOUT "[[$cmd]] failed\n";
+    print STDOUT "[[$cmd]] failed\n";
     # continue after set failure (or should we abort?)
   }
 }
 $ret = system("$commit_cmd");
 if ($ret >> 8) {
-  print STDERR "Commit failed at rank $cur_rank\n";
+  print OLDOUT "Commit failed at rank $cur_rank\n";
+  print STDOUT "Commit failed at rank $cur_rank\n";
   system("$cleanup_cmd");
   # exit normally after cleanup (or should we exit with error?)
 }
 
 # really clean up
-system('/opt/vyatta/sbin/xorp_tmpl_tool end_loading');
+system("$CWRAPPER end");
+restore_fds();
 
 exit 0;
+
