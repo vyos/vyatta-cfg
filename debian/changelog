@@ -1,3 +1,21 @@
+vyatta-cfg (0.2) UNRELEASED; urgency=low
+
+  vc4.0.0
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * rewrite lexical analyzer to support simplified templates.
+  * add "official" support for "comp_help" and "allowed" in config
+    template
+  * allow non-indented line continuation
+  * skip spaces immediately after field names
+  * handle empty action
+  * * don't require backslash line-continuation in expressions.
+  * allow non-txt values in initial state (for default).
+
+ -- An-Cheng Huang <mobrien@vyatta.com>  Mon, 25 Feb 2008 17:38:45 -0800
+
 vyatta-cfg (0.1) unstable; urgency=low
 
   * Initial Release.
