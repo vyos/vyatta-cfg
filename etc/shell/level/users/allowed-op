@@ -1,6 +1,14 @@
-show
-terminal
+clear
+debug
 exit
-telnet
+init-floppy
+no
 ping
+reboot
+set
+show
+telnet
+terminal
 traceroute
+undebug
+vpn

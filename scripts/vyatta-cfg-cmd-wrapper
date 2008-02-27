@@ -1,0 +1,65 @@
+#!/bin/bash
+
+if grep -q union=aufs /proc/cmdline || grep -q aufs /proc/filesystems ; then
+  export UNIONFS=aufs
+else
+  export UNIONFS=unionfs
+fi
+
+UMASK_SAVE=`umask`
+umask 0002
+
+export VYATTA_EDIT_LEVEL=/;
+export VYATTA_TEMPLATE_LEVEL=/;
+export VYATTA_ACTIVE_CONFIGURATION_DIR=/opt/vyatta/config/active;
+
+export VYATTA_CHANGES_ONLY_DIR=/opt/vyatta/config/tmp/changes_only_$PPID;
+export VYATTA_TEMP_CONFIG_DIR=/opt/vyatta/config/tmp/new_config_$PPID;
+export VYATTA_CONFIG_TMP=/opt/vyatta/config/tmp/tmp_$PPID;
+
+RET_STATUS=0
+
+case "$1" in
+  begin)
+    # set up the environment/directories
+    mkdir -p $VYATTA_ACTIVE_CONFIGURATION_DIR
+    mkdir -p $VYATTA_CHANGES_ONLY_DIR
+    if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]; then
+      mkdir -p $VYATTA_TEMP_CONFIG_DIR
+      sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
+    fi
+    mkdir -p $VYATTA_CONFIG_TMP
+    ;;
+  end)
+    # tear down the environment/directories
+    sudo umount ${VYATTA_TEMP_CONFIG_DIR}
+    rm -rf ${VYATTA_CHANGES_ONLY_DIR}
+    rm -rf ${VYATTA_CONFIG_TMP}
+    rm -rf ${VYATTA_TEMP_CONFIG_DIR}
+    ;;
+  cleanup)
+    sudo umount ${VYATTA_TEMP_CONFIG_DIR}
+    rm -rf $VYATTA_CHANGES_ONLY_DIR/* $VYATTA_CHANGES_ONLY_DIR/.modified
+    sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
+    ;;
+  set)
+    /opt/vyatta/sbin/my_set "${@:2}"
+    RET_STATUS=$?
+    ;;
+  delete)
+    /opt/vyatta/sbin/my_delete "${@:2}"
+    RET_STATUS=$?
+    ;;
+  commit)
+    /opt/vyatta/sbin/my_commit
+    RET_STATUS=$?
+    ;;
+  *)
+    echo "Invalid command \"$1\" for vyatta-cfg-cmd-wrapper"
+    RET_STATUS=1  
+    ;;
+esac
+
+umask ${UMASK_SAVE}
+exit $RET_STATUS
+

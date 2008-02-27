@@ -61,7 +61,7 @@ show ()
 
 save ()
 {
-  eval "sudo sg quaggavty \
+  eval "sudo sg vyattacfg \
         \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
@@ -968,7 +968,7 @@ vyatta_config_complete ()
   eval $restore_shopts
 }
 
-DEF_GROUP=quaggavty
+DEF_GROUP=vyattacfg
 make_vyatta_config_dir ()
 {
   sudo mkdir -m 0775 -p $1
