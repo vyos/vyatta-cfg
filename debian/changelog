@@ -1,4 +1,4 @@
-vyatta-cfg (0.2) UNRELEASED; urgency=low
+vyatta-cfg (0.2) unstable; urgency=low
 
   vc4.0.0
   [ Mark O'Brien ]
