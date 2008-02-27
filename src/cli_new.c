@@ -745,11 +745,12 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
       if (!token) 
 	return 0;
       if (token != EOL) {
+	fprintf(out_stream, "\"%s\" is not a valid value\n", value);
 	print_msg("Badly formed value in %s\n", 
 		  m_path.path + m_path.print_offset);
 	if (token == VALUE)
 	  my_free(get_cli_value_ptr()->val);
-	return 0;
+	return -1;
       }
     }
     return 0;

@@ -34,11 +34,14 @@
 #   - Print the affinity mask of the IRQ being used by an interface
 #
 
-# The default "all-ones" IRQ affinity mask.  Used in the "reset" sub-command.
-DEFAULT_MASK=ffff
-
 # Max number of hex characters in an IRQ affinity mask.  Support up to 16 CPUs.
 MAX_MASK=4
+
+# Set up some global values...
+numcpus=`grep -c -e "^processor" /proc/cpuinfo`
+declare -i maxmask=(2**numcpus)
+let maxmask=maxmask-1
+maxmaskhex=`printf "%x" ${maxmask}`
 
 print_usage()
 {
@@ -78,23 +81,17 @@ get_mask()
 	return 1
     fi
 
+    declare -i intmask=0x${mask}
+
     # Make sure that mask holds at least one bit, and holds no more bits
     # than we have CPUs.
 
-    if [ ${mask} -eq 0 ]; then
+    if [ ${intmask} -eq 0 ]; then
 	echo "Mask can not be 0."
 	return 1
     fi
 
-    numcpus=`grep -c -e "^processor" /proc/cpuinfo`
-
-    declare -i maxmask=(2**numcpus)
-    let maxmask=maxmask-1
-    
-    declare -i intmask=0x${mask}
-
     if [ $intmask -gt $maxmask ]; then
-	maxmaskhex=`printf "%x" ${maxmask}`
 	echo "Mask is too large.  Maximum hexidecimal bitmask is: ${maxmaskhex}"
 	return 1
     fi
@@ -102,10 +99,29 @@ get_mask()
     return 0
 }
 
+
+#
+# Don't waste our time with uniprocessor machines
+#
+check_uniproc()
+{
+    if [ $maxmask -eq 1 ]; then
+	echo "This machine has only 1 CPU."
+	echo "Can only set SMP affinity on multi-processor machines"
+	return 1;
+    fi
+    return 0
+}
+	      
+
 case "$1" in
     check)
 	if [ $# -ne 3 ]; then
 		print_usage
+		exit 1
+	fi
+
+	if ! check_uniproc ; then
 		exit 1
 	fi
 
@@ -124,6 +140,11 @@ case "$1" in
 		print_usage
 		exit 1
 	fi
+
+	if ! check_uniproc ; then
+		exit 1
+	fi
+
 	if ! get_irqnum $2 ; then
 	    exit 1
 	fi
@@ -149,7 +170,7 @@ case "$1" in
 	    exit 1
 	fi
 
-	echo $DEFAULT_MASK > /proc/irq/$irqnum/smp_affinity
+	echo $maxmaskhex > /proc/irq/$irqnum/smp_affinity
 	if [ $? -ne 0 ]; then
 	    echo "Couldn't assign smp_affinity.  Exit status: $?"
 	    exit 1
