@@ -9,16 +9,17 @@ use VyattaConfig;
 
 # configuration ordering. higher rank configured before lower rank.
 my $default_rank = 0;
-my %config_rank = (
-                    'interfaces' => 100,
-                    'interfaces bridge' => 99,
-                    'interfaces ethernet' => 98,
-                    'interfaces tunnel' => 91,
-                    'system' => 90,
-                    'protocols static' => 85,
-                    'service ssh' => 84,
-                    'service telnet' => 83,
-                  );
+my %config_rank  = (
+    'qos-policy'            => 110,
+    'interfaces'            => 100,
+    'interfaces bridge'     => 99,
+    'interfaces ethernet'   => 98,
+    'interfaces tunnel'     => 91,
+    'system'                => 90,
+    'protocols static'      => 85,
+    'service ssh'           => 84,
+    'service telnet'        => 83,
+);
 
 my @all_nodes = ();
 my @all_naked_nodes = ();
