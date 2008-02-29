@@ -9,7 +9,7 @@ use VyattaConfigLoad;
 umask 0002;
 
 if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
-    || !open(STDOUT, ">/var/log/config-boot.log")
+    || !open(STDOUT, "|/usr/bin/logger -t config-loader -p local0.debug")
     || !open(STDERR, ">&STDOUT")) {
   print STDERR "Cannot dup STDOUT/STDERR: $!\n";
   exit 1;
