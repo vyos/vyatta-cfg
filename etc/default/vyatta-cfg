@@ -33,6 +33,10 @@ for g in "${groups[@]}"; do
     is_users=1
   fi
 done
+# root is also admin
+if [ "$(id -u)" == 0 ]; then
+  is_admin=1
+fi
 # check level from high to low
 if [ $is_admin == 1 ]; then
   declare -x -r VYATTA_USER_LEVEL_DIR=${vyatta_sysconfdir}/shell/level/admin
