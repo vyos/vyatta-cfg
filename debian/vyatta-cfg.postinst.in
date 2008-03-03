@@ -18,6 +18,6 @@ if [ "$sysconfdir" != "/etc" ]; then
   done
 fi
 
-# add group for configure
+# add group for configuration, if not already present:
+grep '^vyattacfg:' /etc/group >/dev/null ||
 addgroup --system vyattacfg
-
