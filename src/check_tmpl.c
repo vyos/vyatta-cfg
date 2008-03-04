@@ -1,5 +1,8 @@
+#define _ISOC99_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "cli_val.h"
 

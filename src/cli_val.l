@@ -1,4 +1,7 @@
 %{
+#define __USE_ISOC99
+#include <limits.h>
+
 #include "cli_val.h"
 #include "cli_parse.h"
 #include "cli_objects.h"
@@ -226,6 +229,15 @@ false	{
 	}
 
 [0-9]+	{
+        long long int cval = 0;
+        char *endp = NULL;
+        errno = 0;
+        cval = strtoll(yytext, &endp, 10);
+        if ((errno == ERANGE && (cval == LLONG_MAX || cval == LLONG_MIN))
+            || (errno != 0 && cval == 0)
+            || (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
+          return SYNTAX_ERROR;
+        }
         make_val_value(INT_TYPE);
 	return VALUE;
 	}
