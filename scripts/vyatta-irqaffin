@@ -1,6 +1,5 @@
-
 #!/bin/bash
-#
+
 # **** License ****
 # Version: VPL 1.0
 #
@@ -20,12 +19,10 @@
 #
 # Author: Robert E. Gilligan
 # Date: 2008
-# Description:
+# Description: CLI back-end script to manipulate NIC interrupt CPU affinity.
 #
 # **** End License ****
-#
-# CLI back-end script to manipulate NIC interrupt CPU affinity.
-#
+
 # Provides sub-commands to:
 #   - Check the validity of an interface name and affinity mask value
 #   - Set the affinity mask to the IRQ being used by an interface

@@ -1,5 +1,7 @@
+#!/usr/bin/perl
+
 #
-# Module: serial
+# Module: vyatta-cfg
 #
 # **** License ****
 # Version: VPL 1.0

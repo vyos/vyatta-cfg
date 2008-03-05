@@ -1,4 +1,5 @@
-#
+#!/usr/bin/perl
+
 # Module: VyattaMisc.pm
 #
 # **** License ****
@@ -20,7 +21,7 @@
 #
 # Author: Marat
 # Date: 2007
-# Description:
+# Description: Implements miscellaneous commands
 #
 # **** End License ****
 #
