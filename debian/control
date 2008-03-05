@@ -16,7 +16,10 @@ Depends: bash (>= 3.1),
  bsdutils,
  vyatta-op,
  vyatta-config-migrate, 
- dhcp3-client | vyatta-dhcp3-client
+ dhcp3-client | vyatta-dhcp3-client,
+ bsdutils (>=1:2.13),
+ libc6 (>= 2.7-6)
+Replaces: vyatta-cfg-firewall
 Suggests: util-linux (>= 2.13-5),
  net-tools,
  ethtool,
