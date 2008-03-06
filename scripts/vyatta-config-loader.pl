@@ -14,6 +14,11 @@ if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
   print STDERR "Cannot dup STDOUT/STDERR: $!\n";
   exit 1;
 }
+    
+if (!open(WARN, "|/usr/bin/logger -t config-loader -p local0.warning")) {
+  print OLDERR "Cannot open syslog: $!\n";
+  exit 1;
+}
 
 sub restore_fds {
   open(STDOUT, ">&OLDOUT");
@@ -35,7 +40,7 @@ my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
 system("$CWRAPPER begin");
 if ($? >> 8) {
   print OLDOUT "Cannot set up configuration environment\n";
-  print STDOUT "Cannot set up configuration environment\n";
+  print WARN "Cannot set up configuration environment\n";
   restore_fds();
   exit 1;
 }
@@ -51,7 +56,7 @@ foreach (@all_nodes) {
     $ret = system("$commit_cmd");
     if ($ret >> 8) {
       print OLDOUT "Commit failed at rank $cur_rank\n";
-      print STDOUT "Commit failed at rank $cur_rank\n";
+      print WARN "Commit failed at rank $cur_rank\n";
       system("$cleanup_cmd");
       # continue after cleanup (or should we abort?)
     }
@@ -62,14 +67,14 @@ foreach (@all_nodes) {
   if ($ret >> 8) {
     $cmd =~ s/^.*?set /set /;
     print OLDOUT "[[$cmd]] failed\n";
-    print STDOUT "[[$cmd]] failed\n";
+    print WARN "[[$cmd]] failed\n";
     # continue after set failure (or should we abort?)
   }
 }
 $ret = system("$commit_cmd");
 if ($ret >> 8) {
   print OLDOUT "Commit failed at rank $cur_rank\n";
-  print STDOUT "Commit failed at rank $cur_rank\n";
+  print WARN "Commit failed at rank $cur_rank\n";
   system("$cleanup_cmd");
   # exit normally after cleanup (or should we exit with error?)
 }
