@@ -358,7 +358,7 @@ sub is_valid_addr {
     }
 
     my ($addr, $net);
-    if ($addr_net =~ m/^([0-9\.\:]+)\/(\d+)$/) {
+    if ($addr_net =~ m/^([0-9a-fA-F\.\:]+)\/(\d+)$/) {
 	$addr = $1;
 	$net  = $2;
     } else {
