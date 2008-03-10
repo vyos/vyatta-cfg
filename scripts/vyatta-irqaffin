@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Author: Robert E. Gilligan <gilligan@vyatta.com>
+# Date: 2008
+# Description: CLI back-end script to manipulate NIC interrupt CPU affinity.
+
 # **** License ****
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -9,22 +13,10 @@
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-#
-# A copy of the GNU General Public License is available as
-# `/usr/share/common-licenses/GPL' in the Debian GNU/Linux distribution
-# or on the World Wide Web at `http://www.gnu.org/copyleft/gpl.html'.
-# You can also obtain it by writing to the Free Software Foundation,
-# Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-#
+# 
 # This code was originally developed by Vyatta, Inc.
-# Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
 # All Rights Reserved.
-#
-# Author: Robert E. Gilligan
-# Date: 2008
-# Description: CLI back-end script to manipulate NIC interrupt CPU affinity.
-#
 # **** End License ****
 
 # Provides sub-commands to:
