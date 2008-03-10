@@ -10,7 +10,7 @@ AM_CFLAGS = -I src -Wall
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
-completion_DATA	= etc/bash_completion.d/20vyatta-cfg
+completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-ofr
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 
@@ -43,13 +43,13 @@ sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-interfaces.pl
 sbin_SCRIPTS  += scripts/vyatta-irqaffin
 
-share_perl5_DATA = scripts/VyattaConfig.pm
-share_perl5_DATA += scripts/VyattaConfigDOMTree.pm
-share_perl5_DATA += scripts/VyattaConfigOutput.pm
-share_perl5_DATA += scripts/VyattaConfigLoad.pm
-share_perl5_DATA += scripts/VyattaMisc.pm
-share_perl5_DATA += scripts/VyattaTypeChecker.pm
-share_perl5_DATA += scripts/VyattaIpTablesAddressFilter.pm
+share_perl5_SCRIPTS = scripts/VyattaConfig.pm
+share_perl5_SCRIPTS += scripts/VyattaConfigDOMTree.pm
+share_perl5_SCRIPTS += scripts/VyattaConfigOutput.pm
+share_perl5_SCRIPTS += scripts/VyattaConfigLoad.pm
+share_perl5_SCRIPTS += scripts/VyattaMisc.pm
+share_perl5_SCRIPTS += scripts/VyattaTypeChecker.pm
+share_perl5_SCRIPTS += scripts/VyattaIpTablesAddressFilter.pm
 
 default_DATA = etc/default/vyatta-cfg
 

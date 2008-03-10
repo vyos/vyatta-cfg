@@ -1,4 +1,23 @@
-# Perl module for loading configuration.
+#!/usr/bin/perl
+
+# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Date: 2007
+# Description: Perl module for loading configuration.
+
+# **** License ****
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
+# All Rights Reserved.
+
 package VyattaConfigLoad;
 
 use strict;
