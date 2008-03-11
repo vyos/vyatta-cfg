@@ -34,7 +34,7 @@ use lib "/opt/vyatta/share/perl5/";
 use VyattaConfig;
 use VyattaMisc;
 use Getopt::Long;
-
+use POSIX;
 use NetAddr::IP;
 
 use strict;
@@ -45,18 +45,22 @@ my $dhcp_conf   = '/etc/dhcp3/dhclient.conf';
 my $dhcp_pid    = '/var/run/dhclient.pid';
 my $dhcp_leases = '/var/lib/dhcp3/dhclient.leases';
 
+my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev, $mac, $mac_update);
 
-my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev);
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
 	   "valid-addr=s"      => \$addr,
 	   "restart-dhclient!" => \$restart_dhclient,
            "dev=s"             => \$dev,
+	   "valid-mac=s"       => \$mac,
+	   "set-mac=s"	       => \$mac_update,
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
 if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
 if (defined $addr)             { is_valid_addr($addr, $dev); }
+if (defined $mac)	       { is_valid_mac($mac, $dev); }
+if (defined $mac_update)       { update_mac($mac_update, $dev); }
 if (defined $restart_dhclient) { dhcp_restart_daemon(); }
 
 sub is_ip_configured {
@@ -340,6 +344,45 @@ sub delete_eth_addrs {
     if ($version == 6) {
 	return system("ip -6 addr del $addr dev $intf");
     }
+}
+
+sub update_mac {
+    my ($mac, $intf) = @_;
+
+    open my $fh, "<", "/sys/class/net/$intf/flags"
+	or die "Error: $intf is not a network device\n";
+
+    my $flags = <$fh>;
+    chomp $flags;
+    close $fh or die "Error: can't read state\n";
+
+    if (POSIX::strtoul($flags) & 1) {
+	# NB: Perl 5 system return value is bass-ackwards
+	system "sudo ip link set $intf down"
+	    and die "Could not set $intf down ($!)\n";
+	system "sudo ip link set $intf address $mac"
+	    and die "Could not set $intf address ($!)\n";
+	system "sudo ip link set $intf up"
+	    and die "Could not set $intf up ($!)\n";
+    } else {
+	exec "sudo ip link set $intf address $mac";
+    }
+    exit 0;
+}
+ 
+sub is_valid_mac {
+    my ($mac, $intf) = @_;
+    my @octets = split /:/, $mac;
+    
+    ($#octets == 5) or die "Error: wrong number of octets: $#octets\n";
+
+    (($octets[0] & 1) == 0) or die "Error: $mac is a multicast address\n";
+
+    my $sum = 0;
+    $sum += strtoul('0x' . $_) foreach @octets;
+    ( $sum != 0 ) or die "Error: zero is not a valid address\n";
+
+    exit 0;
 }
 
 sub is_valid_addr {
