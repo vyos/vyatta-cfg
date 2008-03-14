@@ -1,14 +1,7 @@
 type: macaddr
 help: Set the MAC address of this interface
+syntax:expression: exec "\
+	/opt/vyatta/sbin/vyatta-interfaces.pl --dev $VAR(../@) --valid-mac $VAR(@)"
+update: /opt/vyatta/sbin/vyatta-interfaces.pl --dev $VAR(../@) --set-mac $VAR(@)
+delete: /opt/vyatta/sbin/vyatta-interfaces.pl --dev $VAR(../@) --set-mac $VAR(../hw-id/@)
 
-update:expression: "sudo sh -c \"ip link set $VAR(../@) down &&            \
-                                 ip link set $VAR(../@) address $VAR(@) && \
-                                 ip link set $VAR(../@) up; \" ";          \
-                   "Error setting MAC address on dev $VAR(../@)"
-
-delete:expression: "sudo sh -c \"ip link set $VAR(../@) down &&            \
-                                 ip link set $VAR(../@) address            \
-                                   $VAR(../hw-id/@) &&                     \
-                                 ip link set $VAR(../@) up;\" ";           \
-                   "Error resetting MAC address on dev $VAR(../@) to       \
-                    $VAR(../hw-id/@)"

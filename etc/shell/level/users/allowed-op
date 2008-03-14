@@ -8,7 +8,6 @@ reboot
 set
 show
 telnet
-terminal
 traceroute
 undebug
 vpn

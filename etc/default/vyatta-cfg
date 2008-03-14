@@ -43,6 +43,8 @@ if [ $is_admin == 1 ]; then
 else
   # no need to check is_users since there are only 2 levels for now
   declare -x -r VYATTA_USER_LEVEL_DIR=${vyatta_sysconfdir}/shell/level/users
+  declare -x -r LESSSECURE=1
+  alias more=less
 fi
 } 2>/dev/null || :
 
