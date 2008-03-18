@@ -1,7 +1,6 @@
 clear
 debug
 exit
-init-floppy
 no
 ping
 reboot
