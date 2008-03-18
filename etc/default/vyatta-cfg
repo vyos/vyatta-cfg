@@ -3,7 +3,7 @@
 
 {
 declare -x -r VYATTA_ACTIVE_CONFIGURATION_DIR=${vyatta_configdir}/active
-declare -x -r VYATTA_CHANGES_ONLY_DIR=${vyatta_configdir}/tmp/changes_only_$$
+declare -x -r VYATTA_CHANGES_ONLY_DIR=/tmp/changes_only_$$
 declare -x -r VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
 declare -x -r VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
 declare -x -r VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates

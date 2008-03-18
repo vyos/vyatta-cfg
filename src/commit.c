@@ -1359,7 +1359,7 @@ static int fin_commit(boolean ok)
   system(command);
   my_free(command);
 
-  command = my_malloc(strlen(format3) + c_len, "");
+  command = my_malloc(strlen(format3) + t_len, "");
   sprintf(command, format3, get_tmpp());
   system(command);
   my_free(command);
