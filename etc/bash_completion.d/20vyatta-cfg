@@ -441,6 +441,8 @@ vyatta_parse_tmpl ()
  
   if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
     astr=$(eval "$acmd")
+    astr=${astr//</\\<}
+    astr=${astr//>/\\>}
     eval "ares=( $astr )"
     for (( i=0 ; i<${#ares[@]} ; i++ )); do
       if [[ "${ares[i]}" != \<*\> ]]; then
