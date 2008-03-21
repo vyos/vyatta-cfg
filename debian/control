@@ -7,13 +7,13 @@ Standards-Version: 3.7.2
 
 Package: vyatta-cfg
 Architecture: any
-Depends: bash (>= 3.1),
- sed (>= 4.1.5),
+Depends: sed (>= 4.1.5),
  perl (>= 5.8.8),
  procps (>= 1:3.2.7-3),
  vyatta-quagga | quagga,
  coreutils (>= 5.97-5.3),
  vyatta-op,
+ vyatta-bash,
  vyatta-config-migrate, 
  dhcp3-client | vyatta-dhcp3-client,
  bsdutils (>=1:2.13),
