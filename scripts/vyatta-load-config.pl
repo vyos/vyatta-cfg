@@ -28,16 +28,19 @@ use VyattaConfigLoad;
 my $etcdir = $ENV{vyatta_sysconfdir};
 my $sbindir = $ENV{vyatta_sbindir};
 my $bootpath = $etcdir . "/config";
+my $load_file = $bootpath . "/config.boot";
 
-if ($#ARGV != 0) {
+if ($#ARGV > 0) {
   print "Usage: load <config_file_name>\n";
   exit 1;
 }
 
-my $load_file = $ARGV[0];
-if (!($load_file =~ /^\//)) {
-  # relative path
-  $load_file = "$bootpath/$load_file";
+if (defined($ARGV[0])) {
+   $load_file = $ARGV[0];
+   if (!($load_file =~ /^\//)) {
+      # relative path
+      $load_file = "$bootpath/$load_file";
+   }
 }
 
 # do config migration
