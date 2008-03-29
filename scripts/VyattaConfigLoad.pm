@@ -30,6 +30,8 @@ use VyattaConfig;
 my $default_rank = 0;
 my %config_rank  = (
     'qos-policy'            => 110,
+    'firewall'              => 102,
+    'service nat'           => 101,
     'interfaces'            => 100,
     'interfaces bridge'     => 99,
     'interfaces ethernet'   => 98,
@@ -38,6 +40,7 @@ my %config_rank  = (
     'protocols static'      => 85,
     'service ssh'           => 84,
     'service telnet'        => 83,
+    'vpn'                   => 80,
 );
 
 my @all_nodes = ();

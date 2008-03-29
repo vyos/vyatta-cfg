@@ -66,6 +66,11 @@ have_rl_system () {
 
 # if necessary, provide initial config
 init_bootfile () {
+    if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
+			    $BOOTFILE >&/dev/null; then
+	CURTIME=$(date +%F-%H%M%S)
+	mv $BOOTFILE $BOOTFILE.pre-glendale.$CURTIME
+    fi
     if [ ! -f $BOOTFILE ] ; then
 	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
 	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
