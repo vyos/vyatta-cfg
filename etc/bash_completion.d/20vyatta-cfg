@@ -440,7 +440,10 @@ vyatta_parse_tmpl ()
   vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
  
   if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
-    local -a ares=( $(eval "$acmd") )
+    astr=$(eval "$acmd")
+    astr=${astr//</\\<}
+    astr=${astr//>/\\>}
+    eval "ares=( $astr )"
     for (( i=0 ; i<${#ares[@]} ; i++ )); do
       if [[ "${ares[i]}" != \<*\> ]]; then
         vyatta_cfg_allowed+=( "${ares[i]}" )

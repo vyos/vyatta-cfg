@@ -1,3 +1,56 @@
+vyatta-cfg (0.3) unstable; urgency=low
+
+  VC4.0.1
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix for bug 2868: return failure for invalid values.
+  * fix for bug 2749: add u32 range check
+  * fix for bug 2912: direct config loading output to syslog.
+  * fix for bug 2924: set admin flag for root
+  * fix for bug 2950: raise config error messages during boot to warning
+    level.
+  * add LESSSECURE
+  * partial fix for bug 2987: use "less" instead of "more", and disable
+  * handle "<*>" allowed values
+
+  [ Bob Gilligan ]
+  * Bugfix: 2653
+  * Bugfix: 2885
+  * Bugfix: 2986
+
+  [ Christopher Liljenstolpe ]
+  * Fix 2954: IPv6 addresses that have a-f in the address fail.
+
+  [ Mohit Mehta ]
+  * CLI tab enhancement at "set interfaces ethernet <> address"
+  * CLI tab enhancement at "set interfaces ethernet <> address"
+
+  [ Robert Bays ]
+  * fix for bugs 2725 and 2999
+  * fix for bugs 2725 2999
+
+  [ Stephen Hemminger ]
+  * Read qos-policy before setting interface qos-policy
+  * Replace VPL with GPLv2
+  * Convert from VPL 1.0 to GPLv2
+  * more robust handling of set mac address
+  * Don't allow operator to run init-floppy
+
+  [ rbalocca ]
+  * Merge changelog fix to glendale
+  * Vyatta-cfg postinst was preventing upgrade
+  * Add VPL to scripts and fix lintian errors
+  * Fix problems with upgrading (and also fix lintian errors)
+  * Fix problems with upgrading (and also fix lintian errors)
+  * Remove a dependency listed twice
+  * Add GPLv2 to additional Vyatta created scripts
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 18 Mar 2008 19:04:10 -0700
+
 vyatta-cfg (0.2) unstable; urgency=low
 
   vc4.0.0

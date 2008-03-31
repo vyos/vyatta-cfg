@@ -40,6 +40,24 @@ if (!($load_file =~ /^\//)) {
   $load_file = "$bootpath/$load_file";
 }
 
+if (!open(CFG, "<$load_file")) {
+  print "Cannot open configuration file $load_file\n";
+  exit 1;
+}
+while (<CFG>) {
+  if (/\/\*XORP Configuration File, v1.0\*\//) {
+    print "Warning: Loading a pre-Glendale configuration.\n";
+    print "Do you want to continue? [no] ";
+    my $resp = <STDIN>;
+    if (!($resp =~ /^yes$/i)) {
+      print "Configuration not loaded\n";
+      exit 1;
+    }
+    last;
+  }
+}
+close CFG;
+
 # do config migration
 system("$sbindir/vyatta_config_migrate.pl $load_file");
 

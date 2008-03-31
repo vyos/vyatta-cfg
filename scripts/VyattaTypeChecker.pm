@@ -52,8 +52,11 @@ use strict;
 my %type_handler = (
                     'ipv4' => \&validate_ipv4,
                     'ipv4net' => \&validate_ipv4net,
+                    'ipv4range' => \&validate_ipv4range,
                     'ipv4_negate' => \&validate_ipv4_negate,
                     'ipv4net_negate' => \&validate_ipv4net_negate,
+                    'ipv4range_negate' => \&validate_ipv4range_negate,
+                    'iptables4_addr' => \&validate_iptables4_addr,
                     'protocol' => \&validate_protocol,
                     'protocol_negate' => \&validate_protocol_negate,
                     'macaddr' => \&validate_macaddr,
@@ -75,6 +78,14 @@ sub validate_ipv4net {
   return 1;
 }
 
+sub validate_ipv4range {
+  $_ = shift;
+  return 0 if (!/^([^-]+)-([^-]+)$/);
+  my ($a1, $a2) = ($1, $2);
+  return 0 if (!validate_ipv4($a1) || !validate_ipv4($a2));
+  return 1;
+}
+
 sub validate_ipv4_negate {
   my $value = shift;
   if ($value =~ m/^\!(.*)$/) {
@@ -89,6 +100,22 @@ sub validate_ipv4net_negate {
     $value = $1;
   }
   return validate_ipv4net($value);
+}
+
+sub validate_ipv4range_negate {
+  my $value = shift;
+  if ($value =~ m/^\!(.*)$/) {
+    $value = $1;
+  }
+  return validate_ipv4range($value);
+}
+
+sub validate_iptables4_addr {
+  my $value = shift;
+  return 0 if (!validate_ipv4_negate($value)
+               && !validate_ipv4net_negate($value)
+               && !validate_ipv4range_negate($value));
+  return 1;
 }
 
 sub validate_protocol {

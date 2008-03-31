@@ -28,7 +28,7 @@ static void remove_rf(boolean do_umount)
       command = my_malloc(strlen(get_mdirp()) + strlen(get_cdirp()) + 
 			  strlen(get_mdirp()) + 100,
 			  "delete");
-      sprintf(command, "sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro:" 
+      sprintf(command, "sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
 	      " $UNIONFS %s", get_cdirp(), get_adirp(), get_mdirp());
       system(command);
       free(command);
