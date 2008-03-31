@@ -332,18 +332,44 @@ sub delete_eth_addrs {
 	dhcp_release_addr($intf);
 	update_dhcp_client();
 	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease");
-	return;
+	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
-    if (!defined $version) {
-	exit 1;
+
+    # If interface has address than delete it
+    if (is_ip_configured($intf, $addr)) {
+	if ($version == 4) {
+	    exec 'ip', 'addr', 'del', $addr, 'dev', $intf;
+	} elsif ($version == 6) {
+	    exec 'ip', '-6', 'addr', 'del', $addr, 'dev', $intf;
+	} else {
+	    die "Bad ip version";
+	}
+	die "Can't exec ip";
     }
+
+    # Interface address might have been removed by quagga link going down
+    # so tell quagga no to restore it on link-detect
+    my $vtysh;
+    if ( -x '/usr/bin/vyatta-vtysh' ) {
+	$vtysh = '/usr/bin/vyatta-vtysh';
+    } else {
+	$vtysh = '/usr/bin/vtysh';
+    }
+
+    my @cmd = ();
     if ($version == 4) {
-	return system("ip addr del $addr dev $intf");
+	@cmd = ('vtysh', '-c', 
+		"configure terminal; interface $intf; no ip address $intf" );
+    } elsif ($version == 6) {
+	@cmd = ('vtysh', '-c', 
+		"configure terminal; interface $intf; no ip6 address $intf" );
+    } else {
+	die "Bad ip version";
     }
-    if ($version == 6) {
-	return system("ip -6 addr del $addr dev $intf");
-    }
+    exec $vtysh, @cmd;
+
+    die "Can't exec vtysh";
 }
 
 sub update_mac {
