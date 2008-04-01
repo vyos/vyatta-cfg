@@ -34,13 +34,13 @@
 # parameters:
 #   --id=""     : owner of exclude line (e.g. vrrp, ha) [required]
 #   --action="" : add or remove                         [required]
-#   --intf=""   : interface                             [required]
+#   --intf=""   : interface                             [required for add]
 #   --ipaddr="" : ip address or network to execlude     [optional]
 #   --signal    : should watchlink get signaled         [optional]
 #
 # Expected format of exclude file:
 #
-# [interface] ([ipv4addr]|ipv4net]) # id
+# <interface> [ <ipv4addr> | <ipv4net> ] # id
 # 
 
 use Getopt::Long;
@@ -76,6 +76,24 @@ sub write_exclude_file {
     close($FILE);
 }
 
+sub remove_exclude_id {
+    my ($id, @lines) = @_;
+
+    my @new_lines;
+    my $match = 0;
+    foreach my $line (@lines) {
+	if ($line =~ /# $id$/) {
+	    $match++;
+	} else {
+	    push @new_lines, $line;
+	}
+    }
+    if ($match < 1) {
+	die "Error: no match found for $id";
+    }
+    return @new_lines;
+}
+
 sub remove_exclude_line {
     my ($remove_line, @lines) = @_;
 
@@ -108,12 +126,16 @@ GetOptions("id=s"     => \$opt_id,
 	   "signal!"  => \$opt_signal,
     );
 
-if (!(defined $opt_id and defined $opt_action and defined $opt_intf) ) {
-    die "Error: parameters --id --intf --action must be set";
+if (!(defined $opt_id and defined $opt_action)) {
+    die "Error: parameters --id --action must be set";
 }
 
 if ($opt_action ne "add" and $opt_action ne "remove") {
     die "Error: --action must be \"add\" or \"remove\" ";
+}
+
+if ($opt_action eq "add" and !defined($opt_intf)) {
+    die "Error: --intf must be set for \"add\"";
 }
 
 my @lines = read_exclude_file();
@@ -127,8 +149,10 @@ if (defined $opt_id) {
 
 if ($opt_action eq "add") {
     push @lines, $new_line;
-} else {
+} elsif (defined $opt_intf) {
     @lines = remove_exclude_line($new_line, @lines);
+} else {
+    @lines = remove_exclude_id($opt_id, @lines);
 }
 write_exclude_file(@lines);
 
