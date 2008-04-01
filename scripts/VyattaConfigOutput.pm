@@ -32,6 +32,7 @@ package VyattaConfigOutput;
 use strict;
 use lib '/opt/vyatta/share/perl5/';
 use VyattaConfig;
+use Sort::Versions;
 
 # whether to show default values
 my $show_all = 0;
@@ -190,6 +191,7 @@ sub displayDeletedOrigChildren {
                     $dont_show_as_deleted);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
+        @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
           if ($cname eq 'node.val') {
             # should not happen
@@ -244,6 +246,7 @@ sub displayChildren {
       displayValues([ @cur_path, $child ], $prefix, $child);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
+        @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
           if ($cname eq 'node.val') {
             # should not happen

@@ -17,7 +17,9 @@ Depends: sed (>= 4.1.5),
  vyatta-config-migrate, 
  dhcp3-client | vyatta-dhcp3-client,
  bsdutils (>=1:2.13),
- libc6 (>= 2.7-6)
+ libc6 (>= 2.7-6),
+ libsort-versions-perl,
+ vlan
 Replaces: vyatta-cfg-firewall
 Suggests: util-linux (>= 2.13-5),
  net-tools,
