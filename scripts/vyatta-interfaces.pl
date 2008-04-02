@@ -325,6 +325,18 @@ sub update_eth_addrs {
     exit 1;
 }
 
+sub if_nametoindex {
+    my ($intf) = @_;
+
+    open my $sysfs, "<", "/sys/class/net/$intf/ifindex" 
+	|| die "Unknown interface $intf";
+    my $ifindex = <$sysfs>;
+    close($sysfs) or die "read sysfs error\n";
+    chomp $ifindex;
+    print "$intf = $ifindex\n";
+    return $ifindex;
+}
+
 sub delete_eth_addrs {
     my ($addr, $intf) = @_;
 
@@ -336,8 +348,9 @@ sub delete_eth_addrs {
     } 
     my $version = is_ip_v4_or_v6($addr);
 
-    # If interface has address than delete it
     if (is_ip_configured($intf, $addr)) {
+	# Link is up, so just delete address
+	# Zebra is watching for netlink events and will handle it
 	if ($version == 4) {
 	    exec 'ip', 'addr', 'del', $addr, 'dev', $intf;
 	} elsif ($version == 6) {
@@ -348,28 +361,12 @@ sub delete_eth_addrs {
 	die "Can't exec ip";
     }
 
-    # Interface address might have been removed by quagga link going down
-    # so tell quagga no to restore it on link-detect
-    my $vtysh;
-    if ( -x '/usr/bin/vyatta-vtysh' ) {
-	$vtysh = '/usr/bin/vyatta-vtysh';
-    } else {
-	$vtysh = '/usr/bin/vtysh';
-    }
+    # Destroy watchlink's internal status so it doesn't erronously
+    # restore the address when link is restored
+    my $status = '/var/linkstatus/' . if_nametoindex($intf);
+    unlink($status) or die "can't remove $status";
 
-    my @cmd = ();
-    if ($version == 4) {
-	@cmd = ('vtysh', '-c', 
-		"configure terminal; interface $intf; no ip address $intf" );
-    } elsif ($version == 6) {
-	@cmd = ('vtysh', '-c', 
-		"configure terminal; interface $intf; no ip6 address $intf" );
-    } else {
-	die "Bad ip version";
-    }
-    exec $vtysh, @cmd;
-
-    die "Can't exec vtysh";
+    exit 0;
 }
 
 sub update_mac {
