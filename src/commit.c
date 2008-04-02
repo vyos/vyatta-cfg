@@ -747,17 +747,16 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
     mark_paths(&mark);
     if (!deleting) {
       int status;
-      /* are we marked with opaque */
       push_path(&m_path, child);
-      push_path(&m_path, opaque_name);
+      switch_path(APATH); /* switch to active */
       status = lstat(m_path.path, &statbuf);
+      switch_path(CPATH); /* back to changes */
       pop_path(&m_path);
-      pop_path(&m_path);
-      if (status >= 0) {
-	/* brand new directory, nothing is 
-	   deleted there;
-	   update will handle txn (both begin and end)
-	*/
+      if (status < 0) {
+        /* node doesn't exist in active config. it's newly created
+         * so we don't need to handle delete. update will handle the
+         * transaction (if any).
+         */
 	return TRUE;
       }
     }
