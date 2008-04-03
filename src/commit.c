@@ -53,6 +53,23 @@ static void make_dir()
 }
 #endif
 
+static struct dirent *
+get_next_filtered_dirent(DIR *dp, int exclude_wh)
+{
+  struct dirent *dirp = NULL;
+  while ((dirp = readdir(dp)) != NULL) {
+    if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0
+        || strcmp(dirp->d_name, MOD_NAME) == 0
+        || strcmp(dirp->d_name, opaque_name) == 0
+        || (exclude_wh && strncmp(dirp->d_name, ".wh.", 4) == 0)) {
+      continue;
+    } else {
+      return dirp;
+    }
+  }
+  return dirp;
+}
+
 /*************************************************
  validate_dir_for_commit: 
    validate value.value if there is one, validate
@@ -114,16 +131,7 @@ static boolean validate_dir_for_commit()
       push_path(&t_path, tag_name); /* PUSH 2a */
     }
 
-    while ((dirp = readdir(dp)) != NULL) {
-
-      if (strcmp(dirp->d_name, ".") == 0 ||
-	  strcmp(dirp->d_name, "..") == 0 ||
-	  strcmp(dirp->d_name, MOD_NAME) == 0 ||
-	  strcmp(dirp->d_name, opaque_name) == 0 ||
-	  strncmp(dirp->d_name, ".wh.", 4) == 0) {
-	continue; /*ignore dot and dot-dot*/
-      }
-
+    while ((dirp = get_next_filtered_dirent(dp, 1)) != NULL) {
       subdirs_number++;
 
       if(uename)
@@ -916,25 +924,82 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
     return ok;
 }
 
+/* add a value to the valstruct. struct must be initialized (memset 0).
+ * cp: pointer to value
+ * type: type of value
+ */
+static void
+valstruct_append(valstruct *mvals, char *cp, vtw_type_e type)
+{
+  if (!(mvals->free_me)) {
+    /* empty struct. add 1st value */
+    mvals->free_me = TRUE;
+    mvals->val = cp;
+    mvals->val_type = type;      
+  } else {
+    if ((mvals->cnt % MULTI_ALLOC) == 0) {
+      /* convert into multivalue */
+      mvals->vals = my_realloc(mvals->vals, (mvals->cnt + MULTI_ALLOC)
+                                            * sizeof(char *), "add_value");
+      if (mvals->cnt == 0) { /* single value - convert */
+        mvals->vals[0] = mvals->val;
+        mvals->cnt= 1;
+        mvals->val = NULL;
+      }
+    }
+    mvals->vals[mvals->cnt] = cp;
+    ++mvals->cnt;
+  }
+}
+
+/* get the filtered directory listing and put the names in valstruct.
+ * dp: target directory
+ * mvals: structure for storing the names
+ * type: type of the names
+ * exclude_wh: exclude whiteouts
+ */
+static void
+get_filtered_directory_listing(DIR *dp, valstruct *mvals, vtw_type_e type,
+                               int exclude_wh)
+{
+  struct dirent *dirp = NULL;
+  char *cp = NULL;
+
+  memset(mvals, 0, sizeof (valstruct));
+  while ((dirp = get_next_filtered_dirent(dp, exclude_wh)) != NULL) {
+    cp = clind_unescape(dirp->d_name);
+    valstruct_append(mvals, cp, type);
+  }
+}
+
 static boolean commit_delete_children(vtw_def *defp, boolean deleting, 
 				      boolean in_txn)
 {
-  DIR    *dp;
-  int     status;
-  struct dirent *dirp;
+  DIR    *dp, *adp = NULL, *mdp = NULL;
   boolean ok = TRUE;
   char          *child;
   vtw_type_e     type;
-  valstruct      mvals;
-  boolean        first;
-  char          *cp;
+  valstruct      mvals, valsA, valsM;
   int            elem, curi;
   vtw_sorted     cur_sorted;
-  char          *uename = NULL;
+
+  if (!deleting) {
+    switch_path(APATH); /* switch to active */
+    if ((adp = opendir(m_path.path)) == NULL) {
+      INTERNAL;
+    }
+    switch_path(MPATH); /* switch to modified */
+    if ((mdp = opendir(m_path.path)) == NULL) {
+      INTERNAL;
+    }
+    switch_path(CPATH); /* back to changes */
+  }
 
   if ((dp = opendir(m_path.path)) == NULL){
-    if (deleting)
+    if (deleting) {
+      /* deleting. adp & mdp are not opened so no need to close. */
       return TRUE;
+    }
     INTERNAL;
   }
   if (defp)
@@ -943,46 +1008,37 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
     type = TEXT_TYPE;
   if (type == ERROR_TYPE)
     type = TEXT_TYPE;
-  first = TRUE;
   memset(&mvals, 0, sizeof (valstruct));
+  memset(&valsA, 0, sizeof (valstruct));
+  memset(&valsM, 0, sizeof (valstruct));
   memset(&cur_sorted, 0, sizeof(vtw_sorted));
 
-  while ((dirp = readdir(dp)) != NULL) {
-    child = dirp->d_name;
-    if (strcmp(child, ".") == 0 ||
-	strcmp(child, "..") == 0 ||
-	strcmp(child, MOD_NAME) == 0 ||
-	strcmp(child, OPQ_NAME) == 0)
-      continue;
-    uename = clind_unescape(child);
-    cp = uename;
-    if (first) {
-      mvals.free_me = TRUE;
-      mvals.val = cp;
-      mvals.val_type = type;      
-      first = FALSE;
-    } else {
-      if (mvals.cnt%MULTI_ALLOC == 0) {
-	/* convert into multivalue */
-	mvals.vals = my_realloc(mvals.vals, 
-				(mvals.cnt + MULTI_ALLOC) *
-				sizeof(char *), "add_value");
-	if (mvals.cnt == 0) { /* single value - convert */
-	  mvals.vals[0] = mvals.val;
-	  mvals.cnt= 1;
-	  mvals.val = NULL;
-	}
-      }
-      mvals.vals[mvals.cnt] = cp;
-      ++mvals.cnt;
+  get_filtered_directory_listing(dp, &mvals, type, 0);
+  if (closedir(dp) != 0) {
+    INTERNAL;
+  }
+  if (adp) {
+    get_filtered_directory_listing(adp, &valsA, type, 0);
+    if (closedir(adp) != 0) {
+      INTERNAL;
     }
   }
-  status = closedir(dp);
-  if (status)
-    INTERNAL;
-  if (first) {
+  if (mdp) {
+    get_filtered_directory_listing(mdp, &valsM, type, 0);
+    if (closedir(mdp) != 0) {
+      INTERNAL;
+    }
+  }
+
+  if (!(mvals.free_me)) {
+    /* empty struct. nothing to do. */
     return TRUE;
   }
+  /* XXX TODO */
+  /* for each "node" in A but not in M
+   *   if ".wh.node" is not in mvals
+   *     add ".wh.node" to mvals
+   */
   vtw_sort(&mvals, &cur_sorted);
   for (curi = 0; curi < cur_sorted.num && ok; ++curi){
     if (type == TEXT_TYPE || 
@@ -1006,18 +1062,12 @@ static boolean commit_update_children(vtw_def *defp, boolean creating,
 			boolean in_txn, boolean *parent_update)
 {
   DIR    *dp;
-  int     status;
-  struct dirent *dirp;
   boolean ok = TRUE;
   char          *child;
   vtw_type_e     type;
   valstruct      mvals;
-  boolean        first;
-  char          *cp;
   int            elem, curi;
   vtw_sorted     cur_sorted;
-  char          *uename = NULL;
-
 
   if ((dp = opendir(m_path.path)) == NULL){
     printf("%s:%d: opendir error: path=%s\n",
@@ -1033,43 +1083,14 @@ static boolean commit_update_children(vtw_def *defp, boolean creating,
     type = TEXT_TYPE;
   if (type == ERROR_TYPE)
     type = TEXT_TYPE;
-  first = TRUE;
 
-  while ((dirp = readdir(dp)) != NULL) {
-    child = dirp->d_name;
-    if (strcmp(child, ".") == 0 ||
-	strcmp(child, "..") == 0 ||
-	strcmp(child, MOD_NAME) == 0 ||
-	strcmp(child, OPQ_NAME) == 0)
-      continue;
-    cp = uename = clind_unescape(child);
-    if (first) {
-      mvals.free_me = TRUE;
-      mvals.val = cp;
-      mvals.val_type = type;      
-      first = FALSE;
-    } else {
-      if (mvals.cnt%MULTI_ALLOC == 0) {
-	/* convert into multivalue */
-	mvals.vals = my_realloc(mvals.vals, 
-				(mvals.cnt + MULTI_ALLOC) *
-				sizeof(char *), "add_value");
-	if (mvals.cnt == 0) { /* single value - convert */
-	  mvals.vals[0] = mvals.val;
-	  mvals.cnt= 1;
-	  mvals.val = NULL;
-	}
-      }
-      mvals.vals[mvals.cnt] = cp;
-      ++mvals.cnt;
-    }
-  }
-  status = closedir(dp);
-  if (status)
+  get_filtered_directory_listing(dp, &mvals, type, 0);
+  if (closedir(dp) != 0) {
     INTERNAL;
-  if (first) {
-    if (uename)
-      my_free(uename);
+  }
+
+  if (!(mvals.free_me)) {
+    /* empty struct. nothing to do. */
     return TRUE;
   }
   vtw_sort(&mvals, &cur_sorted);
@@ -1164,7 +1185,6 @@ static boolean commit_value(vtw_def *defp, char *cp,
     /* act_value will be freed by freeing cur_value 
        do not zero out it here */
   }
-    
   acti = 0;
   curi = 0; 
   total = act_sorted.num + cur_sorted.num;
