@@ -972,6 +972,65 @@ get_filtered_directory_listing(DIR *dp, valstruct *mvals, vtw_type_e type,
   }
 }
 
+/* check if a value is one of those in a valstruct.
+ * cp: pointer to value
+ * vals: pointer to valstruct
+ *
+ * return 1 if yes, 0 otherwise.
+ * TODO: optimization
+ */
+static int
+is_val_in_valstruct(char *cp, valstruct *vals)
+{
+  int i = 0;
+  if (!(vals->free_me)) {
+    /* empty struct. */
+    return 0;
+  }
+  if (vals->cnt == 0) {
+    /* single-value struct */
+    if (strcmp(cp, vals->val) == 0) {
+      return 1;
+    }
+    return 0;
+  }
+  /* multi-value */
+  for (i = 0; i < vals->cnt; i++) {
+    if (strcmp(cp, vals->vals[i]) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* returns the value at a particular index in a valstruct.
+ * vals: pointer to the valstruct
+ * idx: index of the value
+ *
+ * return pointer to the value, NULL if idx is not valid.
+ */
+static char *
+idx_val_in_valstruct(valstruct *vals, int idx)
+{
+  if (!(vals->free_me)) {
+    /* empty struct. */
+    return NULL;
+  }
+  if (vals->cnt == 0) {
+    /* single-value struct */
+    if (idx == 0) {
+      return vals->val;
+    }
+    return NULL;
+  }
+  /* multi-value */
+  if ((idx < 0) || (idx >= vals->cnt)) {
+    return NULL;
+  }
+  return vals->vals[idx];
+}
+
+
 static boolean commit_delete_children(vtw_def *defp, boolean deleting, 
 				      boolean in_txn)
 {
@@ -1013,20 +1072,46 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
   memset(&valsM, 0, sizeof (valstruct));
   memset(&cur_sorted, 0, sizeof(vtw_sorted));
 
+  /* changes directory */
   get_filtered_directory_listing(dp, &mvals, type, 0);
   if (closedir(dp) != 0) {
     INTERNAL;
   }
-  if (adp) {
+  
+  if (adp && mdp) {
+    /* active directory */
     get_filtered_directory_listing(adp, &valsA, type, 0);
     if (closedir(adp) != 0) {
       INTERNAL;
     }
-  }
-  if (mdp) {
+    /* modified directory */
     get_filtered_directory_listing(mdp, &valsM, type, 0);
     if (closedir(mdp) != 0) {
       INTERNAL;
+    }
+
+    if (valsA.free_me) {
+      /* A is not empty */
+      int idx = 0;
+      char *cp = NULL;
+      for (idx = 0; (cp = idx_val_in_valstruct(&valsA, idx)); idx++) {
+        if (!is_val_in_valstruct(cp, &valsM)) {
+          /* cp is in A but not in M */
+          /* construct whiteout name */
+          char *wh_name = my_malloc(strlen(cp) + 4 + 1, "del_children");
+          strcpy(wh_name, ".wh.");
+          strcpy(wh_name + 4, cp);
+          if (!is_val_in_valstruct(wh_name, &mvals)) {
+            /* whiteout not in C */
+            /* add whiteout to mvals */
+            valstruct_append(&mvals, wh_name, type);
+          }
+        }
+      }
+      free_val(&valsA);
+    }
+    if (valsM.free_me) {
+      free_val(&valsM);
     }
   }
 
@@ -1034,11 +1119,6 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
     /* empty struct. nothing to do. */
     return TRUE;
   }
-  /* XXX TODO */
-  /* for each "node" in A but not in M
-   *   if ".wh.node" is not in mvals
-   *     add ".wh.node" to mvals
-   */
   vtw_sort(&mvals, &cur_sorted);
   for (curi = 0; curi < cur_sorted.num && ok; ++curi){
     if (type == TEXT_TYPE || 
