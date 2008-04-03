@@ -267,6 +267,28 @@ int main(int argc, char **argv)
     remove_rf(FALSE);
     return 0;
   }
+
+  /*
+    let's do a new check here:
+    -> if this is a leaf and there is a value look for a match of the value
+    -> make sure to check existing configuration as well as uncommitted config
+   */
+  if (ai+1 == argc) {
+    //does this work up until the last value
+    pop_path(&m_path);
+    if(lstat(m_path.path, &statbuf) == 0) {
+      //now compare last value with that in the node.def file to determine whether to accept this delete
+      status = get_value(&cp, &m_path);
+      if (status != VTWERR_OK) {
+	bye("Cannot read old value %s\n", m_path.path);
+      }
+      if (!strcmp(cp,argv[argc - 1])) {
+	remove_rf(FALSE);
+	return 0;
+      }
+    }
+  }
+
   fprintf(out_stream, "The specified configuration node is not valid\n");
   bye("There is no appropriate template for %s", 
       m_path.path + strlen(get_mdirp()));
