@@ -112,6 +112,18 @@ sub remove_exclude_line {
     return @new_lines;
 }
 
+sub is_exclude_dup {
+    my ($new_line, @lines) = @_;
+
+    my $frag = substr($new_line, 0, index($new_line, ' #'));
+    foreach my $line (@lines) {
+	if (substr($line, 0, index($line, ' #')) eq $frag) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
 
 #
 # main
@@ -148,7 +160,9 @@ if (defined $opt_id) {
 }
 
 if ($opt_action eq "add") {
-    push @lines, $new_line;
+    if (! is_exclude_dup($new_line, @lines)) {
+	push @lines, $new_line;
+    }
 } elsif (defined $opt_intf) {
     @lines = remove_exclude_line($new_line, @lines);
 } else {
