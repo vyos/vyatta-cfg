@@ -33,9 +33,12 @@
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfig;
 use VyattaMisc;
+
 use Getopt::Long;
 use POSIX;
 use NetAddr::IP;
+use Tie::File;
+use Fcntl qw (:flock);
 
 use strict;
 use warnings;
@@ -333,8 +336,12 @@ sub if_nametoindex {
     my $ifindex = <$sysfs>;
     close($sysfs) or die "read sysfs error\n";
     chomp $ifindex;
-    print "$intf = $ifindex\n";
+
     return $ifindex;
+}
+
+sub htonl {
+    return unpack('L',pack('N',shift));
 }
 
 sub delete_eth_addrs {
@@ -347,25 +354,48 @@ sub delete_eth_addrs {
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
+    if ($version == 6) {
+	    exec 'ip', '-6', 'addr', 'del', $addr, 'dev', $intf
+		or die "Could not exec ip?";
+    }
+
+    ($version == 4) or die "Bad ip version";
 
     if (is_ip_configured($intf, $addr)) {
 	# Link is up, so just delete address
 	# Zebra is watching for netlink events and will handle it
-	if ($version == 4) {
-	    exec 'ip', 'addr', 'del', $addr, 'dev', $intf;
-	} elsif ($version == 6) {
-	    exec 'ip', '-6', 'addr', 'del', $addr, 'dev', $intf;
-	} else {
-	    die "Bad ip version";
-	}
-	die "Can't exec ip";
+	exec 'ip', 'addr', 'del', $addr, 'dev', $intf
+	    or die "Could not exec ip?";
     }
+	
 
     # Destroy watchlink's internal status so it doesn't erronously
     # restore the address when link is restored
-    my $status = '/var/linkstatus/' . if_nametoindex($intf);
-    unlink($status) or die "can't remove $status";
+    my $statusfile = '/var/linkstatus/' . if_nametoindex($intf);
 
+    # Use tie to treat file as array
+    my $tie = tie my @status, 'Tie::File', $statusfile
+	or die "can't open $statusfile";
+
+    $tie->flock(LOCK_EX);	# Block out watchlink
+    $tie = undef;    		# Drop reference so untie will work
+
+    my $ip = NetAddr::IP->new($addr);
+    my $recno = 0;
+    foreach my $line (@status) {
+	chomp $line;
+
+	# The format of watchlink file is host byte order (IPV6??)
+	my ($ifindex, $raddr, $bcast, $prefix) = split (/,/, $line);
+	my $laddr = htonl($raddr);
+	my $this = NetAddr::IP->new("$laddr/$prefix");
+	if ($ip eq $this) {
+	    splice @status, $recno, 1;	    # delete the line
+	} else {
+	    $recno++;
+	}
+    }
+    untie @status;
     exit 0;
 }
 
