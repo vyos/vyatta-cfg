@@ -40,6 +40,7 @@ my %config_rank  = (
     'protocols static'      => 85,
     'service ssh'           => 84,
     'service telnet'        => 83,
+    'policy'                => 82,
     'vpn'                   => 80,
 );
 
