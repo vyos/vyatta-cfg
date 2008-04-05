@@ -34,6 +34,49 @@ static void remove_rf(boolean do_umount)
       free(command);
     }
 }
+static boolean has_default(char **def, int size)
+{
+  char *buf;
+  buf = malloc(1025);
+  char *buf_ptr;
+  FILE *fp = fopen(t_path.path, "r");
+  if (fp) {
+    while (fgets(buf, 1024, fp)) {
+      if (strncmp(buf, "default:", 8) == 0) {
+	buf_ptr = index(buf,':');
+	if (buf_ptr == NULL) {
+	  break;
+	}
+	buf_ptr++;
+	if (size < strlen(buf_ptr)-1) {
+	  bye("default buffer size is too small\n");
+	}
+	memcpy(*def, buf_ptr, strlen(buf_ptr)-1);
+	fclose(fp);
+	free(buf);
+	return 0;
+      }
+    }
+    fclose(fp);
+  }
+  free(buf);
+  return 1;
+}
+static void reset_default(char *def_val)
+{
+  char *command;
+  boolean has_default = 1;
+  if (def_val == NULL) {
+    return;
+  }
+  if (has_default) {
+    touch();
+    command = my_malloc(strlen(m_path.path) + 100, "set"); 
+    sprintf(command, "echo %s > %s/node.val", def_val, m_path.path);
+    system(command);
+    free(command);
+  }
+}
 /***************************************************
   set_validate:
     validate value against definition
@@ -139,6 +182,7 @@ int main(int argc, char **argv)
         fprintf(out_stream, "Nothing to delete\n");
 	bye("Nothing to delete at %s", m_path.path);
       }
+
       remove_rf(FALSE);
       pop_path(&m_path);
       if ((dp = opendir(m_path.path)) == NULL){
@@ -187,7 +231,17 @@ int main(int argc, char **argv)
       }
     }
     /* else no defnition, remove it also */
-    remove_rf(FALSE);
+    char *def_val;
+    def_val = malloc(1025);
+    if (has_default(&def_val,1024) == 0) {
+      reset_default(def_val);
+      free(def_val);
+    }
+    else {
+      remove_rf(FALSE);
+    }
+    
+	//    remove_rf(FALSE);
     exit(0);
   } 
   if(ai < argc -1 || last_tag) {
@@ -283,11 +337,21 @@ int main(int argc, char **argv)
 	bye("Cannot read old value %s\n", m_path.path);
       }
       if (!strcmp(cp,argv[argc - 1])) {
-	remove_rf(FALSE);
+	/* Also need to handle the case where the value is not specified. */
+	char *def_val;
+	def_val = malloc(1025);
+	if (has_default(&def_val,1024) == 0) {
+	  reset_default(def_val);
+	  free(def_val);
+	}
+	else {
+	  remove_rf(FALSE);
+	}
 	return 0;
       }
     }
   }
+
 
   fprintf(out_stream, "The specified configuration node is not valid\n");
   bye("There is no appropriate template for %s", 
