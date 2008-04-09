@@ -217,10 +217,12 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	struct stat    statbuf;
 
 	/* Directory reference: */
-	if(!check_existence || (lstat(cfg_path_string, &statbuf) == 0)) {
-	  ret=(char**)realloc(ret,sizeof(char*)*1);
-	  ret[0]=clind_unescape(cfg_end);
-	  *ret_size=1;
+	if(!check_existence) {
+	  if (lstat(cfg_path_string, &statbuf) == 0) {
+	    ret=(char**)realloc(ret,sizeof(char*)*1);
+	    ret[0]=clind_unescape(cfg_end);
+	    *ret_size=1;
+	  }
 	} else {
           /* we are checking existence, and it doesn't exist */
           /* return empty string */
@@ -230,7 +232,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
           *ret_size = 1;
         }
       }
-	
+      
       if(ret) {  
 	if(tmpl_end && (strcmp(tmpl_end,NODE_TAG)==0)) {
           /* since it's a tag, it should be treated as a value */
