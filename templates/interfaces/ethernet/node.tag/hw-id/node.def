@@ -1,2 +1,2 @@
 type: macaddr
-help: Specify the MAC address of this interface
+help: Set the Media Access Control (MAC) address of this interface
