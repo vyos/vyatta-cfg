@@ -101,6 +101,7 @@ typedef struct {
   char      *def_type_help;
   char      *def_node_help;
   char      *def_default;
+  unsigned int def_priority;
   boolean    tag;
   boolean    multi;
   vtw_list   actions[top_act];
