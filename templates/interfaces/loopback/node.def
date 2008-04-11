@@ -1,6 +1,6 @@
 tag:
 type: txt
-help: Set loopback interface name
+help: Set loopback interface
 syntax:expression: exec " \
         if [ -z \"`ip addr | grep $VAR(@) `\" ]; then \
           echo loopback interface $VAR(@) doesn\\'t exist on this system ; \
