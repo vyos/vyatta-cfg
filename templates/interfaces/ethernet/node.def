@@ -1,6 +1,6 @@
 tag:
 type: txt
-help: Set ethernet interface name
+help: Set ethernet interface
 syntax:expression: exec " \
         if [ -z \"`ip link | egrep -v 'eth[0-9]+[.]' | grep $VAR(@)`\" ]; then \
           echo Invalid ethernet interface [$VAR(@)]; \
