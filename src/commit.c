@@ -15,6 +15,16 @@
 #include "cli_parse.h"
 #include "cli_path_utils.h"
 
+struct DirSort {
+  char name[255];
+  unsigned long priority;
+};
+
+
+static int g_dirname_index = 0;
+static int g_dirname_ct = 0;
+static struct DirSort** g_dirname = NULL;
+
 static char def_name[] = DEF_NAME;
 static char tag_name[] = TAG_NAME;
 static char opaque_name[] = OPQ_NAME;
@@ -53,21 +63,79 @@ static void make_dir()
 }
 #endif
 
-static struct dirent *
-get_next_filtered_dirent(DIR *dp, int exclude_wh)
+static int
+compare_dirname(const void *p, const void *q)
 {
-  struct dirent *dirp = NULL;
+  const struct DirSort *a = (const struct DirSort*)*(struct Dirsort **)p;
+  const struct DirSort *b = (const struct DirSort*)*(struct Dirsort **)q;
+  if (a->priority == b->priority) {
+    return strcmp(a->name,b->name);
+  }
+  return ((long)b->priority - (long)a->priority);
+}
+
+void
+init_next_filtered_dirname(DIR *dp, int exclude_wh) 
+{
+  //  fprintf(out_stream,"\n");
+  if (g_dirname == NULL) {
+    g_dirname = malloc(1024 * sizeof(char*));
+  }
+  g_dirname_ct = 0;
+  g_dirname_index = 0;  
+  int i;
+  for (i = 0; i < g_dirname_ct; ++i) {
+    free((struct DirSort*)g_dirname[i]);
+  }
+  //NOTE: need to free ct round up to next 1024 when shutting down commit
+
+  struct dirent *dirp;
   while ((dirp = readdir(dp)) != NULL) {
     if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0
         || strcmp(dirp->d_name, MOD_NAME) == 0
         || strcmp(dirp->d_name, opaque_name) == 0
         || (exclude_wh && strncmp(dirp->d_name, ".wh.", 4) == 0)) {
       continue;
-    } else {
-      return dirp;
+    } 
+    else {
+      struct DirSort *d = malloc(sizeof(struct DirSort));
+      strcpy(d->name,dirp->d_name);
+      d->priority = (unsigned long)0;
+
+      //retreive priority now
+      vtw_def        def;
+      char *path;
+      path = malloc(strlen(t_path.path)+strlen(dirp->d_name)+2+8);
+      sprintf(path,"%s/%s/node.def",t_path.path,dirp->d_name);
+      struct stat s;
+      if ((lstat(path,&s) >= 0) && 
+	  ((s.st_mode & S_IFMT) == S_IFREG)) {
+	memset(&def, 0, sizeof(def));
+	if (parse_def(&def,path,FALSE) == 0) {
+	  //	  fprintf(out_stream, "found(D): %s:%d\n",dirp->d_name, def.def_priority);
+	  d->priority = def.def_priority;
+	}
+      }
+      free(path);
+
+      g_dirname[g_dirname_ct++] = d;
+      if (g_dirname_ct % 1024 == 0) {
+	g_dirname = realloc(g_dirname, g_dirname_ct+1024);
+      }
     }
   }
-  return dirp;
+  qsort(g_dirname, g_dirname_ct, sizeof(char*), compare_dirname);
+}
+
+static char*
+get_next_filtered_dirname()
+{
+  if (g_dirname_index == g_dirname_ct) {
+    return NULL;
+  }
+  //just return the collection ptr;
+  //  fprintf(out_stream, "get_next: %s\n", g_dirname[g_dirname_index]->name);
+  return g_dirname[g_dirname_index++]->name;
 }
 
 /*************************************************
@@ -88,7 +156,7 @@ static boolean validate_dir_for_commit()
     boolean        value_present=FALSE;
     int            subdirs_number=0;
     DIR           *dp=NULL;
-    struct dirent *dirp=NULL;
+    char          *dirname = NULL;
     char          *cp=NULL;
     boolean        ret=TRUE;
     char          *uename = NULL;
@@ -131,13 +199,14 @@ static boolean validate_dir_for_commit()
       push_path(&t_path, tag_name); /* PUSH 2a */
     }
 
-    while ((dirp = get_next_filtered_dirent(dp, 1)) != NULL) {
+    init_next_filtered_dirname(dp,1);
+    while ((dirname = get_next_filtered_dirname()) != NULL) {
       subdirs_number++;
 
       if(uename)
 	my_free(uename);
 
-      uename = clind_unescape(dirp->d_name);
+      uename = clind_unescape(dirname);
 
       if (strcmp(uename, VAL_NAME) == 0) {
 
@@ -962,12 +1031,13 @@ static void
 get_filtered_directory_listing(DIR *dp, valstruct *mvals, vtw_type_e type,
                                int exclude_wh)
 {
-  struct dirent *dirp = NULL;
+  char *dname = NULL;
   char *cp = NULL;
 
   memset(mvals, 0, sizeof (valstruct));
-  while ((dirp = get_next_filtered_dirent(dp, exclude_wh)) != NULL) {
-    cp = clind_unescape(dirp->d_name);
+  init_next_filtered_dirname(dp,exclude_wh);
+  while ((dname = get_next_filtered_dirname()) != NULL) {
+    cp = clind_unescape(dname);
     valstruct_append(mvals, cp, type);
   }
 }
