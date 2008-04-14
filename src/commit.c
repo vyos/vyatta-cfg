@@ -85,7 +85,7 @@ init_next_filtered_dirname(DIR *dp, int exclude_wh)
   g_dirname_index = 0;  
   int i;
   for (i = 0; i < g_dirname_ct; ++i) {
-    free((struct DirSort*)g_dirname[i]);
+    //    free((struct DirSort*)g_dirname[i]);
   }
   //NOTE: need to free ct round up to next 1024 when shutting down commit
 
