@@ -76,8 +76,19 @@ compare_dirname(const void *p, const void *q)
   return ((long)b->priority - (long)a->priority);
 }
 
+static int
+compare_dirname_reverse_priority(const void *p, const void *q)
+{
+  const struct DirSort *a = (const struct DirSort*)*(struct Dirsort **)p;
+  const struct DirSort *b = (const struct DirSort*)*(struct Dirsort **)q;
+  if (a->priority == b->priority) {
+    return strcmp(a->name,b->name);
+  }
+  return ((long)a->priority - (long)b->priority);
+}
+
 struct DirIndex*
-init_next_filtered_dirname(DIR *dp, int exclude_wh) 
+init_next_filtered_dirname(DIR *dp, int sort_order, int exclude_wh) 
 {
   struct DirIndex *di = malloc(sizeof(struct DirIndex));
   di->dirname = malloc(1024 * sizeof(char*));
@@ -118,7 +129,12 @@ init_next_filtered_dirname(DIR *dp, int exclude_wh)
       }
     }
   }
-  qsort(di->dirname, di->dirname_ct, sizeof(char*), compare_dirname);
+  if (sort_order == 0) {
+    qsort(di->dirname, di->dirname_ct, sizeof(char*), compare_dirname);
+  }
+  else {
+    qsort(di->dirname, di->dirname_ct, sizeof(char*), compare_dirname_reverse_priority);
+  }
   return di;
 }
 
@@ -206,7 +222,7 @@ static boolean validate_dir_for_commit()
     if (def_present && def.tag) {
       push_path(&t_path, tag_name); /* PUSH 2a */
     }
-    struct DirIndex *di = init_next_filtered_dirname(dp,1);
+    struct DirIndex *di = init_next_filtered_dirname(dp,0,1);
     while ((dirname = get_next_filtered_dirname(di)) != NULL) {
       subdirs_number++;
 
@@ -1037,13 +1053,13 @@ valstruct_append(valstruct *mvals, char *cp, vtw_type_e type)
  */
 static void
 get_filtered_directory_listing(DIR *dp, valstruct *mvals, vtw_type_e type,
-                               int exclude_wh)
+                               int exclude_wh, int sort_order)
 {
   char *dname = NULL;
   char *cp = NULL;
 
   memset(mvals, 0, sizeof (valstruct));
-  struct DirIndex *di = init_next_filtered_dirname(dp,exclude_wh);
+  struct DirIndex *di = init_next_filtered_dirname(dp, sort_order, exclude_wh);
   while ((dname = get_next_filtered_dirname(di)) != NULL) {
     cp = clind_unescape(dname);
     valstruct_append(mvals, cp, type);
@@ -1152,19 +1168,19 @@ static boolean commit_delete_children(vtw_def *defp, boolean deleting,
   memset(&cur_sorted, 0, sizeof(vtw_sorted));
 
   /* changes directory */
-  get_filtered_directory_listing(dp, &mvals, type, 0);
+  get_filtered_directory_listing(dp, &mvals, type, 0, 1);
   if (closedir(dp) != 0) {
     INTERNAL;
   }
   
   if (adp && mdp) {
     /* active directory */
-    get_filtered_directory_listing(adp, &valsA, type, 0);
+    get_filtered_directory_listing(adp, &valsA, type, 0, 1);
     if (closedir(adp) != 0) {
       INTERNAL;
     }
     /* modified directory */
-    get_filtered_directory_listing(mdp, &valsM, type, 0);
+    get_filtered_directory_listing(mdp, &valsM, type, 0, 1);
     if (closedir(mdp) != 0) {
       INTERNAL;
     }
@@ -1243,7 +1259,7 @@ static boolean commit_update_children(vtw_def *defp, boolean creating,
   if (type == ERROR_TYPE)
     type = TEXT_TYPE;
 
-  get_filtered_directory_listing(dp, &mvals, type, 0);
+  get_filtered_directory_listing(dp, &mvals, type, 0, 0);
   if (closedir(dp) != 0) {
     INTERNAL;
   }
