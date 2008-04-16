@@ -56,6 +56,9 @@
 
 #include "cli_val_engine.h"
 
+
+static int is_multi_node(clind_path_ref tmpl_path);
+
 /*********************
  * Data definitions 
  *
@@ -128,6 +131,13 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
   char** ret=NULL;
   int value_ref = 0;
   *ret_size=0;
+
+
+  if (check_existence) {
+    if (is_multi_node(tmpl_path)) {
+      check_existence = FALSE;
+    }
+  }
 
   DPRINT("get_current_value cfg[%s] tmpl[%s] chkexist=%d\n",
          clind_path_get_path_string(cfg_path),
@@ -217,6 +227,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	struct stat    statbuf;
 
 	/* Directory reference: */
+
 	if(!check_existence || (lstat(cfg_path_string, &statbuf) == 0)) {
 	  ret=(char**)realloc(ret,sizeof(char*)*1);
 	  ret[0]=clind_unescape(cfg_end);
