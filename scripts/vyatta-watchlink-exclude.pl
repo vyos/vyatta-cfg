@@ -89,7 +89,7 @@ sub remove_exclude_id {
 	}
     }
     if ($match < 1) {
-	die "Error: no match found for $id";
+	print "$0: no match found for $id";
     }
     return @new_lines;
 }
@@ -107,7 +107,7 @@ sub remove_exclude_line {
 	}
     }
     if ($match < 1) {
-	die "Error: no match found for $remove_line";
+	print "$0: no match found for $remove_line";
     }
     return @new_lines;
 }
@@ -172,7 +172,11 @@ write_exclude_file(@lines);
 
 if (defined $opt_signal) {
     if (! -e $watchlink_pid) {
-	die "Error: missing pid file [$watchlink_pid]\n";
+	#
+	# watchlink may have been disabled, so don't treat 
+	# this as an error
+	#
+	exit 0;
     }
     my $pid = `cat $watchlink_pid`;
     chomp $pid;
