@@ -289,6 +289,11 @@ static boolean validate_dir_for_commit()
 	continue;  
       }
 
+      if (strcmp(uename,"def") == 0) {
+	ret = TRUE;
+	continue;
+      }
+
       push_path(&m_path, uename); /* PUSH 3 */
       if (lstat(m_path.path, &statbuf) < 0) {
 	printf("Can't read directory %s\n", 

@@ -64,7 +64,7 @@ static boolean has_default(char **def, int size)
 }
 static void reset_default(char *def_val)
 {
-  char *command;
+  char *command,*def_cmd;
   boolean has_default = 1;
   if (def_val == NULL) {
     return;
@@ -74,7 +74,11 @@ static void reset_default(char *def_val)
     command = my_malloc(strlen(m_path.path) + 100, "set"); 
     sprintf(command, "echo %s > %s/node.val", def_val, m_path.path);
     system(command);
+    def_cmd = malloc(strlen(m_path.path) + 12); 
+    sprintf(def_cmd, "touch %s/def",m_path.path);
+    system(def_cmd);
     free(command);
+    free(def_cmd); 
   }
 }
 /***************************************************

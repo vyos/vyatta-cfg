@@ -245,6 +245,16 @@ int main(int argc, char **argv)
     pop_path(&m_path);
   }
   make_dir(); 
+
+
+  if (!def.multi) {
+    char *path;
+    path= malloc(strlen(m_path.path)+5);
+    sprintf(path, "%s/def",m_path.path);
+    unlink(path);
+    free(path);
+  }
+
   push_path(&m_path, VAL_NAME);
   if(not_new && !def.multi) {
     /* it is not multi and seen from M */
@@ -341,11 +351,22 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
     }
     if (def.def_default) {
       push_path(mpath, uename);
+
       push_path(mpath, VAL_NAME);
       if (lstat(mpath->path, &statbuf) < 0) {
         /* no value. add the default */
         pop_path(mpath);
         touch_dir(mpath->path); /* make sure directory exist */
+
+	//create def marker
+	char *def_file;
+	def_file = malloc(strlen(mpath->path)+22);
+	sprintf(def_file,"touch %s/def",mpath->path);
+	system(def_file);
+	sprintf(def_file,"echo 'empty' > %s/def",mpath->path);
+	system(def_file);
+	free(def_file);
+
         push_path(mpath, VAL_NAME);
         fp = fopen(mpath->path, "w");
         if (fp == NULL) {
@@ -356,6 +377,7 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
           bye("Error writing file %s", mpath->path);
         }
         fclose(fp);
+
       }
       pop_path(mpath); /* value */
       pop_path(mpath); /* child */
