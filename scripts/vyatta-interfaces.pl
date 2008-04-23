@@ -319,10 +319,7 @@ sub update_eth_addrs {
     }
 
     if ($version == 4) {
-        # revert this gruesome hack when quagga static route initialization
-        # is fixed.
-        #return system("ip addr add $addr broadcast + dev $intf");
-        return system("ip link set $intf down; ip link set $intf up; ip addr add $addr broadcast + dev $intf");
+	return system("ip addr add $addr broadcast + dev $intf");
     }
     if ($version == 6) {
 	return system("ip -6 addr add $addr dev $intf");
