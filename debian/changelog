@@ -1,3 +1,33 @@
+vyatta-cfg (0.6) unstable; urgency=low
+
+  VC4.0.2
+  [ Mark O'Brien ]
+
+
+  [ Robert Bays ]
+  * fix for bug 3177
+  * cycle interface state on IP address assigment to fix static routes
+
+  [ Stig Thormodsrud ]
+  * If watchlink isn't running, don't treat it as a fatal error.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Sat, 19 Apr 2008 11:56:07 -0700
+
+vyatta-cfg (0.5) unstable; urgency=low
+
+  VC4.0.2 release candidate
+  [ Mark O'Brien ]
+
+
+  [ Stig Thormodsrud ]
+  * Fix 3034: Loopback interface controlled by "ethernet lo"
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Wed, 16 Apr 2008 09:50:08 -0700
+
 vyatta-cfg (0.4) unstable; urgency=low
 
   3.0.2
