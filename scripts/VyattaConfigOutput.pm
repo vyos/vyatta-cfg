@@ -189,6 +189,8 @@ sub displayDeletedOrigChildren {
     if ($#cnames == 0 && $cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $prefix, $child,
                     $dont_show_as_deleted);
+    } elsif ($cnames[0] eq 'def') {
+	#ignore
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
@@ -244,6 +246,8 @@ sub displayChildren {
     my @cnames = sort keys %cnodes;
     if ($#cnames == 0 && $cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $prefix, $child);
+    } elsif ($cnames[0] eq 'def') {
+	#skip
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
@@ -286,6 +290,8 @@ sub displayChildren {
         my @onodes = $config->listOrigNodes(join ' ', (@cur_path, $child));
         if ($#onodes == 0 && $onodes[0] eq 'node.val') {
           displayValues([ @cur_path, $child ], $prefix, $child);
+	} elsif ($onodes[0] eq 'def') {
+	    #skip this
         } else {
           print "$diff$prefix$child {\n";
           displayDeletedOrigChildren([ @cur_path, $child ], "$prefix    ");
@@ -312,6 +318,8 @@ sub outputNewConfig {
     if ($#rn == 0 && $rn[0] eq 'node.val') {
       # this is a leaf value-node
       displayValues([ @_ ], '', $_[$#_]);
+    } elsif ($rn[0] eq 'def') {
+      #skip
     } else {
       displayChildren(\%rnodes, [ @_ ], '');
     }
