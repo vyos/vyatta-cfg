@@ -155,7 +155,8 @@ sub displayValues {
         $diff = '>';
       }
     }
-    if (!defined($default) || $default ne $value || $show_all) {
+#    if (!defined($default) || $default ne $value || $show_all) {
+    if (!defined($default) || !$config->exists('def') || $show_all) {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
