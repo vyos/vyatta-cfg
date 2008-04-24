@@ -1,5 +1,24 @@
 #!/usr/bin/perl
-# Perl script for loading config file at run time.
+
+# Author: An-Cheng Huang <ancheng@vyatta.com.
+# Date: 2007
+# Description: Perl script for loading config file at run time.
+
+# **** License ****
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
+# All Rights Reserved.
+# **** End License ****
+
 # $0: config file.
 
 use strict;
@@ -20,6 +39,24 @@ if (!($load_file =~ /^\//)) {
   # relative path
   $load_file = "$bootpath/$load_file";
 }
+
+if (!open(CFG, "<$load_file")) {
+  print "Cannot open configuration file $load_file\n";
+  exit 1;
+}
+while (<CFG>) {
+  if (/\/\*XORP Configuration File, v1.0\*\//) {
+    print "Warning: Loading a pre-Glendale configuration.\n";
+    print "Do you want to continue? [no] ";
+    my $resp = <STDIN>;
+    if (!($resp =~ /^yes$/i)) {
+      print "Configuration not loaded\n";
+      exit 1;
+    }
+    last;
+  }
+}
+close CFG;
 
 # do config migration
 system("$sbindir/vyatta_config_migrate.pl $load_file");
@@ -71,4 +108,3 @@ if ($? >> 8) {
 
 print "Done\n";
 exit 0;
-

@@ -1,3 +1,126 @@
+vyatta-cfg (0.6) unstable; urgency=low
+
+  VC4.0.2
+  [ Mark O'Brien ]
+
+
+  [ Robert Bays ]
+  * fix for bug 3177
+  * cycle interface state on IP address assigment to fix static routes
+
+  [ Stig Thormodsrud ]
+  * If watchlink isn't running, don't treat it as a fatal error.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Sat, 19 Apr 2008 11:56:07 -0700
+
+vyatta-cfg (0.5) unstable; urgency=low
+
+  VC4.0.2 release candidate
+  [ Mark O'Brien ]
+
+
+  [ Stig Thormodsrud ]
+  * Fix 3034: Loopback interface controlled by "ethernet lo"
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Wed, 16 Apr 2008 09:50:08 -0700
+
+vyatta-cfg (0.4) unstable; urgency=low
+
+  3.0.2
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix for bug 3037: shell completion
+  * add validation for more types
+  * handle <> completion correctly
+  * startup config ordering
+  * fix for bug 3032:
+  * fix for bug 2675: correctly detect newly created config nodes.
+  * add function to delete watchlink exclude entries based on ID.
+  * fix for bug 2689: sort tag nodes appropriately
+  * code cleanup (remove some evil copy-and-paste instances).
+  * fix for bug 3097: correctly detect deleted tag
+  * fix for bug 3090: commit "policy" before "protocols" at boot time.
+
+  [ Mark O'Brien ]
+  * 3.0.1
+
+  [ Stephen Hemminger ]
+  * handle delete address request if address is already removed
+  * stop watchlink when address is removed
+  * handle multiple address deletion when link is down
+
+  [ Stig Thormodsrud ]
+  * Add utilitly script to add/removed entries to watchlink exclude
+    file.
+  * Add duplicate check to watchlink exclude file.
+
+  [ rbalocca ]
+  * Fix debian dependencies
+  * Set dependencies on either bash or vyatta-bash
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Fri, 04 Apr 2008 18:00:44 -0700
+
+vyatta-cfg (0.3) unstable; urgency=low
+
+  VC4.0.1
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix for bug 2868: return failure for invalid values.
+  * fix for bug 2749: add u32 range check
+  * fix for bug 2912: direct config loading output to syslog.
+  * fix for bug 2924: set admin flag for root
+  * fix for bug 2950: raise config error messages during boot to warning
+    level.
+  * add LESSSECURE
+  * partial fix for bug 2987: use "less" instead of "more", and disable
+  * handle "<*>" allowed values
+
+  [ Bob Gilligan ]
+  * Bugfix: 2653
+  * Bugfix: 2885
+  * Bugfix: 2986
+
+  [ Christopher Liljenstolpe ]
+  * Fix 2954: IPv6 addresses that have a-f in the address fail.
+
+  [ Mohit Mehta ]
+  * CLI tab enhancement at "set interfaces ethernet <> address"
+  * CLI tab enhancement at "set interfaces ethernet <> address"
+
+  [ Robert Bays ]
+  * fix for bugs 2725 and 2999
+  * fix for bugs 2725 2999
+
+  [ Stephen Hemminger ]
+  * Read qos-policy before setting interface qos-policy
+  * Replace VPL with GPLv2
+  * Convert from VPL 1.0 to GPLv2
+  * more robust handling of set mac address
+  * Don't allow operator to run init-floppy
+
+  [ rbalocca ]
+  * Merge changelog fix to glendale
+  * Vyatta-cfg postinst was preventing upgrade
+  * Add VPL to scripts and fix lintian errors
+  * Fix problems with upgrading (and also fix lintian errors)
+  * Fix problems with upgrading (and also fix lintian errors)
+  * Remove a dependency listed twice
+  * Add GPLv2 to additional Vyatta created scripts
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 18 Mar 2008 19:04:10 -0700
+
 vyatta-cfg (0.2) unstable; urgency=low
 
   vc4.0.0

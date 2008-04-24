@@ -3,17 +3,21 @@
 # Module: vyatta-interfaces.pl
 # 
 # **** License ****
-# Version: VPL 1.0
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
 # 
-# The contents of this file are subject to the Vyatta Public License
-# Version 1.0 ("License"); you may not use this file except in
-# compliance with the License. You may obtain a copy of the License at
-# http://www.vyatta.com/vpl
-# 
-# Software distributed under the License is distributed on an "AS IS"
-# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-# the License for the specific language governing rights and limitations
-# under the License.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# A copy of the GNU General Public License is available as
+# `/usr/share/common-licenses/GPL' in the Debian GNU/Linux distribution
+# or on the World Wide Web at `http://www.gnu.org/copyleft/gpl.html'.
+# You can also obtain it by writing to the Free Software Foundation,
+# Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 # 
 # This code was originally developed by Vyatta, Inc.
 # Portions created by Vyatta are Copyright (C) 2007 Vyatta, Inc.
@@ -29,9 +33,12 @@
 use lib "/opt/vyatta/share/perl5/";
 use VyattaConfig;
 use VyattaMisc;
-use Getopt::Long;
 
+use Getopt::Long;
+use POSIX;
 use NetAddr::IP;
+use Tie::File;
+use Fcntl qw (:flock);
 
 use strict;
 use warnings;
@@ -41,18 +48,22 @@ my $dhcp_conf   = '/etc/dhcp3/dhclient.conf';
 my $dhcp_pid    = '/var/run/dhclient.pid';
 my $dhcp_leases = '/var/lib/dhcp3/dhclient.leases';
 
+my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev, $mac, $mac_update);
 
-my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev);
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
 	   "valid-addr=s"      => \$addr,
 	   "restart-dhclient!" => \$restart_dhclient,
            "dev=s"             => \$dev,
+	   "valid-mac=s"       => \$mac,
+	   "set-mac=s"	       => \$mac_update,
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
 if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
 if (defined $addr)             { is_valid_addr($addr, $dev); }
+if (defined $mac)	       { is_valid_mac($mac, $dev); }
+if (defined $mac_update)       { update_mac($mac_update, $dev); }
 if (defined $restart_dhclient) { dhcp_restart_daemon(); }
 
 sub is_ip_configured {
@@ -308,13 +319,32 @@ sub update_eth_addrs {
     }
 
     if ($version == 4) {
-	return system("ip addr add $addr broadcast + dev $intf");
+        # revert this gruesome hack when quagga static route initialization
+        # is fixed.
+        #return system("ip addr add $addr broadcast + dev $intf");
+        return system("ip link set $intf down; ip link set $intf up; ip addr add $addr broadcast + dev $intf");
     }
     if ($version == 6) {
 	return system("ip -6 addr add $addr dev $intf");
     }
     print "Error: Invalid address/prefix [$addr] for interface $intf\n";
     exit 1;
+}
+
+sub if_nametoindex {
+    my ($intf) = @_;
+
+    open my $sysfs, "<", "/sys/class/net/$intf/ifindex" 
+	|| die "Unknown interface $intf";
+    my $ifindex = <$sysfs>;
+    close($sysfs) or die "read sysfs error\n";
+    chomp $ifindex;
+
+    return $ifindex;
+}
+
+sub htonl {
+    return unpack('L',pack('N',shift));
 }
 
 sub delete_eth_addrs {
@@ -324,18 +354,91 @@ sub delete_eth_addrs {
 	dhcp_release_addr($intf);
 	update_dhcp_client();
 	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease");
-	return;
+	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
-    if (!defined $version) {
-	exit 1;
-    }
-    if ($version == 4) {
-	return system("ip addr del $addr dev $intf");
-    }
     if ($version == 6) {
-	return system("ip -6 addr del $addr dev $intf");
+	    exec 'ip', '-6', 'addr', 'del', $addr, 'dev', $intf
+		or die "Could not exec ip?";
     }
+
+    ($version == 4) or die "Bad ip version";
+
+    if (is_ip_configured($intf, $addr)) {
+	# Link is up, so just delete address
+	# Zebra is watching for netlink events and will handle it
+	exec 'ip', 'addr', 'del', $addr, 'dev', $intf
+	    or die "Could not exec ip?";
+    }
+	
+
+    # Destroy watchlink's internal status so it doesn't erronously
+    # restore the address when link is restored
+    my $statusfile = '/var/linkstatus/' . if_nametoindex($intf);
+
+    # Use tie to treat file as array
+    my $tie = tie my @status, 'Tie::File', $statusfile
+	or die "can't open $statusfile";
+
+    $tie->flock(LOCK_EX);	# Block out watchlink
+    $tie = undef;    		# Drop reference so untie will work
+
+    my $ip = NetAddr::IP->new($addr);
+    my $recno = 0;
+    foreach my $line (@status) {
+	chomp $line;
+
+	# The format of watchlink file is host byte order (IPV6??)
+	my ($ifindex, $raddr, $bcast, $prefix) = split (/,/, $line);
+	my $laddr = htonl($raddr);
+	my $this = NetAddr::IP->new("$laddr/$prefix");
+	if ($ip eq $this) {
+	    splice @status, $recno, 1;	    # delete the line
+	} else {
+	    $recno++;
+	}
+    }
+    untie @status;
+    exit 0;
+}
+
+sub update_mac {
+    my ($mac, $intf) = @_;
+
+    open my $fh, "<", "/sys/class/net/$intf/flags"
+	or die "Error: $intf is not a network device\n";
+
+    my $flags = <$fh>;
+    chomp $flags;
+    close $fh or die "Error: can't read state\n";
+
+    if (POSIX::strtoul($flags) & 1) {
+	# NB: Perl 5 system return value is bass-ackwards
+	system "sudo ip link set $intf down"
+	    and die "Could not set $intf down ($!)\n";
+	system "sudo ip link set $intf address $mac"
+	    and die "Could not set $intf address ($!)\n";
+	system "sudo ip link set $intf up"
+	    and die "Could not set $intf up ($!)\n";
+    } else {
+	exec "sudo ip link set $intf address $mac";
+    }
+    exit 0;
+}
+ 
+sub is_valid_mac {
+    my ($mac, $intf) = @_;
+    my @octets = split /:/, $mac;
+    
+    ($#octets == 5) or die "Error: wrong number of octets: $#octets\n";
+
+    (($octets[0] & 1) == 0) or die "Error: $mac is a multicast address\n";
+
+    my $sum = 0;
+    $sum += strtoul('0x' . $_) foreach @octets;
+    ( $sum != 0 ) or die "Error: zero is not a valid address\n";
+
+    exit 0;
 }
 
 sub is_valid_addr {
@@ -358,7 +461,7 @@ sub is_valid_addr {
     }
 
     my ($addr, $net);
-    if ($addr_net =~ m/^([0-9\.\:]+)\/(\d+)$/) {
+    if ($addr_net =~ m/^([0-9a-fA-F\.\:]+)\/(\d+)$/) {
 	$addr = $1;
 	$net  = $2;
     } else {

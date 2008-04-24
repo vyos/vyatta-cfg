@@ -3,7 +3,7 @@
 
 {
 declare -x -r VYATTA_ACTIVE_CONFIGURATION_DIR=${vyatta_configdir}/active
-declare -x -r VYATTA_CHANGES_ONLY_DIR=${vyatta_configdir}/tmp/changes_only_$$
+declare -x -r VYATTA_CHANGES_ONLY_DIR=/tmp/changes_only_$$
 declare -x -r VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
 declare -x -r VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
 declare -x -r VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates
@@ -43,6 +43,8 @@ if [ $is_admin == 1 ]; then
 else
   # no need to check is_users since there are only 2 levels for now
   declare -x -r VYATTA_USER_LEVEL_DIR=${vyatta_sysconfdir}/shell/level/users
+  declare -x -r LESSSECURE=1
+  alias more=less
 fi
 } 2>/dev/null || :
 

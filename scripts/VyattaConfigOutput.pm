@@ -1,5 +1,25 @@
-# Perl module for generating output of the configuration.
+#!/usr/bin/perl
+
+# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Date: 2007
+# Description: Perl module for generating output of the configuration.
+
+# **** License ****
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
 # 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
+# All Rights Reserved.
+# **** End License ****
+
+
 # outputNewConfig()
 #   prints the "new" config, i.e., the active config with any un-committed
 #   changes. 'diff' notation is also generated to indicate the changes.
@@ -12,6 +32,7 @@ package VyattaConfigOutput;
 use strict;
 use lib '/opt/vyatta/share/perl5/';
 use VyattaConfig;
+use Sort::Versions;
 
 # whether to show default values
 my $show_all = 0;
@@ -170,6 +191,7 @@ sub displayDeletedOrigChildren {
                     $dont_show_as_deleted);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
+        @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
           if ($cname eq 'node.val') {
             # should not happen
@@ -224,6 +246,7 @@ sub displayChildren {
       displayValues([ @cur_path, $child ], $prefix, $child);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
+        @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
           if ($cname eq 'node.val') {
             # should not happen

@@ -1,4 +1,23 @@
-# Perl module for loading configuration.
+#!/usr/bin/perl
+
+# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Date: 2007
+# Description: Perl module for loading configuration.
+
+# **** License ****
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
+# All Rights Reserved.
+
 package VyattaConfigLoad;
 
 use strict;
@@ -9,16 +28,21 @@ use VyattaConfig;
 
 # configuration ordering. higher rank configured before lower rank.
 my $default_rank = 0;
-my %config_rank = (
-                    'interfaces' => 100,
-                    'interfaces bridge' => 99,
-                    'interfaces ethernet' => 98,
-                    'interfaces tunnel' => 91,
-                    'system' => 90,
-                    'protocols static' => 85,
-                    'service ssh' => 84,
-                    'service telnet' => 83,
-                  );
+my %config_rank  = (
+    'qos-policy'            => 110,
+    'firewall'              => 102,
+    'service nat'           => 101,
+    'interfaces'            => 100,
+    'interfaces bridge'     => 99,
+    'interfaces ethernet'   => 98,
+    'interfaces tunnel'     => 91,
+    'system'                => 90,
+    'protocols static'      => 85,
+    'service ssh'           => 84,
+    'service telnet'        => 83,
+    'policy'                => 82,
+    'vpn'                   => 80,
+);
 
 my @all_nodes = ();
 my @all_naked_nodes = ();

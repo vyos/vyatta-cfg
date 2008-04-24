@@ -1,14 +1,12 @@
 clear
 debug
 exit
-init-floppy
 no
 ping
 reboot
 set
 show
 telnet
-terminal
 traceroute
 undebug
 vpn

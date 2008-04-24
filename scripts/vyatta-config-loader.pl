@@ -1,4 +1,24 @@
 #!/usr/bin/perl
+
+# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Date: 2007
+# Description: configuration loader
+
+# **** License ****
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# This code was originally developed by Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
+# All Rights Reserved.
+# **** End License ****
+
 # Perl script for loading the startup config file.
 # $0: startup config file.
 
@@ -12,6 +32,11 @@ if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
     || !open(STDOUT, "|/usr/bin/logger -t config-loader -p local0.debug")
     || !open(STDERR, ">&STDOUT")) {
   print STDERR "Cannot dup STDOUT/STDERR: $!\n";
+  exit 1;
+}
+    
+if (!open(WARN, "|/usr/bin/logger -t config-loader -p local0.warning")) {
+  print OLDERR "Cannot open syslog: $!\n";
   exit 1;
 }
 
@@ -35,7 +60,7 @@ my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
 system("$CWRAPPER begin");
 if ($? >> 8) {
   print OLDOUT "Cannot set up configuration environment\n";
-  print STDOUT "Cannot set up configuration environment\n";
+  print WARN "Cannot set up configuration environment\n";
   restore_fds();
   exit 1;
 }
@@ -51,7 +76,7 @@ foreach (@all_nodes) {
     $ret = system("$commit_cmd");
     if ($ret >> 8) {
       print OLDOUT "Commit failed at rank $cur_rank\n";
-      print STDOUT "Commit failed at rank $cur_rank\n";
+      print WARN "Commit failed at rank $cur_rank\n";
       system("$cleanup_cmd");
       # continue after cleanup (or should we abort?)
     }
@@ -62,14 +87,14 @@ foreach (@all_nodes) {
   if ($ret >> 8) {
     $cmd =~ s/^.*?set /set /;
     print OLDOUT "[[$cmd]] failed\n";
-    print STDOUT "[[$cmd]] failed\n";
+    print WARN "[[$cmd]] failed\n";
     # continue after set failure (or should we abort?)
   }
 }
 $ret = system("$commit_cmd");
 if ($ret >> 8) {
   print OLDOUT "Commit failed at rank $cur_rank\n";
-  print STDOUT "Commit failed at rank $cur_rank\n";
+  print WARN "Commit failed at rank $cur_rank\n";
   system("$cleanup_cmd");
   # exit normally after cleanup (or should we exit with error?)
 }
