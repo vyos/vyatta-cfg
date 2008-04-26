@@ -319,10 +319,7 @@ sub update_eth_addrs {
     }
 
     if ($version == 4) {
-        # revert this gruesome hack when quagga static route initialization
-        # is fixed.
-        #return system("ip addr add $addr broadcast + dev $intf");
-        return system("ip link set $intf down; ip link set $intf up; ip addr add $addr broadcast + dev $intf");
+	return system("ip addr add $addr broadcast + dev $intf");
     }
     if ($version == 6) {
 	return system("ip -6 addr add $addr dev $intf");
@@ -371,34 +368,6 @@ sub delete_eth_addrs {
 	    or die "Could not exec ip?";
     }
 	
-
-    # Destroy watchlink's internal status so it doesn't erronously
-    # restore the address when link is restored
-    my $statusfile = '/var/linkstatus/' . if_nametoindex($intf);
-
-    # Use tie to treat file as array
-    my $tie = tie my @status, 'Tie::File', $statusfile
-	or die "can't open $statusfile";
-
-    $tie->flock(LOCK_EX);	# Block out watchlink
-    $tie = undef;    		# Drop reference so untie will work
-
-    my $ip = NetAddr::IP->new($addr);
-    my $recno = 0;
-    foreach my $line (@status) {
-	chomp $line;
-
-	# The format of watchlink file is host byte order (IPV6??)
-	my ($ifindex, $raddr, $bcast, $prefix) = split (/,/, $line);
-	my $laddr = htonl($raddr);
-	my $this = NetAddr::IP->new("$laddr/$prefix");
-	if ($ip eq $this) {
-	    splice @status, $recno, 1;	    # delete the line
-	} else {
-	    $recno++;
-	}
-    }
-    untie @status;
     exit 0;
 }
 
