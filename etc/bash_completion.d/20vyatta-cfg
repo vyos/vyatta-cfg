@@ -70,6 +70,7 @@ declare vyatta_cfg_prompt_level=''
 set_config_ps1 ()
 {
   local level=$1
+  vyatta_unescape level level
   if [ -z "$level" ]; then
     export PS1="[edit]\n\u@\h# "
     vyatta_cfg_prompt_level=''
