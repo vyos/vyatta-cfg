@@ -197,6 +197,21 @@ sub dhcp_get_interfaces {
 	    }
 	}
     }
+
+    $config->setLevel("interfaces bridge");
+    my @brs = $config->listNodes();
+    foreach my $br (@brs) {
+	$config->setLevel("interfaces bridge $br");
+	if ($config->exists("address")) {
+	    my @addrs = $config->returnValues("address");
+	    foreach my $addr (@addrs) {
+		if (defined $addr && $addr eq "dhcp") {
+		    push @dhcp_intfs, $br;
+		}
+	    }
+	}
+    }
+
     return @dhcp_intfs;
 }
 
@@ -205,10 +220,16 @@ sub is_dhcp_enabled {
 
     my $config = new VyattaConfig;
 
-    if ($intf =~ m/(\w+)\.(\d)/) {
-	$config->setLevel("interfaces ethernet $1 vif $2");
+    if ($intf =~ m/^eth/) {
+	if ($intf =~ m/(\w+)\.(\d)/) {
+	    $config->setLevel("interfaces ethernet $1 vif $2");
+	} else {
+	    $config->setLevel("interfaces ethernet $intf");
+	}
+    } elsif ($intf =~ m/^br/) {
+	$config->setLevel("interfaces bridge $intf");
     } else {
-	$config->setLevel("interfaces ethernet $intf");
+	die "unsupported dhcp interface [$intf]";
     }
     my @addrs = $config->returnOrigValues("address");
     foreach my $addr (@addrs) {
@@ -223,11 +244,17 @@ sub is_address_enabled {
     my $intf = shift;
 
     my $config = new VyattaConfig;
-
-    if ($intf =~ m/(\w+)\.(\d)/) {
-	$config->setLevel("interfaces ethernet $1 vif $2");
+    
+    if ($intf =~ m/^eth/) {
+	if ($intf =~ m/(\w+)\.(\d)/) {
+	    $config->setLevel("interfaces ethernet $1 vif $2");
+	} else {
+	    $config->setLevel("interfaces ethernet $intf");
+	}
+    } elsif ($intf =~ m/^br/) {
+	$config->setLevel("interfaces bridge $intf");
     } else {
-	$config->setLevel("interfaces ethernet $intf");
+	die "unsupported dhcp interface [$intf]";
     }
     my @addrs = $config->returnOrigValues("address");
     foreach my $addr (@addrs) {
