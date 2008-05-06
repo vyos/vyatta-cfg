@@ -229,7 +229,11 @@ sub is_dhcp_enabled {
     } elsif ($intf =~ m/^br/) {
 	$config->setLevel("interfaces bridge $intf");
     } else {
-	die "unsupported dhcp interface [$intf]";
+	#
+	# currently we only support dhcp on ethernet 
+	# and bridge interfaces.
+	#
+	return 0;
     }
     my @addrs = $config->returnOrigValues("address");
     foreach my $addr (@addrs) {
