@@ -23,7 +23,7 @@ package VyattaConfigLoad;
 use strict;
 use sort 'stable';
 use lib "/opt/vyatta/share/perl5/";
-use XorpConfigParser;
+use XorpConfigParser; 
 use VyattaConfig;
 
 # configuration ordering. higher rank configured before lower rank.
@@ -36,16 +36,22 @@ my %config_rank  = (
     'interfaces bridge'     => 99,
     'interfaces ethernet'   => 98,
     'interfaces tunnel'     => 91,
-    'system'                => 90,
+    'system gateway-address'=> 89,
+    'system name-server'    => 88,
+    'system login user'     => 87,
+    'system'                => 86,
     'protocols static'      => 85,
     'service ssh'           => 84,
     'service telnet'        => 83,
     'policy'                => 82,
-    'vpn'                   => 80,
+    'protocols bgp'         => 79,
+    'protocols ospf'        => 78,
+    'protocols rip'         => 77,
+    'vpn'                   => 60,
 );
 
 my %wildcard_rank = (
-    'interfaces ethernet * vrrp' => 50,
+    'interfaces ethernet * vrrp'       => 50,
     'interfaces ethernet * vif * vrrp' => 50,
 );
 
