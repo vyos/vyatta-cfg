@@ -29,49 +29,47 @@ use VyattaConfig;
 # configuration ordering. higher rank configured before lower rank.
 my $default_rank = 0;
 my %config_rank  = (
-    'qos-policy'            => 110,
-    'firewall'              => 102,
-    'service nat'           => 101,
-    'interfaces'            => 100,
-    'interfaces bridge'     => 99,
-    'interfaces ethernet'   => 98,
-    'interfaces tunnel'     => 91,
-    'system gateway-address'=> 89,
-    'system name-server'    => 88,
-    'system login user'     => 87,
-    'system'                => 86,
-    'protocols static'      => 85,
-    'service ssh'           => 84,
-    'service telnet'        => 83,
-    'policy'                => 82,
-    'protocols bgp'         => 79,
-    'protocols ospf'        => 78,
-    'protocols rip'         => 77,
-    'vpn'                   => 60,
+    'qos-policy'            => 1100,
+    'firewall'              => 1020,
+    'service nat'           => 1010,
+    'interfaces'            => 1000,
+    'interfaces bridge'     => 990,
+    'interfaces ethernet'   => 980,
+    'interfaces tunnel'     => 910,
+    'system gateway-address'=> 890,
+    'system name-server'    => 880,
+    'system login user'     => 870,
+    'system'                => 860,
+    'protocols static'      => 850,
+    'service ssh'           => 840,
+    'service telnet'        => 830,
+    'policy'                => 820,
+    'protocols bgp'         => 790,
+    'protocols ospf'        => 780,
+    'protocols rip'         => 770,
+    'vpn'                   => 600,
 );
 
-my %wildcard_rank = (
-    'interfaces ethernet * vrrp'       => 50,
-    'interfaces ethernet * vif * vrrp' => 50,
+my %regex_rank = (
+    'interfaces ethernet \S* vrrp'                  => 500,
+    'interfaces ethernet \S* vif \S* vrrp'          => 500,
+    'protocols bgp \d+ neighbor \S*[^\d.]\S*'       => 800,
 );
 
 my @all_nodes = ();
 my @all_naked_nodes = ();
 
-# the wildcard matching could use some serious optimization. but probably
-# not when we only have a couple of entries.
-sub match_wildcard {
+sub match_regex {
   my ($pattern, $str) = @_;
-  $pattern =~ s/\*/\\S*/g;
   $pattern =~ s/^(.*)$/\^$1\$/;
   return ($str =~ m/$pattern/) ? 1 : 0;
 }
 
-sub get_wildcard_rank {
+sub get_regex_rank {
   my ($str) = @_;
-  foreach (keys %wildcard_rank) {
-    if (match_wildcard($_, $str)) {
-      return $wildcard_rank{$_};
+  foreach (keys %regex_rank) {
+    if (match_regex($_, $str)) {
+      return $regex_rank{$_};
     }
   }
   return undef;
@@ -85,7 +83,7 @@ sub get_config_rank {
     if (defined($config_rank{$path_str})) {
       return ($config_rank{$path_str});
     }
-    my $wrank = get_wildcard_rank($path_str);
+    my $wrank = get_regex_rank($path_str);
     return $wrank if (defined($wrank));
     pop @path;
   }
