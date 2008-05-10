@@ -221,7 +221,7 @@ sub is_dhcp_enabled {
     my $config = new VyattaConfig;
 
     if ($intf =~ m/^eth/) {
-	if ($intf =~ m/(\w+)\.(\d)/) {
+	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
 	} else {
 	    $config->setLevel("interfaces ethernet $intf");
@@ -250,7 +250,7 @@ sub is_address_enabled {
     my $config = new VyattaConfig;
     
     if ($intf =~ m/^eth/) {
-	if ($intf =~ m/(\w+)\.(\d)/) {
+	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
 	} else {
 	    $config->setLevel("interfaces ethernet $intf");
