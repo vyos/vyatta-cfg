@@ -11,7 +11,7 @@ update:expression: "${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" 
           -c \"link-detect\"; "
 delete:expression: "sudo ip link set $VAR(@) down" ; "Error disabling dev $VAR(@)"
 allowed: for dev in /sys/class/net/*; 
-         do if [[ -L $dev/device ]]
+         do if [[ -d $dev && -L $dev/device ]]
             then if [[ $(cat $dev/type) -eq 1 ]]
                  then echo -n ${dev##*/} " "
                  fi
