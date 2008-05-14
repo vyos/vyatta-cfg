@@ -37,8 +37,6 @@ use VyattaMisc;
 use Getopt::Long;
 use POSIX;
 use NetAddr::IP;
-use Tie::File;
-use Fcntl qw (:flock);
 
 use strict;
 use warnings;
