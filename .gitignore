@@ -20,6 +20,7 @@ libtool
 /debian/vyatta-cfg
 /debian/vyatta-cfg.postinst
 /debian/vyatta-cfg.postrm
+/debian/vyatta-cfg.debhelper.log
 /INSTALL
 /Makefile.in
 /Makefile
