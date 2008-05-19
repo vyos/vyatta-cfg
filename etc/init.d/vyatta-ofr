@@ -117,6 +117,7 @@ start ()
 	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
     done
     load_bootfile
+    chmod g-w,o-w /
     log_end_msg $?
 }
 
