@@ -44,8 +44,32 @@ my %config_rank  = (
     'vpn'                   => 80,
 );
 
+my %wildcard_rank = (
+    'interfaces ethernet * vrrp' => 50,
+    'interfaces ethernet * vif * vrrp' => 50,
+);
+
 my @all_nodes = ();
 my @all_naked_nodes = ();
+
+# the wildcard matching could use some serious optimization. but probably
+# not when we only have a couple of entries.
+sub match_wildcard {
+  my ($pattern, $str) = @_;
+  $pattern =~ s/\*/\\S*/g;
+  $pattern =~ s/^(.*)$/\^$1\$/;
+  return ($str =~ m/$pattern/) ? 1 : 0;
+}
+
+sub get_wildcard_rank {
+  my ($str) = @_;
+  foreach (keys %wildcard_rank) {
+    if (match_wildcard($_, $str)) {
+      return $wildcard_rank{$_};
+    }
+  }
+  return undef;
+}
 
 sub get_config_rank {
   # longest prefix match
@@ -55,6 +79,8 @@ sub get_config_rank {
     if (defined($config_rank{$path_str})) {
       return ($config_rank{$path_str});
     }
+    my $wrank = get_wildcard_rank($path_str);
+    return $wrank if (defined($wrank));
     pop @path;
   }
   return $default_rank;
