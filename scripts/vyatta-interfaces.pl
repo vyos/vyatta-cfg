@@ -471,6 +471,18 @@ sub is_valid_addr {
 	exit 1;
     }
 
+    my $ip = NetAddr::IP->new($addr_net);
+    my $network = $ip->network();
+    my $bcast   = $ip->broadcast();
+    if ($ip->addr() eq $network->addr()) {
+       print "Can not assign network address as the IP address\n";
+       exit 1;
+    }
+    if ($ip->addr() eq $bcast->addr()) {
+       print "Can not assign broadcast address as the IP address\n";
+       exit 1;
+    }
+
     if (is_dhcp_enabled($intf)) {
 	print "Error: remove dhcp before adding static addresses for $intf\n";
 	exit 1;
