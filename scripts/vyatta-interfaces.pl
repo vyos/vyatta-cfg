@@ -474,13 +474,23 @@ sub is_valid_addr {
     my $ip = NetAddr::IP->new($addr_net);
     my $network = $ip->network();
     my $bcast   = $ip->broadcast();
-    if ($ip->addr() eq $network->addr()) {
-       print "Can not assign network address as the IP address\n";
-       exit 1;
-    }
-    if ($ip->addr() eq $bcast->addr()) {
-       print "Can not assign broadcast address as the IP address\n";
-       exit 1;
+    
+    if ($ip->version == 4 and $ip->masklen() == 31) {
+       #
+       # RFC3021 allows for /31 to treat both address as host addresses
+       #
+    } elsif ($ip->masklen() != $ip->bits()) {
+       #
+       # allow /32 for ivp4 and /128 for ipv6
+       #
+       if ($ip->addr() eq $network->addr()) {
+          print "Can not assign network address as the IP address\n";
+          exit 1;
+       }
+       if ($ip->addr() eq $bcast->addr()) {
+          print "Can not assign broadcast address as the IP address\n";
+          exit 1;
+       }
     }
 
     if (is_dhcp_enabled($intf)) {
