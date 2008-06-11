@@ -66,6 +66,11 @@ save ()
         \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
+reboot ()
+{
+  echo "Exit from configure mode before rebooting."
+}
+
 declare vyatta_cfg_prompt_level=''
 set_config_ps1 ()
 {
