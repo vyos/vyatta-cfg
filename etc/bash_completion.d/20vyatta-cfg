@@ -66,6 +66,28 @@ save ()
         \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
+discard ()
+{
+    local changes
+    if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+	changes=1
+    else
+	changes=0
+    fi
+
+    sudo umount ${VYATTA_TEMP_CONFIG_DIR};
+    rm -fr ${VYATTA_CHANGES_ONLY_DIR};
+    mkdir -p ${VYATTA_CHANGES_ONLY_DIR};
+    sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro unionfs ${VYATTA_TEMP_CONFIG_DIR};
+    
+    if (( changes )); then
+	echo "Changes have been discarded"
+    else
+	echo "No changes have been discarded"
+    fi
+
+}
+
 reboot ()
 {
   echo "Exit from configure mode before rebooting."
