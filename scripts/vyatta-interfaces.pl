@@ -42,16 +42,14 @@ use strict;
 use warnings;
 
 my $dhcp_daemon = '/sbin/dhclient';
-my $dhcp_conf   = '/etc/dhcp3/dhclient.conf';
-my $dhcp_pid    = '/var/run/dhclient.pid';
-my $dhcp_leases = '/var/lib/dhcp3/dhclient.leases';
+my $dhclient_dir = '/var/lib/dhcp3/';
 
-my ($eth_update, $eth_delete, $addr, $restart_dhclient, $dev, $mac, $mac_update);
+
+my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update);
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
 	   "valid-addr=s"      => \$addr,
-	   "restart-dhclient!" => \$restart_dhclient,
            "dev=s"             => \$dev,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
@@ -62,7 +60,6 @@ if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
 if (defined $addr)             { is_valid_addr($addr, $dev); }
 if (defined $mac)	       { is_valid_mac($mac, $dev); }
 if (defined $mac_update)       { update_mac($mac_update, $dev); }
-if (defined $restart_dhclient) { dhcp_restart_daemon(); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
@@ -97,54 +94,6 @@ sub is_ip_duplicate {
     }
 }
 
-sub is_dhcp_running {
-    if (-f $dhcp_pid) {
-	my $pid = `cat $dhcp_pid`;
-	chomp $pid;
-	my $ps = `ps -p $pid -o comm=`;
-
-	if (defined($ps) && $ps ne "") {
-	    return 1;
-	} 
-    }
-    return 0;
-}
-
-sub dhcp_start_daemon {
-    my $cmd = "$dhcp_daemon -q -nw &";
-    system($cmd);
-}
-
-sub dhcp_stop_daemon {
-    if (is_dhcp_running()) {
-	my $pid = `cat $dhcp_pid`;
-	system("kill $pid");
-    } 
-    system("rm -f $dhcp_pid");
-}
-
-sub dhcp_restart_daemon {
-    #
-    # check if vyatta has generated the config file, otherwise
-    # an empty config will try to get new addresses for all
-    # interfaces
-    #
-    my $grep = `grep vyatta-interfaces.pl $dhcp_conf | wc -l`;
-    chomp $grep;
-    if (!defined $grep or $grep != 1) {
-	die "DHCP client not configured\n";
-    }
-    if (is_dhcp_running()) {
-	dhcp_stop_daemon();
-    }
-    dhcp_start_daemon();	
-}
-
-sub dhcp_release_addr {
-    my $intf = shift;
-    my $cmd = "$dhcp_daemon -q -r $intf 2> /dev/null";
-    system($cmd);
-}
 
 sub dhcp_write_file {
     my ($file, $data) = @_;
@@ -164,53 +113,6 @@ sub dhcp_conf_header {
     $output .= "\tdomain-name, domain-name-servers, host-name,\n";
     $output .= "\tinterface-mtu;\n\n";
     return $output;
-}
-
-sub dhcp_get_interfaces {
-    my @dhcp_intfs;
-
-    my $config = new VyattaConfig;
-
-    $config->setLevel("interfaces ethernet");
-    my @eths = $config->listNodes();
-    foreach my $eth (@eths) {
-	$config->setLevel("interfaces ethernet $eth");
-	if ($config->exists("address")) {
-	    my @addrs = $config->returnValues("address");
-	    foreach my $addr (@addrs) {
-		if (defined $addr && $addr eq "dhcp") {
-		    push @dhcp_intfs, $eth;
-		}
-	    }
-	}
-	$config->setLevel("interfaces ethernet $eth vif");
-	my @vifs = $config->listNodes();
-	foreach my $vif (@vifs) {
-	    $config->setLevel("interfaces ethernet $eth vif $vif");
-	    my @addrs = $config->returnValues("address");
-	    foreach my $addr (@addrs) {
-		if (defined $addr && $addr eq "dhcp") {
-		    push @dhcp_intfs, "$eth.$vif";
-		}
-	    }
-	}
-    }
-
-    $config->setLevel("interfaces bridge");
-    my @brs = $config->listNodes();
-    foreach my $br (@brs) {
-	$config->setLevel("interfaces bridge $br");
-	if ($config->exists("address")) {
-	    my @addrs = $config->returnValues("address");
-	    foreach my $addr (@addrs) {
-		if (defined $addr && $addr eq "dhcp") {
-		    push @dhcp_intfs, $br;
-		}
-	    }
-	}
-    }
-
-    return @dhcp_intfs;
 }
 
 sub is_dhcp_enabled {
@@ -256,7 +158,8 @@ sub is_address_enabled {
     } elsif ($intf =~ m/^br/) {
 	$config->setLevel("interfaces bridge $intf");
     } else {
-	die "unsupported dhcp interface [$intf]";
+	print "unsupported dhcp interface [$intf]\n";
+	exit 1;
     }
     my @addrs = $config->returnOrigValues("address");
     foreach my $addr (@addrs) {
@@ -275,34 +178,18 @@ sub get_hostname {
 }
 
 sub dhcp_update_config {
+    my ($conf_file, $intf) = @_;
+    
     my $output = dhcp_conf_header();
     my $hostname = get_hostname();
 
-    my $config = new VyattaConfig;
-    my $dhcp_instances = 0;
-    my @dhcp_intfs = dhcp_get_interfaces();
-    foreach my $intf (@dhcp_intfs) {
-	$output .= "interface \"$intf\" {\n";
-	if (defined($hostname)) {
-	    $output .= "\tsend host-name \"$hostname\";\n";
-	}
-        $output .= "}\n\n";
-	$dhcp_instances++;
+    $output .= "interface \"$intf\" {\n";
+    if (defined($hostname)) {
+       $output .= "\tsend host-name \"$hostname\";\n";
     }
+    $output .= "}\n\n";
 
-    if ($dhcp_instances > 0) {
-	my $conf_file = $dhcp_conf;
-	dhcp_write_file($conf_file, $output);
-	dhcp_restart_daemon();
-    }
-    return $dhcp_instances;
-}
-
-sub update_dhcp_client {
-    my $dhcp_instances = dhcp_update_config();
-    if ($dhcp_instances == 0) {
-	dhcp_stop_daemon();
-    }
+    dhcp_write_file($conf_file, $output);
 }
 
 sub is_ip_v4_or_v6 {
@@ -328,11 +215,42 @@ sub is_ip_v4_or_v6 {
     return undef;
 }
 
+sub generate_dhclient_intf_files {
+    my $intf = shift;
+
+    $intf =~ s/\./_/g;
+    my $intf_config_file = $dhclient_dir . 'dhclient_' . $intf . '.conf';
+    my $intf_process_id_file = $dhclient_dir . 'dhclient_' . $intf . '.pid';
+    my $intf_leases_file = $dhclient_dir . 'dhclient_' . $intf . '.leases';
+    return ($intf_config_file, $intf_process_id_file, $intf_leases_file);
+
+}
+
+sub run_dhclient {
+    my $intf = shift;
+
+    my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = generate_dhclient_intf_files($intf);
+    dhcp_update_config($intf_config_file, $intf);
+    my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
+    # adding & at the end to make the process into a daemon immediately
+    system ($cmd);
+}
+
+sub stop_dhclient {
+    my $intf = shift;
+
+    my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = generate_dhclient_intf_files($intf);
+    my $cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
+    system ($cmd);
+    system ("rm -f $intf_config_file");
+
+}
+
 sub update_eth_addrs {
     my ($addr, $intf) = @_;
 
     if ($addr eq "dhcp") {
-	update_dhcp_client();
+	run_dhclient($intf);
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -377,8 +295,7 @@ sub delete_eth_addrs {
     my ($addr, $intf) = @_;
 
     if ($addr eq "dhcp") {
-	dhcp_release_addr($intf);
-	update_dhcp_client();
+	stop_dhclient($intf);
 	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease");
 	exit 0;
     } 
