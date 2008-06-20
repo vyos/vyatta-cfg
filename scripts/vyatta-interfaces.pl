@@ -45,7 +45,7 @@ my $dhcp_daemon = '/sbin/dhclient';
 my $dhclient_dir = '/var/lib/dhcp3/';
 
 
-my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update);
+my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
@@ -53,6 +53,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
            "dev=s"             => \$dev,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
+	   "op-command=s"      => \$op_dhclient,
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -60,6 +61,7 @@ if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
 if (defined $addr)             { is_valid_addr($addr, $dev); }
 if (defined $mac)	       { is_valid_mac($mac, $dev); }
 if (defined $mac_update)       { update_mac($mac_update, $dev); }
+if (defined $op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
@@ -243,7 +245,6 @@ sub stop_dhclient {
     my $cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
     system ($cmd);
     system ("rm -f $intf_config_file");
-
 }
 
 sub update_eth_addrs {
@@ -431,6 +432,28 @@ sub is_valid_addr {
     }
 
     exit 1;
+}
+
+sub op_dhcp_command {
+    my ($op_command, $intf) = @_;
+
+    if (!is_dhcp_enabled($intf)) {
+        print "$intf is not using DHCP to get an IP address\n";
+        exit 1;
+    }
+
+    if ($op_command eq "dhcp-release") {
+        print "Releasing DHCP lease on $intf ...\n";
+        stop_dhclient($intf);
+        exit 0;
+    } elsif ($op_command eq "dhcp-renew") {
+        print "Renewing DHCP lease on $intf ...\n"; 
+        run_dhclient($intf);
+        exit 0;
+    }
+    
+    exit 0;    
+
 }
 
 exit 0;
