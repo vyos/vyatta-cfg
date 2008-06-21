@@ -298,7 +298,7 @@ sub delete_eth_addrs {
 
     if ($addr eq "dhcp") {
 	stop_dhclient($intf);
-	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/lib/dhcp3/$intf\_release;");
+	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/lib/dhcp3/release_$intf\;");
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -443,7 +443,7 @@ sub op_dhcp_command {
         exit 1;
     }
     
-    my $release_file = $dhclient_dir . $intf . '_release';
+    my $release_file = $dhclient_dir . 'release_' . $intf;
     if ($op_command eq "dhcp-release") {
         if (-e $release_file) {
           print "IP address for $intf has already been released.\n";
