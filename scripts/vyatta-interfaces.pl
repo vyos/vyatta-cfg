@@ -252,6 +252,7 @@ sub update_eth_addrs {
 
     if ($addr eq "dhcp") {
 	run_dhclient($intf);
+	system ("touch /var/lib/dhcp3/$intf\;");
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -297,7 +298,7 @@ sub delete_eth_addrs {
 
     if ($addr eq "dhcp") {
 	stop_dhclient($intf);
-	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease");
+	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/lib/dhcp3/$intf\_release;");
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -441,14 +442,22 @@ sub op_dhcp_command {
         print "$intf is not using DHCP to get an IP address\n";
         exit 1;
     }
-
+    
+    my $release_file = $dhclient_dir . $intf . '_release';
     if ($op_command eq "dhcp-release") {
-        print "Releasing DHCP lease on $intf ...\n";
-        stop_dhclient($intf);
-        exit 0;
+        if (-e $release_file) {
+          print "IP address for $intf has already been released.\n";
+          exit 1;
+        } else {
+          print "Releasing DHCP lease on $intf ...\n";
+          stop_dhclient($intf);
+          system ("touch $release_file\;");
+          exit 0;
+        }
     } elsif ($op_command eq "dhcp-renew") {
         print "Renewing DHCP lease on $intf ...\n"; 
         run_dhclient($intf);
+        system ("rm -f $release_file\;");
         exit 0;
     }
     
