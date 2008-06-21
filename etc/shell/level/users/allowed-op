@@ -5,6 +5,8 @@ exit
 no
 ping
 reboot
+release
+renew
 set
 show
 telnet
