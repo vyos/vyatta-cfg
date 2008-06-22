@@ -1,5 +1,8 @@
 clear
+connect
 debug
+delete
+disconnect
 exit
 no
 ping
@@ -9,6 +12,7 @@ renew
 set
 show
 telnet
+terminal
 traceroute
 undebug
 vpn
