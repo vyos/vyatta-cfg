@@ -29,23 +29,83 @@ my $etcdir = $ENV{vyatta_sysconfdir};
 my $sbindir = $ENV{vyatta_sbindir};
 my $bootpath = $etcdir . "/config";
 my $load_file = $bootpath . "/config.boot";
+my $url_tmp_file = $bootpath . "/config.boot.$$";
 
 if ($#ARGV > 0) {
   print "Usage: load <config_file_name>\n";
   exit 1;
 }
 
+my $mode = 'local';
+my $proto;
+
 if (defined($ARGV[0])) {
-   $load_file = $ARGV[0];
-   if (!($load_file =~ /^\//)) {
-      # relative path
-      $load_file = "$bootpath/$load_file";
-   }
+  $load_file = $ARGV[0];
 }
 
-if (!open(CFG, "<$load_file")) {
-  print "Cannot open configuration file $load_file\n";
-  exit 1;
+if ($load_file =~ /^[^\/]\w+:\//) {
+  if ($load_file =~ /^(\w+):\/\/\w/) {
+    $mode = 'url';
+    $proto = lc($1);
+    if ($proto eq 'tftp') {
+    } elsif ($proto eq 'ftp') {
+    } elsif ($proto eq 'http') {
+    } elsif ($proto eq 'scp') {
+    } else {
+      print "Invalid url protocol [$proto]\n";
+      exit 1;
+    }
+  } else {
+    print "Invalid url [$load_file]\n";
+    exit 1;
+  }
+}
+
+if ($mode eq 'local' and !($load_file =~ /^\//)) {
+  # relative path
+  $load_file = "$bootpath/$load_file";
+}
+
+if ($mode eq 'local') {
+  if (!open(CFG, "<$load_file")) {
+    print "Cannot open configuration file $load_file\n";
+    exit 1;
+  }
+} elsif ($mode eq 'url') {
+  if (! -f '/usr/bin/curl') {
+    print "Package [curl] not installed\n";
+    exit 1;
+  }
+  if ($proto eq 'http') {
+    #
+    # error codes are send back in html, so 1st try a header
+    # and look for "HTTP/1.1 200 OK"
+    #
+    my $rc = `curl -q -I $load_file 2>&1`;
+    if ($rc =~ /HTTP\/\d+\.?\d\s+(\d+)\s+(.*)$/mi) {
+      my $rc_code   = $1;
+      my $rc_string = $2;
+      if ($rc_code == 200) {
+	# good resonse
+      } else {
+	print "http error: [$rc_code] $rc_string\n";
+        exit 1;
+      }
+    } else {
+      print "Error: $rc\n";
+      exit 1;
+    }
+  }
+  my $rc = system("curl -# -o $url_tmp_file $load_file");
+  if ($rc) {
+      print "Can not open remote configuration file $load_file\n";
+      exit 1;
+  }
+  if (!open(CFG, "<$url_tmp_file")) {  
+    print "Cannot open configuration file $load_file\n";
+    exit 1;
+  }
+  $load_file = $url_tmp_file;
 }
 while (<CFG>) {
   if (/\/\*XORP Configuration File, v1.0\*\//) {
