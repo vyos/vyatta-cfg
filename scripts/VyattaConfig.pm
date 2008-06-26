@@ -262,7 +262,10 @@ sub returnValues {
 # node is relative
 sub returnOrigValues {
   my $val = returnOrigValue(@_);
-  my @values = split("\n", $val);
+  my @values = ();
+  if (defined($val)) {
+    @values = split("\n", $val);
+  }
   return @values;
 }
 

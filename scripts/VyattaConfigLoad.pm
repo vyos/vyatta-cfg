@@ -32,6 +32,7 @@ my %config_rank  = (
     'qos-policy'                => 1100,
     'firewall'                  => 1020,
     'service nat'               => 1010,
+    'system host-name'          => 1005,
     'interfaces'                => 1000,
     'interfaces bridge'         => 990,
     'interfaces ethernet'       => 980,
