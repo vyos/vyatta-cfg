@@ -254,13 +254,10 @@ sub run_dhclient {
 
 sub stop_dhclient {
     my $intf = shift;
-    my $new_resolv_conf = "/etc/resolv.conf.dhclient-new-$intf";
 
     my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = generate_dhclient_intf_files($intf);
     my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
     system ($release_cmd);
-    my $update_resolv_conf_cmd = "rm -f $new_resolv_conf; echo \" \" > $new_resolv_conf; /opt/vyatta/sbin/vyatta_update_resolv.pl --dhclient-script 1";
-    system($update_resolv_conf_cmd);
     system ("rm -f $intf_config_file");
 }
 
