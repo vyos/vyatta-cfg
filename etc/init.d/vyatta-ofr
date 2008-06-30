@@ -4,7 +4,7 @@
 # Required-Start:    $syslog $time $local_fs
 # Required-Stop:     $syslog $time $local_fs
 # Default-Start:     2 3 4 5
-# Default-Stop:      S 0 1 6
+# Default-Stop:      0 1 6
 # Short-Description: Vyatta Router
 # Description:       Debian init script for the Vyatta Router
 ### END INIT INFO
@@ -117,6 +117,7 @@ start ()
 	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
     done
     load_bootfile
+    chmod g-w,o-w /
     log_end_msg $?
 }
 

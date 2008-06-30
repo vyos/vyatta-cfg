@@ -1435,7 +1435,7 @@ static int expand_string(char *stringp)
 	  if(clind_config_engine_apply_command_path(n_cfg_path,
 						    n_tmpl_path,
 						    n_cmd_path,
-						    FALSE,
+						    TRUE,
 						    &cv,
 						    get_cdirp(),
 						    get_tdirp(),

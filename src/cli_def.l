@@ -19,8 +19,9 @@ static char str_delim = 0;
 static int eof_seen = 0;
 static int pre_str_state = 0;
 
-static char *reg_fields[] = { "default", "tag", "type", "multi", NULL };
-static int reg_fields_t[] = { DEFAULT, TAG, TYPE, MULTI, 0 };
+static char *reg_fields[] = { "default", "tag", "type", "multi", "priority",
+                              NULL };
+static int reg_fields_t[] = { DEFAULT, TAG, TYPE, MULTI, PRIORITY, 0 };
 static char *act_fields[] = { "help", "syntax", "commit",
                               "delete", "update", "activate", "create",
                               "begin", "end",
@@ -262,7 +263,7 @@ RE_OP_COND (==|!=|<|>|<=|>=|in)
 RE_OP_OTHER (pattern|exec|,|\|\||&&|=|!|\(|\)|;)
 
 /* template fields */
-RE_REG_FIELD (default|tag|type|multi)
+RE_REG_FIELD (default|tag|type|multi|priority)
 RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_help|allowed)
 
 %%

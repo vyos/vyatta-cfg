@@ -26,6 +26,8 @@ use VyattaConfigOutput;
 my $etcdir = "/opt/vyatta/etc";
 my $bootpath = $etcdir . "/config";
 my $save_file = $bootpath . "/config.boot";
+my $url_tmp_file = $bootpath . "/config.boot.$$";
+
 
 if ($#ARGV > 0) {
   print "Usage: save [config_file_name]\n";
@@ -34,25 +36,68 @@ if ($#ARGV > 0) {
 
 if (defined($ARGV[0])) {
   $save_file = $ARGV[0];
-  if (!($save_file =~ /^\//)) {
-    # relative path
-    $save_file = "$bootpath/$save_file";
+}
+
+my $mode = 'local';
+my $proto;
+
+if ($save_file =~ /^[^\/]\w+:\//) {
+  if ($save_file =~ /^(\w+):\/\/\w/) {
+    $mode = 'url';
+    $proto = lc($1);
+    if ($proto eq 'tftp') {
+    } elsif ($proto eq 'ftp') {
+    } elsif ($proto eq 'scp') {
+    } else {
+      print "Invalid url protocol [$proto]\n";
+      exit 1;
+    }
+  } else {
+    print "Invalid url [$save_file]\n";
+    exit 1;
   }
 }
 
-# this overwrites the file if it exists. we could create a backup first.
-if (! open(SAVE, ">$save_file")) {
-  print "Cannot open file '$save_file': $!\n";
-  exit 1;
+if ($mode eq 'local' and !($save_file =~ /^\//)) {
+  # relative path
+  $save_file = "$bootpath/$save_file";
 }
 
-print "Saving configuration to '$save_file'...";
+my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
+print "Saving configuration to '$save_file'...\n";
+
+if ($mode eq 'local') {
+  # this overwrites the file if it exists. we could create a backup first.
+  if (! open(SAVE, ">$save_file")) {
+    print "Cannot open file '$save_file': $!\n";
+    exit 1;
+  }
+} elsif ($mode eq 'url') {
+  if (! -f '/usr/bin/curl') {
+    print "Package [curl] not installed\n";
+    exit 1;
+  }
+  if (! open(SAVE, ">$url_tmp_file")) {
+    print "Cannot open file '$url_tmp_file': $!\n";
+    exit 1;
+  }
+}
+
 select SAVE;
 VyattaConfigOutput::set_show_all(1);
 VyattaConfigOutput::outputActiveConfig();
-my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
-print SAVE $version_str;
-select STDOUT;
-print "\nDone\n";
+print $version_str;
 close SAVE;
+select STDOUT;
+
+if ($mode eq 'url') {
+  my $rc = system("curl -# -T $url_tmp_file $save_file");
+  system("rm -f $url_tmp_file");
+  if ($rc) {
+    print "Error saving $save_file\n";
+    exit 1;
+  }
+}
+
+print "Done\n";
 exit 0;

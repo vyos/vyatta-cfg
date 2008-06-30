@@ -1,3 +1,110 @@
+vyatta-cfg (0.10) unstable; urgency=low
+
+	  3.1.0
+  [ Mark O'Brien ]
+
+
+  [ Stig Thormodsrud ]
+  * Block reboot from config mode.
+  * Add exception for /31 and /32 for ipv4 and /128 for ipv6
+  * Fix 920: System allows configuration of invalid IP Address for
+    subnet
+
+  [ rbalocca ]
+  * Ignore log file
+  * Fix for bug #3274 https://bugzilla.vyatta.com/show_bug.cgi?id=3274
+
+  [ Stig Thormodsrud ]
+  * Force "protocols ospf parameters" to be committed before other ospf
+    config.
+
+  [ Stephen Hemminger ]
+  * Avoid any problems with non-device entries in /sys/class/net
+  * Remove unused dependencies
+
+  [ Stig Thormodsrud ]
+  * Fix vlan regex.
+
+  [ An-Cheng Huang ]
+  * fix for bug 3239: now support regex-based ordering for startup
+    config
+
+  [ Stig Thormodsrud ]
+  * Add more granularity to config rank (commit rip, ospf, bgp
+    separately).
+
+  [ rbalocca ]
+  * Fix problem with Default-Stop
+  * Convert to our method of changelog creation
+
+  [ Stig Thormodsrud ]
+  * Only check for dhcp client on eth, vlan, and bridge.
+  * Fix 3233 dhcp client doesn't work on bridge interface
+
+  [ An-Cheng Huang ]
+  * support "wildcard" ranking at boot time. only VRRP uses this for
+    now.
+  * partial fix for bug 3216: display escaped edit path correctly.
+
+  [ Michael Larson ]
+  * fix for show -all. note there is a change in how config files are
+    saved--only set values are now save as opposed to set
+
+  [ rbalocca ]
+  * Add parted debian package for install-system use
+
+  [ Michael Larson ]
+  * backing out show cmd change for now on existence of def
+  * final checkin as fix for bug 1219.
+  * mask out def markers in config script
+  * create def file to mark configuration nodes that are created by
+    default, rather than a node with a default value created by a
+  * modified fix for 2525--fixes problem introduced with last fix (bug
+    3163)
+  * revert fix for 2525 until delete on commit warnings are resolved.
+  * reverse sort order on delete
+  * modified node ordering code.
+  * partial revert of priority support--will reapply after additional
+    changes.
+  * temp removal of free--possible corruption.
+  * support for node priority. higher value in node.def is higher
+    priority.
+
+  [ Mohit Mehta ]
+  * Fix Bug 3069 Help strings should be standardized
+
+  [ An-Cheng Huang ]
+  * partial fix for bug 2181: add new template field "priority".
+
+  [ Michael Larson ]
+  * alternate fix for 2525--force directory evaluation upstream.
+  * Revert "fix for bug 2525"
+
+  [ Mohit Mehta ]
+  * Fix Bug 3069 Help strings should be standardized
+
+  [ Michael Larson ]
+  * fix for bug 2525
+  * fix for bug 2549.
+  * fix for bug 2507
+
+  [ An-Cheng Huang ]
+  * fix for bug 2689: sort tag nodes appropriately
+
+  [ Mohit Mehta ]
+  * Fix Bug 2825 Load should read config file from default location when
+    no argument is provided.
+
+  [ Stig Thormodsrud ]
+  * Add vlan dependancy for vyatta-cfg.
+
+  [ rbalocca ]
+  * Fix a changelog problem
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 17 Jun 2008 09:26:38 -0700
+
 vyatta-cfg (0.9) unstable; urgency=low
 
   3.0.5

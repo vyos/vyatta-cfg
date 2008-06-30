@@ -66,10 +66,38 @@ save ()
         \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
+discard ()
+{
+    local changes
+    if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+	changes=1
+    else
+	changes=0
+    fi
+
+    sudo umount ${VYATTA_TEMP_CONFIG_DIR};
+    sudo rm -fr ${VYATTA_CHANGES_ONLY_DIR};
+    sudo mkdir -p ${VYATTA_CHANGES_ONLY_DIR};
+    sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro unionfs ${VYATTA_TEMP_CONFIG_DIR};
+    
+    if (( changes )); then
+	echo "Changes have been discarded"
+    else
+	echo "No changes have been discarded"
+    fi
+
+}
+
+reboot ()
+{
+  echo "Exit from configure mode before rebooting."
+}
+
 declare vyatta_cfg_prompt_level=''
 set_config_ps1 ()
 {
   local level=$1
+  vyatta_unescape level level
   if [ -z "$level" ]; then
     export PS1="[edit]\n\u@\h# "
     vyatta_cfg_prompt_level=''
@@ -105,6 +133,66 @@ top ()
   export VYATTA_EDIT_LEVEL="/"
   export VYATTA_TEMPLATE_LEVEL="/"
   set_config_ps1 ''
+}
+
+rename()
+{
+  mvcp rename Rename mv "$@"
+}
+
+copy()
+{
+  mvcp copy Copy "cp -a" "$@"
+}
+
+mvcp ()
+{
+  local str=$1
+  shift
+  local Str=$1
+  shift
+  local cmd=$1
+  shift
+  local _otag=$1
+  local _ovalu=$2
+  local _to=$3
+  local _ntag=$4
+  local _nvalu=$5
+  local _oval=''
+  local _nval=''
+  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
+  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
+  vyatta_escape _ovalu _oval
+  vyatta_escape _nvalu _nval
+  if [ "$_to" != 'to' ] || [ -z "$_ntag" ] || [ -z "$_nval" ]; then
+    echo "Invalid $str command"
+    return 1
+  fi
+  if [ "$_otag" != "$_ntag" ]; then
+    echo "Cannot $str from \"$_otag\" to \"$_ntag\""
+    return 1
+  fi
+  if [ ! -d "$_tpath/$_otag/$VYATTA_TAG_NAME" ]; then
+    echo "Cannot $str under \"$_otag\""
+    return 1
+  fi
+  if [ ! -d "$_mpath/$_otag/$_oval" ]; then
+    echo "Configuration \"$_otag $_ovalu\" does not exist"
+    return 1
+  fi
+  if [ -d "$_mpath/$_ntag/$_nval" ]; then
+    echo "Configuration \"$_ntag $_nvalu\" already exists"
+    return 1
+  fi
+  if ! /opt/vyatta/sbin/my_set $_ntag "$_nvalu"; then
+    echo "$Str failed"
+    return 1
+  fi
+  /opt/vyatta/sbin/my_delete $_ntag "$_nvalu" >&/dev/null 3>&1
+
+  $cmd "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
+
+  return 0
 }
 
 edit ()
@@ -726,6 +814,7 @@ vyatta_config_complete ()
   if (( ${#COMP_WORDS[@]} < 2 )); then
     declare -a hitems=( "commit" \
                         "delete" \
+	                "discard" \
                         "edit" \
                         "exit" \
                         "load" \
@@ -736,6 +825,7 @@ vyatta_config_complete ()
     declare -a hstrs=( \
       "Commit the current set of changes" \
       "Delete a configuration element" \
+      "Discard uncommitted changes" \
       "Edit a sub-element" \
       "Exit from this configuration level" \
       "Load configuration from a file" \

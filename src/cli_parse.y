@@ -1,8 +1,12 @@
 %{
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+
+#define __USE_ISOC99
+#include <limits.h>
 
 #include "cli_val.h"
 
@@ -30,6 +34,7 @@ static  void cli_deferror(const char *);
 %token TYPE
 %token HELP
 %token DEFAULT
+%token PRIORITY
 %token PATTERN
 %token EXEC
 %token SYNTAX
@@ -101,6 +106,7 @@ type:	      	TYPE TYPE_DEF
 
 cause:		help_cause
 		| default_cause
+		| priority_stmt
 		| syntax_cause
                 | ACTION action { append(parse_defp->actions + $1, $2, 0);}
                 | dummy_stmt
@@ -125,6 +131,25 @@ default_cause:  DEFAULT STRING
 		     yy_cli_parse_error((const char *)"Bad default\n");
 		   parse_defp->def_default = $2;
 		}
+
+priority_stmt:  PRIORITY VALUE
+                {
+                  char *tmp = $2.val;
+                  long long int cval = 0;
+                  char *endp = NULL;
+                  errno = 0;
+                  cval = strtoll(tmp, &endp, 10);
+                  if (($2.val_type != INT_TYPE)
+                      || (errno == ERANGE
+                          && (cval == LLONG_MAX || cval == LLONG_MIN))
+                      || (errno != 0 && cval == 0)
+                      || (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
+                    yy_cli_parse_error((const char *)
+                                       "Priority must be <u32>\n");
+                  } else {
+                    parse_defp->def_priority = cval;
+                  }
+                }
 
 syntax_cause:   SYNTAX exp {append(parse_defp->actions + syntax_act, $2, 0);}
 		;

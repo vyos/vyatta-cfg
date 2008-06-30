@@ -133,8 +133,12 @@ sub displayValues {
         $nval = "\"$nval\"";
       }
     }
+
+    my %cnodes = $config->listNodeStatus();
+    my @cnames = sort keys %cnodes;
+
     if (defined($simple_show)) {
-      if (!defined($default) || $default ne $oval || $show_all) {
+      if (!$cnodes{'def'} || $show_all) {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
@@ -155,7 +159,7 @@ sub displayValues {
         $diff = '>';
       }
     }
-    if (!defined($default) || $default ne $value || $show_all) {
+    if (!$cnodes{'def'} || $show_all) {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
@@ -186,9 +190,12 @@ sub displayDeletedOrigChildren {
     my $is_tag = $config->isTagNode([ @cur_path, $child ]);
     $config->setLevel(join ' ', (@cur_path, $child));
     my @cnames = sort $config->listOrigNodes();
-    if ($#cnames == 0 && $cnames[0] eq 'node.val') {
+
+    if ($cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $prefix, $child,
                     $dont_show_as_deleted);
+    } elsif ($cnames[0] eq 'def') {
+	#ignore
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
@@ -242,7 +249,20 @@ sub displayChildren {
     $config->setLevel(join ' ', (@cur_path, $child));
     my %cnodes = $config->listNodeStatus();
     my @cnames = sort keys %cnodes;
-    if ($#cnames == 0 && $cnames[0] eq 'node.val') {
+    
+    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
+    my $leaf = 0;
+    if ($cnodes{'def'}) {
+	if ($#cnames == 1 && $cnodes{'node.val'}) {
+	    $leaf = 1;
+	}
+    } else {
+	if ($#cnames == 0 && $cnodes{'node.val'}) {
+	    $leaf = 1;
+	}
+    }
+    
+    if ($leaf == 1) {
       displayValues([ @cur_path, $child ], $prefix, $child);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
@@ -309,7 +329,20 @@ sub outputNewConfig {
   my %rnodes = $config->listNodeStatus();
   if (scalar(keys %rnodes) > 0) {
     my @rn = keys %rnodes;
-    if ($#rn == 0 && $rn[0] eq 'node.val') {
+
+    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
+    my $leaf = 0;
+    if ($rnodes{'def'}) {
+	if ($#rn == 1 && $rnodes{'node.val'}) {
+	    $leaf = 1;
+	}
+    } else {
+	if ($#rn == 0 && $rnodes{'node.val'}) {
+	    $leaf = 1;
+	}
+    }
+    
+    if ($leaf == 1) {
       # this is a leaf value-node
       displayValues([ @_ ], '', $_[$#_]);
     } else {

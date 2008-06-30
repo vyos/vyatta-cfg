@@ -10,7 +10,6 @@ libtool
 /aclocal.m4
 /autom4te.cache
 /build-stamp
-/ChangeLog
 /config
 /config.log
 /config.guess
@@ -21,6 +20,7 @@ libtool
 /debian/vyatta-cfg
 /debian/vyatta-cfg.postinst
 /debian/vyatta-cfg.postrm
+/debian/vyatta-cfg.debhelper.log
 /INSTALL
 /Makefile.in
 /Makefile
