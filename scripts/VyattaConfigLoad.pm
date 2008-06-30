@@ -49,7 +49,7 @@ my %config_rank  = (
     'protocols ospf'            => 780,
     'protocols rip'             => 770,
     'vpn'                       => 600,
-
+    'load-balancing'            => 500,
 );
 
 my %regex_rank = (
