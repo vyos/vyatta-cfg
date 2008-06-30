@@ -75,9 +75,10 @@ discard ()
 	changes=0
     fi
 
-    sudo umount ${VYATTA_TEMP_CONFIG_DIR};
-    sudo rm -fr ${VYATTA_CHANGES_ONLY_DIR};
-    sudo mkdir -p ${VYATTA_CHANGES_ONLY_DIR};
+    sudo umount $VYATTA_TEMP_CONFIG_DIR
+    sudo rm -fr $VYATTA_CHANGES_ONLY_DIR $VYATTA_TEMP_CONFIG_DIR
+    make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
+    make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
     sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro unionfs ${VYATTA_TEMP_CONFIG_DIR};
     
     if (( changes )); then
