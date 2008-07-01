@@ -214,6 +214,7 @@ extern int get_config_lock();
 
 extern int out_fd;
 extern FILE *out_stream;
+extern FILE *err_stream;
 
 extern int initialize_output();
 
