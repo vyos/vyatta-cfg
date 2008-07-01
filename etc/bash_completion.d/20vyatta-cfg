@@ -814,22 +814,26 @@ vyatta_config_complete ()
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
     declare -a hitems=( "commit" \
+                        "copy" \
                         "delete" \
-	                "discard" \
+                        "discard" \
                         "edit" \
                         "exit" \
                         "load" \
+                        "rename" \
                         "run" \
                         "save" \
                         "set" \
                         "show" )
     declare -a hstrs=( \
       "Commit the current set of changes" \
+      "Copy a configuration element" \
       "Delete a configuration element" \
       "Discard uncommitted changes" \
       "Edit a sub-element" \
       "Exit from this configuration level" \
       "Load configuration from a file" \
+      "Rename a configuration element" \
       "Run an operational-mode command" \
       "Save configuration to a file" \
       "Set the value of a parameter or create a new element" \
