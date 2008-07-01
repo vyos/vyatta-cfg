@@ -1926,24 +1926,51 @@ void subtract_values(char **lhs, const char *rhs)
   if (lhs == NULL || *lhs == NULL || **lhs == '\0' || rhs == NULL || *rhs == '\0')
     return;
 
+  /* calculate number of rhs entries */
   rhs_copy = strdup(rhs);
-  length = strlen(rhs) / 2;
-  head = ptr = my_malloc(length, "subtract_values list1");
-  memset(head, 0, length);
-
   line = strtok(rhs_copy, "\n\r");
   while (line != NULL && *line != '\0') {
-    *ptr = line;
-    ptr++;
     rhs_cnt++;
     line = strtok(NULL, "\n\r");
   }
 
-  length = strlen(*lhs) / 2;
+  /* strtok destroys the string. dup again. */
+  free(rhs_copy);
+  rhs_copy = strdup(rhs);
+
+  /* allocate enough space for all old entries (to be subtracted) */
+  length = rhs_cnt * sizeof(char *);
+  head = ptr = my_malloc(length, "subtract_values list1");
+  memset(head, 0, length);
+
+  /* parse the entries and put them in head[] */
+  line = strtok(rhs_copy, "\n\r");
+  while (line != NULL && *line != '\0') {
+    *ptr = line;
+    ptr++;
+    line = strtok(NULL, "\n\r");
+  }
+
+  /* calculate number of lhs entries */
+  {
+    char *lhs_copy = strdup(*lhs);
+    line = strtok(lhs_copy, "\n\r");
+    while (line != NULL && *line != '\0') {
+      lhs_cnt++;
+      line = strtok(NULL, "\n\r");
+    }
+    free(lhs_copy);
+  }
+
+  /* allocate enough space for all new entries */
+  length = lhs_cnt * sizeof(char *);
   new_head = new_ptr = my_malloc(length, "subtract_values list2");
   memset(new_head, 0, length);
 
+  /* reset length and lhs_cnt. they are now used for the "new" array (i.e.,
+   * after subtraction). */
   length = 0;
+  lhs_cnt = 0;
   line = strtok(*lhs, "\n\r");
   while (line != NULL && *line != '\0') {
     for (i = 0; i < rhs_cnt; i++) {
