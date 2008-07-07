@@ -397,8 +397,19 @@ sub getConfigDiff {
   # everything together anyway.
   @delete_list = sort { ${$a}[1] <=> ${$b}[1] } @delete_list;
   @set_list = sort { ${$b}[1] <=> ${$a}[1] } @set_list;
+
+  # need to filter out deletions of nodes with default values
+  my @new_delete_list = ();
+  foreach my $del (@delete_list) {
+    my @comps = map { s/^'(.*)'$/$1/; $_; } @{${$del}[0]};
+    my ($is_multi, $is_text, $default) = $active_cfg->parseTmpl(\@comps);
+    if (!defined($default)) {
+      push @new_delete_list, $del;
+    }
+  }
+
   my %diff = (
-              'delete' => \@delete_list,
+              'delete' => \@new_delete_list,
               'set' => \@set_list,
              );
   return %diff;
