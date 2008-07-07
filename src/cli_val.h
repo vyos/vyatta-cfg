@@ -153,6 +153,7 @@ extern void cli_val_done(void);
 extern void init_path(vtw_path *path, const char *root);
 extern void pop_path(vtw_path *path);
 extern void push_path(vtw_path *path, char *segm);
+extern void push_path_no_escape(vtw_path *path, char *segm);
 extern void free_def(vtw_def *defp);
 extern void free_sorted(vtw_sorted *sortp);
 extern void *my_malloc(size_t size, const char *name);
