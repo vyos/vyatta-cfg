@@ -23,6 +23,9 @@
 
 use strict;
 use lib "/opt/vyatta/share/perl5/";
+use POSIX;
+use IO::Prompt;
+use Sys::Syslog qw(:standard :macros);
 use VyattaConfigLoad;
 
 my $etcdir = $ENV{vyatta_sysconfdir};
@@ -42,6 +45,7 @@ my $proto;
 if (defined($ARGV[0])) {
   $load_file = $ARGV[0];
 }
+my $orig_load_file = $load_file;
 
 if ($load_file =~ /^[^\/]\w+:\//) {
   if ($load_file =~ /^(\w+):\/\/\w/) {
@@ -107,19 +111,35 @@ if ($mode eq 'local') {
   }
   $load_file = $url_tmp_file;
 }
+
+my $xorp_cfg  = 0;
+my $valid_cfg = 0;
 while (<CFG>) {
   if (/\/\*XORP Configuration File, v1.0\*\//) {
-    print "Warning: Loading a pre-Glendale configuration.\n";
-    print "Do you want to continue? [no] ";
-    my $resp = <STDIN>;
-    if (!($resp =~ /^yes$/i)) {
-      print "Configuration not loaded\n";
-      exit 1;
-    }
+    $xorp_cfg = 1;
+    last;
+  } elsif (/vyatta-config-version/) {
+    $valid_cfg = 1;
     last;
   }
 }
+if ($xorp_cfg or ! $valid_cfg) {
+  if ($xorp_cfg) {
+    print "Warning: Loading a pre-Glendale configuration.\n";
+  } else {
+    print "Warning: file does NOT appear to be a valid config file.\n";
+  }
+  if (!prompt("Do you want to continue? ", -tty, -Yes, -default=>'no')) {
+    print "Configuration not loaded\n";
+    exit 1;
+  }
+}
 close CFG;
+
+# log it
+openlog($0, "", LOG_USER);
+my $login = getlogin() || getpwuid($<) || "unknown";
+syslog("warning", "Load config [$orig_load_file] by $login");
 
 # do config migration
 system("$sbindir/vyatta_config_migrate.pl $load_file");

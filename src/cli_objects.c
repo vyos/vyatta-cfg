@@ -243,7 +243,7 @@ void init_edit()
       slashp = strchr(scanp, '/');
       if (slashp)
 	*slashp = 0;
-      push_path(&m_path, scanp);
+      push_path_no_escape(&m_path, scanp);
       if (slashp) {
 	*slashp = '/';
 	scanp = slashp+1;
