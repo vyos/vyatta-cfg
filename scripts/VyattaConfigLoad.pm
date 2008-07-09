@@ -297,9 +297,6 @@ sub findDeletedNodes {
   $active_cfg->setLevel(join ' ', @active_path);
   my @active_nodes = $active_cfg->listOrigNodes();
   foreach (@active_nodes) {
-    if ($_ eq 'def') {
-      next;
-    }
     if ($_ eq 'node.val') {
       findDeletedValues($new_ref, \@active_path);
       next;
