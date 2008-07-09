@@ -75,9 +75,10 @@ discard ()
 	changes=0
     fi
 
-    sudo umount ${VYATTA_TEMP_CONFIG_DIR};
-    sudo rm -fr ${VYATTA_CHANGES_ONLY_DIR};
-    sudo mkdir -p ${VYATTA_CHANGES_ONLY_DIR};
+    sudo umount $VYATTA_TEMP_CONFIG_DIR
+    sudo rm -fr $VYATTA_CHANGES_ONLY_DIR $VYATTA_TEMP_CONFIG_DIR
+    make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
+    make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
     sudo mount -t unionfs -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro unionfs ${VYATTA_TEMP_CONFIG_DIR};
     
     if (( changes )); then
@@ -813,22 +814,26 @@ vyatta_config_complete ()
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
     declare -a hitems=( "commit" \
+                        "copy" \
                         "delete" \
-	                "discard" \
+                        "discard" \
                         "edit" \
                         "exit" \
                         "load" \
+                        "rename" \
                         "run" \
                         "save" \
                         "set" \
                         "show" )
     declare -a hstrs=( \
       "Commit the current set of changes" \
+      "Copy a configuration element" \
       "Delete a configuration element" \
       "Discard uncommitted changes" \
       "Edit a sub-element" \
       "Exit from this configuration level" \
       "Load configuration from a file" \
+      "Rename a configuration element" \
       "Run an operational-mode command" \
       "Save configuration to a file" \
       "Set the value of a parameter or create a new element" \

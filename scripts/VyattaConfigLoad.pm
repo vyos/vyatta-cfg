@@ -56,7 +56,8 @@ my %regex_rank = (
     'interfaces ethernet \S* vrrp'                  => 500,
     'interfaces ethernet \S* vif \S* vrrp'          => 500,
     'protocols bgp \d+ parameters'                  => 810,
-    'protocols bgp \d+ neighbor \S*[^\d.]\S*'       => 800,
+    'protocols bgp \d+ neighbor \d+\.\d+\.\d+\.\d+' => 800,
+    'protocols bgp \d+ neighbor \w+'                => 801,
 );
 
 my @all_nodes = ();
@@ -296,9 +297,6 @@ sub findDeletedNodes {
   $active_cfg->setLevel(join ' ', @active_path);
   my @active_nodes = $active_cfg->listOrigNodes();
   foreach (@active_nodes) {
-    if ($_ eq 'def') {
-      next;
-    }
     if ($_ eq 'node.val') {
       findDeletedValues($new_ref, \@active_path);
       next;
@@ -396,8 +394,19 @@ sub getConfigDiff {
   # everything together anyway.
   @delete_list = sort { ${$a}[1] <=> ${$b}[1] } @delete_list;
   @set_list = sort { ${$b}[1] <=> ${$a}[1] } @set_list;
+
+  # need to filter out deletions of nodes with default values
+  my @new_delete_list = ();
+  foreach my $del (@delete_list) {
+    my @comps = map { s/^'(.*)'$/$1/; $_; } @{${$del}[0]};
+    my ($is_multi, $is_text, $default) = $active_cfg->parseTmpl(\@comps);
+    if (!defined($default)) {
+      push @new_delete_list, $del;
+    }
+  }
+
   my %diff = (
-              'delete' => \@delete_list,
+              'delete' => \@new_delete_list,
               'set' => \@set_list,
              );
   return %diff;

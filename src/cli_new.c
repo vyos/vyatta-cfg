@@ -1774,7 +1774,35 @@ void push_path(vtw_path *path, char *segm)
       }else 
 	*pp = *cp; 
     *pp = 0;
+    path->path_len += len;
+    if (path->path_lev == path->path_ends_alloc){
+	path->path_ends_alloc += ENDS_ALLOC;
+	path->path_ends = (int *)my_realloc(path->path_ends, 
+		     sizeof(int *)*path->path_ends_alloc, "puhs_path 2");
+    }
+    path->path_ends[path->path_lev++] = path->path_len;
+    //    push_path_no_escape();
+}
 
+/**
+ * Version of above that doesn't escape value before stuffing.
+ *
+ **/
+void push_path_no_escape(vtw_path *path, char *segm)
+{
+    int len;
+    char *cp;
+    char *pp;
+    
+    for(cp=segm, len=0;*cp;++cp, ++len);
+    warrant_path(path, len + 1);
+    path->path_buf[path->path_len] = '/';
+    path->path_buf[++path->path_len] = 0;	
+    for(pp=path->path_buf + path->path_len,cp=segm;
+	*cp;++cp, ++pp) {
+      *pp = *cp; 
+    }
+    *pp = 0;
     path->path_len += len;
     if (path->path_lev == path->path_ends_alloc){
 	path->path_ends_alloc += ENDS_ALLOC;
@@ -1926,24 +1954,51 @@ void subtract_values(char **lhs, const char *rhs)
   if (lhs == NULL || *lhs == NULL || **lhs == '\0' || rhs == NULL || *rhs == '\0')
     return;
 
+  /* calculate number of rhs entries */
   rhs_copy = strdup(rhs);
-  length = strlen(rhs) / 2;
-  head = ptr = my_malloc(length, "subtract_values list1");
-  memset(head, 0, length);
-
   line = strtok(rhs_copy, "\n\r");
   while (line != NULL && *line != '\0') {
-    *ptr = line;
-    ptr++;
     rhs_cnt++;
     line = strtok(NULL, "\n\r");
   }
 
-  length = strlen(*lhs) / 2;
+  /* strtok destroys the string. dup again. */
+  free(rhs_copy);
+  rhs_copy = strdup(rhs);
+
+  /* allocate enough space for all old entries (to be subtracted) */
+  length = rhs_cnt * sizeof(char *);
+  head = ptr = my_malloc(length, "subtract_values list1");
+  memset(head, 0, length);
+
+  /* parse the entries and put them in head[] */
+  line = strtok(rhs_copy, "\n\r");
+  while (line != NULL && *line != '\0') {
+    *ptr = line;
+    ptr++;
+    line = strtok(NULL, "\n\r");
+  }
+
+  /* calculate number of lhs entries */
+  {
+    char *lhs_copy = strdup(*lhs);
+    line = strtok(lhs_copy, "\n\r");
+    while (line != NULL && *line != '\0') {
+      lhs_cnt++;
+      line = strtok(NULL, "\n\r");
+    }
+    free(lhs_copy);
+  }
+
+  /* allocate enough space for all new entries */
+  length = lhs_cnt * sizeof(char *);
   new_head = new_ptr = my_malloc(length, "subtract_values list2");
   memset(new_head, 0, length);
 
+  /* reset length and lhs_cnt. they are now used for the "new" array (i.e.,
+   * after subtraction). */
   length = 0;
+  lhs_cnt = 0;
   line = strtok(*lhs, "\n\r");
   while (line != NULL && *line != '\0') {
     for (i = 0; i < rhs_cnt; i++) {
