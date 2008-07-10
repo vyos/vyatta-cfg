@@ -1,3 +1,57 @@
+vyatta-cfg (0.11) unstable; urgency=low
+
+	  3.1.1
+  [ Mark O'Brien ]
+
+
+  [ Mohit Mehta ]
+  * add top level op-mode commands: 'connect', 'delete', 'disconnect',
+    and 'terminal'
+
+  [ Michael Larson ]
+  * fixed non-root user access for discard. also moved help string.
+
+  [ Stig Thormodsrud ]
+  * Fix 2619: Implement something similar to Juniper's "show | display
+    set" functionality.
+  * Fix 3143: Unable to save/load config from a remote server.
+
+  [ Mohit Mehta ]
+  * add release and renew to allowed-op file so that operator is able to
+    execute them
+  * better handling of allowed values for 'release/renew dhcp interface
+    <>'
+
+  [ rbalocca ]
+  * Add dependency
+
+  [ Mohit Mehta ]
+  * better handling of dhcp release/renew commands
+  * Fix bug 3059 Operator Level commands for DHCP client
+
+  [ Stig Thormodsrud ]
+  * Add a config ranking to prioritize bgp route-id ahead of neighbors.
+
+  [ Mohit Mehta ]
+  * -> redo the way dhcp client works. instead of using one daemon for
+    all interfaces,
+
+  [ Bob Gilligan ]
+  * Bugfix: 3355
+
+  [ An-Cheng Huang ]
+  * fix for bug 2622: add "copy" and "rename" commands for configuration
+    mode.
+
+  [ Michael Larson ]
+  * fix for bug 110. added discard command to configure mode. This
+    command deletes local changes and keeps the user in configure mode.
+  * fix for bug 3347--skip def file.o
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Sat, 28 Jun 2008 11:22:15 -0700
+
 vyatta-cfg (0.10) unstable; urgency=low
 
 	  3.1.0
