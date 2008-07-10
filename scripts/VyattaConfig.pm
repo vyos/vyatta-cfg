@@ -130,9 +130,7 @@ sub listOrigNodes {
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
     #print "DEBUG VyattaConfig->listNodes(): node = $tmp\n";
-    if ($tmp ne 'def') {
-      push @nodes_modified, $tmp;
-    }
+    push @nodes_modified, $tmp;
   }
 
   return @nodes_modified;
