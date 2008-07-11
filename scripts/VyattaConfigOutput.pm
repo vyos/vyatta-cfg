@@ -189,7 +189,7 @@ sub displayDeletedOrigChildren {
     }
     my $is_tag = $config->isTagNode([ @cur_path, $child ]);
     $config->setLevel(join ' ', (@cur_path, $child));
-    my @cnames = sort $config->listOrigNodes();
+    my @cnames = sort $config->listOrigNodesNoDef();
 
     if ($cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $prefix, $child,

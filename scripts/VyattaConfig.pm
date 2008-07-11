@@ -136,6 +136,43 @@ sub listOrigNodes {
   return @nodes_modified;
 }
 
+## listOrigNodes("level")
+# return array of all original nodes (i.e., before any current change; i.e.,
+# in "working") at "level"
+# level is relative
+sub listOrigNodesNoDef {
+  my ($self, $path) = @_;
+  my @nodes = ();
+
+  if (defined $path) { 
+    $path =~ s/\//%2F/g;
+    $path =~ s/\s+/\//g;
+    $path = $self->{_active_dir_base} . $self->{_current_dir_level} . "/"
+            . $path;
+  }
+  else {
+    $path = $self->{_active_dir_base} . $self->{_current_dir_level};
+  }
+
+  #print "DEBUG VyattaConfig->listNodes(): path = $path\n";
+  opendir DIR, "$path" or return ();
+  @nodes = grep !/^\./, readdir DIR;
+  closedir DIR;
+
+  my @nodes_modified = ();
+  while (@nodes) {
+    my $tmp = pop (@nodes);
+    $tmp =~ s/\n//g;
+    $tmp =~ s/%2F/\//g;
+    #print "DEBUG VyattaConfig->listNodes(): node = $tmp\n";
+    if ($tmp ne 'def') {
+	push @nodes_modified, $tmp;
+    }
+  }
+
+  return @nodes_modified;
+}
+
 ## returnParent("level")
 # return the name of parent node relative to the current hierarchy
 # in this case "level" is set to the parent dir ".. .."
