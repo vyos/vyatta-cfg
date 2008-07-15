@@ -138,7 +138,7 @@ sub displayValues {
     my @cnames = sort keys %cnodes;
 
     if (defined($simple_show)) {
-      if ($show_all) {
+      if (!$cnodes{'def'} || $show_all) {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
@@ -159,7 +159,7 @@ sub displayValues {
         $diff = '>';
       }
     }
-    if ($show_all) {
+    if (!$cnodes{'def'} || $show_all) {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
@@ -189,11 +189,13 @@ sub displayDeletedOrigChildren {
     }
     my $is_tag = $config->isTagNode([ @cur_path, $child ]);
     $config->setLevel(join ' ', (@cur_path, $child));
-    my @cnames = sort $config->listOrigNodes();
+    my @cnames = sort $config->listOrigNodesNoDef();
 
     if ($cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $prefix, $child,
                     $dont_show_as_deleted);
+    } elsif ($cnames[0] eq 'def') {
+	#ignore
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
