@@ -119,11 +119,6 @@ start ()
     load_bootfile
     chmod g-w,o-w /
 
-    (   [ -s /boot/grub/menu.lst ] &&
-	upgrade-from-grub-legacy &&
-	rm -f /boot/grub/menu.lst*
-    ) || true
-
     log_end_msg $?
 }
 
