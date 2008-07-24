@@ -56,6 +56,7 @@ my %config_rank  = (
 my %regex_rank = (
     'interfaces ethernet \S* vrrp'                  => 500,
     'interfaces ethernet \S* vif \S* vrrp'          => 500,
+    'interfaces ethernet \S* pppo[ea]'              => 400,
     'protocols bgp \d+ parameters'                  => 810,
     'protocols bgp \d+ neighbor \d+\.\d+\.\d+\.\d+' => 800,
     'protocols bgp \d+ neighbor \w+'                => 801,
