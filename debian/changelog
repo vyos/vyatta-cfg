@@ -1,3 +1,76 @@
+vyatta-cfg (0.12) unstable; urgency=low
+
+	  3.1.2
+  [ Mark O'Brien ]
+
+
+  [ Rick Balocca ]
+  * Code moved for fix of bug
+    http://bugzilla.vyatta.com/show_bug.cgi?id=3417
+
+  [ Stig Thormodsrud ]
+  * Prioritize vpn ahead of pppo[ea] interfaces.
+
+  [ Mohit Mehta ]
+  * removing code to update resolv.conf from here, it is better to call
+    it from dhclient-script
+  * => Modified VyattaConfig.pm function 'returnOrigValues()' to return
+    empty array when no value is configured
+
+  [ Michael Larson ]
+  * fix for bug 3441. Selective stripping of the 'def' only needs to
+    occur in one location.
+  * Revert "fix for bug 3441. Removed def from listOutputNodes(), which
+    allowed other code that filters out def file to be removed."
+
+  [ root ]
+  * fix for bug 3441. Removed def from listOutputNodes(), which allowed
+    other code that filters out def file to be removed.
+
+  [ rbalocca ]
+  * Fix for bug http://bugzilla.vyatta.com/show_bug.cgi?id=3427
+
+  [ An-Cheng Huang ]
+  * fix for bug 3323: skip deletions of nodes with default values when
+    loading
+
+  [ Michael Larson ]
+  * fix for bug 3216. added no escape option to push path for
+    environmental path variable. note this is appied to all c code
+    access to the
+
+  [ Stig Thormodsrud ]
+  * Partial fix for 3383: check for vyatta-config-version, warn/prompt
+    that it appears to be invalid config.
+
+  [ Michael Larson ]
+  * fix for bug 3377.
+
+  [ An-Cheng Huang ]
+  * fix for bug 3403: allocate correct amount of memory for multi-valued
+    nodes.
+
+  [ Michael Larson ]
+  * Revert "set load-balancing load order after interfaces are
+    configured on load."
+
+  [ Stig Thormodsrud ]
+  * Fix 3396: "commit failed at rank 800" while booting with bgp peer-
+    group.
+
+  [ An-Cheng Huang ]
+  * add help string for "copy" and "rename"
+
+  [ Michael Larson ]
+  * fix for bug 3400. user vyatta needed modification to discard
+    command.
+  * set load-balancing load order after interfaces are configured on
+    load.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Wed, 23 Jul 2008 21:36:00 -0700
+
 vyatta-cfg (0.11) unstable; urgency=low
 
 	  3.1.1
