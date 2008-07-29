@@ -35,7 +35,7 @@
 /* Global vars: */
 vtw_path m_path, t_path;
 
-/* Loval vars: */
+/* Local vars: */
 static vtw_node *vtw_free_nodes; /* linked via left */
 static char val_name[] = VAL_NAME;
 static int cond1[TOP_COND] ={5, 0,-1,-1, 0, 1, 0, 0};
@@ -43,23 +43,23 @@ static int cond2[TOP_COND] ={5, 0, 1,-1,-1, 1, 1, 0};
 static char const *cond_formats[DOMAIN_TYPE] = 
   {
     0, 
-    "%u", /* INT_TYPE */
-    "%u.%u.%u.%u", /*IPV4_TYPE*/ 
-    "%u.%u.%u.%u/%u", /*IPV4NET_TYPE*/ 
-    0,
-    0,
-    "%x:%x:%x:%x:%x:%x" /* MACADDR_TYPE */
+    "%u",                         /* INT_TYPE     */
+    "%u.%u.%u.%u",                /* IPV4_TYPE    */ 
+    "%u.%u.%u.%u/%u",             /* IPV4NET_TYPE */ 
+    "%x:%x:%x:%x:%x:%x:%x:%x",    /* IPV6NET      */ 
+    "%x:%x:%x:%x:%x:%x:%x:%x/%u", /* IPV6NET_TYPE */ 
+    "%x:%x:%x:%x:%x:%x"           /* MACADDR_TYPE */
   };
 
 static int cond_format_lens[DOMAIN_TYPE] = 
   {
-    0, 
-    1, /* INT_TYPE */
-    4, /*IPV4_TYPE*/ 
-    5, /*IPV4NET_TYPE*/ 
-    0,
-    0,
-    6 /* MACADDR_TYPE */
+     0, 
+     1, /* INT_TYPE     */
+     4, /* IPV4_TYPE    */ 
+     5, /* IPV4NET_TYPE */ 
+    16, /* IPV6_TYPE    */ 
+    17, /* IPV6NET_TYPE */ 
+     6  /* MACADDR_TYPE */
   };
 
 static int cli_val_len;
