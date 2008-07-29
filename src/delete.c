@@ -12,35 +12,35 @@ extern char *cli_operation_name;
 
 static void remove_rf(boolean do_umount)
 {
-    char *command;
-    touch();
-    if (do_umount) {
-      command = my_malloc(strlen(get_mdirp()) + 20, "delete");
-      sprintf(command, "sudo umount %s", get_mdirp());
-      system(command);
-      free(command);
-    }
-    command = my_malloc(strlen(m_path.path) + 10, "delete"); 
-    sprintf(command, "rm -rf %s", m_path.path);
+  char *command = NULL;
+  touch();
+  if (do_umount) {
+    command = malloc(strlen(get_mdirp()) + 20);
+    sprintf(command, "sudo umount %s", get_mdirp());
     system(command);
-    free(command);
-    if (do_umount) {
-      command = my_malloc(strlen(get_mdirp()) + strlen(get_cdirp()) + 
-			  strlen(get_mdirp()) + 100,
-			  "delete");
-      sprintf(command, "sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
-	      " $UNIONFS %s", get_cdirp(), get_adirp(), get_mdirp());
-      system(command);
-      free(command);
-    }
+  }
+
+  command = realloc(command, strlen(m_path.path) + 10);
+  sprintf(command, "rm -rf %s", m_path.path);
+  system(command);
+
+  if (do_umount) {
+    command = realloc(command, strlen(get_mdirp()) + strlen(get_cdirp()) + 
+		      strlen(get_mdirp()) + 100);
+    sprintf(command, "sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
+	    " $UNIONFS %s", get_cdirp(), get_adirp(), get_mdirp());
+    system(command);
+  }
+  free(command);
 }
+
 static boolean has_default(char **def, int size)
 {
-  char *buf;
-  buf = malloc(1025);
   char *buf_ptr;
   FILE *fp = fopen(t_path.path, "r");
+
   if (fp) {
+    char buf[1025];
     while (fgets(buf, 1024, fp)) {
       if (strncmp(buf, "default:", 8) == 0) {
 	buf_ptr = index(buf,':');
@@ -53,33 +53,32 @@ static boolean has_default(char **def, int size)
 	}
 	memcpy(*def, buf_ptr, strlen(buf_ptr)-1);
 	fclose(fp);
-	free(buf);
 	return 0;
       }
     }
     fclose(fp);
   }
-  free(buf);
+
   return 1;
 }
-static void reset_default(char *def_val)
+
+static void reset_default(const char *def_val)
 {
-  char *command,*def_cmd;
-  boolean has_default = 1;
-  if (def_val == NULL) {
+  if (def_val == NULL)
     return;
-  }
-  if (has_default) {
-    touch();
-    command = my_malloc(strlen(m_path.path) + 100, "set"); 
-    sprintf(command, "echo %s > %s/node.val", def_val, m_path.path);
-    system(command);
-    def_cmd = malloc(strlen(m_path.path) + 12); 
-    sprintf(def_cmd, "touch %s/def",m_path.path);
-    system(def_cmd);
-    free(command);
-    free(def_cmd); 
-  }
+
+  char filename[strlen(m_path.path) + 10];
+  touch();
+  sprintf(filename, "%s/node.val", m_path.path);
+
+  FILE *fp = fopen(filename, "w");
+  if (fp == NULL)
+    bye("can not open: %s", filename);
+  fputs(def_val, fp);
+  fclose(fp);
+
+  sprintf(filename, "%s/def", m_path.path);
+  touch_file(filename);
 }
 /***************************************************
   set_validate:
