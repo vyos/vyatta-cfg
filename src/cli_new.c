@@ -2103,7 +2103,7 @@ void touch()
   free(command);
 }
   
-char *type_to_name(vtw_type_e type) {
+const char *type_to_name(vtw_type_e type) {
   switch(type) {
   case INT_TYPE: return("u32");
   case IPV4_TYPE: return("ipv4");

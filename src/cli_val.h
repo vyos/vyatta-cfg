@@ -187,7 +187,7 @@ extern void free_val(valstruct *val);
 extern void my_free(void *ptr);
 extern void touch(void);
 extern void dump_log(int argc, char **argv);
-extern char *type_to_name(vtw_type_e type);
+extern const char *type_to_name(vtw_type_e type);
 extern boolean execute_list(vtw_node *cur, vtw_def *def);
 extern void touch_dir(const char *dp);
 
