@@ -2074,35 +2074,7 @@ int cli_val_read(char *buf, int max_size)
   }
   return len;
 }
-/*==========================================================*/
-/*        MEMORY                                            */
-/*==========================================================*/
-
-void *my_malloc(size_t size, const char *name)
-{
-  return malloc(size);
-}
-void *my_realloc(void *ptr, size_t size, const char *name)
-{
-  return realloc(ptr, size);
-}
-
-void my_free(void *ptr) 
-{
-  free(ptr);
-}
-
-/*************************************************
-  my_strdup:
-    do a strdup,
-    exit on no memory
-**************************************************/
-char *my_strdup(const char *s, const char *name)
-{
-  return strdup(s);
-}
-
-void done()
+void done(void)
 {
   free_reuse_list();
   free_path(&t_path);

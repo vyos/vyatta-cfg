@@ -156,8 +156,6 @@ extern void push_path(vtw_path *path, char *segm);
 extern void push_path_no_escape(vtw_path *path, char *segm);
 extern void free_def(vtw_def *defp);
 extern void free_sorted(vtw_sorted *sortp);
-extern void *my_malloc(size_t size, const char *name);
-extern void *my_realloc(void *ptr, size_t size, const char *name);
 
 extern vtw_path m_path, t_path;
 
@@ -167,7 +165,6 @@ extern vtw_path m_path, t_path;
 extern void add_val(valstruct *first, valstruct *second);
 extern int cli_val_read(char *buf, int max_size);
 extern vtw_node *make_val_node(valstruct *val);
-extern char *my_strdup(const char *s, const char *name);
 extern valstruct str2val(char *cp);
 extern void dump_tree(vtw_node *node, int lev);
 extern void dump_def(vtw_def *defp);
@@ -188,7 +185,6 @@ extern void print_msg(const char *msg, ...)
 extern void switch_path(first_seg *seg);
 extern void vtw_sort(valstruct *valp, vtw_sorted *sortp);
 extern void free_val(valstruct *val);
-extern void my_free(void *ptr);
 extern void touch(void);
 extern int mkdir_p(const char *path);
 
@@ -224,6 +220,12 @@ extern FILE *out_stream;
 extern FILE *err_stream;
 
 extern int initialize_output(void);
+
+/* debug hooks? */
+#define my_malloc(size, name)		malloc(size)
+#define my_realloc(ptr, size, name)	realloc(ptr, size)
+#define my_strdup(str, name)		strdup(str)
+#define my_free(ptr)			free(ptr)
 
 /*** debug ***/
 #undef CLI_DEBUG
