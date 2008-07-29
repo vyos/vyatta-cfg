@@ -55,6 +55,7 @@
 #include <string.h>
 
 #include "cli_path_utils.h"
+#include "cli_val.h"
 
 /*********************
  * Data definitions 

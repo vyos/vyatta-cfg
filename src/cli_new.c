@@ -16,6 +16,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <time.h>
+#include <utime.h>
 
 #include "cli_objects.h"
 #include "cli_val_engine.h"
@@ -110,7 +111,7 @@ char *cli_operation_name = NULL;
    printf("echo \"bla-bla-bla%s\";", sptr)
    note very important ';' as the end of the format
 */
-void bye(char *msg, ...)
+void bye(const char *msg, ...)
 {
   va_list ap;
             
@@ -135,7 +136,7 @@ void bye(char *msg, ...)
    which are executed as eval `command` in order to
    modify BASH env
 */
-void print_msg(char *msg, ...)
+void print_msg(const char *msg, ...)
 {
   va_list ap;
 
@@ -149,21 +150,49 @@ void print_msg(char *msg, ...)
   va_end(ap);
 }
 
+int mkdir_p(const char *path)
+{
+  if (mkdir(path, 0777) == 0)
+    return 0;
+
+  if (errno != ENOENT)
+    return -1;
+
+  char *tmp = strdup(path);
+  if (tmp == NULL) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  char *slash = strrchr(tmp, '/');
+  if (slash == NULL)
+    return -1;
+  *slash = '\0';
+
+  /* recurse to make missing piece of path */
+  int ret = mkdir_p(tmp);
+  if (ret == 0)
+    ret = mkdir(path, 0777);
+
+  free(tmp);
+  return ret;
+}
+
 void touch_dir(const char *dp) 
 {
   struct stat    statbuf;
+
   if (lstat(dp, &statbuf) < 0) {
-    char *command;
-    command = my_malloc(strlen(dp) + 10, "set"); 
-    sprintf(command, "mkdir -p %s", dp);
-    system(command);
-    free(command);
-    return;
-  } 
-  if ((statbuf.st_mode & S_IFMT) != S_IFDIR) {
-    bye("directory %s expected, found regular file", dp);
+    if (errno != ENOENT) 
+      bye("can't access directory: %s (%s)", dp, strerror(errno));
+
+    if (mkdir_p(dp) < 0)
+      bye("can't make directory: %s (%s)", dp, strerror(errno));
+  } else {
+    if(!S_ISDIR(statbuf.st_mode))
+      bye("directory %s expected, found file", dp);
+    utime(dp, NULL);
   }
-  return;
 }
 
 /*****************************************************
@@ -367,7 +396,7 @@ get_config_lock()
   return ret;
 }
 
-void internal_error(int line, char *file)
+void internal_error(int line, const char *file)
 {
   printf("\n\nInternal Error at line %d in %s\n", line, file);
   exit (-1);
@@ -802,7 +831,7 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
     compare two values per cond
     returns result of comparison
 ****************************************************/
-boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond) 
+boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond) 
 {
   unsigned int left_parts[9], right_parts[9];
   vtw_type_e val_type;
@@ -2045,35 +2074,7 @@ int cli_val_read(char *buf, int max_size)
   }
   return len;
 }
-/*==========================================================*/
-/*        MEMORY                                            */
-/*==========================================================*/
-
-void *my_malloc(size_t size, const char *name)
-{
-  return malloc(size);
-}
-void *my_realloc(void *ptr, size_t size, const char *name)
-{
-  return realloc(ptr, size);
-}
-
-void my_free(void *ptr) 
-{
-  free(ptr);
-}
-
-/*************************************************
-  my_strdup:
-    do a strdup,
-    exit on no memory
-**************************************************/
-char *my_strdup(const char *s, const char *name)
-{
-  return strdup(s);
-}
-
-void done()
+void done(void)
 {
   free_reuse_list();
   free_path(&t_path);
@@ -2094,16 +2095,28 @@ void restore_paths(vtw_mark *markp)
     pop_path(&t_path);
 }
 
-void touch() 
+void touch_file(const char *filename)
 {
-  char *command;
-  command = my_malloc(strlen(get_mdirp()) + 20, "delete");
-  sprintf(command, "touch %s/%s", get_mdirp(), MOD_NAME);
-  system(command);
-  free(command);
+  int fd = creat(filename, 0666);
+  if (fd < 0)
+    {
+      if (errno == EEXIST)
+	utime(filename, NULL);
+      else
+	bye("can't touch %s (%s)", filename, strerror(errno));
+    }
+  else
+    close(fd);
+}
+
+void touch(void) 
+{
+  char filename[strlen(get_mdirp()) + 20];
+  sprintf(filename, "%s/%s", get_mdirp(), MOD_NAME);
+  touch_file(filename);
 }
   
-char *type_to_name(vtw_type_e type) {
+const char *type_to_name(vtw_type_e type) {
   switch(type) {
   case INT_TYPE: return("u32");
   case IPV4_TYPE: return("ipv4");
@@ -2118,12 +2131,7 @@ char *type_to_name(vtw_type_e type) {
   }
 }
 
-#if 1
-void
-dump_log(int argc, char **argv)
-{
-}
-#else
+#ifdef CLI_DEBUG
 void dump_log(int argc, char **argv)
 {
   int i;
