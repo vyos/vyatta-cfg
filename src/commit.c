@@ -22,14 +22,14 @@ struct DirIndex {
 };
 
 struct DirSort {
-  char name[255];
   unsigned long priority;
+  char name[255];
 };
 
 
-static char def_name[] = DEF_NAME;
-static char tag_name[] = TAG_NAME;
-static char opaque_name[] = OPQ_NAME;
+static const char def_name[] = DEF_NAME;
+static const char tag_name[] = TAG_NAME;
+static const char opaque_name[] = OPQ_NAME;
 
 static int fin_commit(boolean ok);
 static boolean commit_value(vtw_def *defp, char *cp, 
@@ -51,17 +51,12 @@ static void make_dir()
 {
   struct stat    statbuf;
   if (lstat(m_path.path, &statbuf) < 0) {
-    char *command;
-    command = my_malloc(strlen(m_path.path) + 10, "set"); 
-    sprintf(command, "mkdir -p %s", m_path.path);
-    system(command);
-    free(command);
+    mkdir_p(m_path.path);
     return;
   } 
-  if ((statbuf.st_mode & S_IFMT) != S_IFDIR) {
-    bye("directory %s expected, found regular file", m_path.path);
+  if (!S_ISDIR(statbuf.st_mode)) {
+    bye("directory %s expected, found  file", m_path.path);
   }
-  return;
 }
 #endif
 
@@ -111,18 +106,18 @@ init_next_filtered_dirname(DIR *dp, int sort_order, int exclude_wh)
       strcpy(d->name,dirp->d_name);
       d->priority = (unsigned long)0;
       vtw_def        def;
-      char *path;
-      path = malloc(strlen(t_path.path)+strlen(dirp->d_name)+2+8+1);
-      sprintf(path,"%s/%s/node.def",t_path.path,dirp->d_name);
+
+      char path[strlen(t_path.path)+strlen(dirp->d_name)+2+8+1];
+      sprintf(path,"%s/%s/node.def", t_path.path, dirp->d_name);
+
       struct stat s;
-      if ((lstat(path,&s) >= 0) && 
-	  ((s.st_mode & S_IFMT) == S_IFREG)) {
+      if ((lstat(path,&s) == 0) && S_ISREG(s.st_mode)) {
 	memset(&def, 0, sizeof(def));
 	if (parse_def(&def,path,FALSE) == 0) {
 	  d->priority = def.def_priority;
 	}
       }
-      free(path);
+
       di->dirname[di->dirname_ct++] = d;
       if (di->dirname_ct % 1024 == 0) {
 	di->dirname = realloc(di->dirname, (di->dirname_ct+1024)*sizeof(char*));
@@ -380,9 +375,7 @@ int main(int argc, char **argv)
 {
 
   boolean  status;
-  char *mod;
   struct stat    statbuf;
-  int st;
   boolean update_pending = FALSE;
  
   cli_operation_name = "Commit";
@@ -394,11 +387,10 @@ int main(int argc, char **argv)
   set_in_commit(TRUE);
   dump_log( argc, argv);
   init_paths(TRUE);
-  mod = my_malloc(strlen(get_mdirp()) + strlen(MOD_NAME)+2, "COMMIT");
+
+  char mod[strlen(get_mdirp()) + sizeof(MOD_NAME)+2];
   sprintf(mod, "%s/%s", get_mdirp(), MOD_NAME);
-  st = lstat(mod, &statbuf);
-  my_free(mod);
-  if (st < 0 ) {
+  if (lstat(mod, &statbuf) < 0) {
     fprintf(out_stream, "No configuration changes to commit\n");
     return 0;
   }
@@ -430,17 +422,14 @@ int main(int argc, char **argv)
 static void perform_create_node()
 {
 #if BITWISE
-  static char format[]="rm -f -r %s;mkdir %s";
-  char *command;
+  static const char format[]="rm -f -r %s;mkdir %s";
+  char command[2 * strlen(m_path.path) + sizeof(format)];
+
   switch_path(APATH);
-  command = my_malloc(2 * strlen(m_path.path) + sizeof(format),
-		      "commit_create");
   sprintf(command, format,  m_path.path, m_path.path);
   system(command);
-  my_free(command);
   switch_path(CPATH);
 #endif
-  return;
 }
  
 
@@ -451,32 +440,27 @@ static void perform_create_node()
 static void perform_delete_node()
 {
 #if BITWISE
-  static char format[]="rm -f -r %s";
-  char *command;
-  command = my_malloc(strlen(m_path.path) + sizeof(format),
-		      "commit_delete");
+  static const char format[]="rm -f -r %s";
+  char command[strlen(m_path.path) + sizeof(format)];
   sprintf(command, format, m_path.path);
   system(command);
-  my_free(command);
 #endif
-  return;
 }
+
 static void perform_move()
 {
 #if BITWISE
-  static char format[] = "rm -r -f %s;mkdir %s;mv %s/" VAL_NAME " %s";
+  static const char format[] = "rm -r -f %s;mkdir %s;mv %s/" VAL_NAME " %s";
   char *a_path;
-  char *command;
+  char command[sizeof(format)+3*strlen(a_path)+strlen(m_path.path)];
+
   switch_path(APATH);
   a_path = my_strdup(m_path.path, "");
   switch_path(CPATH);
-  command = my_malloc(sizeof(format)+3*strlen(a_path)+strlen(m_path.path),"");
   sprintf(command, format, a_path, a_path, m_path.path, a_path);
   system(command);
-  my_free(command);
   my_free(a_path);
 #endif
-  return;
 }
   
 /*************************************************
@@ -753,26 +737,26 @@ boolean commit_update_child(vtw_def *pdefp, char *child,
       switch_path(MPATH);
       len = sizeof(format1) + 2 * strlen(get_tmpp()) + 
 	strlen(m_path.path) + strlen(child);
-      command = my_malloc(len, "");
+      command = malloc(len);
       sprintf(command, format1, get_tmpp(), m_path.path, child, 
 	      get_tmpp());
       system(command);
-      my_free(command);
+
       switch_path(APATH);
       len = sizeof(format2) + 2 *strlen(m_path.path) +
 	2 * strlen( child) + strlen(get_tmpp());
-      command = my_malloc(len, "");
+      command = realloc(command, len);
       sprintf(command, format2, m_path.path, child, get_tmpp(), 
 	      child, m_path.path);
       system(command);
-      my_free(command);
+
       switch_path(CPATH);
       len = sizeof(format3) + strlen(m_path.path) +
 	strlen( child);
-      command = my_malloc(len, "");
+      command = realloc(command, len);
       sprintf(command, format3, m_path.path, child);
       system(command);
-      my_free(command);
+      free(command);
     }
 #endif
     restore_paths(&mark);
@@ -1530,14 +1514,14 @@ static boolean commit_value(vtw_def *defp, char *cp,
 static int fin_commit(boolean ok)
 {
   char *command;
-  static char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
-  static char format2[]="sudo umount %s"; /*mdirp*/
-  static char format3[]="rm -f %s/" MOD_NAME " >&/dev/null ; /bin/true";
+  static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
+  static const char format2[]="sudo umount %s"; /*mdirp*/
+  static const char format3[]="rm -f %s/" MOD_NAME " >&/dev/null ; /bin/true";
                         /*tmpp*/
-  static char format4[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
-  static char format5[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*adirp*/
-  static char format6[]="mv -f %s/* -t %s";/*tmpp, adirp*/
-  static char format7[]="sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
+  static const char format4[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
+  static const char format5[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*adirp*/
+  static const char format6[]="mv -f %s/* -t %s";/*tmpp, adirp*/
+  static const char format7[]="sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro" 
     " $UNIONFS %s"; /*cdirp, adirp, mdirp*/
   int m_len = strlen(get_mdirp()); 
   int t_len = strlen(get_tmpp()); 
@@ -1548,40 +1532,34 @@ static int fin_commit(boolean ok)
     fprintf(out_stream, "Commit failed\n");
     return -1;
   }
-  command = my_malloc(strlen(format1) + m_len + t_len, "");
+  command = malloc(strlen(format1) + m_len + t_len);
   sprintf(command, format1, get_mdirp(), get_tmpp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format2) + m_len, "");
-  sprintf(command, format2, get_mdirp());
+  command = realloc(command, strlen(format2) + m_len);
+  sprintf(command,  format2, get_mdirp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format3) + t_len, "");
-  sprintf(command, format3, get_tmpp());
+  command = realloc(command, strlen(format3) + t_len);
+  sprintf(command,  format3, get_tmpp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format4) + c_len, "");
-  sprintf(command, format4, get_cdirp());
+  command = realloc(command, strlen(format4) + c_len);
+  sprintf(command,  format4, get_cdirp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format5) + a_len, "");
-  sprintf(command, format5, get_adirp());
+  command = realloc(command, strlen(format5) + a_len);
+  sprintf(command,  format5, get_adirp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format6) + t_len + a_len, "");
-  sprintf(command, format6, get_tmpp(), get_adirp());
+  command = realloc(command, strlen(format6) + t_len + a_len);
+  sprintf(command,  format6, get_tmpp(), get_adirp());
   system(command);
-  my_free(command);
 
-  command = my_malloc(strlen(format7) + c_len + a_len + m_len, "");
-  sprintf(command, format7, get_cdirp(), get_adirp(), get_mdirp());
+  command = realloc(command, strlen(format7) + c_len + a_len + m_len);
+  sprintf(command,  format7, get_cdirp(), get_adirp(), get_mdirp());
   system(command);
-  my_free(command);
+  free(command);
 
   /* notify other users in config mode */
   system("/opt/vyatta/sbin/vyatta-cfg-notify");
