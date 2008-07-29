@@ -12,12 +12,11 @@
 
 extern char *cli_operation_name;
 
-static void make_dir(void);
 static void handle_defaults(void);
 
 static void make_dir()
 {
-  touch_dir(m_path.path);
+  mkdir_p(m_path.path);
 }
 /***************************************************
   set_validate:
@@ -107,7 +106,6 @@ int main(int argc, char **argv)
   FILE          *fp;
   boolean        res;
   char          *cp;
-  char          *command;
   boolean       need_mod = FALSE, not_new = FALSE;
   boolean       empty_val = FALSE;
 
@@ -248,11 +246,9 @@ int main(int argc, char **argv)
 
 
   if (!def.multi) {
-    char *path;
-    path= malloc(strlen(m_path.path)+5);
+    char path[strlen(m_path.path)+5];
     sprintf(path, "%s/def",m_path.path);
     unlink(path);
-    free(path);
   }
 
   push_path(&m_path, VAL_NAME);
@@ -276,9 +272,9 @@ int main(int argc, char **argv)
     bye("Error writing file %s", m_path.path);
   if (need_mod) {
     pop_path(&m_path); /* get rid of "value" */
-    command = my_malloc(strlen(m_path.path) + 30, "set");
-    sprintf(command, "touch %s/" MOD_NAME, m_path.path);
-    system(command);
+    char filename[strlen(m_path.path) + sizeof(MOD_NAME)+1];
+    sprintf(filename, "%s/" MOD_NAME, m_path.path);
+    touch_file(filename);
   }
   return 0;
 }
@@ -359,13 +355,13 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
         touch_dir(mpath->path); /* make sure directory exist */
 
 	//create def marker
-	char *def_file;
-	def_file = malloc(strlen(mpath->path)+22);
-	sprintf(def_file,"touch %s/def",mpath->path);
-	system(def_file);
-	sprintf(def_file,"echo 'empty' > %s/def",mpath->path);
-	system(def_file);
-	free(def_file);
+	char def_file[strlen(mpath->path)+8];
+	sprintf(def_file,"%s/def",mpath->path);
+	fp = fopen(def_file, "w");
+	if (fp == NULL)
+	  bye("Can not open def file %s", def_file);
+	fputs("empty\n", fp);
+	fclose(fp);
 
         push_path(mpath, VAL_NAME);
         fp = fopen(mpath->path, "w");
