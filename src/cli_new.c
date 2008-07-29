@@ -110,7 +110,7 @@ char *cli_operation_name = NULL;
    printf("echo \"bla-bla-bla%s\";", sptr)
    note very important ';' as the end of the format
 */
-void bye(char *msg, ...)
+void bye(const char *msg, ...)
 {
   va_list ap;
             
@@ -135,7 +135,7 @@ void bye(char *msg, ...)
    which are executed as eval `command` in order to
    modify BASH env
 */
-void print_msg(char *msg, ...)
+void print_msg(const char *msg, ...)
 {
   va_list ap;
 
@@ -367,7 +367,7 @@ get_config_lock()
   return ret;
 }
 
-void internal_error(int line, char *file)
+void internal_error(int line, const char *file)
 {
   printf("\n\nInternal Error at line %d in %s\n", line, file);
   exit (-1);
@@ -802,7 +802,7 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
     compare two values per cond
     returns result of comparison
 ****************************************************/
-boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond) 
+boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond) 
 {
   unsigned int left_parts[9], right_parts[9];
   vtw_type_e val_type;
@@ -2118,12 +2118,7 @@ const char *type_to_name(vtw_type_e type) {
   }
 }
 
-#if 1
-void
-dump_log(int argc, char **argv)
-{
-}
-#else
+#ifdef CLI_DEBUG
 void dump_log(int argc, char **argv)
 {
   int i;

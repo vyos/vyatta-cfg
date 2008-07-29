@@ -171,22 +171,26 @@ extern char *my_strdup(const char *s, const char *name);
 extern valstruct str2val(char *cp);
 extern void dump_tree(vtw_node *node, int lev);
 extern void dump_def(vtw_def *defp);
-extern boolean val_cmp(valstruct *left, valstruct *right, vtw_cond_e cond);
-extern void out_of_memory(void);
+extern boolean val_cmp(const valstruct *left, const valstruct *right,
+		       vtw_cond_e cond);
+extern void out_of_memory(void)  __attribute__((noreturn));
 extern void subtract_values(char **lhs, const char *rhs);
 extern boolean validate_value(vtw_def *def, 
 			      char *value);
-extern void internal_error(int line, char *file);
+extern void internal_error(int line, const char *file)
+  __attribute__((noreturn));
 extern void done(void);
 extern void del_value(vtw_def *defp, char *cp);
-extern void bye(char *msg, ...);
-extern void print_msg(char *msg, ...);
+extern void bye(const char *msg, ...) 
+  __attribute__((format(printf, 1, 2), noreturn));
+extern void print_msg(const char *msg, ...)
+  __attribute__((format(printf, 1, 2)));
 extern void switch_path(first_seg *seg);
 extern void vtw_sort(valstruct *valp, vtw_sorted *sortp);
 extern void free_val(valstruct *val);
 extern void my_free(void *ptr);
 extern void touch(void);
-extern void dump_log(int argc, char **argv);
+
 extern const char *type_to_name(vtw_type_e type);
 extern boolean execute_list(vtw_node *cur, vtw_def *def);
 extern void touch_dir(const char *dp);
@@ -197,7 +201,7 @@ extern void free_path(vtw_path *path);
 void mark_paths(vtw_mark *markp);
 void restore_paths(vtw_mark *markp);
 
-extern int get_config_lock();
+extern int get_config_lock(void);
 
 #define    VTWERR_BADPATH  -2 
 #define    VTWERR_OK     0
@@ -217,14 +221,15 @@ extern int out_fd;
 extern FILE *out_stream;
 extern FILE *err_stream;
 
-extern int initialize_output();
+extern int initialize_output(void);
 
 /*** debug ***/
 #undef CLI_DEBUG
 #ifdef CLI_DEBUG
-#define DPRINT(...) printf(__VA_ARGS__)
+#define DPRINT(fmt, arg...)	printf(fmt, #arg)
+extern void dump_log(int argc, char **argv);
 #else
-#define DPRINT(...)
+#define DPRINT(fmt, arg...)	while (0) { printf(fmt, ##arg); }
+#define dump_log(argc, argv)
 #endif
-
 #endif
