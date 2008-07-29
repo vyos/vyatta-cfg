@@ -184,6 +184,14 @@ sub is_domain_name_set {
     return $domainname;
 }
 
+sub is_ethernet_mtu_set {
+    my $intf = shift;
+    my $config = new VyattaConfig;
+    $config->setLevel("interfaces ethernet $intf");
+    my $interface_mtu = undef;
+    $interface_mtu = $config->returnValue("mtu");
+    return $interface_mtu;
+}
 
 sub dhcp_update_config {
     my ($conf_file, $intf) = @_;
@@ -198,11 +206,15 @@ sub dhcp_update_config {
     $output .= "\trequest subnet-mask, broadcast-address, routers, domain-name-servers";
     my $domainname = is_domain_name_set();
     if (!defined($domainname)) {
-       $output .= ", domain-name;\n";
-    } else {
-       $output .= ";\n";
+       $output .= ", domain-name";
+    } 
+    if ($intf =~ m/^eth[0-9]+$/) {
+       my $interface_mtu = is_ethernet_mtu_set($intf);
+       if (!defined($interface_mtu)) {
+          $output .= ", interface-mtu";
+       }
     }
-
+    $output .= ";\n";
     $output .= "}\n\n";
 
     dhcp_write_file($conf_file, $output);

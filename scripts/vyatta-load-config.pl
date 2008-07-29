@@ -28,6 +28,8 @@ use IO::Prompt;
 use Sys::Syslog qw(:standard :macros);
 use VyattaConfigLoad;
 
+$SIG{'INT'} = 'IGNORE';
+
 my $etcdir = $ENV{vyatta_sysconfdir};
 my $sbindir = $ENV{vyatta_sbindir};
 my $bootpath = $etcdir . "/config";
