@@ -16,6 +16,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <time.h>
+#include <utime.h>
 
 #include "cli_objects.h"
 #include "cli_val_engine.h"
@@ -149,21 +150,49 @@ void print_msg(const char *msg, ...)
   va_end(ap);
 }
 
+int mkdir_p(const char *path)
+{
+  if (mkdir(path, 0777) == 0)
+    return 0;
+
+  if (errno != ENOENT)
+    return -1;
+
+  char *tmp = strdup(path);
+  if (tmp == NULL) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  char *slash = strrchr(tmp, '/');
+  if (slash == NULL)
+    return -1;
+  *slash = '\0';
+
+  /* recurse to make missing piece of path */
+  int ret = mkdir_p(tmp);
+  if (ret == 0)
+    ret = mkdir(path, 0777);
+
+  free(tmp);
+  return ret;
+}
+
 void touch_dir(const char *dp) 
 {
   struct stat    statbuf;
+
   if (lstat(dp, &statbuf) < 0) {
-    char *command;
-    command = my_malloc(strlen(dp) + 10, "set"); 
-    sprintf(command, "mkdir -p %s", dp);
-    system(command);
-    free(command);
-    return;
-  } 
-  if ((statbuf.st_mode & S_IFMT) != S_IFDIR) {
-    bye("directory %s expected, found regular file", dp);
+    if (errno != ENOENT) 
+      bye("can't access directory: %s (%s)", dp, strerror(errno));
+
+    if (mkdir_p(dp) < 0)
+      bye("can't make directory: %s (%s)", dp, strerror(errno));
+  } else {
+    if(!S_ISDIR(statbuf.st_mode))
+      bye("directory %s expected, found file", dp);
+    utime(dp, NULL);
   }
-  return;
 }
 
 /*****************************************************
@@ -2094,13 +2123,25 @@ void restore_paths(vtw_mark *markp)
     pop_path(&t_path);
 }
 
-void touch() 
+void touch_file(const char *filename)
 {
-  char *command;
-  command = my_malloc(strlen(get_mdirp()) + 20, "delete");
-  sprintf(command, "touch %s/%s", get_mdirp(), MOD_NAME);
-  system(command);
-  free(command);
+  int fd = creat(filename, 0666);
+  if (fd < 0)
+    {
+      if (errno == EEXIST)
+	utime(filename, NULL);
+      else
+	bye("can't touch %s (%s)", filename, strerror(errno));
+    }
+  else
+    close(fd);
+}
+
+void touch(void) 
+{
+  char filename[strlen(get_mdirp()) + 20];
+  sprintf(filename, "%s/%s", get_mdirp(), MOD_NAME);
+  touch_file(filename);
 }
   
 const char *type_to_name(vtw_type_e type) {

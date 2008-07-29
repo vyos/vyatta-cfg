@@ -190,10 +190,12 @@ extern void vtw_sort(valstruct *valp, vtw_sorted *sortp);
 extern void free_val(valstruct *val);
 extern void my_free(void *ptr);
 extern void touch(void);
+extern int mkdir_p(const char *path);
 
 extern const char *type_to_name(vtw_type_e type);
 extern boolean execute_list(vtw_node *cur, vtw_def *def);
 extern void touch_dir(const char *dp);
+extern void touch_file(const char *name);
 
 extern void copy_path(vtw_path *to, vtw_path *from);
 extern void free_path(vtw_path *path);
