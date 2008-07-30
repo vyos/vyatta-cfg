@@ -7,7 +7,7 @@ syntax:expression: exec " \
           exit 1 ; \
         fi ; "
 update:expression: "sudo ip link set $VAR(@) up" ; "Error enabling dev $VAR(@)"
-update:expression: "${vyatta_sbindir}/vyatta-vtysh.pl -c \"configure terminal\" -c \"interface $VAR(@)\" \
+update:expression: "vyatta-vtysh -c \"configure terminal\" -c \"interface $VAR(@)\" \
           -c \"link-detect\"; "
 delete:expression: "sudo ip link set $VAR(@) down" ; "Error disabling dev $VAR(@)"
 allowed: for dev in /sys/class/net/*; 
