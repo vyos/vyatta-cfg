@@ -312,7 +312,7 @@ sub delete_eth_addrs {
 
     if ($addr eq "dhcp") {
 	stop_dhclient($intf);
-	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/lib/dhcp3/release_$intf\;");
+	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/run/vyatta/dhclient/dhclient_release_$intf\;");
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -457,7 +457,8 @@ sub op_dhcp_command {
         exit 1;
     }
     
-    my $release_file = $dhclient_dir . 'release_' . $intf;
+    my $tmp_dhclient_dir = '/var/run/vyatta/dhclient/';
+    my $release_file = $tmp_dhclient_dir . 'dhclient_release_' . $intf;
     if ($op_command eq "dhcp-release") {
         if (-e $release_file) {
           print "IP address for $intf has already been released.\n";
@@ -465,6 +466,9 @@ sub op_dhcp_command {
         } else {
           print "Releasing DHCP lease on $intf ...\n";
           stop_dhclient($intf);
+          if(! -d $tmp_dhclient_dir ){
+            system ("mkdir $tmp_dhclient_dir\;");
+          }
           system ("touch $release_file\;");
           exit 0;
         }
