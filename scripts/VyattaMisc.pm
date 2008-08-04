@@ -24,8 +24,8 @@
 package VyattaMisc;
 require Exporter;
 @ISA	= qw(Exporter);
-@EXPORT	= qw(getNetAddIP isIpAddress);
-@EXPORT_OK = qw(getNetAddIP isIpAddress);
+@EXPORT	= qw(getNetAddIP isIpAddress is_ip_v4_or_v6);
+@EXPORT_OK = qw(getNetAddIP isIpAddress is_ip_v4_or_v6);
 
 
 use strict;
@@ -59,6 +59,29 @@ sub getNetAddrIP {
     use NetAddr::IP;  # This library is available via libnetaddr-ip-perl.deb
     my $naip = new NetAddr::IP($ip, $netmask);
     return $naip;
+}
+
+sub is_ip_v4_or_v6 {
+    my $addr = shift;
+
+    my $ip = NetAddr::IP->new($addr);
+    if (defined $ip && $ip->version() == 4) {
+	#
+	# the call to IP->new() will accept 1.1 and consider
+        # it to be 1.1.0.0, so add a check to force all
+	# 4 octets to be defined
+        #
+	if ($addr !~ /\d+\.\d+\.\d+\.\d+/) {
+	    return undef;
+	}
+	return 4;
+    }
+    $ip = NetAddr::IP->new6($addr);
+    if (defined $ip && $ip->version() == 6) {
+	return 6;
+    }
+    
+    return undef;
 }
 
 sub isIpAddress {
