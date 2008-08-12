@@ -7,7 +7,8 @@ syntax:expression: exec " \
           exit 1 ; \
         fi ; "
 update: sudo ip link set "$VAR(@)" up
-        vtysh -c "configure terminal" -c "interface $VAR(@)" -c "link-detect"
+        ${vyatta_sbindir}/vyatta-vtysh -c "configure terminal" \
+          -c "interface $VAR(@)" -c "link-detect"
 delete: sudo ip link set "$VAR(@)" down
 allowed: for dev in /sys/class/net/*; 
          do if [[ -d $dev && -L $dev/device ]]
