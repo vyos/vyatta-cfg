@@ -6,10 +6,9 @@ syntax:expression: exec " \
           echo Invalid ethernet interface [$VAR(@)]; \
           exit 1 ; \
         fi ; "
-update:expression: "sudo ip link set $VAR(@) up" ; "Error enabling dev $VAR(@)"
-update:expression: "vyatta-vtysh -c \"configure terminal\" -c \"interface $VAR(@)\" \
-          -c \"link-detect\"; "
-delete:expression: "sudo ip link set $VAR(@) down" ; "Error disabling dev $VAR(@)"
+update: sudo ip link set "$VAR(@)" up
+        vtysh -c "configure terminal" -c "interface $VAR(@)" -c "link-detect"
+delete: sudo ip link set "$VAR(@)" down
 allowed: for dev in /sys/class/net/*; 
          do if [[ -d $dev && -L $dev/device ]]
             then if [[ $(cat $dev/type) -eq 1 ]]

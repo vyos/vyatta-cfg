@@ -2,12 +2,10 @@ tag:
 type: u32
 help: Set Virtual Local Area Network (VLAN) ID
 syntax:expression: $VAR(@) >= 0 && $VAR(@) <= 4094; "VLAN ID must be between 0 and 4094"
-create:expression: "sudo modprobe 8021q"; "Error loading 802.1q driver"
-create:expression: "sudo vconfig add $VAR(../@) $VAR(@)"; "Error adding VLAN id $VAR(@) to dev $VAR(../@)"
-create:expression: "sudo ip link set $VAR(../@).$VAR(@) up"; "Error enabling VLAN id $VAR(@) on dev $VAR(../@)"
-create:expression: "vyatta-vtysh -c \"configure terminal\"\
-          -c \"interface $VAR(../@).$VAR(@)\" \
-          -c \"link-detect\"; "
-delete:expression: "sudo vconfig rem $VAR(../@).$VAR(@)"; "Error removing VLAN id $VAR(@) from dev $VAR(../@)"
+create: sudo modprobe 8021q
+        sudo vconfig add "$VAR(../@)" "$VAR(@)"
+        sudo ip link set "$VAR(../@).$VAR(@)" up
+	vtysh -c "configure terminal" -c "interface $VAR(../@).$VAR(@)" -c "link-detect"
+delete: sudo vconfig rem "$VAR(../@).$VAR(@)"
 comp_help: possible completions:
  <0-4094>           Set VLAN ID
