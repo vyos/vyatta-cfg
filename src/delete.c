@@ -47,7 +47,18 @@ static boolean has_default(char **def, int size)
 	if (buf_ptr == NULL) {
 	  break;
 	}
+
+	//iterate up to non-whitespace character
 	buf_ptr++;
+	while (buf_ptr < (buf + size)) {
+	  if (*buf_ptr == ' ') {
+	    buf_ptr++;
+	  }
+	  else {
+	    break;
+	  }
+	}
+
 	if (size < strlen(buf_ptr)-1) {
 	  bye("default buffer size is too small\n");
 	}
