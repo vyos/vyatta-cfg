@@ -1776,10 +1776,10 @@ void warrant_path(vtw_path *path, int len)
 /*****************************************************
   push_path - extend path by '/' and one new segment 
 *****************************************************/
-void push_path(vtw_path *path, char *segm)
+void push_path(vtw_path *path, const char *segm)
 {
     int len;
-    char *cp;
+    const char *cp;
     char *pp;
 
     for(cp=segm, len=0;*cp;++cp, ++len)
@@ -1807,7 +1807,7 @@ void push_path(vtw_path *path, char *segm)
     if (path->path_lev == path->path_ends_alloc){
 	path->path_ends_alloc += ENDS_ALLOC;
 	path->path_ends = (int *)my_realloc(path->path_ends, 
-		     sizeof(int *)*path->path_ends_alloc, "puhs_path 2");
+		     sizeof(int *)*path->path_ends_alloc, "push_path 2");
     }
     path->path_ends[path->path_lev++] = path->path_len;
     //    push_path_no_escape();
