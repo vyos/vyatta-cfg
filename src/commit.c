@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -800,6 +801,10 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
     
     /* deleted subdirectory */
     if (strncmp(child, ".wh.", 4) == 0) { /* whiteout */
+       /* ignore aufs control files */
+       if (strncmp(child, ".wh..wh.", 8) == 0)
+	  return TRUE;
+
       if (deleting)
 	/* in do_delete mode we traverse A hierarchy, no white-outs possible */
 	INTERNAL; /* it is exit */
@@ -815,9 +820,10 @@ static boolean commit_delete_child(vtw_def *pdefp,  char *child,
 	     begin and end 
 	  */
 	  ok = commit_delete_child(pdefp, child + 4, TRUE, in_txn);
-	}else {
-	  /* I do not understand how we could be here */
-	  printf("Mystery  #1\n"); 
+	} else {
+	  /* whiteout entry exists but can't see it race or unionfs problem? */
+	  printf("commit delete confused by lstat(%s) %s\n",
+		       m_path.path, strerror(errno)); 
 	  ok = TRUE;
 	}
 	switch_path(CPATH);
