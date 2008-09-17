@@ -35,6 +35,7 @@ my %config_rank  = (
     'system host-name'          => 1005,
     'interfaces'                => 1000,
     'interfaces bridge'         => 990,
+    'interfaces bonding'	=> 995,
     'interfaces ethernet'       => 980,
     'interfaces tunnel'         => 910,
     'system gateway-address'    => 890,
