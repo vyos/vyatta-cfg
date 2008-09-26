@@ -73,11 +73,11 @@ init_bootfile () {
     grep -q vfat /proc/filesystems || modprobe -q vfat 2>/dev/null
     if [ ! -d /media/floppy/config ] && grep -q fd /proc/devices
     then
-        mkdir -p /media/floppy 2>/dev/null
-        mount /dev/fd0 /media/floppy -o sync 2>/dev/null ||
-            mount -t ext2 /dev/fd0 /media/floppy -o sync 2>/dev/null ||
-            mount -t vfat /dev/fd0 /media/floppy 2>/dev/null
-    fi
+        mkdir -p /media/floppy
+        mount /dev/fd0 /media/floppy -o sync ||
+            mount -t ext2 /dev/fd0 /media/floppy -o sync ||
+            mount -t vfat /dev/fd0 /media/floppy
+    fi 2>/dev/null
 
     [ -d /media/floppy/config ] &&
     	mount -o bind /media/floppy/config /opt/vyatta/etc/config
