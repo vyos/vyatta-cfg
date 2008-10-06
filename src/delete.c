@@ -78,6 +78,20 @@ static void reset_default(const char *def_val)
   if (def_val == NULL)
     return;
 
+  //strip off quotes
+  char tmp_val[1025];
+  char *ptr = index(def_val,'"');
+  if (ptr != NULL) {
+    strcpy(tmp_val,ptr);
+    ptr = rindex(tmp_val,'"');
+    if (ptr != NULL) {
+      *ptr = '\0';
+    }
+  }
+  else {
+    strcpy(tmp_val,def_val);
+  }
+
   char filename[strlen(m_path.path) + 10];
   touch();
   sprintf(filename, "%s/node.val", m_path.path);
@@ -85,7 +99,7 @@ static void reset_default(const char *def_val)
   FILE *fp = fopen(filename, "w");
   if (fp == NULL)
     bye("can not open: %s", filename);
-  fputs(def_val, fp);
+  fputs(tmp_val, fp);
   fclose(fp);
 
   sprintf(filename, "%s/def", m_path.path);
