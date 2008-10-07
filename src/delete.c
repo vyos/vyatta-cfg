@@ -82,10 +82,13 @@ static void reset_default(const char *def_val)
   char tmp_val[1025];
   char *ptr = index(def_val,'"');
   if (ptr != NULL) {
-    strcpy(tmp_val,ptr);
+    strcpy(tmp_val,ptr+1);
     ptr = rindex(tmp_val,'"');
     if (ptr != NULL) {
       *ptr = '\0';
+    }
+    else {
+      strcpy(tmp_val,def_val); //go with original value.
     }
   }
   else {
