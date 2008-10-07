@@ -126,7 +126,7 @@ start ()
 	chgrp ${GROUP} ${vyatta_configdir}
     log_action_end_msg $?
     init_bootfile
-    log_daemon_msg "Starting Vyatta Router"
+    log_daemon_msg "Starting Vyatta router"
     migrate_bootfile
     for s in ${subinit[@]} ; do
 	log_progress_msg $s
@@ -141,7 +141,7 @@ start ()
 stop()
 {
     local -i status=0
-    log_daemon_msg "Stopping Vyatta Router"
+    log_daemon_msg "Stopping Vyatta router"
     for ((i=${#sub_inits[@]} - 1; i >= 0; i--)) ; do
 	s=${subinit[$i]}
 	log_progress_msg $s
