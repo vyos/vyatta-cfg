@@ -3,8 +3,18 @@
 prefix=@prefix@
 sysconfdir=@sysconfdir@
 
+# add group for configuration, if not already present:
+grep '^vyattacfg:' /etc/group >&/dev/null ||
+addgroup --system vyattacfg
+
 mkdir -m 0775 -p $sysconfdir/config $prefix/config
 chgrp vyattacfg $sysconfdir/config $prefix/config 2>/dev/null
+
+# fix permissions of config file during upgrade
+if [ ! -d $sysconfdir/config/config.boot ]; then
+    chgrp vyattacfg 
+    chmod 0664 $sysconfdir/config/config.boot
+fi
 
 update-rc.d vyatta-ofr defaults 90 >/dev/null
 # do we want to start vyatta-ofr here in postinst?
@@ -18,6 +28,3 @@ if [ "$sysconfdir" != "/etc" ]; then
   done
 fi
 
-# add group for configuration, if not already present:
-grep '^vyattacfg:' /etc/group >&/dev/null ||
-addgroup --system vyattacfg
