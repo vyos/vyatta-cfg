@@ -6,7 +6,6 @@ disconnect
 exit
 no
 ping
-reboot
 release
 renew
 set
