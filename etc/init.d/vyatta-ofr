@@ -119,6 +119,19 @@ load_bootfile ()
   fi
 }
 
+
+# Unload the RAID modules that we are not using.  It is safe to try to
+# unload all of the RAID modules.   The kernel will refuse to unload any
+# that we are actually using.
+#
+cleanup_raid()
+{
+    MD_MODULES='linear multipath raid0 raid1 raid456 raid5 raid6 raid10'
+    rmmod $MD_MODULES > /tmp/vyatta_raid_cleanup_log 2>&1
+}
+
+
+
 start ()
 {
     log_action_begin_msg "Mounting Vyatta Config"
@@ -133,6 +146,7 @@ start ()
 	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
     done
     load_bootfile
+    cleanup_raid
     chmod g-w,o-w /
 
     log_end_msg $?
