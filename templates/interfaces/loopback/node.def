@@ -3,7 +3,7 @@ type: txt
 help: Set loopback interface
 allowed: echo "lo"
 syntax:expression: exec "\
-	if [ !-d /sys/class/net/$VAR(@) ]; then \
+	if [ ! -d /sys/class/net/$VAR(@) ]; then \
 		echo \"loopback interface $VAR(@) does not exist\"; \
 		exit 1; \
 	elif [ $(cat /sys/class/net/$VAR(@)/type) -ne 772 ]; then \
