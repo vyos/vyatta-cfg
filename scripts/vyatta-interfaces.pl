@@ -119,7 +119,9 @@ sub is_dhcp_enabled {
 
     my $config = new VyattaConfig;
 
-    if ($intf =~ m/^eth/) {
+    # FIXME: this is wrong and depends on name of interface -> type
+    #   which is not dependable
+    if ($intf =~ m/^eth/ || $intf =~ m/^bond/) {
 	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
 	} else {
@@ -129,8 +131,8 @@ sub is_dhcp_enabled {
 	$config->setLevel("interfaces bridge $intf");
     } else {
 	#
-	# currently we only support dhcp on ethernet 
-	# and bridge interfaces.
+	# FIXME: currently we only support dhcp on ethernet 
+	# and bridge interfaces (what about wireles, ...???)
 	#
 	return 0;
     }
