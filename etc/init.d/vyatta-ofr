@@ -12,7 +12,7 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -66,6 +66,22 @@ have_rl_system () {
 
 # if necessary, provide initial config
 init_bootfile () {
+    # try floppy
+    # if we do not discover an fd device, try loading the floppy module
+    grep -q fd /proc/devices || modprobe -q floppy 2>/dev/null
+    grep -q ext2 /proc/filesystems || modprobe -q ext2 2>/dev/null
+    grep -q vfat /proc/filesystems || modprobe -q vfat 2>/dev/null
+    if [ ! -d /media/floppy/config ] && grep -q fd /proc/devices
+    then
+        mkdir -p /media/floppy
+        mount /dev/fd0 /media/floppy -o sync ||
+            mount -t ext2 /dev/fd0 /media/floppy -o sync ||
+            mount -t vfat /dev/fd0 /media/floppy
+    fi 2>/dev/null
+
+    [ -d /media/floppy/config ] &&
+    	mount -o bind /media/floppy/config /opt/vyatta/etc/config
+
     if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
 			    $BOOTFILE >&/dev/null; then
 	CURTIME=$(date +%F-%H%M%S)
@@ -78,7 +94,7 @@ init_bootfile () {
           $vyatta_sbindir/vyatta_current_conf_ver.pl > $BOOTFILE
         fi
     fi
-    chgrp ${GROUP} $BOOTFILE 
+    chgrp ${GROUP} $BOOTFILE
     chmod 660 $BOOTFILE
     ## remove the unnecessary and potentially conflicting
     ## config-directory statement (i.e. /mnt/floppy vs. /media/floppy
@@ -103,6 +119,19 @@ load_bootfile ()
   fi
 }
 
+
+# Unload the RAID modules that we are not using.  It is safe to try to
+# unload all of the RAID modules.   The kernel will refuse to unload any
+# that we are actually using.
+#
+cleanup_raid()
+{
+    MD_MODULES='linear multipath raid0 raid1 raid456 raid5 raid6 raid10'
+    rmmod $MD_MODULES > /tmp/vyatta_raid_cleanup_log 2>&1
+}
+
+
+
 start ()
 {
     log_action_begin_msg "Mounting Vyatta Config"
@@ -110,13 +139,14 @@ start ()
 	chgrp ${GROUP} ${vyatta_configdir}
     log_action_end_msg $?
     init_bootfile
-    log_daemon_msg "Starting Vyatta Router"
+    log_daemon_msg "Starting Vyatta router"
     migrate_bootfile
     for s in ${subinit[@]} ; do
 	log_progress_msg $s
 	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
     done
     load_bootfile
+    cleanup_raid
     chmod g-w,o-w /
 
     log_end_msg $?
@@ -125,7 +155,7 @@ start ()
 stop()
 {
     local -i status=0
-    log_daemon_msg "Stopping Vyatta Router"
+    log_daemon_msg "Stopping Vyatta router"
     for ((i=${#sub_inits[@]} - 1; i >= 0; i--)) ; do
 	s=${subinit[$i]}
 	log_progress_msg $s

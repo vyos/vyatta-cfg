@@ -75,7 +75,7 @@ sub displayValues {
       $default = $txt;
     }
   }
-  my $is_password = ($name =~ /^.*password$/);
+  my $is_password = ($name =~ /^.*(password|pre-shared-secret)$/);
   my $HIDE_PASSWORD = '****************';
   $config->setLevel(join ' ', @cur_path);
   if ($is_multi) {

@@ -1,19 +1,20 @@
 tag:
 type: txt
 help: Set ethernet interface
+syntax:expression: pattern $VAR(@) "^eth[0-9]+$" \
+		   ; "interface must be (eth0 - eth999)"
 syntax:expression: exec " \
-        if [ -z \"`ip link | grep eth | egrep -v 'eth[0-9]+[.]' | grep $VAR(@)`\" ]; then \
-          echo Invalid ethernet interface [$VAR(@)]; \
-          exit 1 ; \
-        fi ; "
+	if [ -f /sys/class/net/$VAR(@) ]; then \
+	echo \"Ethernet interface does not exist: $VAR(@)\"; \
+	exit 1; \
+	fi"
+
 update: sudo ip link set "$VAR(@)" up
         vyatta-vtysh -c "configure terminal" \
           -c "interface $VAR(@)" -c "link-detect"
 delete: sudo ip link set "$VAR(@)" down
-allowed: for dev in /sys/class/net/*; 
+allowed: for dev in /sys/class/net/eth*; 
          do if [[ -d $dev && -L $dev/device ]]
-            then if [[ $(cat $dev/type) -eq 1 ]]
-                 then echo -n ${dev##*/} " "
-                 fi
+	    then echo -n ${dev##*/} " "
             fi
          done

@@ -1,9 +1,14 @@
 tag:
 type: txt
 help: Set loopback interface
-syntax:expression: exec " \
-        if [ -z \"`ip addr | grep $VAR(@) `\" ]; then \
-          echo loopback interface $VAR(@) doesn\\'t exist on this system ; \
-          exit 1 ; \
-        fi ; "
-update:expression: "sudo ip link set $VAR(@) up"
+allowed: echo "lo"
+syntax:expression: exec "\
+	if [ ! -d /sys/class/net/$VAR(@) ]; then \
+		echo \"loopback interface $VAR(@) does not exist\"; \
+		exit 1; \
+	elif [ $(cat /sys/class/net/$VAR(@)/type) -ne 772 ]; then \
+		echo \"interface $VAR(@) is not a loopback interface\"; \
+		exit 1; \
+	fi"
+
+update: sudo ip link set $VAR(@) up
