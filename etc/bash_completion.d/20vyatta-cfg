@@ -22,6 +22,12 @@
 # 
 # **** End License ****
 
+# Turn on history logging
+export HISTCONTROL=
+export HISTFILESIZE=10000
+export HISTSIZE=10000
+export PROMPT_COMMAND='history -a'
+
 # only do this if we are going into configure mode
 if [ "$_OFR_CONFIGURE" != "ok" ]; then
   return 0
