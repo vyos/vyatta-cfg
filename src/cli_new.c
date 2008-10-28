@@ -1859,7 +1859,10 @@ static void scan_ipv6(char *val, unsigned int *parts)
   int total = 8;
   int gap;
 
-  for (p = val;TRUE; ++p) {
+  p = val;
+  if (strncmp(p, ".wh.", 4) == 0)
+    p = p + 4;
+  for ( ;TRUE; ++p) {
     switch ((c = *p)) {
     case '.':
       if (dot_cnt == 0) {
