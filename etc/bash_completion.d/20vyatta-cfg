@@ -26,7 +26,9 @@
 export HISTCONTROL=
 export HISTFILESIZE=10000
 export HISTSIZE=10000
+export HISTTIMEFORMAT='%FT%T%z ' 
 export PROMPT_COMMAND='history -a'
+builtin set histappend=1
 
 # only do this if we are going into configure mode
 if [ "$_OFR_CONFIGURE" != "ok" ]; then
