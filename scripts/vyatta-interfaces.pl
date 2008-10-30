@@ -150,12 +150,16 @@ sub is_address_enabled {
 
     my $config = new VyattaConfig;
     
+    ## FIXME this is name based madness find a better way
+    ##   so we don't have to redo with each interface type!
     if ($intf =~ m/^eth/) {
 	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
 	} else {
 	    $config->setLevel("interfaces ethernet $intf");
 	}
+    } elsif ($intf =~ m/^bond/) {
+	$config->setLevel("interfaces bonding $intf");
     } elsif ($intf =~ m/^br/) {
 	$config->setLevel("interfaces bridge $intf");
     } else {
@@ -174,25 +178,20 @@ sub is_address_enabled {
 sub get_hostname {
     my $config = new VyattaConfig;
     $config->setLevel("system");
-    my $hostname = $config->returnValue("host-name");
-    return $hostname;
+    return $config->returnValue("host-name");
 }
 
 sub is_domain_name_set {
     my $config = new VyattaConfig;
     $config->setLevel("system");
-    my $domainname = undef;
-    $domainname = $config->returnValue("domain-name");
-    return $domainname;
+    return $config->returnValue("domain-name");
 }
 
-sub is_ethernet_mtu_set {
+sub get_mtu {
     my $intf = shift;
     my $config = new VyattaConfig;
-    $config->setLevel("interfaces ethernet $intf");
-    my $interface_mtu = undef;
-    $interface_mtu = $config->returnValue("mtu");
-    return $interface_mtu;
+    $config->setLevel("interfaces $intf");
+    return $config->returnValue("mtu");
 }
 
 sub dhcp_update_config {
@@ -210,12 +209,20 @@ sub dhcp_update_config {
     if (!defined($domainname)) {
        $output .= ", domain-name";
     } 
+
+    ## FIXME more code depending on name
+    my $mtu;
     if ($intf =~ m/^eth[0-9]+$/) {
-       my $interface_mtu = is_ethernet_mtu_set($intf);
-       if (!defined($interface_mtu)) {
-          $output .= ", interface-mtu";
-       }
+	## XXX what about vif?
+	$mtu = get_mtu("ethernet $intf");
+    } elsif ($intf =~ m/^bond[0-9]+$/) {
+	$mtu = get_mtu("bonding $intf");
+    } elsif ($intf =~ m/^br[0-9]+$/) {
+	## bridge doesn't have mtu yet 
+	$mtu = get_mtu("bridge $intf");
     }
+
+    $mtu or $output .= ", interface-mtu";
     $output .= ";\n";
     $output .= "}\n\n";
 
