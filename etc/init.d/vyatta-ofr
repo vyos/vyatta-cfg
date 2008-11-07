@@ -66,15 +66,10 @@ have_rl_system () {
 
 # if necessary, provide initial config
 init_bootfile () {
-    # try floppy
-    # if we do not discover an fd device, try loading the floppy module
-    grep -q fd /proc/devices || modprobe -q floppy 2>/dev/null
-    grep -q ext2 /proc/filesystems || modprobe -q ext2 2>/dev/null
-    grep -q vfat /proc/filesystems || modprobe -q vfat 2>/dev/null
     if [ ! -d /media/floppy/config ] && grep -q fd /proc/devices
     then
         mkdir -p /media/floppy
-        mount /dev/fd0 /media/floppy -o sync ||
+	mount /dev/fd0 /media/floppy -o sync ||
             mount -t ext2 /dev/fd0 /media/floppy -o sync ||
             mount -t vfat /dev/fd0 /media/floppy
     fi 2>/dev/null
