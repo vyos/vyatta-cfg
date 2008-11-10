@@ -32,6 +32,44 @@ use strict;
 
 use VyattaConfig;
 
+# getInterfacesIPadresses() returns IP addresses for the interface type passed to it
+# possible type of interfaces : 'broadcast', 'pointopoint', 'multicast', 'all'
+# the loopback IP address is never returned with any of the above parameters
+sub getInterfacesIPadresses {
+
+    my $interface_type = shift;
+    if (!($interface_type =~ m/broadcast|pointopoint|multicast|all/)) {
+        print STDERR "Invalid interface type specified to retrive IP addresses for\n";
+        return undef;
+    }
+    my @interfaces_on_system = `ifconfig -a | awk '\$2 ~ /Link/ {print \$1}'`;
+    chomp @interfaces_on_system;
+    my @intf_ips = ();
+    my $intf_ips_index = 0;
+    foreach my $intf_system (@interfaces_on_system) {
+     if (!($intf_system eq 'lo')) {
+      my $is_intf_interface_type = 0;
+       if (!($interface_type eq 'all')) {
+       $is_intf_interface_type =
+       `ip link show $intf_system 2>/dev/null | grep -i $interface_type | wc -l`;
+       } else {
+         $is_intf_interface_type = 1;
+       }
+       if ($is_intf_interface_type > 0) {
+        $intf_ips[$intf_ips_index] =
+        `ip addr show $intf_system 2>/dev/null | grep inet | grep -v inet6 | awk '{print \$2}'`;
+        if (!($intf_ips[$intf_ips_index] eq '')){
+         $intf_ips_index++;
+        }
+       }
+     }
+    }
+    chomp @intf_ips;
+    return (@intf_ips);
+
+}
+
+
 sub getNetAddrIP {
     my ($interface);
     ($interface) = @_;
