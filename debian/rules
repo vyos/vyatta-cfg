@@ -17,7 +17,7 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 PACKAGE=vyatta-cfg
 PKGDIR=$(CURDIR)/debian/$(PACKAGE)
 
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g 
 
 configure	 = ./configure
 configure	+= --host=$(DEB_HOST_GNU_TYPE)
@@ -31,7 +31,7 @@ configure	+= LDFLAGS="-Wl,-z,defs"
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -O0
 else
-	CFLAGS += -O2
+	CFLAGS += -Os
 endif
 
 configure: configure.ac Makefile.am
