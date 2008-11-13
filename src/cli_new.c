@@ -2138,24 +2138,13 @@ const char *type_to_name(vtw_type_e type) {
 void dump_log(int argc, char **argv)
 {
   int i;
-  int len;
-  char *cp;
 
-  len = 0;
-  for (i=0; i<argc;++i)
-    len += strlen(argv[i]);
-  len += argc;
-  cp = my_malloc(len, "dump_log");
-  len = 0;
-  for (i=0; i<argc;++i){
-    strcpy(cp+len, argv[i]);
-    len += strlen(argv[i]);
-    cp[len]= ' ';
-    ++len;
+  printf("Command:");
+  for (i = 0; i < argc; ++i) {
+	  putchar(' ');
+	  puts(argv[i]);
   }
-  cp[len-1]=0;
-  printf("Command: %s\n",cp);
-  my_free(cp);
+  putchar('\n');
 }
 #endif
 
