@@ -264,7 +264,7 @@ sub stop_dhclient {
     my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = generate_dhclient_intf_files($intf);
     my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
     system ($release_cmd);
-    system ("rm -f $intf_config_file");
+    unlink ($intf_config_file);
 }
 
 sub update_eth_addrs {
@@ -318,7 +318,9 @@ sub delete_eth_addrs {
 
     if ($addr eq "dhcp") {
 	stop_dhclient($intf);
-	system("rm -f /var/lib/dhcp3/dhclient_$intf\_lease; rm -f /var/lib/dhcp3/$intf\; rm -f /var/run/vyatta/dhclient/dhclient_release_$intf\;");
+	unlink("/var/lib/dhcp3/dhclient_$intf\_lease");
+	unlink("/var/lib/dhcp3/$intf");
+	unlink("/var/run/vyatta/dhclient/dhclient_release_$intf");
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -479,7 +481,7 @@ sub op_dhcp_command {
     } elsif ($op_command eq "dhcp-renew") {
         print "Renewing DHCP lease on $intf ...\n";
         run_dhclient($intf);
-        system ("rm -f $release_file\;");
+	unlink ($release_file);
         exit 0;
     }
 
