@@ -65,7 +65,7 @@ if (defined $op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
-    my $wc = `ip addr show $intf | grep $ip | wc -l`;
+    my $wc = `ip addr show $intf | grep -c $ip`;
     if (defined $wc and $wc > 0) {
 	return 1;
     } else {
