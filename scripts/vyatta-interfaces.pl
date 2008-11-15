@@ -472,10 +472,8 @@ sub op_dhcp_command {
         } else {
           print "Releasing DHCP lease on $intf ...\n";
           stop_dhclient($intf);
-          if(! -d $tmp_dhclient_dir ){
-            system ("mkdir $tmp_dhclient_dir\;");
-          }
-	  touch($release_file);
+	  mkdir ($tmp_dhclient_dir) if (! -d $tmp_dhclient_dir );
+	  touch ($release_file);
           exit 0;
         }
     } elsif ($op_command eq "dhcp-renew") {
