@@ -100,7 +100,8 @@ sub touch {
     my $file = shift;
     my $t = time;
 
-    sysopen (my $f, $file, O_RDWR|O_CREAT) or die "Can't touch $file";
+    sysopen (my $f, $file, O_RDWR|O_CREAT)
+	or die "Can't touch $file: $!";
     close $f;
     utime $t, $t, $file;
 }
@@ -255,7 +256,8 @@ sub run_dhclient {
     dhcp_update_config($intf_config_file, $intf);
     my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
     # adding & at the end to make the process into a daemon immediately
-    system ($cmd);
+    system ($cmd) == 0
+	or warn "start $dhcp_daemon failed: $?\n";
 }
 
 sub stop_dhclient {
@@ -263,7 +265,8 @@ sub stop_dhclient {
 
     my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = generate_dhclient_intf_files($intf);
     my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
-    system ($release_cmd);
+    system ($release_cmd) == 0
+	or warn "stop $dhcp_daemon failed: $?\n";
     unlink ($intf_config_file);
 }
 
