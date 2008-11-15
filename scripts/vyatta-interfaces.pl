@@ -37,13 +37,13 @@ use VyattaMisc;
 use Getopt::Long;
 use POSIX;
 use NetAddr::IP;
+use Fcntl;
 
 use strict;
 use warnings;
 
 my $dhcp_daemon = '/sbin/dhclient';
 my $dhclient_dir = '/var/lib/dhcp3/';
-
 
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
 
@@ -96,6 +96,14 @@ sub is_ip_duplicate {
     }
 }
 
+sub touch {
+    my $file = shift;
+    my $t = time;
+
+    sysopen (my $f, $file, O_RDWR|O_CREAT) or die "Can't touch $file";
+    close $f;
+    utime $t, $t, $file;
+}
 
 sub dhcp_write_file {
     my ($file, $data) = @_;
@@ -263,8 +271,8 @@ sub update_eth_addrs {
     my ($addr, $intf) = @_;
 
     if ($addr eq "dhcp") {
+	touch("/var/lib/dhcp3/$intf");
 	run_dhclient($intf);
-	system ("touch /var/lib/dhcp3/$intf\;");
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -467,7 +475,7 @@ sub op_dhcp_command {
           if(! -d $tmp_dhclient_dir ){
             system ("mkdir $tmp_dhclient_dir\;");
           }
-          system ("touch $release_file\;");
+	  touch($release_file);
           exit 0;
         }
     } elsif ($op_command eq "dhcp-renew") {
