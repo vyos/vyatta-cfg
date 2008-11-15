@@ -130,7 +130,7 @@ sub is_dhcp_enabled {
 
     # FIXME: this is wrong and depends on name of interface -> type
     #   which is not dependable
-    if ($intf =~ m/^eth/ || $intf =~ m/^bond/) {
+    if ($intf =~ m/^eth/) {
 	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
 	} else {
@@ -138,6 +138,8 @@ sub is_dhcp_enabled {
 	}
     } elsif ($intf =~ m/^br/) {
 	$config->setLevel("interfaces bridge $intf");
+    } elsif ($intf =~ m/^bond/) {
+        $config->setLevel("interfaces bonding $intf");
     } else {
 	#
 	# FIXME: currently we only support dhcp on ethernet 
