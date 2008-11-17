@@ -32,6 +32,53 @@ use strict;
 
 use VyattaConfig;
 
+# check if interace is configured to get an IP address using dhcp
+sub is_dhcp_enabled {
+    my ($intf, $outside_cli) = @_;
+
+    my $config = new VyattaConfig;
+    if (!($outside_cli eq '')) {
+     $config->{_active_dir_base} = "/opt/vyatta/config/active/";
+    }
+
+    if ($intf =~ m/^eth/) {
+        if ($intf =~ m/(\w+)\.(\d+)/) {
+            $config->setLevel("interfaces ethernet $1 vif $2");
+        } else {
+            $config->setLevel("interfaces ethernet $intf");
+        }
+    } elsif ($intf =~ m/^br/) {
+        $config->setLevel("interfaces bridge $intf");
+    } elsif ($intf =~ m/^bond/) {
+        $config->setLevel("interfaces bonding $intf");
+    } else {
+        #
+        # add other interfaces that can be configured to use dhcp above
+        #
+        return 0;
+    }
+    my @addrs = $config->returnOrigValues("address");
+    foreach my $addr (@addrs) {
+        if (defined $addr && $addr eq "dhcp") {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+# return dhclient related files for interface
+sub generate_dhclient_intf_files {
+    my $intf = shift;
+    my $dhclient_dir = '/var/lib/dhcp3/';
+
+    $intf =~ s/\./_/g;
+    my $intf_config_file = $dhclient_dir . 'dhclient_' . $intf . '.conf';
+    my $intf_process_id_file = $dhclient_dir . 'dhclient_' . $intf . '.pid';
+    my $intf_leases_file = $dhclient_dir . 'dhclient_' . $intf . '.leases';
+    return ($intf_config_file, $intf_process_id_file, $intf_leases_file);
+
+}
+
 # getInterfacesIPadresses() returns IP addresses for the interface type passed to it
 # possible type of interfaces : 'broadcast', 'pointopoint', 'multicast', 'all'
 # the loopback IP address is never returned with any of the above parameters
