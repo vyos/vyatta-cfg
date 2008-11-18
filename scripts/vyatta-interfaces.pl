@@ -129,6 +129,8 @@ sub is_address_enabled {
     
     ## FIXME this is name based madness find a better way
     ##   so we don't have to redo with each interface type!
+    ## POSSIBLE SOLUTION: pass the cli-path uptill 'address' node from 
+    ## address/node.def so we don't have to determine the address type here
     if ($intf =~ m/^eth/) {
 	if ($intf =~ m/(\w+)\.(\d+)/) {
 	    $config->setLevel("interfaces ethernet $1 vif $2");
@@ -136,7 +138,11 @@ sub is_address_enabled {
 	    $config->setLevel("interfaces ethernet $intf");
 	}
     } elsif ($intf =~ m/^bond/) {
-	$config->setLevel("interfaces bonding $intf");
+        if ($intf =~ m/(\w+)\.(\d+)/) {
+            $config->setLevel("interfaces bonding $1 vif $2");
+        } else {
+            $config->setLevel("interfaces bonding $intf");
+        }
     } elsif ($intf =~ m/^br/) {
 	$config->setLevel("interfaces bridge $intf");
     } else {
