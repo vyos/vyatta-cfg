@@ -6,6 +6,7 @@ disconnect
 exit
 no
 ping
+ping6
 release
 renew
 set
@@ -13,6 +14,6 @@ show
 telnet
 terminal
 traceroute
+traceroute6
 undebug
 update
-vpn
