@@ -50,7 +50,11 @@ sub is_dhcp_enabled {
     } elsif ($intf =~ m/^br/) {
         $config->setLevel("interfaces bridge $intf");
     } elsif ($intf =~ m/^bond/) {
-        $config->setLevel("interfaces bonding $intf");
+        if ($intf =~ m/(\w+)\.(\d+)/) {
+            $config->setLevel("interfaces bonding $1 vif $2");
+        } else {
+            $config->setLevel("interfaces bonding $intf");
+        }
     } else {
         #
         # add other interfaces that can be configured to use dhcp above
