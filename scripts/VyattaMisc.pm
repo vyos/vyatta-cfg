@@ -32,6 +32,18 @@ use strict;
 
 use VyattaConfig;
 
+sub get_sysfs_value {
+    my ($intf, $name) = @_;
+
+    open (my $statf, '<', "/sys/class/net/$intf/$name")
+        or die "Can't open statistics file /sys/class/net/$intf/$name";
+
+    my $value = <$statf>;
+    chomp $value if defined $value;
+    close $statf;
+    return $value;
+}
+
 # check if interace is configured to get an IP address using dhcp
 sub is_dhcp_enabled {
     my ($intf, $outside_cli) = @_;
