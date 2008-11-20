@@ -44,7 +44,7 @@ use warnings;
 
 my $dhcp_daemon = '/sbin/dhclient';
 
-my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
+my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient, $intf_cli_path);
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
@@ -53,6 +53,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
 	   "op-command=s"      => \$op_dhclient,
+           "intf-cli-path=s"   => \$intf_cli_path
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -212,25 +213,56 @@ sub dhcp_update_config {
     dhcp_write_file($conf_file, $output);
 }
 
+sub is_intf_disabled {
+    my $intf = shift;
+
+    # only do this if script run from config mode
+    if (!defined $op_dhclient) {
+
+      if (!defined $intf_cli_path) {
+        print "unable to check if interface is disabled without cli path\n";
+        exit 1;
+      }
+
+      my $config = new VyattaConfig;
+      $config->setLevel("$intf_cli_path");
+
+      if ($intf =~ m/^br/) {
+        if ($config->returnValue("disable") eq "true") {
+         return 1;
+        }
+      } else {
+        if ($config->exists("disable")) {
+          return 1;
+        }
+      }
+
+    }
+    return 0;
+}
+
+
 sub run_dhclient {
     my $intf = shift;
 
     my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = VyattaMisc::generate_dhclient_intf_files($intf);
     dhcp_update_config($intf_config_file, $intf);
-    my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
-    # adding & at the end to make the process into a daemon immediately
-    system ($cmd) == 0
+    if (!(is_intf_disabled($intf))) {
+      my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
+      # adding & at the end to make the process into a daemon immediately
+      system ($cmd) == 0
 	or warn "start $dhcp_daemon failed: $?\n";
+    }
 }
 
 sub stop_dhclient {
     my $intf = shift;
-
-    my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = VyattaMisc::generate_dhclient_intf_files($intf);
-    my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
-    system ($release_cmd) == 0
+    if (!(is_intf_disabled($intf))) {
+      my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = VyattaMisc::generate_dhclient_intf_files($intf);
+      my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
+      system ($release_cmd) == 0
 	or warn "stop $dhcp_daemon failed: $?\n";
-    unlink ($intf_config_file);
+    }
 }
 
 sub update_eth_addrs {
@@ -287,6 +319,7 @@ sub delete_eth_addrs {
 	unlink("/var/lib/dhcp3/dhclient_$intf\_lease");
 	unlink("/var/lib/dhcp3/$intf");
 	unlink("/var/run/vyatta/dhclient/dhclient_release_$intf");
+        unlink("/var/lib/dhcp3/dhclient_$intf\.conf");
 	exit 0;
     } 
     my $version = is_ip_v4_or_v6($addr);
@@ -429,6 +462,13 @@ sub op_dhcp_command {
     if (!VyattaMisc::is_dhcp_enabled($intf)) {
         print "$intf is not using DHCP to get an IP address\n";
         exit 1;
+    }
+    
+    my $flags = VyattaMisc::get_sysfs_value($intf, 'flags');
+    my $hex_flags = hex($flags);
+    if (!($hex_flags & 0x1)) {
+     print "$intf is disabled. Unable to release/renew lease\n"; 
+     exit 1;
     }
 
     my $tmp_dhclient_dir = '/var/run/vyatta/dhclient/';
