@@ -32,7 +32,7 @@
 #
 #
 
-package VyattaConfigDOMTree;
+package Vyatta::ConfigDOMTree;
 
 use strict;
 
@@ -350,7 +350,7 @@ sub _construct_dom_tree {
 		    $valuePresent++;
 		}
 	    } elsif (-d $fn) {
-		my $subnode = new VyattaConfigDOMTree($fn,$entry);
+		my $subnode = new Vyatta::ConfigDOMTree($fn,$entry);
 		if(defined $subnode) {
 		    if(! defined $self->{_subnodes} ) {
 			$self->{_subnodes} = {};
@@ -368,3 +368,5 @@ sub _construct_dom_tree {
     
     return $self;
 }
+
+1;

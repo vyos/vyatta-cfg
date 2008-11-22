@@ -20,20 +20,20 @@
 # **** End License ****
 
 use strict;
-use lib "/opt/vyatta/share/perl5/";
-use VyattaConfigOutput;
+use lib "/opt/vyatta/share/perl5";
+use Vyatta::Config::Output;
 
 if ($ARGV[0] eq '-all') {
   shift;
-  VyattaConfigOutput::set_show_all(1);
+  set_show_all(1);
 }
 
 if ($ARGV[0] eq '-active') {
   shift;
-  VyattaConfigOutput::set_hide_password(1);
-  VyattaConfigOutput::outputActiveConfig(@ARGV);
+  set_hide_password(1);
+  outputActiveConfig(@ARGV);
 } else {
-  VyattaConfigOutput::outputNewConfig(@ARGV);
+  outputNewConfig(@ARGV);
 }
 
 exit 0;

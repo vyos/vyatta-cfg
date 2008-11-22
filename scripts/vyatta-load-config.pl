@@ -26,7 +26,7 @@ use lib "/opt/vyatta/share/perl5/";
 use POSIX;
 use IO::Prompt;
 use Sys::Syslog qw(:standard :macros);
-use VyattaConfigLoad;
+use Vyatta::ConfigLoad;
 
 $SIG{'INT'} = 'IGNORE';
 
@@ -147,7 +147,7 @@ syslog("warning", "Load config [$orig_load_file] by $login");
 system("$sbindir/vyatta_config_migrate.pl $load_file");
 
 print "Loading config file $load_file...\n";
-my %cfg_hier = VyattaConfigLoad::loadConfigHierarchy($load_file);
+my %cfg_hier = Vyatta::ConfigLoad::loadConfigHierarchy($load_file);
 if (scalar(keys %cfg_hier) == 0) {
   print "The specified file does not contain any configuration.\n";
   print "Do you want to remove everything in the running configuration? [no] ";
@@ -158,7 +158,7 @@ if (scalar(keys %cfg_hier) == 0) {
   }
 }
 
-my %cfg_diff = VyattaConfigLoad::getConfigDiff(\%cfg_hier);
+my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff(\%cfg_hier);
 
 my @delete_list = @{$cfg_diff{'delete'}};
 my @set_list = @{$cfg_diff{'set'}};

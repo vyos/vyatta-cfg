@@ -21,7 +21,7 @@
 # All Rights Reserved.
 # **** End License ****
 
-package VyattaMisc;
+package Vyatta::Misc;
 require Exporter;
 @ISA	= qw(Exporter);
 @EXPORT	= qw(getNetAddIP isIpAddress is_ip_v4_or_v6);
@@ -30,7 +30,7 @@ require Exporter;
 
 use strict;
 
-use VyattaConfig;
+use Vyatta::Config;
 
 sub get_sysfs_value {
     my ($intf, $name) = @_;
@@ -48,7 +48,7 @@ sub get_sysfs_value {
 sub is_dhcp_enabled {
     my ($intf, $outside_cli) = @_;
 
-    my $config = new VyattaConfig;
+    my $config = new Vyatta::Config;
     if (!($outside_cli eq '')) {
      $config->{_active_dir_base} = "/opt/vyatta/config/active/";
     }
@@ -483,4 +483,4 @@ sub getPortRuleString {
   return ($rule_str, undef);
 }
 
-return 1;
+1;

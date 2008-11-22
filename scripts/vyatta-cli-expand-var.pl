@@ -21,7 +21,7 @@
 
 use strict;
 use lib "/opt/vyatta/share/perl5/";
-use VyattaConfig;
+use Vyatta::Config;
 
 # expand a variable reference
 if ($#ARGV != 0) {
@@ -59,7 +59,7 @@ if (/\@/) {
   exit 1;
 }
 
-my $config = new VyattaConfig;
+my $config = new Vyatta::Config;
 my $path_str = join ' ', (split /\//);
 my $val_str = "";
 if ($multi_val) {

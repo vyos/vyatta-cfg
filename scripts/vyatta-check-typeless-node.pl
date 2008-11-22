@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use lib "/opt/vyatta/share/perl5/";
-use VyattaConfig;
-use VyattaMisc;
+use Vyatta::Config;
+use Vyatta::Misc;
 use Getopt::Long;
 
 ## Check if a typeless node exists
@@ -9,7 +9,7 @@ use Getopt::Long;
 # i.e. $VAR(./node/) always expands to true.  Once bug 2525 is properly
 # fixed, this can go away
 my $node = shift;
-my $config = new VyattaConfig;
+my $config = new Vyatta::Config;
 
 if ($config->exists("$node")) {
   exit 0;

@@ -1,5 +1,5 @@
 cfgdir = $(datadir)/vyatta-cfg/templates
-share_perl5dir = /opt/vyatta/share/perl5
+share_perl5dir = /opt/vyatta/share/perl5/Vyatta
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
 defaultdir = /etc/default
@@ -45,13 +45,12 @@ sbin_SCRIPTS  += scripts/vyatta-interfaces.pl
 sbin_SCRIPTS  += scripts/vyatta-irqaffin
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 
-share_perl5_SCRIPTS = scripts/VyattaConfig.pm
-share_perl5_SCRIPTS += scripts/VyattaConfigDOMTree.pm
-share_perl5_SCRIPTS += scripts/VyattaConfigOutput.pm
-share_perl5_SCRIPTS += scripts/VyattaConfigLoad.pm
-share_perl5_SCRIPTS += scripts/VyattaMisc.pm
-share_perl5_SCRIPTS += scripts/VyattaTypeChecker.pm
-share_perl5_SCRIPTS += scripts/VyattaIpTablesAddressFilter.pm
+share_perl5_DATA = lib/Vyatta/Config.pm
+share_perl5_DATA += lib/Vyatta/Misc.pm
+share_perl5_DATA += lib/Vyatta/TypeChecker.pm
+share_perl5_DATA += lib/Vyatta/ConfigDOMTree.pm
+share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
+share_perl5_DATA += lib/Vyatta/ConfigLoad.pm
 
 default_DATA = etc/default/vyatta-cfg
 

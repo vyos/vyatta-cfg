@@ -20,8 +20,8 @@
 # **** End License ****
 
 use strict;
-use lib "/opt/vyatta/share/perl5/";
-use VyattaConfigOutput;
+use lib "/opt/vyatta/share/perl5";
+use Vyatta::Config::Output;
 
 my $etcdir = "/opt/vyatta/etc";
 my $bootpath = $etcdir . "/config";
@@ -84,8 +84,8 @@ if ($mode eq 'local') {
 }
 
 select SAVE;
-VyattaConfigOutput::set_show_all(1);
-VyattaConfigOutput::outputActiveConfig();
+set_show_all(1);
+outputActiveConfig();
 print $version_str;
 close SAVE;
 select STDOUT;

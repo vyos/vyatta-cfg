@@ -25,7 +25,7 @@
 
 use strict;
 use lib "/opt/vyatta/share/perl5/";
-use VyattaConfigLoad;
+use Vyatta::ConfigLoad;
 
 my $conf_file = '/opt/vyatta/etc/config/config.boot';
 
@@ -33,7 +33,7 @@ $conf_file = $ARGV[0] if defined $ARGV[0];
 
 # get a list of all config statement in the startup config file
 # (sorted by rank).
-my @all_nodes = VyattaConfigLoad::getStartupConfigStatements($conf_file);
+my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($conf_file);
 if (scalar(@all_nodes) == 0) {
   # no config statements
   exit 1;

@@ -19,11 +19,11 @@
 # All Rights Reserved.
 # **** End License ****
 
-package VyattaConfig;
+package Vyatta::Config;
 
 use strict;
 
-use VyattaConfigDOMTree;
+use Vyatta::ConfigDOMTree;
 
 my %fields = (
   _changes_only_dir_base  => $ENV{VYATTA_CHANGES_ONLY_DIR},
@@ -84,7 +84,7 @@ sub listNodes {
     $path = $self->{_new_config_dir_base} . $self->{_current_dir_level};
   }
 
-  #print "DEBUG VyattaConfig->listNodes(): path = $path\n";
+  #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir DIR, "$path" or return ();
   @nodes = grep !/^\./, readdir DIR;
   closedir DIR;
@@ -94,7 +94,7 @@ sub listNodes {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
-    #print "DEBUG VyattaConfig->listNodes(): node = $tmp\n";
+    #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     push @nodes_modified, $tmp;
   }
 
@@ -119,7 +119,7 @@ sub listOrigNodes {
     $path = $self->{_active_dir_base} . $self->{_current_dir_level};
   }
 
-  #print "DEBUG VyattaConfig->listNodes(): path = $path\n";
+  #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir DIR, "$path" or return ();
   @nodes = grep !/^\./, readdir DIR;
   closedir DIR;
@@ -129,7 +129,7 @@ sub listOrigNodes {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
-    #print "DEBUG VyattaConfig->listNodes(): node = $tmp\n";
+    #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     push @nodes_modified, $tmp;
   }
 
@@ -154,7 +154,7 @@ sub listOrigNodesNoDef {
     $path = $self->{_active_dir_base} . $self->{_current_dir_level};
   }
 
-  #print "DEBUG VyattaConfig->listNodes(): path = $path\n";
+  #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir DIR, "$path" or return ();
   @nodes = grep !/^\./, readdir DIR;
   closedir DIR;
@@ -164,7 +164,7 @@ sub listOrigNodesNoDef {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
-    #print "DEBUG VyattaConfig->listNodes(): node = $tmp\n";
+    #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     if ($tmp ne 'def') {
 	push @nodes_modified, $tmp;
     }
@@ -376,13 +376,13 @@ sub isChangedOrDeleted {
 sub isAdded {
   my ($self, $node) = @_;
 
-  #print "DEBUG VyattaConfig->isAdded(): node $node\n";
+  #print "DEBUG Vyatta::Config->isAdded(): node $node\n";
   # let's setup the filepath for the modify dir
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
   my $filepathNewConfig = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
   
-  #print "DEBUG VyattaConfig->isAdded(): filepath $filepathNewConfig\n";
+  #print "DEBUG Vyatta::Config->isAdded(): filepath $filepathNewConfig\n";
 
   # if the node doesn't exist in the modify dir, it's not
   # been added.  so short circuit and return false.
@@ -415,7 +415,7 @@ sub listNodeStatus {
   @nodes = $self->listNodes("$path");
   foreach my $node (@nodes) {
     if ($node =~ /.+/) {
-      #print "DEBUG VyattaConfig->listNodeStatus(): node $node\n";
+      #print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
       # No deleted nodes -- added, changed, ot static only.
       if    ($self->isAdded("$path $node"))   { $nodehash{$node} = "added"; }
       elsif ($self->isChanged("$path $node")) { $nodehash{$node} = "changed"; }
@@ -433,7 +433,7 @@ sub createActiveDOMTree {
 
     my $self = shift;
 
-    my $tree = new VyattaConfigDOMTree($self->{_active_dir_base} . $self->{_current_dir_level},"active");
+    my $tree = new Vyatta::Config::DOMTree($self->{_active_dir_base} . $self->{_current_dir_level},"active");
 
     return $tree;
 }
@@ -443,7 +443,7 @@ sub createChangesOnlyDOMTree {
 
     my $self = shift;
 
-    my $tree = new VyattaConfigDOMTree($self->{_changes_only_dir_base} . $self->{_current_dir_level},
+    my $tree = new Vyatta::Config::DOMTree($self->{_changes_only_dir_base} . $self->{_current_dir_level},
 				       "changes_only");
 
     return $tree;
@@ -453,11 +453,9 @@ sub createChangesOnlyDOMTree {
 sub createNewConfigDOMTree {
 
     my $self = shift;
+    my $level = $self->{_new_config_dir_base} . $self->{_current_dir_level};
 
-    my $tree = new VyattaConfigDOMTree($self->{_new_config_dir_base} . $self->{_current_dir_level},
-				       "new_config");
-
-    return $tree;
+    return new Vyatta::Config::DOMTree($level, "new_config");
 }
 
 
@@ -601,3 +599,5 @@ sub compareValueLists {
   }
   return %comp_hash;
 }
+
+1;

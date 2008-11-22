@@ -27,11 +27,14 @@
 # outputActiveConfig()
 #   prints the "active" config. suitable for "saving", for example.
 
-package VyattaConfigOutput;
+package Vyatta::ConfigOutput;
+our @EXPORT = qw(setshow_all set_hide_password outputActiveConfig outputNewConfig);
+use base qw(Exporter);
 
 use strict;
-use lib '/opt/vyatta/share/perl5/';
-use VyattaConfig;
+use lib '/opt/vyatta/share/perl5';
+use Vyatta::Config;
+
 use Sort::Versions;
 
 # whether to show default values
@@ -324,7 +327,7 @@ sub displayChildren {
 # @ARGV: represents the 'root' path. the output starts at this point under
 #        the new config.
 sub outputNewConfig {
-  $config = new VyattaConfig;
+  $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
   my %rnodes = $config->listNodeStatus();
   if (scalar(keys %rnodes) > 0) {
@@ -363,7 +366,7 @@ sub outputNewConfig {
 # @ARGV: represents the 'root' path. the output starts at this point under
 #        the active config.
 sub outputActiveConfig {
-  $config = new VyattaConfig;
+  $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
   displayDeletedOrigChildren([ @_ ], '', 1);
 }

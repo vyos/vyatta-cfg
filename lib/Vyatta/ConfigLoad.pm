@@ -18,13 +18,16 @@
 # Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
 # All Rights Reserved.
 
-package VyattaConfigLoad;
+package Vyatta::ConfigLoad;
+
+our @EXPORT = qw(getStartupConfigStatements loadConfigHierarchy getConfigDiff);
+use base qw(Exporter);
 
 use strict;
 use sort 'stable';
-use lib "/opt/vyatta/share/perl5/";
+use lib "/opt/vyatta/share/perl5";
 use XorpConfigParser; 
-use VyattaConfig;
+use Vyatta::Config;
 
 # configuration ordering. higher rank configured before lower rank.
 my $default_rank = 0;
@@ -390,7 +393,7 @@ sub findSetNodes {
 # $0: hash ref of config hierarchy.
 # return: hash containing the diff.
 sub getConfigDiff {
-  $active_cfg = new VyattaConfig;
+  $active_cfg = new Vyatta::Config;
   $new_cfg_ref = shift;
   @set_list = ();
   @delete_list = ();

@@ -21,9 +21,9 @@
 
 # Perl module for type validation.
 # Usage 1: validate a value of a specific type.
-#   use VyattaTypeChecker;
+#   use Vyatta::TypeChecker;
 #   ...
-#   if (VyattaTypeChecker::validateType('ipv4', '1.1.1.1')) {
+#   if (validateType('ipv4', '1.1.1.1')) {
 #     # valid
 #     ...
 #   } else {
@@ -33,7 +33,7 @@
 #
 # Usage 2: find the type of a value (from a list of candidates), returns
 # undef if the value is not valid for any of the candidates.
-#   $valtype = VyattaTypeChecker::findType('1.1.1.1', 'ipv4', 'ipv6');
+#   $valtype = findType('1.1.1.1', 'ipv4', 'ipv6');
 #   if (!defined($valtype)) {
 #     # neither ipv4 nor ipv6
 #     ...
@@ -45,7 +45,9 @@
 #     }
 #   }
 
-package VyattaTypeChecker;
+package Vyatta::TypeChecker;
+our @EXPORT = qw(findType validateType);
+use base qw(Exporter);
 
 use strict;
 
@@ -225,4 +227,3 @@ sub findType {
 }
 
 1;
-

@@ -21,7 +21,7 @@
 
 use strict;
 use lib "/opt/vyatta/share/perl5/";
-use VyattaTypeChecker;
+use Vyatta::TypeChecker;
 
 # validate a value of a specific type
 if ($#ARGV < 1) {
@@ -35,5 +35,5 @@ if ($ARGV[0] eq '-q') {
   $quiet = 1;
 }
 
-exit 0 if (VyattaTypeChecker::validateType($ARGV[0], $ARGV[1], $quiet));
+exit 0 if (Vyatta::TypeChecker::validateType($ARGV[0], $ARGV[1], $quiet));
 exit 1;
