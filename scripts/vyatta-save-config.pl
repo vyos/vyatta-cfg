@@ -21,7 +21,7 @@
 
 use strict;
 use lib "/opt/vyatta/share/perl5";
-use Vyatta::Config::Output;
+use Vyatta::ConfigOutput;
 
 my $etcdir = "/opt/vyatta/etc";
 my $bootpath = $etcdir . "/config";

@@ -433,7 +433,7 @@ sub createActiveDOMTree {
 
     my $self = shift;
 
-    my $tree = new Vyatta::Config::DOMTree($self->{_active_dir_base} . $self->{_current_dir_level},"active");
+    my $tree = new Vyatta::ConfigDOMTree($self->{_active_dir_base} . $self->{_current_dir_level},"active");
 
     return $tree;
 }
@@ -443,7 +443,7 @@ sub createChangesOnlyDOMTree {
 
     my $self = shift;
 
-    my $tree = new Vyatta::Config::DOMTree($self->{_changes_only_dir_base} . $self->{_current_dir_level},
+    my $tree = new Vyatta::ConfigDOMTree($self->{_changes_only_dir_base} . $self->{_current_dir_level},
 				       "changes_only");
 
     return $tree;
@@ -455,7 +455,7 @@ sub createNewConfigDOMTree {
     my $self = shift;
     my $level = $self->{_new_config_dir_base} . $self->{_current_dir_level};
 
-    return new Vyatta::Config::DOMTree($level, "new_config");
+    return new Vyatta::ConfigDOMTree($level, "new_config");
 }
 
 
