@@ -1,3 +1,125 @@
+vyatta-cfg (0.14) unstable; urgency=low
+
+	  3.2.0
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix for bug 3922: disable "vpn" command for operators.
+
+  [ Stig Thormodsrud ]
+  * Fix 3919: Operator level users cannot issue ping6 command
+
+  [ Mohit Mehta ]
+  * Fix Bug 3808 - OpenVPN accepts non-existent local-host option
+
+  [ Stephen Hemminger ]
+  * Allow dhcp on bonding
+  * Set history timestamp at start of shell
+
+  [ Stig Thormodsrud ]
+  * Fix 3505: cli crash on delete of ipv6net static route.
+
+  [ Stephen Hemminger ]
+  * Fix dhcp on bonding
+  * Expand shell history
+
+  [ Bob Gilligan ]
+  * Bugfix: 3807: Typo in config template for interfaces/loopback.
+  * Bugfix: 3655
+
+  [ Stephen Hemminger ]
+  * Enforce restrictions on loopback name
+  * enforce syntax restrictions on ethernet device names
+  * reboot not allowed from operator level
+  * Revert my bad idea
+  * Fix permissions of config file during upgrade
+
+  [ Mohit Mehta ]
+  * Fix Bug 3770 vpn pre-shared keys should be obscured in "show
+    configuration"
+
+  [ rbalocca ]
+  * Fix for bug http://bugzilla.vyatta.com/show_bug.cgi?id=2138
+
+  [ slioch ]
+  * fix for regression bug 3758. added additional check requiring
+    opening and closing quotes before stripping takes place.
+  * fix for bug 3666. strip off leading and trailing quote from default
+    text values that are deleted. default values are treated
+
+  [ rbalocca ]
+  * Simplify the code
+  * Fix for http://bugzilla.vyatta.com/show_bug.cgi?id=3680 (floppy
+    config not loaded)
+
+  [ Stephen Hemminger ]
+  * Add entry for upcoming bonding
+
+  [ Stig Thormodsrud ]
+  * Allow operator user to execute top level "update" node.
+
+  [ Stephen Hemminger ]
+  * Handle special files in aufs
+  * Fix build warnings
+  * Allow use of aufs
+
+  [ slioch ]
+  * strip off whitespace in default value parsed from node.def file--
+    fixes problem of deleting time-zone value without
+
+  [ An-Cheng Huang ]
+  * fix for bug 3280: ignore password etc. in history
+
+  [ Stephen Hemminger ]
+  * Vtysh is not in sbindir
+  * Change back to vyatta-vtysh
+  * Replace vyatta-vtysh with vtysh
+
+  [ Stig Thormodsrud ]
+  * Move is_ip_v4_or_v6() to VyattaMisc.pm so other scripts can use it.
+  * Add curl package for bug 3143.
+
+  [ Mohit Mehta ]
+  * Fix Bug 3524 dhcp client doesn't insert default route on system
+    reboot
+
+  [ Stephen Hemminger ]
+  * Use vtysh directly
+  * mark vyatta-cfg as bash not sh script
+  * Optimize delete
+  * Optimize commit
+  * Turn my_wrappers into macros
+  * Avoid overhead of system
+  * Avoid needless calls to system()
+  * Add missing include
+  * Add annotation to cli functions
+
+  [ Stig Thormodsrud ]
+  * Add ipv6 address to comp_help.
+
+  [ Stephen Hemminger ]
+  * type_to_name returns immutable string
+
+  [ Stig Thormodsrud ]
+  * Fix 3505: cli crashes on ipv6net type.
+
+  [ rbalocca ]
+  * Remove spurious error message during install
+
+  [ root ]
+  * fix for bug 1130. disable ctrl-c during load command to prevent
+    partial load.
+
+  [ Mohit Mehta ]
+  * Fix bug 3318
+  * Fix Bug 3318 ENHANCEMENT REQUEST: Option to NOT Accept DHCP MTU
+    Offers Below Specified Value
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 25 Nov 2008 19:09:37 -0800
+
 vyatta-cfg (0.13) unstable; urgency=low
 
 	  3.1.3
