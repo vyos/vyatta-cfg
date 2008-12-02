@@ -28,7 +28,7 @@
 #   prints the "active" config. suitable for "saving", for example.
 
 package Vyatta::ConfigOutput;
-our @EXPORT = qw(setshow_all set_hide_password outputActiveConfig outputNewConfig);
+our @EXPORT = qw(set_show_all set_hide_password outputActiveConfig outputNewConfig);
 use base qw(Exporter);
 
 use strict;
