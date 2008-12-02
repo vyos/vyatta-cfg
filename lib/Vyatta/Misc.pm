@@ -24,8 +24,8 @@
 package Vyatta::Misc;
 require Exporter;
 @ISA	= qw(Exporter);
-@EXPORT	= qw(getNetAddIP isIpAddress is_ip_v4_or_v6);
-@EXPORT_OK = qw(getNetAddIP isIpAddress is_ip_v4_or_v6 getPortRuleString);
+@EXPORT	= qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6);
+@EXPORT_OK = qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6 getPortRuleString);
 
 
 use strict;
