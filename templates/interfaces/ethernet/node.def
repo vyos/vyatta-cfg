@@ -10,8 +10,7 @@ syntax:expression: exec " \
 	fi"
 
 update: sudo ip link set "$VAR(@)" up
-        vyatta-vtysh -c "configure terminal" \
-          -c "interface $VAR(@)" -c "link-detect"
+	vyatta-link-detect $VAR(@) on
 delete: sudo ip link set "$VAR(@)" down
 allowed: for dev in /sys/class/net/eth*; 
          do if [[ -d $dev && -L $dev/device ]]
