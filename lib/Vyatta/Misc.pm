@@ -119,10 +119,12 @@ sub getInterfacesIPadresses {
          $is_intf_interface_type = 1;
        }
        if ($is_intf_interface_type > 0) {
-        $intf_ips[$intf_ips_index] =
+	my @ips = ();
+        @ips =
         `ip addr show $intf_system 2>/dev/null | grep inet | grep -v inet6 | awk '{print \$2}'`;
-        if (!($intf_ips[$intf_ips_index] eq '')){
-         $intf_ips_index++;
+	chomp @ips;
+        if (scalar(@ips) > 0){
+	 push @intf_ips, @ips;
         }
        }
      }
