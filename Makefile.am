@@ -6,7 +6,7 @@ defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
 
-AM_CFLAGS = -I src -Wall
+AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
@@ -21,12 +21,26 @@ src_libvyatta_cfg_la_SOURCES = src/cli_parse.y src/cli_def.l src/cli_val.l \
 												src/cli_val_engine.c src/cli_objects.c
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 LDADD = src/libvyatta-cfg.la
+LDADD += /usr/lib/libglib-2.0.la
+
 
 sbin_PROGRAMS = src/my_commit
+sbin_PROGRAMS += src/my_commit2
+sbin_PROGRAMS += src/exe_action
+sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
 sbin_PROGRAMS += src/check_tmpl
 src_my_commit_SOURCES = src/commit.c
+src_my_commit2_SOURCES = src/commit2.c
+src_my_commit2_SOURCES += src/common/common.c
+src_my_commit2_SOURCES += src/common/unionfs.c
+src_exe_action_SOURCES = src/exe_action.c
+src_exe_action_SOURCES += src/common/common.c
+src_exe_action_SOURCES += src/common/unionfs.c
+src_dump_SOURCES = src/dump_session.c
+src_dump_SOURCES += src/common/common.c
+src_dump_SOURCES += src/common/unionfs.c
 src_my_delete_SOURCES = src/delete.c
 src_my_set_SOURCES = src/set.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
