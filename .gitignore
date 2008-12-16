@@ -28,6 +28,8 @@ libtool
 /src/my_set
 /src/my_delete
 /src/check_tmpl
+/src/dump
+/src/exe_action
 /src/cli_def.c
 /src/cli_parse.c
 /src/cli_parse.h
