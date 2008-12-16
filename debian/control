@@ -2,7 +2,7 @@ Source: vyatta-cfg
 Section: contrib/net
 Priority: extra
 Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
-Build-Depends: debhelper (>= 5), autotools-dev
+Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev
 Standards-Version: 3.7.2
 
 Package: vyatta-cfg
@@ -22,6 +22,7 @@ Depends: sed (>= 4.1.5),
  libc6 (>= 2.7-6),
  libsort-versions-perl,
  vlan,
+ libglib2.0-0,
  curl
 Replaces: vyatta-cfg-firewall
 Suggests: util-linux (>= 2.13-5),
