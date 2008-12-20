@@ -434,7 +434,7 @@ sub getPortRuleString {
     $port_str = $1;
     $negate = '! ';
   }
-  $port_str =~ s/-/:/g;
+  $port_str =~ s/(\d+)-(\d+)/$1:$2/g;
 
   my $num_ports = 0;
   my @port_specs = split /,/, $port_str;
