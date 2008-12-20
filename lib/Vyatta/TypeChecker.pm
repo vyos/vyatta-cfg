@@ -124,6 +124,10 @@ sub validate_protocol {
   my $value = shift;
   $value = lc $value;
   return 1 if ($value eq 'all');
+  if ($value =~ /^\d+$/) {
+      # 0 has special meaning to iptables
+      return 1 if $value >= 1 and $value <= 255;
+  }
   if (!open(IN, "</etc/protocols")) {
     print "can't open /etc/protocols";
     return 0;
