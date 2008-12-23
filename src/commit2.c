@@ -184,7 +184,7 @@ main(int argc, char** argv)
     //on each priority node now execute actions
     if ((success = process_priority_node(trans_child_node)) == TRUE) {
       //this below copies the node directory from the local to active location
-      success = complete(trans_child_node, test_mode);
+      complete(trans_child_node, test_mode);
     }
 
     if (success == FALSE) {
