@@ -24,14 +24,14 @@ LDADD = src/libvyatta-cfg.la
 LDADD += /usr/lib/libglib-2.0.la
 
 
-sbin_PROGRAMS = src/my_commit
+sbin_PROGRAMS = src/my_commit1
 sbin_PROGRAMS += src/my_commit2
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
 sbin_PROGRAMS += src/check_tmpl
-src_my_commit_SOURCES = src/commit.c
+src_my_commit1_SOURCES = src/commit.c
 src_my_commit2_SOURCES = src/commit2.c
 src_my_commit2_SOURCES += src/common/common.c
 src_my_commit2_SOURCES += src/common/unionfs.c
@@ -76,3 +76,5 @@ install-exec-hook:
 	cd templates; $(cpiop) $(DESTDIR)$(cfgdir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
+	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit1 my_commit
+	
