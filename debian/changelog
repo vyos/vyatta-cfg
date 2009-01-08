@@ -1,3 +1,77 @@
+vyatta-cfg (0.14.1) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Avoid overhead of modprobe
+  * Optimize for size
+  * Simplify the debug code
+  * Implement touch in perl
+  * Use perl mkdir
+  * Use perl unlink rather than rm
+  * Use grep -c rather than running wc command
+  * Check result of system commands
+
+  [ Mohit Mehta ]
+  * rectify check for bond interface
+  * move submodules to VyattaMisc.pm so that they can be used elsewhere
+    as well
+  * check dhcp for bond vif interfaces as well
+  * add check for bond vif interface to submodule
+
+  [ An-Cheng Huang ]
+  * add support for development build
+
+  [ Mohit Mehta ]
+  * move submodule to get interface related info to VyattaMisc
+  * Fix Bug 3917 dhcp brings interface up for lease acquire/renew even
+    though interface has been disabled in CLI
+
+  [ Stephen Hemminger ]
+  * Convert VyattaConfig (et al) to Vyatta::Config
+  * Need to fix some stuff from change to Vyatta::
+  * export getPortRuleString
+
+  [ Stig Thormodsrud ]
+  * "save" command broken - fix spelling error.
+  * "show interfaces" broken.  Use new perl hierarchy.
+
+  [ Stephen Hemminger ]
+  * Use vyatta-link-detect
+  * Need full path to link-detect
+
+  [ Stig Thormodsrud ]
+  * Fix 3991: Unable to configure DHCP server on a multinetted
+    interfaceZ
+
+  [ An-Cheng Huang ]
+  * update maintainer information
+  * "files" file should be removed before package build
+
+  [ slioch ]
+  * initial checkin of new commit code--building but does not replace
+    original commit. New commit may be accessed through
+  * removed tmp file that shouldn't have been committed.
+
+  [ An-Cheng Huang ]
+  * update Build-Depends and Depends
+  * update .gitignore
+
+  [ Stig Thormodsrud ]
+  * Fix 3626: Not all protocol numbers are accepted in firewall rules.
+  * Fix 3815: FW: Hyphenated port names treated as ranges in firewall
+    rules.
+
+  [ slioch ]
+  * alter return check for dirctory copy on successful completion of
+    node processing.
+  * mod to make it easier to switch between commits
+
+  [ Stephen Hemminger ]
+  * New Vyatta::Interface infrastructure
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 08 Jan 2009 09:27:14 -0800
+
 vyatta-cfg (0.14) unstable; urgency=low
 
 	  3.2.0
