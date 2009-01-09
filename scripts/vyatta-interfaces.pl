@@ -44,8 +44,8 @@ use warnings;
 my $dhcp_daemon = '/sbin/dhclient';
 my $dhclient_dir = '/var/lib/dhcp3/';
 
-
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
+my $restore_ipv6;
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
@@ -54,6 +54,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
 	   "op-command=s"      => \$op_dhclient,
+	   "restore-ipv6"      => \$restore_ipv6,
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -62,6 +63,7 @@ if (defined $addr)             { is_valid_addr($addr, $dev); }
 if (defined $mac)	       { is_valid_mac($mac, $dev); }
 if (defined $mac_update)       { update_mac($mac_update, $dev); }
 if (defined $op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
+if (defined $restore_ipv6)     { restore_ipv6_addr($dev); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
@@ -174,6 +176,38 @@ sub is_address_enabled {
     }
     return 0;
 }
+
+# work around for loss of ipv6 addresses on admin don
+sub restore_ipv6_addr {
+    my $intf = shift;
+    my $config = new VyattaConfig;
+
+    ## convert name to config path
+    ## this will be fixed in later versions
+    if ($intf =~ m/^eth/) {
+	if ($intf =~ m/(\w+)\.(\d+)/) {
+	    $config->setLevel("interfaces ethernet $1 vif $2");
+	} else {
+	    $config->setLevel("interfaces ethernet $intf");
+	}
+    } elsif ($intf =~ m/^bond/) {
+	$config->setLevel("interfaces bonding $intf");
+    } elsif ($intf =~ m/^br/) {
+	$config->setLevel("interfaces bridge $intf");
+    } else {
+	print "unsupported interface [$intf]\n";
+	exit 1;
+    }
+    
+    foreach my $addr ($config->listNodes('address')) {
+	next if ($addr eq 'dhcp');
+	my $version = is_ip_v4_or_v6($addr);
+	next unless $version;
+	next unless ($version == 6);
+	system("ip -6 addr add $addr dev $intf");
+    }
+}
+
 
 sub get_hostname {
     my $config = new VyattaConfig;
