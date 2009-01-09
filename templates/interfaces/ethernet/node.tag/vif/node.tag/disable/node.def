@@ -1,3 +1,4 @@
 help: Set interface disabled
-update:expression: "sudo ip link set $VAR(../../@).$VAR(../@) down"; "Error disabling dev $VAR(../../@).$VAR(../@)"
-delete:expression: "sudo ip link set $VAR(../../@).$VAR(../@) up"; "Error enabling dev $VAR(../../@).$VAR(../@)"
+update:sudo ip link set $VAR(../../@).$VAR(../@) down
+delete:sudo ip link set $VAR(../../@).$VAR(../@) up
+    /opt/vyatta/sbin/vyatta-interfaces.pl --dev  $VAR(../../@).$VAR(../@) --restore-ipv6

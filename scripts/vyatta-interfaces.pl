@@ -199,12 +199,13 @@ sub restore_ipv6_addr {
 	exit 1;
     }
     
-    foreach my $addr ($config->listNodes('address')) {
+    foreach my $addr ($config->returnValues('address')) {
 	next if ($addr eq 'dhcp');
 	my $version = is_ip_v4_or_v6($addr);
 	next unless $version;
 	next unless ($version == 6);
-	system("ip -6 addr add $addr dev $intf");
+	system("sudo ip -6 addr add $addr dev $intf") == 0
+	    or die "restoring $addr failed: $!\n";
     }
 }
 
