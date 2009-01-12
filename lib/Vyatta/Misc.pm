@@ -103,7 +103,7 @@ sub getInterfacesIPadresses {
     my $interface_type = shift;
     if (!($interface_type =~ m/broadcast|pointopoint|multicast|all/)) {
         print STDERR "Invalid interface type specified to retrive IP addresses for\n";
-        return undef;
+        return;	# undef
     }
     my @interfaces_on_system = `ifconfig -a | awk '\$2 ~ /Link/ {print \$1}'`;
     chomp @interfaces_on_system;
@@ -141,7 +141,7 @@ sub getNetAddrIP {
 
     if ($interface eq '') {
 	print STDERR "Error:  No interface specified.\n";
-	return undef;
+	return; # undef
     }
 
     my $ifconfig_out = `ifconfig $interface`;
@@ -149,14 +149,14 @@ sub getNetAddrIP {
     my $ip = $1;
     if ($ip eq '') {
 	print STDERR "Error:  Unable to determine IP address for interface \'$interface\'.\n";
-	return undef;
+	return; # undef
     }
 
     $ifconfig_out =~ /Mask:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
     my $netmask = $1;
     if ($netmask eq '') {
 	print STDERR "Error:  Unable to determine netmask for interface \'$interface\'.\n";
-	return undef;
+	return; # undef 
     }
     
     use NetAddr::IP;  # This library is available via libnetaddr-ip-perl.deb
@@ -174,9 +174,7 @@ sub is_ip_v4_or_v6 {
         # it to be 1.1.0.0, so add a check to force all
 	# 4 octets to be defined
         #
-	if ($addr !~ /\d+\.\d+\.\d+\.\d+/) {
-	    return undef;
-	}
+	return if ($addr !~ /\d+\.\d+\.\d+\.\d+/); # unndef
 	return 4;
     }
     $ip = NetAddr::IP->new6($addr);
@@ -184,28 +182,18 @@ sub is_ip_v4_or_v6 {
 	return 6;
     }
     
-    return undef;
+    return; # undef
 }
 
 sub isIpAddress {
   my $ip = shift;
 
-  $_ = $ip;
-  if ( ! /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) {
-    return 0;
-  }
-  else {
-    my @ips = split /\./, $ip;
-    my $octet = 0;
-    my $counter = 0;
-
-    foreach $octet (@ips) {
-      if (($octet < 0) || ($octet > 255)) { return 0; }
-      if (($counter == 0) && ($octet < 1)) { return 0; }
-      $counter++;
-    }
-  }
-
+  return unless $ip =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/;
+  
+  return unless ($1 > 0 && $1 < 256);
+  return unless ($2 >= 0 && $2 < 256);
+  return unless ($3 >= 0 && $3 < 256);
+  return unless ($4 >= 0 && $4 < 256);
   return 1;
 }
 
