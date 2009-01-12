@@ -295,22 +295,6 @@ sub update_eth_addrs {
     exit 1;
 }
 
-sub if_nametoindex {
-    my ($intf) = @_;
-
-    open my $sysfs, "<", "/sys/class/net/$intf/ifindex" 
-	|| die "Unknown interface $intf";
-    my $ifindex = <$sysfs>;
-    close($sysfs) or die "read sysfs error\n";
-    chomp $ifindex;
-
-    return $ifindex;
-}
-
-sub htonl {
-    return unpack('L',pack('N',shift));
-}
-
 sub delete_eth_addrs {
     my ($addr, $intf) = @_;
 
