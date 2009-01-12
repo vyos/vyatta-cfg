@@ -138,7 +138,7 @@ sub mtu {
     return $config->returnValue("mtu");
 }
 
-sub dhcp {
+sub using_dhcp {
     my $self   = shift;
     my $config = new Vyatta::Config;
     $config->setLevel( $self->{path} );
@@ -149,20 +149,29 @@ sub dhcp {
     return $addr[0];
 }
 
-# return array of static address (if any)
+## System checks
+
+# return array of current addresses (on system)
 sub address {
     my $self    = shift;
-    my $config  = new Vyatta::Config;
-    $config->setLevel( $self->{path} );
 
-    my @addr = grep { $_ ne 'dhcp' } $config->returnOrigValues('address');
+    open my $ipcmd, "ip addr show dev $self->{name} |"
+	or die "ip addr command failed: $!";
 
-    return @addr if (wantarray);
-    return if ($#addr < 0);
-    return $addr[0];
+    my @addresses;
+    <$ipcmd>;
+    while (<$ipcmd>) {
+	my ($proto, $addr) = split;
+	next unless ($proto =~ /inet/);
+	push @addresses, $addr;
+    }
+    close $ipcmd;
+
+    return @addresses;
 }
 
-## System checks
+# return 
+
 sub exists {
     my $self = shift;
 

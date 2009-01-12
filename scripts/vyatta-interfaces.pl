@@ -53,7 +53,6 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
 	   "op-command=s"      => \$op_dhclient,
-           "intf-cli-path=s"   => \$intf_cli_path
 );
 
 if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -123,42 +122,6 @@ sub dhcp_conf_header {
     return $output;
 }
 
-sub is_address_enabled {
-    my $intf = shift;
-
-    my $config = new Vyatta::Config;
-    
-    ## FIXME this is name based madness find a better way
-    ##   so we don't have to redo with each interface type!
-    ## POSSIBLE SOLUTION: pass the cli-path uptill 'address' node from 
-    ## address/node.def so we don't have to determine the address type here
-    if ($intf =~ m/^eth/) {
-	if ($intf =~ m/(\w+)\.(\d+)/) {
-	    $config->setLevel("interfaces ethernet $1 vif $2");
-	} else {
-	    $config->setLevel("interfaces ethernet $intf");
-	}
-    } elsif ($intf =~ m/^bond/) {
-        if ($intf =~ m/(\w+)\.(\d+)/) {
-            $config->setLevel("interfaces bonding $1 vif $2");
-        } else {
-            $config->setLevel("interfaces bonding $intf");
-        }
-    } elsif ($intf =~ m/^br/) {
-	$config->setLevel("interfaces bridge $intf");
-    } else {
-	print "unsupported dhcp interface [$intf]\n";
-	exit 1;
-    }
-    my @addrs = $config->returnOrigValues("address");
-    foreach my $addr (@addrs) {
-	if (defined $addr && $addr ne "dhcp") {
-	    return 1;
-	}
-    }
-    return 0;
-}
-
 sub get_hostname {
     my $config = new Vyatta::Config;
     $config->setLevel("system");
@@ -214,29 +177,17 @@ sub dhcp_update_config {
 }
 
 sub is_intf_disabled {
-    my $intf = shift;
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+
+    $intf or die "Unknown interface name/type: $name\n";
 
     # only do this if script run from config mode
     if (!defined $op_dhclient) {
+	my $config = new Vyatta::Config;
+	$config->setLevel($intf->path());
 
-      if (!defined $intf_cli_path) {
-        print "unable to check if interface is disabled without cli path\n";
-        exit 1;
-      }
-
-      my $config = new Vyatta::Config;
-      $config->setLevel("$intf_cli_path");
-
-      if ($intf =~ m/^br/) {
-        if ($config->returnValue("disable") eq "true") {
-         return 1;
-        }
-      } else {
-        if ($config->exists("disable")) {
-          return 1;
-        }
-      }
-
+	return $config->exists("disable");
     }
     return 0;
 }

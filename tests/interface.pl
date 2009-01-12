@@ -19,12 +19,18 @@ foreach my $arg (@ARGV) {
     
     my $vif = $intf->vif();
     print "vif=$vif " if $vif;
-    printf "path = '%s' device=%s\n", $intf->path(), $intf->physicalDevice();
+    printf "path = '%s'\ndevice=%s\n", $intf->path(), $intf->physicalDevice();
 
-    foreach my $attr (qw(exists configured disabled dhcp address up running)) {
+    my @addresses = $intf->address();
+    if ($#addresses eq -1) {
+	print "address is no set\n";
+    } else {
+	print "address ", join(' ',@addresses), "\n";
+    }
+
+    foreach my $attr (qw(exists configured disabled using up running)) {
 	my $val = $intf->$attr();
-
-	if ($val) {
+	if (defined $val) {
 	    print "\t$attr = $val\n";
 	} else {
 	    print "\t$attr is not set\n";

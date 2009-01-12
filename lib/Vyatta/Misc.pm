@@ -24,13 +24,14 @@
 package Vyatta::Misc;
 require Exporter;
 @ISA	= qw(Exporter);
-@EXPORT	= qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6);
+@EXPORT	= qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6 is_dhcp_enabled is_address_enabled);
 @EXPORT_OK = qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6 getPortRuleString);
 
 
 use strict;
 
 use Vyatta::Config;
+use Vyatta::Interface;
 
 sub get_sysfs_value {
     my ($intf, $name) = @_;
@@ -44,42 +45,35 @@ sub get_sysfs_value {
     return $value;
 }
 
-# check if interace is configured to get an IP address using dhcp
+# check if interface is configured to get an IP address using dhcp
 sub is_dhcp_enabled {
-    my ($intf, $outside_cli) = @_;
+    my ($name, $outside_cli) = @_;
+    my $intf = new Vyatta::Interface($name);
+    return unless $intf;
 
     my $config = new Vyatta::Config;
-    if (!($outside_cli eq '')) {
-     $config->{_active_dir_base} = "/opt/vyatta/config/active/";
-    }
+    $config->{_active_dir_base} = "/opt/vyatta/config/active/" 
+	if ($outside_cli);
 
-    if ($intf =~ m/^eth/) {
-        if ($intf =~ m/(\w+)\.(\d+)/) {
-            $config->setLevel("interfaces ethernet $1 vif $2");
-        } else {
-            $config->setLevel("interfaces ethernet $intf");
-        }
-    } elsif ($intf =~ m/^br/) {
-        $config->setLevel("interfaces bridge $intf");
-    } elsif ($intf =~ m/^bond/) {
-        if ($intf =~ m/(\w+)\.(\d+)/) {
-            $config->setLevel("interfaces bonding $1 vif $2");
-        } else {
-            $config->setLevel("interfaces bonding $intf");
-        }
-    } else {
-        #
-        # add other interfaces that can be configured to use dhcp above
-        #
-        return 0;
+    $config->setLevel($intf->path());
+    foreach my $addr ($config->returnOrigValues('address')) {
+	return 1 if ($addr && $addr eq "dhcp");
     }
-    my @addrs = $config->returnOrigValues("address");
-    foreach my $addr (@addrs) {
-        if (defined $addr && $addr eq "dhcp") {
-            return 1;
-        }
+    # return undef
+}
+
+# check if any non-dhcp addresses configured
+sub is_address_enabled {
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+    $intf or return;
+
+    my $config = new Vyatta::Config;
+    $config->setLevel($intf->path());
+    foreach my $addr ($config->returnOrigValues('address')) {
+	return 1 if ($addr && $addr ne 'dhcp');
     }
-    return 0;
+    # return undefined (ie false)
 }
 
 # return dhclient related files for interface
@@ -119,12 +113,10 @@ sub getInterfacesIPadresses {
          $is_intf_interface_type = 1;
        }
        if ($is_intf_interface_type > 0) {
-	my @ips = ();
-        @ips =
+        $intf_ips[$intf_ips_index] =
         `ip addr show $intf_system 2>/dev/null | grep inet | grep -v inet6 | awk '{print \$2}'`;
-	chomp @ips;
-        if (scalar(@ips) > 0){
-	 push @intf_ips, @ips;
+        if (!($intf_ips[$intf_ips_index] eq '')){
+         $intf_ips_index++;
         }
        }
      }
@@ -134,34 +126,17 @@ sub getInterfacesIPadresses {
 
 }
 
-
 sub getNetAddrIP {
-    my ($interface);
-    ($interface) = @_;
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+    $intf or return;
 
-    if ($interface eq '') {
-	print STDERR "Error:  No interface specified.\n";
-	return; # undef
+    foreach my $addr ($intf->addresses()) {
+	my $ip = new NetAddr::IP->new($addr);
+	next unless ($ip && ip->version() == 4);
+	return $ip;
     }
-
-    my $ifconfig_out = `ifconfig $interface`;
-    $ifconfig_out =~ /inet addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-    my $ip = $1;
-    if ($ip eq '') {
-	print STDERR "Error:  Unable to determine IP address for interface \'$interface\'.\n";
-	return; # undef
-    }
-
-    $ifconfig_out =~ /Mask:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-    my $netmask = $1;
-    if ($netmask eq '') {
-	print STDERR "Error:  Unable to determine netmask for interface \'$interface\'.\n";
-	return; # undef 
-    }
-    
-    use NetAddr::IP;  # This library is available via libnetaddr-ip-perl.deb
-    my $naip = new NetAddr::IP($ip, $netmask);
-    return $naip;
+    # default return of undefined (ie false)
 }
 
 sub is_ip_v4_or_v6 {
@@ -200,9 +175,7 @@ sub isIpAddress {
 sub isClusterIP {
     my ($vc, $ip) = @_;
     
-    if (!(defined($ip))) {
-	return 0;
-    }
+    return unless $ip;	# undef
     
     my @cluster_groups = $vc->listNodes('cluster group');
     foreach my $cluster_group (@cluster_groups) {
@@ -214,7 +187,7 @@ sub isClusterIP {
 	}
     }
     
-    return 0;
+    return;
 }
 
 sub remove_ip_prefix {
@@ -227,118 +200,34 @@ sub remove_ip_prefix {
 sub is_ip_in_list {
     my ($ip, @list) = @_;
     
-    if (!defined($ip) || scalar(@list) == 0) {
-	return 0;
-    }
-
     @list = remove_ip_prefix(@list);
     my %list_hash = map { $_ => 1 } @list;
-    if (defined($list_hash{$ip})) {
-	return 1;
-    } else {
-	return 0;
-    }
-}
 
-sub get_eth_ip_addrs {
-    my ($vc, $eth_path) = @_;
-
-    my @addrs      = ();
-    my @virt_addrs = ();
-
-    $vc->setLevel("interfaces ethernet $eth_path");
-    @addrs = $vc->returnValues("address");
-
-    #
-    # check for VIPs
-    #
-    $vc->setLevel("interfaces ethernet $eth_path vrrp vrrp-group");
-    my @vrrp_groups = $vc->listNodes();
-    foreach my $group (@vrrp_groups) {
-	$vc->setLevel("interfaces ethernet $eth_path vrrp vrrp-group $group");
-	@virt_addrs = $vc->returnValues("virtual-address");
-    }
-    return (@addrs, @virt_addrs);
-}
-
-sub get_tun_ip_addrs {
-    my ($vc, $tun_path) = @_;
-
-    my @addrs      = ();
-    my @virt_addrs = ();
-
-    $vc->setLevel("interfaces tunnel $tun_path");
-    @addrs = $vc->returnValues("address");
-
-    #
-    # check for VIPs
-    #
-    $vc->setLevel("interfaces tunnel $tun_path vrrp vrrp-group");
-    my @vrrp_groups = $vc->listNodes();
-    foreach my $group (@vrrp_groups) {
-	$vc->setLevel("interfaces tunnel $tun_path vrrp vrrp-group $group");
-	@virt_addrs = $vc->returnValues("virtual-address");
-    }
-    return (@addrs, @virt_addrs);
-}
-
-sub get_serial_ip_addrs {
-    #
-    # Todo when serial is added
-    #
+    return $list_hash{$ip};
 }
 
 sub isIPinInterfaces {
     my ($vc, $ip_addr, @interfaces) = @_;
 
-    if (!(defined($ip_addr))) {
-	return 0;
-    }
+    return unless $ip_addr;	# undef == false
 
-    foreach my $intf (@interfaces) {
-	# regular ethernet
-	if ($intf =~ m/^eth\d+$/) {
-	    my @addresses = get_eth_ip_addrs($vc, $intf);
-	    if (is_ip_in_list($ip_addr, @addresses)) {
-		return 1;
-	    }
-	}
-	# ethernet vlan
-	if ($intf =~ m/^eth(\d+).(\d+)$/) {
-	    my $eth = "eth$1";
-	    my $vif = $2;
-	    my @addresses = get_eth_ip_addrs($vc, "$eth vif $vif");
-	    if (is_ip_in_list($ip_addr, @addresses)) {
-		return 1;
-	    }
-	}
-	# tunnel
-        if ($intf =~ m/^tun\d+$/) {
-	    my @addresses = get_tun_ip_addrs($vc, $intf);
-	    if (is_ip_in_list($ip_addr, @addresses)) {
-		return 1;
-	    }
-	}
-	# serial
-	if ($intf =~ m/^wan(\d+).(\d+)$/) {
-	    my @addresses = get_serial_ip_addrs($vc, $intf);
-	    if (is_ip_in_list($ip_addr, @addresses)) {
-		return 1;
-	    }
-	}
+    foreach my $name (@interfaces) {
+	my $name = shift;
+	my $intf = new Vyatta::Interface($name);
+	next unless $intf;	# unknown interface type
+
+	my @addresses = $intf->address();
+	
+	return 1 if (is_ip_in_list($ip_addr, @addresses));
     }
     
-    return 0;
+    return; # undef == false
 }
 
 sub isClusteringEnabled {
     my ($vc) = @_;
     
-    if ($vc->exists('cluster')) {
-	return 1;
-    } else {
-	return 0;
-    } 
+    return $vc->exists('cluster');
 }
 
 # $str: string representing a port number
