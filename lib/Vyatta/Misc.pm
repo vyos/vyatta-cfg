@@ -386,26 +386,6 @@ sub isValidPortRange {
   return (1, undef);
 }
 
-my %port_name_hash_tcp = ();
-my %port_name_hash_udp = ();
-sub buildPortNameHash {
-  open(IF, "</etc/services") or return 0;
-  while (<IF>) {
-    s/#.*$//;
-    my $is_tcp = /\d\/tcp\s/;
-    my @names = grep (!/\//, (split /\s/));
-    foreach my $name (@names) {
-      if ($is_tcp) {
-        $port_name_hash_tcp{$name} = 1;
-      } else {
-        $port_name_hash_udp{$name} = 1;
-      }
-    }
-  }
-  close IF;
-  return 1;
-}
-
 # $str: string representing a port name
 # $proto: protocol to check
 # returns ($success, $err)
@@ -416,11 +396,10 @@ sub isValidPortName {
   my $proto = shift;
   return (undef, "\"\" is not a valid port name for protocol \"$proto\"")
     if ($str eq '');
-  buildPortNameHash() if ((keys %port_name_hash_tcp) == 0);
-  return (1, undef) if ($proto eq 'tcp' && defined($port_name_hash_tcp{$str}));
-  return (1, undef) if ($proto eq '6' && defined($port_name_hash_tcp{$str}));
-  return (1, undef) if ($proto eq 'udp' && defined($port_name_hash_udp{$str}));
-  return (1, undef) if ($proto eq '17' && defined($port_name_hash_udp{$str}));
+
+  my $port = getservbyname($str, $proto);
+  return (1, undef) if $port;
+
   return (undef, "\"$str\" is not a valid port name for protocol \"$proto\"");
 }
 
