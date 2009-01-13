@@ -175,7 +175,7 @@ sub using_dhcp {
 
 # return array of current addresses (on system)
 sub address {
-    my $self    = shift;
+    my ($self, $type) = @_;
 
     open my $ipcmd, "ip addr show dev $self->{name} |"
 	or die "ip addr command failed: $!";
@@ -185,6 +185,11 @@ sub address {
     while (<$ipcmd>) {
 	my ($proto, $addr) = split;
 	next unless ($proto =~ /inet/);
+	if ($type) {
+	    next if ($proto eq 'inet6' && $type != 6);
+	    next if ($proto eq 'inet' && $type != 4);
+	}
+
 	push @addresses, $addr;
     }
     close $ipcmd;

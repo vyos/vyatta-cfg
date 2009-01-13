@@ -104,7 +104,7 @@ my %type_hash = (
     'pointtopoint'	=> IFF_POINTOPOINT,
 );
 
-# getInterfacesIPadresses() returns IP addresses for the interface type passed to it
+# getInterfacesIPadresses() returns IPv4 addresses for the interface type
 # possible type of interfaces : 'broadcast', 'pointopoint', 'multicast', 'all'
 # the loopback IP address is never returned with any of the above parameters
 sub getInterfacesIPadresses {
@@ -126,7 +126,7 @@ sub getInterfacesIPadresses {
 	my $flags = $intf->flags();
 	next if ($flags & IFF_LOOPBACK);
 
-	my @addresses = $intf->address();
+	my @addresses = $intf->address(4);
 	push @ips, @addresses;
     }
     return @ips;
