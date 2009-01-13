@@ -33,6 +33,7 @@ use strict;
 
 use Vyatta::Config;
 use Vyatta::Interface;
+use NetAddr::IP;
 
 sub get_sysfs_value {
     my ($intf, $name) = @_;
@@ -138,7 +139,7 @@ sub getNetAddrIP {
     $intf or return;
 
     foreach my $addr ($intf->addresses()) {
-	my $ip = new NetAddr::IP->new($addr);
+	my $ip = new NetAddr::IP $addr;
 	next unless ($ip && ip->version() == 4);
 	return $ip;
     }
@@ -148,22 +149,20 @@ sub getNetAddrIP {
 sub is_ip_v4_or_v6 {
     my $addr = shift;
 
-    my $ip = NetAddr::IP->new($addr);
-    if (defined $ip && $ip->version() == 4) {
+    my $ip = new NetAddr::IP $addr;
+    return unless defined $ip;
+
+    my $vers = $ip->version();
+    if ($vers == 4) {
 	#
-	# the call to IP->new() will accept 1.1 and consider
-        # it to be 1.1.0.0, so add a check to force all
-	# 4 octets to be defined
-        #
-	return if ($addr !~ /\d+\.\d+\.\d+\.\d+/); # unndef
-	return 4;
-    }
-    $ip = NetAddr::IP->new6($addr);
-    if (defined $ip && $ip->version() == 6) {
+	# NetAddr::IP will accept short forms 1.1 and hostnames 
+	# so check if all 4 octets are defined
+	return 4 unless ($addr !~ /\d+\.\d+\.\d+\.\d+/); # undef
+    } elsif ($vers == 6) {
 	return 6;
     }
-    
-    return; # undef
+
+    # default return of undefined (ie false)
 }
 
 sub isIpAddress {
