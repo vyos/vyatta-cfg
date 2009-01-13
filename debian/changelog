@@ -1,3 +1,17 @@
+vyatta-cfg (0.14.0+islavista1) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * Fix 3991: Unable to configure DHCP server on a multinetted
+    interface.
+
+  [ Stephen Hemminger ]
+  * Add option for restoring ipv6 addresses
+  * Restore IPV6 addresses when interface re-enabled
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 12 Jan 2009 16:39:42 -0800
+
 vyatta-cfg (0.14) unstable; urgency=low
 
 	  3.2.0
