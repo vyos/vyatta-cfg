@@ -7,13 +7,17 @@
 use strict;
 use warnings;
 use Vyatta::Interface;
-use Vyatta::Misc qw(getInterfaces getInterfacesIPadresses);
+use Vyatta::Misc;
 
 my @interfaces = getInterfaces();
 print "Interfaces: ", join(' ',@interfaces),"\n";
 
-my @ips = getInterfacesIPadresses('all');
-print "IP addresses = ",join(' ',@ips), "\n";
+print "IP addresses = ";
+foreach my $addr (Vyatta::Misc::getInterfacesIPadresses('all')) {
+    print $addr, '(', is_ip_v4_or_v6($addr), ') ';
+}
+print "\n";
+
 
 foreach my $arg (@interfaces) {
     print "$arg : ";
