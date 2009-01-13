@@ -7,8 +7,12 @@
 use strict;
 use warnings;
 use Vyatta::Interface;
+use Vyatta::Misc qw(getInterfaces getInterfacesIPadresses);
 
-foreach my $arg (@ARGV) {
+my @ips = getInterfacesIPadresses('all');
+print "IP addresses = ",join(' ',@ips), "\n";
+
+foreach my $arg (getInterfaces()) {
     print "$arg : ";
     my $intf = new Vyatta::Interface($arg);
 
