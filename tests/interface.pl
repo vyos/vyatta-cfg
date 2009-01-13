@@ -9,10 +9,13 @@ use warnings;
 use Vyatta::Interface;
 use Vyatta::Misc qw(getInterfaces getInterfacesIPadresses);
 
+my @interfaces = getInterfaces();
+print "Interfaces: ", join(' ',@interfaces),"\n";
+
 my @ips = getInterfacesIPadresses('all');
 print "IP addresses = ",join(' ',@ips), "\n";
 
-foreach my $arg (getInterfaces()) {
+foreach my $arg (@interfaces) {
     print "$arg : ";
     my $intf = new Vyatta::Interface($arg);
 
@@ -32,14 +35,11 @@ foreach my $arg (getInterfaces()) {
 	print "address ", join(' ',@addresses), "\n";
     }
 
-    foreach my $attr (qw(exists configured disabled using up running)) {
+    foreach my $attr (qw(exists configured disabled using_dhcp flags up running)) {
 	my $val = $intf->$attr();
-	if (defined $val) {
-	    print "\t$attr = $val\n";
-	} else {
-	    print "\t$attr is not set\n";
-	}
+	print " $attr=$val" if ($val);
     }
+    print "\n";
 }
 
 exit 0;
