@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.2) unstable; urgency=low
+
+  * Remove unused functions
+  * Use getservbyname to find ports
+  * Simplfy and cleanup misc interfaces
+  * Use new interfaces routines
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 12 Jan 2009 16:50:53 -0800
+
 vyatta-cfg (0.14.1) unstable; urgency=low
 
   [ Stephen Hemminger ]
