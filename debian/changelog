@@ -1,3 +1,15 @@
+vyatta-cfg (0.14.3) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Ignore IPV6 addresses in getInterfacesIPadresses
+  * Fix problems with test program
+  * Add test for is_ip_v4
+  * Better usage of NetAddr::IP
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 14 Jan 2009 17:29:39 -0800
+
 vyatta-cfg (0.14.2) unstable; urgency=low
 
   * Remove unused functions
