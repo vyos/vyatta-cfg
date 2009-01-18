@@ -117,7 +117,8 @@ sub getInterfacesIPadresses {
 
     if ($type ne 'all') {
 	$mask = $type_hash{$type};
-	die "Invalid type specified to retreive IP addresses for: $type";
+	die "Invalid type specified to retreive IP addresses for: $type"
+	    unless $mask;
     }
 
     foreach my $name (getInterfaces()) {
