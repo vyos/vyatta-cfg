@@ -12,11 +12,14 @@ use Vyatta::Misc;
 my @interfaces = getInterfaces();
 print "Interfaces: ", join(' ',@interfaces),"\n";
 
-print "IP addresses = ";
-foreach my $addr (Vyatta::Misc::getInterfacesIPadresses('all')) {
-    print $addr, '(', is_ip_v4_or_v6($addr), ') ';
+print "IP\n";
+foreach my $type (qw/all broadcast multicast pointtopoint/) {
+    print "\t$type = ";
+    foreach my $addr (Vyatta::Misc::getInterfacesIPadresses($type)) {
+	print $addr, '(', is_ip_v4_or_v6($addr), ') ';
+    }
+    print "\n";
 }
-print "\n";
 
 
 foreach my $arg (@interfaces) {
