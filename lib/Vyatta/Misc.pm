@@ -99,6 +99,29 @@ sub getInterfaces {
     return @interfaces;
 }
 
+sub getIP {
+    my ($name, $type) = @_;
+    my @addresses;
+
+    open my $ipcmd, "ip addr show dev $name |"
+	or die "ip addr command failed: $!";
+
+    <$ipcmd>;
+    while (<$ipcmd>) {
+	my ($proto, $addr) = split;
+	next unless ($proto =~ /inet/);
+	if ($type) {
+	    next if ($proto eq 'inet6' && $type != 6);
+	    next if ($proto eq 'inet' && $type != 4);
+	}
+
+	push @addresses, $addr;
+    }
+    close $ipcmd;
+
+    return @addresses;
+}
+
 my %type_hash = (
     'broadcast'	=> IFF_BROADCAST,
     'multicast'	=> IFF_MULTICAST,
@@ -212,22 +235,16 @@ sub is_ip_in_list {
     return $list_hash{$ip};
 }
 
+
 sub isIPinInterfaces {
     my ($vc, $ip_addr, @interfaces) = @_;
 
     return unless $ip_addr;	# undef == false
 
     foreach my $name (@interfaces) {
-	my $name = shift;
-	my $intf = new Vyatta::Interface($name);
-	next unless $intf;	# unknown interface type
-
-	my @addresses = $intf->address();
-	
-	return 1 if (is_ip_in_list($ip_addr, @addresses));
+	return 1 if (is_ip_in_list($ip_addr, getIP($name)));
     }
-    
-    return; # undef == false
+    # false (undef)
 }
 
 sub isClusteringEnabled {

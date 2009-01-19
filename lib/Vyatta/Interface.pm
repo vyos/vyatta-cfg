@@ -177,24 +177,7 @@ sub using_dhcp {
 sub address {
     my ($self, $type) = @_;
 
-    open my $ipcmd, "ip addr show dev $self->{name} |"
-	or die "ip addr command failed: $!";
-
-    my @addresses;
-    <$ipcmd>;
-    while (<$ipcmd>) {
-	my ($proto, $addr) = split;
-	next unless ($proto =~ /inet/);
-	if ($type) {
-	    next if ($proto eq 'inet6' && $type != 6);
-	    next if ($proto eq 'inet' && $type != 4);
-	}
-
-	push @addresses, $addr;
-    }
-    close $ipcmd;
-
-    return @addresses;
+    return Vyatta::Misc::getIP($self->{name}, $type);
 }
 
 # return 
