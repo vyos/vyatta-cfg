@@ -64,6 +64,9 @@ my %type_handler = (
                     'macaddr' => \&validate_macaddr,
                     'macaddr_negate' => \&validate_macaddr_negate,
                     'ipv6' => \&validate_ipv6,
+		    'ipv6_negate' => \&validate_ipv6_negate,
+		    'ipv6net' => \&validate_ipv6net,
+		    'ipv6net_negate' => \&validate_ipv6net_negate,
                    );
 
 sub validate_ipv4 {
@@ -195,6 +198,41 @@ sub validate_ipv6 {
   return 1;
 }
 
+sub validate_ipv6_negate {
+  my $value = shift;
+  if ($value =~ m/^\!(.*)$/) {
+    $value = $1;
+  }
+  return validate_ipv6($value);
+}
+
+sub validate_ipv6net {
+  my $value = shift;
+  
+  if ($value =~ m/^(.*)\/(.*)$/) {
+    my $ipv6_addr = $1;
+    my $prefix_length = $2;
+    if ($prefix_length < 0 || $prefix_length > 128) {
+      print "Invalid prefix length: $prefix_length\n";
+      return 0;
+    }
+    return validate_ipv6($ipv6_addr);
+    
+  } else {
+    print "\"$value\" is not a valid IPv6 prefix\n";
+    return 0;
+  }
+}
+
+sub validate_ipv6net_negate {
+  my $value = shift;
+
+  if ($value =~ m/^\!(.*)$/) {
+    $value = $1;
+  }
+  return validate_ipv6net($value);
+}
+
 sub validateType {
   my ($type, $value, $quiet) = @_;
   if (!defined($type) || !defined($value)) {
@@ -231,3 +269,9 @@ sub findType {
 }
 
 1;
+
+# Local Variables:
+# mode: perl
+# indent-tabs-mode: nil
+# perl-indent-level: 2
+# End:
