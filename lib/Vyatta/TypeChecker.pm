@@ -46,10 +46,10 @@
 #   }
 
 package Vyatta::TypeChecker;
+use strict;
+
 our @EXPORT = qw(findType validateType);
 use base qw(Exporter);
-
-use strict;
 
 my %type_handler = (
                     'ipv4' => \&validate_ipv4,
@@ -124,24 +124,13 @@ sub validate_protocol {
   my $value = shift;
   $value = lc $value;
   return 1 if ($value eq 'all');
+
   if ($value =~ /^\d+$/) {
       # 0 has special meaning to iptables
       return 1 if $value >= 1 and $value <= 255;
   }
-  if (!open(IN, "</etc/protocols")) {
-    print "can't open /etc/protocols";
-    return 0;
-  }
-  my $ret = 0;
-  while (<IN>) {
-    s/^([^#]*)#.*$/$1/;
-    if ((/^$value\s/) || (/^\S+\s+$value\s/)) {
-      $ret = 1;
-      last;
-    }
-  }
-  close IN;
-  return $ret;
+
+  return defined getprotobyname($value);
 }
 
 sub validate_protocol_negate {
@@ -215,9 +204,8 @@ sub validateType {
 
 sub findType {
   my ($value, @candidates) = @_;
-  if (!defined($value) || ((scalar @candidates) < 1)) {
-    return undef;
-  }
+  return if (!defined($value) || ((scalar @candidates) < 1)); # undef
+
   foreach my $type (@candidates) {
     if (!defined($type_handler{$type})) {
       next;
@@ -227,7 +215,6 @@ sub findType {
       return $type;
     }
   }
-  return undef;
 }
 
 1;
