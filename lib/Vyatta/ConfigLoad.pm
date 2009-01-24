@@ -19,11 +19,11 @@
 # All Rights Reserved.
 
 package Vyatta::ConfigLoad;
+use strict;
 
 our @EXPORT = qw(getStartupConfigStatements loadConfigHierarchy getConfigDiff);
 use base qw(Exporter);
 
-use strict;
 use sort 'stable';
 use lib "/opt/vyatta/share/perl5";
 use XorpConfigParser; 
@@ -82,7 +82,7 @@ sub get_regex_rank {
       return $regex_rank{$_};
     }
   }
-  return undef;
+  # returns undef if no match
 }
 
 sub get_config_rank {
