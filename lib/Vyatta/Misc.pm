@@ -22,14 +22,13 @@
 # **** End License ****
 
 package Vyatta::Misc;
-require Exporter;
-@ISA	= qw(Exporter);
-@EXPORT	= qw(get_sysfs_value getInterfaces getNetAddIP isIpAddress is_ip_v4_or_v6 is_dhcp_enabled is_address_enabled);
-@EXPORT_OK = qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6 
-                getInterfacesIPadresses getPortRuleString);
-
-
 use strict;
+
+require Exporter;
+our @ISA	= qw(Exporter);
+our @EXPORT	= qw(get_sysfs_value getInterfaces getNetAddIP isIpAddress is_ip_v4_or_v6 is_dhcp_enabled is_address_enabled);
+our @EXPORT_OK = qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6 
+                getInterfacesIPadresses getPortRuleString);
 
 use Vyatta::Config;
 use Vyatta::Interface;
@@ -103,7 +102,8 @@ sub getIP {
     my ($name, $type) = @_;
     my @addresses;
 
-    open my $ipcmd, "ip addr show dev $name |"
+    open my $ipcmd, '-|' 
+	or exec qw(ip addr show dev), $name
 	or die "ip addr command failed: $!";
 
     <$ipcmd>;
