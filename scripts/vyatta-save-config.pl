@@ -66,28 +66,24 @@ if ($mode eq 'local' and !($save_file =~ /^\//)) {
 my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
 print "Saving configuration to '$save_file'...\n";
 
+my $save;
 if ($mode eq 'local') {
-  # this overwrites the file if it exists. we could create a backup first.
-  if (! open(SAVE, ">$save_file")) {
-    print "Cannot open file '$save_file': $!\n";
-    exit 1;
-  }
+    # this overwrites the file if it exists. we could create a backup first.
+    open $save, '>', $save_file
+	or die "Can not open file '$save_file': $!\n";
 } elsif ($mode eq 'url') {
-  if (! -f '/usr/bin/curl') {
-    print "Package [curl] not installed\n";
-    exit 1;
-  }
-  if (! open(SAVE, ">$url_tmp_file")) {
-    print "Cannot open file '$url_tmp_file': $!\n";
-    exit 1;
-  }
+    die "Package [curl] not installed\n" unless ( -f '/usr/bin/curl');
+
+    open $save, '>', $url_tmp_file
+	or die "Cannot open file '$url_tmp_file': $!\n";
 }
 
-select SAVE;
+select $save;
 set_show_all(1);
 outputActiveConfig();
 print $version_str;
-close SAVE;
+close $save;
+
 select STDOUT;
 
 if ($mode eq 'url') {
