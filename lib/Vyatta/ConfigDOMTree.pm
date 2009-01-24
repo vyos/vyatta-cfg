@@ -330,11 +330,11 @@ sub _construct_dom_tree {
     my $subnodesNum=0;
     my $valuePresent=0;
 
-    if(!(defined $self)) {return undef;}
+    return unless defined $self;
 
-    opendir DIR, $self->{_dir} or return undef;
-    my @entries = grep !/^\./, readdir DIR;
-    closedir DIR;
+    opendir my $dir, $self->{_dir} or return;
+    my @entries = grep !/^\./, readdir $dir;
+    closedir $dir;
 
     while(@entries) {
 
@@ -362,9 +362,7 @@ sub _construct_dom_tree {
 	}
     }
 
-    if($valuePresent<1 && $subnodesNum<1) {
-	return undef;
-    }
+    return if ( $valuePresent < 1 && $subnodesNum < 1 );
     
     return $self;
 }
