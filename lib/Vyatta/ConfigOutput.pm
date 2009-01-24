@@ -28,10 +28,11 @@
 #   prints the "active" config. suitable for "saving", for example.
 
 package Vyatta::ConfigOutput;
+use strict;
+
 our @EXPORT = qw(set_show_all set_hide_password outputActiveConfig outputNewConfig);
 use base qw(Exporter);
 
-use strict;
 use lib '/opt/vyatta/share/perl5';
 use Vyatta::Config;
 
