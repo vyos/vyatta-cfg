@@ -8,7 +8,7 @@
 #include "common/defs.h"
 #include "common/unionfs.h"
 
-extern boolean g_debug;
+boolean g_debug;
 
 extern vtw_path m_path;
 extern vtw_path t_path;
