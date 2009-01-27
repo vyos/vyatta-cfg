@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.6) unstable; urgency=low
+
+  * ConfigOutput: Fix perlcritic warning
+  * Vyatta::Misc - Fix perl critic warnings
+  * DOMTree: Fix perlcritic warnings
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 26 Jan 2009 17:02:11 -0800
+
 vyatta-cfg (0.14.5) unstable; urgency=low
 
   [ slioch ]
