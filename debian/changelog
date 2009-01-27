@@ -1,3 +1,17 @@
+vyatta-cfg (0.14.5) unstable; urgency=low
+
+  [ slioch ]
+  * expose new cli functions in cfg library.
+  * add lib to link when building vyatta-cfg so
+
+  [ Stephen Hemminger ]
+  * Cleanup type checker
+  * config load: fix perlcritic warnings
+  * config load: avoid possible bug in getConfigDiff
+  * save_config: fix perlcritic warnings
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 26 Jan 2009 16:52:25 -0800
+
 vyatta-cfg (0.14.4) unstable; urgency=low
 
   [ Stephen Hemminger ]
