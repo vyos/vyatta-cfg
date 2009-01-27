@@ -82,7 +82,7 @@ sub get_regex_rank {
       return $regex_rank{$_};
     }
   }
-  # returns undef if no match
+  return; # undef if no match
 }
 
 sub get_config_rank {
@@ -407,7 +407,12 @@ sub getConfigDiff {
   # need to filter out deletions of nodes with default values
   my @new_delete_list = ();
   foreach my $del (@delete_list) {
-    my @comps = map { s/^'(.*)'$/$1/; $_; } @{${$del}[0]};
+    my @comps = map { 
+	my $file = $_;
+	$file =~ s/^'(.*)'$/$1/; 
+	$file; 
+    } @{${$del}[0]};
+
     my ($is_multi, $is_text, $default) = $active_cfg->parseTmpl(\@comps);
     if (!defined($default)) {
       push @new_delete_list, $del;
