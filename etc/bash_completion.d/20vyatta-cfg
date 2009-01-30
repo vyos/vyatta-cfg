@@ -201,7 +201,12 @@ mvcp ()
   fi
   /opt/vyatta/sbin/my_delete $_ntag "$_nvalu" >&/dev/null 3>&1
 
-  $cmd "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
+  # workaround for unionfs bug (unionfs chokes on "mv" here but not "cp").
+  # always do "cp -a" instead of "$cmd". remove old if we are renaming.
+  cp -a "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
+  if [ "$str" == "rename" ]; then
+    /opt/vyatta/sbin/my_delete $_otag "$_ovalu" >&/dev/null 3>&1
+  fi
 
   return 0
 }
