@@ -53,27 +53,19 @@ if ( $load_file =~ /^[^\/]\w+:\// ) {
     if ( $load_file =~ /^(\w+):\/\/\w/ ) {
         $mode  = 'url';
         $proto = lc($1);
-        if ( $proto eq 'tftp' ) {
+        unless( $proto eq 'tftp' ||
+		$proto eq 'ftp'  ||
+		$proto eq 'http' ||
+		$proto eq 'scp' ) {
+	    die "Invalid url protocol [$proto]\n";
         }
-        elsif ( $proto eq 'ftp' ) {
-        }
-        elsif ( $proto eq 'http' ) {
-        }
-        elsif ( $proto eq 'scp' ) {
-        }
-        else {
-            print "Invalid url protocol [$proto]\n";
-            exit 1;
-        }
-    }
-    else {
+    } else {
         print "Invalid url [$load_file]\n";
         exit 1;
     }
 }
 
 if ( $mode eq 'local' and !( $load_file =~ /^\// ) ) {
-
     # relative path
     $load_file = "$bootpath/$load_file";
 }
