@@ -140,7 +140,7 @@ if ( $xorp_cfg or !$valid_cfg ) {
         exit 1;
     }
 }
-close $cfg
+close $cfg;
 
 # log it
 openlog( $0, "", LOG_USER );
