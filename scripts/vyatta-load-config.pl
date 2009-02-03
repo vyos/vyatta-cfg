@@ -70,11 +70,10 @@ if ( $mode eq 'local' and !( $load_file =~ /^\// ) ) {
     $load_file = "$bootpath/$load_file";
 }
 
+my $cfg;
 if ( $mode eq 'local' ) {
-    if ( !open( CFG, "<$load_file" ) ) {
-        print "Cannot open configuration file $load_file\n";
-        exit 1;
-    }
+    die "Cannot open configuration file $load_file: $!\n"
+	unless open( $cfg, '<', $load_file);
 }
 elsif ( $mode eq 'url' ) {
     if ( !-f '/usr/bin/curl' ) {
@@ -110,16 +109,15 @@ elsif ( $mode eq 'url' ) {
         print "Can not open remote configuration file $load_file\n";
         exit 1;
     }
-    if ( !open( CFG, "<$url_tmp_file" ) ) {
-        print "Cannot open configuration file $load_file\n";
-        exit 1;
-    }
+    die "Cannot open configuration file $load_file: $!\n"
+	unless open( $cfg, '<', $url_tmp_file);
+
     $load_file = $url_tmp_file;
 }
 
 my $xorp_cfg  = 0;
 my $valid_cfg = 0;
-while (<CFG>) {
+while (<$cfg>) {
     if (/\/\*XORP Configuration File, v1.0\*\//) {
         $xorp_cfg = 1;
         last;
@@ -142,7 +140,7 @@ if ( $xorp_cfg or !$valid_cfg ) {
         exit 1;
     }
 }
-close CFG;
+close $cfg
 
 # log it
 openlog( $0, "", LOG_USER );
