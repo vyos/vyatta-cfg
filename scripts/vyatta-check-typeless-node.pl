@@ -1,8 +1,7 @@
 #!/usr/bin/perl
+use strict;
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::Config;
-use Vyatta::Misc;
-use Getopt::Long;
 
 ## Check if a typeless node exists
 # this is a lame little script to get around bug 2525 not being fixed.
@@ -11,11 +10,5 @@ use Getopt::Long;
 my $node = shift;
 my $config = new Vyatta::Config;
 
-if ($config->exists("$node")) {
-  exit 0;
-}
-else {
-  exit 1;
-}
-
-exit 0;
+exit 0 if ($config->exists("$node"));
+exit 1;
