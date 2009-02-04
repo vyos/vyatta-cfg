@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.9) unstable; urgency=low
+
+  * Add type checking functions for 16- and 32-bit hexadecimal values.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 04 Feb 2009 14:52:25 -0800
+
 vyatta-cfg (0.14.8) unstable; urgency=low
 
   * Revert "Cleanup confg library"
