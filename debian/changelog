@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.7) unstable; urgency=low
+
+  * Reindent load config for clarity
+  * Simplify logic
+  * Replace bare file handle with variable
+  * Simplify and add strict checks
+  * Missing semicolon
+  * Cleanup config library
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 04 Feb 2009 09:25:57 -0800
+
 vyatta-cfg (0.14.6) unstable; urgency=low
 
   * ConfigOutput: Fix perlcritic warning
