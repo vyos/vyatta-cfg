@@ -206,19 +206,16 @@ sub returnValue {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  if ( -f "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val" ) {
-    open FILE, "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val" || return undef;
-    read FILE, $tmp, 16384;
-    close FILE;
+  return unless 
+      open my $file, '<', 
+      "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val";
 
-    $tmp =~ s/\n$//;
-    return $tmp;
-  }
-  else {
-    return undef;
-  }
+  read $file, $tmp, 16384;
+  close $file;
+
+  $tmp =~ s/\n$//;
+  return $tmp;
 }
-
 
 ## returnOrigValue("node")
 # returns the original value of "node" (i.e., before the current change; i.e.,
@@ -231,16 +228,14 @@ sub returnOrigValue {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
   my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
-  if ( -f "$filepath/node.val") {
-    open FILE, "$filepath/node.val" || return undef;
-    read FILE, $tmp, 16384;
-    close FILE;
 
-    $tmp =~ s/\n$//;
-    return $tmp;
-  } else {
-    return undef;
-  }
+  return unless open my $file, '<', "$filepath/node.val";
+  
+  read $file, $tmp, 16384;
+  close $file;
+
+  $tmp =~ s/\n$//;
+  return $tmp;
 }
 
 ## returnValues("node")
