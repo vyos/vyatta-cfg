@@ -353,7 +353,7 @@ sub outputNewConfig {
       displayChildren(\%rnodes, [ @_ ], '');
     }
   } else {
-    if (defined($config->existsOrig()) && !defined($config->exists())) {
+    if ($config->existsOrig() && ! $config->exists()) {
       # this is a deleted node
       print 'Configuration under "' . (join ' ', @_) . "\" has been deleted\n";
     } elsif (!defined($config->getTmplPath(\@_))) {
