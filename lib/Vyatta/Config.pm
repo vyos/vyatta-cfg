@@ -271,12 +271,7 @@ sub exists {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  if ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" ) {
-    #print "DEBUG: the dir is there\n";
-    return !0;
-  } else {
-    return undef;
-  }
+  return ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" );
 }
 
 ## existsOrig("node")
@@ -286,11 +281,7 @@ sub existsOrig {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  if ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" ) {
-    return 1;
-  } else {
-    return undef;
-  }
+  return ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" );
 }
 
 ## isDeleted("node")
