@@ -206,16 +206,19 @@ sub returnValue {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  open (my $file, '<',
-	"$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val")
-      or return;	# undefined
+  if ( -f "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val" ) {
+    open FILE, "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val" || return undef;
+    read FILE, $tmp, 16384;
+    close FILE;
 
-  read $file, $tmp, 16384;
-  close $file;
-
-  $tmp =~ s/\n$//;
-  return $tmp;
+    $tmp =~ s/\n$//;
+    return $tmp;
+  }
+  else {
+    return undef;
+  }
 }
+
 
 ## returnOrigValue("node")
 # returns the original value of "node" (i.e., before the current change; i.e.,
@@ -228,14 +231,16 @@ sub returnOrigValue {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
   my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
-  
-  open my $file, '<', $filepath
-      or return;	# undef
-  read $file, $tmp, 16384;
-  close $file;
+  if ( -f "$filepath/node.val") {
+    open FILE, "$filepath/node.val" || return undef;
+    read FILE, $tmp, 16384;
+    close FILE;
 
-  $tmp =~ s/\n$//;
-  return $tmp;
+    $tmp =~ s/\n$//;
+    return $tmp;
+  } else {
+    return undef;
+  }
 }
 
 ## returnValues("node")
@@ -271,7 +276,12 @@ sub exists {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  return ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" );
+  if ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" ) {
+    #print "DEBUG: the dir is there\n";
+    return !0;
+  } else {
+    return undef;
+  }
 }
 
 ## existsOrig("node")
@@ -281,7 +291,11 @@ sub existsOrig {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  return ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" );
+  if ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" ) {
+    return 1;
+  } else {
+    return undef;
+  }
 }
 
 ## isDeleted("node")
@@ -464,33 +478,34 @@ sub getTmplPath {
       next;
     }
     # the path is not valid!
-    return;
+    return undef;
   }
-  return $tpath;
+  return $tpath
 }
 
 sub isTagNode {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
-  return unless $tpath; # undef;
-  return (-d "$tpath/node.tag");
+  return undef if (!defined($tpath));
+  if (-d "$tpath/node.tag") {
+    return 1;
+  }
+  return 0;
 }
 
 sub hasTmplChildren {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
-
-  return unless $tpath;	# undefined
-
-  opendir (my $tdir, $tpath)
-      or return;	# false
-
-  my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir $tdir));
-  closedir $tdir;
-
-  return (scalar(@tchildren) > 0);
+  return undef if (!defined($tpath));
+  opendir(TDIR, $tpath) or return 0;
+  my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir TDIR));
+  closedir TDIR;
+  if (scalar(@tchildren) > 0) {
+    return 1;
+  }
+  return 0;
 }
 
 # $cfg_path_ref: ref to array containing the node path.
@@ -501,16 +516,12 @@ sub parseTmpl {
   my $cfg_path_ref = shift;
   my ($is_multi, $is_text, $default) = (0, 0, undef);
   my $tpath = $self->getTmplPath($cfg_path_ref);
-
-  return unless $tpath;	# undef
+  return undef if (!defined($tpath));
   if (! -r "$tpath/node.def") {
     return ($is_multi, $is_text);
   }
-
-  open (my $tmp, '<', "$tpath/node.def")
-    or return ($is_multi, $is_text);
-
-  foreach (<$tmp>) {
+  open(TMPL, "<$tpath/node.def") or return ($is_multi, $is_text);
+  foreach (<TMPL>) {
     if (/^multi:/) {
       $is_multi = 1;
     }
@@ -521,7 +532,7 @@ sub parseTmpl {
       $default = $1;
     }
   }
-  close $tmp;
+  close TMPL;
   return ($is_multi, $is_text, $default);
 }
 
