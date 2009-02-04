@@ -473,16 +473,17 @@ sub getTmplPath {
       next;
     }
     # the path is not valid!
-    return undef;
+    return;
   }
-  return $tpath
+  return $tpath;
 }
 
 sub isTagNode {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
-  return undef if (!defined($tpath));
+  return unless $tpath;
+
   if (-d "$tpath/node.tag") {
     return 1;
   }
@@ -493,7 +494,8 @@ sub hasTmplChildren {
   my $self = shift;
   my $cfg_path_ref = shift;
   my $tpath = $self->getTmplPath($cfg_path_ref);
-  return undef if (!defined($tpath));
+  return unless $tpath;
+
   opendir(TDIR, $tpath) or return 0;
   my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir TDIR));
   closedir TDIR;
@@ -511,7 +513,8 @@ sub parseTmpl {
   my $cfg_path_ref = shift;
   my ($is_multi, $is_text, $default) = (0, 0, undef);
   my $tpath = $self->getTmplPath($cfg_path_ref);
-  return undef if (!defined($tpath));
+  return unless $tpath;
+
   if (! -r "$tpath/node.def") {
     return ($is_multi, $is_text);
   }
