@@ -85,9 +85,9 @@ sub listNodes {
   }
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir DIR, "$path" or return ();
-  @nodes = grep !/^\./, readdir DIR;
-  closedir DIR;
+  opendir my $dir, "$path" or return ();
+  @nodes = grep !/^\./, readdir $dir;
+  closedir $dir;
 
   my @nodes_modified = ();
   while (@nodes) {
@@ -120,9 +120,9 @@ sub listOrigNodes {
   }
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir DIR, "$path" or return ();
-  @nodes = grep !/^\./, readdir DIR;
-  closedir DIR;
+  opendir my $dir, "$path" or return ();
+  @nodes = grep !/^\./, readdir $dir;
+  closedir $dir;
 
   my @nodes_modified = ();
   while (@nodes) {
@@ -155,9 +155,9 @@ sub listOrigNodesNoDef {
   }
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir DIR, "$path" or return ();
-  @nodes = grep !/^\./, readdir DIR;
-  closedir DIR;
+  opendir my $dir, "$path" or return ();
+  @nodes = grep !/^\./, readdir $dir;
+  closedir $dir;
 
   my @nodes_modified = ();
   while (@nodes) {
@@ -484,9 +484,9 @@ sub hasTmplChildren {
   my $tpath = $self->getTmplPath($cfg_path_ref);
   return unless $tpath;
 
-  opendir(TDIR, $tpath) or return;
-  my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir TDIR));
-  closedir TDIR;
+  opendir (my $tdir, $tpath) or return;
+  my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir $tdir));
+  closedir $tdir;
 
   return (scalar(@tchildren) > 0);
 }
