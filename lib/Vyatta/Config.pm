@@ -305,10 +305,7 @@ sub isDeleted {
   my $filepathNew
     = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
 
-  if ((-e $filepathAct) && !(-e $filepathNew)) {
-    return 1;
-  }
-  return 0;
+  return ((-e $filepathAct) && !(-e $filepathNew));
 }
 
 ## listDeleted("level")
@@ -335,8 +332,7 @@ sub isChanged {
   my $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
 
   # if the node exists in the change dir, it's modified.
-  if (-e "$filepath") { return 1; }
-  else { return 0; }
+  return ( ! -e $filepath);
 }
 
 ## isChangedOrDeleted("node")
@@ -358,11 +354,7 @@ sub isChangedOrDeleted {
   my $filepathNew
     = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
 
-  if ((-e $filepathAct) && !(-e $filepathNew)) {
-    return 1;
-  }
-
-  return 0;
+  return ((-e $filepathAct) && !(-e $filepathNew));
 }
 
 ## isAdded("node")
@@ -381,14 +373,13 @@ sub isAdded {
 
   # if the node doesn't exist in the modify dir, it's not
   # been added.  so short circuit and return false.
-  if (! -e $filepathNewConfig) { return 0; }
+  return unless (-e $filepathNewConfig);
  
   # now let's setup the path for the working dir
   my $filepathActive = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
 
   # if the node is in the active_dir it's not new
-  if (-e $filepathActive) { return 0; }
-  else { return 1; }
+  return (! -e $filepathActive);
 }
 
 ## listNodeStatus("level")
@@ -484,10 +475,7 @@ sub isTagNode {
   my $tpath = $self->getTmplPath($cfg_path_ref);
   return unless $tpath;
 
-  if (-d "$tpath/node.tag") {
-    return 1;
-  }
-  return 0;
+  return (-d "$tpath/node.tag");
 }
 
 sub hasTmplChildren {
@@ -496,13 +484,11 @@ sub hasTmplChildren {
   my $tpath = $self->getTmplPath($cfg_path_ref);
   return unless $tpath;
 
-  opendir(TDIR, $tpath) or return 0;
+  opendir(TDIR, $tpath) or return;
   my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir TDIR));
   closedir TDIR;
-  if (scalar(@tchildren) > 0) {
-    return 1;
-  }
-  return 0;
+
+  return (scalar(@tchildren) > 0);
 }
 
 # $cfg_path_ref: ref to array containing the node path.
