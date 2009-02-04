@@ -67,6 +67,8 @@ my %type_handler = (
 		    'ipv6_negate' => \&validate_ipv6_negate,
 		    'ipv6net' => \&validate_ipv6net,
 		    'ipv6net_negate' => \&validate_ipv6net_negate,
+		    'hex16' => \&validate_hex_16_bits,
+		    'hex32' => \&validate_hex_32_bits,
                    );
 
 sub validate_ipv4 {
@@ -220,6 +222,20 @@ sub validate_ipv6net_negate {
     $value = $1;
   }
   return validate_ipv6net($value);
+}
+
+# Validate a 16-bit hex value, no leading "0x"
+sub validate_hex_16_bits {
+  my $value = shift;
+  $value = lc $value;
+  return 1 if ($value =~ /^[0-9a-f]{4}$/)
+}
+
+# Validate a 32-bit hex value, no leading "0x"
+sub validate_hex_32_bits {
+  my $value = shift;
+  $value = lc $value;
+  return 1 if ($value =~ /^[0-9a-f]{8}$/)
 }
 
 sub validateType {
