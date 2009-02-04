@@ -259,7 +259,7 @@ sub returnOrigValues {
   my $val = returnOrigValue(@_);
   my @values = ();
   if (defined($val)) {
-    @values = split("\n", $val);
+   @values = split("\n", $val);
   }
   return @values;
 }
@@ -495,8 +495,10 @@ sub parseTmpl {
   if (! -r "$tpath/node.def") {
     return ($is_multi, $is_text);
   }
-  open(TMPL, "<$tpath/node.def") or return ($is_multi, $is_text);
-  foreach (<TMPL>) {
+
+  open (my $tmpl, '<', "$tpath/node.def")
+      or return ($is_multi, $is_text);
+  foreach (<$tmpl>) {
     if (/^multi:/) {
       $is_multi = 1;
     }
@@ -507,7 +509,7 @@ sub parseTmpl {
       $default = $1;
     }
   }
-  close TMPL;
+  close $tmpl;
   return ($is_multi, $is_text, $default);
 }
 
