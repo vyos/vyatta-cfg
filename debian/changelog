@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.11) unstable; urgency=low
+
+  * Move config reload from quagga to vyatta-cfg
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 05 Feb 2009 14:47:22 -0800
+
 vyatta-cfg (0.14.10) unstable; urgency=low
 
   * Vyatta::Config - parseTmpl convert to 3 arg open
