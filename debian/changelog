@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.10) unstable; urgency=low
+
+  * Vyatta::Config - parseTmpl convert to 3 arg open
+  * Fix boolean error
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 05 Feb 2009 11:46:46 -0800
+
 vyatta-cfg (0.14.9) unstable; urgency=low
 
   * Add type checking functions for 16- and 32-bit hexadecimal values.
