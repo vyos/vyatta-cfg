@@ -323,7 +323,7 @@ sub isChanged {
   my $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
 
   # if the node exists in the change dir, it's modified.
-  return ( ! -e $filepath);
+  return (-e $filepath);
 }
 
 ## isChangedOrDeleted("node")
