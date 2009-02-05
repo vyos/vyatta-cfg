@@ -1,3 +1,21 @@
+vyatta-cfg (0.14.9) unstable; urgency=low
+
+  * Add type checking functions for 16- and 32-bit hexadecimal values.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 04 Feb 2009 14:52:25 -0800
+
+vyatta-cfg (0.14.8) unstable; urgency=low
+
+  * Revert "Cleanup confg library"
+  * Vyatta::Config::returnValue - change to three argument open
+  * Vyatta::Config - fix perlcritic warnings from dangling return
+  * Vyatta::Config - simplify boolean
+  * Vyatta::Config - don't use global handle for opendir
+  * Vyatta::ConfigOutput - test for exists should not use defined
+  * Vyatta::Config - exists simplification
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 04 Feb 2009 11:08:50 -0800
+
 vyatta-cfg (0.14.7) unstable; urgency=low
 
   * Reindent load config for clarity
