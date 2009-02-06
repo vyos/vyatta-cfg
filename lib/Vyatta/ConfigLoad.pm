@@ -33,6 +33,7 @@ use Vyatta::Config;
 my $default_rank = 0;
 my %config_rank  = (
     'qos-policy'                => 1100,
+    'firewall group'            => 1021,
     'firewall'                  => 1020,
     'service nat'               => 1010,
     'system host-name'          => 1005,
