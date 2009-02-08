@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.12) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * Force firewall group to be configured before firewall.
+
+  [ Stephen Hemminger ]
+  * Change order of config load
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Sun, 08 Feb 2009 15:47:06 -0800
+
 vyatta-cfg (0.14.11) unstable; urgency=low
 
   * Move config reload from quagga to vyatta-cfg
