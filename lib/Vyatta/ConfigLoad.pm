@@ -32,11 +32,14 @@ use Vyatta::Config;
 # configuration ordering. higher rank configured before lower rank.
 my $default_rank = 0;
 my %config_rank  = (
-    'qos-policy'                => 1100,
-    'firewall group'            => 1021,
-    'firewall'                  => 1020,
-    'service nat'               => 1010,
-    'system host-name'          => 1005,
+    'qos-policy'                => 1110,
+    'firewall group'            => 1100,
+    'firewall'                  => 1090,
+    'service nat'               => 1080,
+    'system host-name'          => 1070,
+    'protocols ospf parameters' => 1060,
+    'protocols ospf'            => 1055,
+    'protocols rip'             => 1050,
     'interfaces'                => 1000,
     'interfaces bridge'         => 990,
     'interfaces bonding'	=> 995,
@@ -51,11 +54,7 @@ my %config_rank  = (
     'service telnet'            => 830,
     'policy'                    => 820,
     'protocols bgp'             => 790,
-    'protocols ospf parameters' => 785,
-    'protocols ospf'            => 780,
-    'protocols rip'             => 770,
     'vpn'                       => 600,
-
 );
 
 my %regex_rank = (
