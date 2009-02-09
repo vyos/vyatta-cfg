@@ -333,6 +333,10 @@ exit ()
 # run op mode commands
 run ()
 {
+ if [ $# == 0 ]; then
+  echo Incomplete command
+  return 1
+ fi 
   _vyatta_op_run $@
 }
 
