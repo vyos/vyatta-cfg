@@ -11,8 +11,8 @@
 400 system
 450 protocols/static
 470 policy
-510 protocols/bgp/node.tag/neighbor/node.tag
-520 protocols/bgp/node.tag/parameters
+510 protocols/bgp/node.tag/parameters
+520 protocols/bgp/node.tag/neighbor/node.tag
 530 protocols/bgp
 600 protocols/ospf/parameters
 610 protocols/ospf
