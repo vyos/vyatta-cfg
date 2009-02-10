@@ -77,6 +77,9 @@ sub new {
     my $class = ref($that) || $that;
     my ($dev, $vif);
 
+    # need argument to constructor
+    return unless $name;
+
     # Strip off vif from name
     if ( $name =~ m/(\w)+\.(\d)+/ ) {
         $dev = $1;
@@ -87,20 +90,21 @@ sub new {
 
     foreach my $prefix (keys %net_prefix) {
         next unless $dev =~ /$prefix/;
-        my $path    = $net_prefix{$prefix}{path};
+        my $type    = $net_prefix{$prefix}{path};
         my $vifpath = $net_prefix{$prefix}{vif};
 
         # Interface name has vif, but this type doesn't support vif!
         return if ( $vif && !$vifpath );
 
         # Check path if given
-        return if ( $#_ >= 0 && join( ' ', @_ ) ne $path );
+        return if ( $#_ >= 0 && join( ' ', @_ ) ne $type );
 
-        $path = "interfaces $path $dev";
+        my $path = "interfaces $type $dev";
         $path .= " $vifpath $vif" if $vif;
 
 	my $self = { 
 	    name => $name,
+	    type => $type,
 	    path => $path,
 	    dev  => $dev,
 	    vif  => $vif,
@@ -108,7 +112,6 @@ sub new {
 
         bless $self, $class;
         return $self;
-
     }
 
     return; # nothing
@@ -133,6 +136,11 @@ sub vif {
 sub physicalDevice {
     my $self = shift;
     return $self->{dev};
+}
+
+sub type {
+    my $self = shift;
+    return $self->{type};
 }
 
 ## Configuration checks

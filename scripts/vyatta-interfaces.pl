@@ -33,6 +33,7 @@
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::Config;
 use Vyatta::Misc;
+use Vyatta::Interface;
 
 use Getopt::Long;
 use POSIX;
@@ -44,7 +45,8 @@ use warnings;
 
 my $dhcp_daemon = '/sbin/dhclient';
 
-my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient, $intf_cli_path);
+my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
+my ($check_name, $show_names, $intf_cli_path);
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
@@ -53,14 +55,18 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
 	   "op-command=s"      => \$op_dhclient,
+	   "check=s"	       => \$check_name,
+	   "show=s"	       => \$show_names,
 );
 
-if (defined $eth_update)       { update_eth_addrs($eth_update, $dev); }
-if (defined $eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
-if (defined $addr)             { is_valid_addr($addr, $dev); }
-if (defined $mac)	       { is_valid_mac($mac, $dev); }
-if (defined $mac_update)       { update_mac($mac_update, $dev); }
-if (defined $op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
+if ($eth_update)       { update_eth_addrs($eth_update, $dev); }
+if ($eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
+if ($addr)             { is_valid_addr($addr, $dev); }
+if ($mac)	       { is_valid_mac($mac, $dev); }
+if ($mac_update)       { update_mac($mac_update, $dev); }
+if ($op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
+if ($check_name)       { is_valid_name($check_name); }
+if ($show_names)       { show_interfaces($show_names); }
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
@@ -428,6 +434,31 @@ sub op_dhcp_command {
 
     exit 0;
 
+}
+
+sub is_valid_name {
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+
+    exit 0 if $intf;
+
+    die "$name: is not a known interface name\n";
+}
+
+# generate one line with all known interfaces (for allowed)
+sub show_interfaces {
+    my $type = shift;
+    my @interfaces = getInterfaces();
+
+    foreach my $name (@interfaces) {
+	my $intf = new Vyatta::Interface($name);
+	next unless $intf;
+	
+	next unless ($type eq 'all' || $type eq $intf->type());
+	print $name, ' ';
+    }
+    print "\n";
+    exit 0;
 }
 
 exit 0;
