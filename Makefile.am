@@ -73,5 +73,5 @@ install-exec-hook:
 	cd templates; $(cpiop) $(DESTDIR)$(cfgdir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
-	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit1 my_commit
+	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit2 my_commit
 	

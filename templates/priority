@@ -1,6 +1,7 @@
-200 firewall
-310 interfaces/bridge/node.tag
-320 interfaces/bonding/node.tag
+200 firewall/name/node.tag
+210 firewall
+310 interfaces/bonding/node.tag
+320 interfaces/bridge/node.tag
 330 interfaces/ethernet/node.tag
 340 interfaces/tunnel/node.tag
 350 interfaces/adsl/node.tag
