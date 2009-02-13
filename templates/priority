@@ -1,4 +1,4 @@
-200 firewall/name/node.tag
+200 firewall/group/node.tag
 210 firewall
 310 interfaces/bonding/node.tag
 320 interfaces/bridge/node.tag
