@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.14) unstable; urgency=low
+
+  * enable new cli.
+  * typo on setting firewall group priority.
+  * removed priority specification for vrrp. checked with stig and it
+    doesn't sound like priorities
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 13 Feb 2009 09:06:22 -0800
+
 vyatta-cfg (0.14.13) unstable; urgency=low
 
   [ Mohit Mehta ]
