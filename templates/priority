@@ -20,3 +20,5 @@
 620 protocols/rip
 630 protocols
 700 vpn
+900 cluster
+900 load-balancing
