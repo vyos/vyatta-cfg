@@ -20,5 +20,3 @@
 620 protocols/rip
 630 protocols
 700 vpn
-800 interfaces/ethernet/node.tag/vrrp
-800 interfaces/ethernet/node.tag/vif/node.tag/vrrp
