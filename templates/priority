@@ -1,6 +1,6 @@
 200 firewall/group/node.tag
 210 firewall
-300 protocols/bgp/node.tag/disable
+300 protocols/bgp/disable
 301 protocols/ospf/disable
 302 protocols/ospf6/disable
 305 protocols/rip/disable
