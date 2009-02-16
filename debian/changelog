@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.15) unstable; urgency=low
+
+  [ slioch ]
+  * provide non-default priorities to load-balancing and cluster so
+    these
+
+  [ Stephen Hemminger ]
+  * Add hook for starting protocols
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 16 Feb 2009 08:57:43 -0800
+
 vyatta-cfg (0.14.14) unstable; urgency=low
 
   * enable new cli.
