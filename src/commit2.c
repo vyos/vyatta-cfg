@@ -202,6 +202,10 @@ main(int argc, char** argv)
       printf("commit2: successful commit, now cleaning up temp directories\n");
     }
   }
+  else {
+    fprintf(out_stream,"Commit failed\n");
+  }
+
   set_in_commit(FALSE);
 
   cleanup(config_data);
