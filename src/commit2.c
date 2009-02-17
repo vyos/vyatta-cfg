@@ -8,6 +8,7 @@
 boolean g_debug = FALSE;
 boolean g_display_error_node = FALSE;
 boolean g_coverage = FALSE;
+boolean g_dump_trans = FALSE;
 
 char* ActionNames[top_act] = {
   "delete",
@@ -98,7 +99,6 @@ int
 main(int argc, char** argv)
 {
   int ch;
-  boolean dump_trans = TRUE;
   boolean priority_mode = TRUE;
   boolean test_mode = FALSE;
 
@@ -119,7 +119,7 @@ main(int argc, char** argv)
       test_mode = TRUE;
       break;
     case 's':
-      dump_trans = TRUE;
+      g_dump_trans = TRUE;
       break;
     case 'e':
       g_display_error_node = TRUE;
@@ -154,7 +154,7 @@ main(int argc, char** argv)
     exit(0);
   }
 
-  if (dump_trans == TRUE) {
+  if (g_dump_trans == TRUE) {
     printf("Dumping transactions\n");
     //iterate over config_data and dump...
     g_node_traverse(trans_coll,
@@ -163,7 +163,7 @@ main(int argc, char** argv)
 		    -1,
 		    (GNodeTraverseFunc)dump_func,
 		    (gpointer)NULL);
-    //    exit(0);
+    exit(0);
   }
 
   GNode *trans_child_node = (GNode*)g_node_first_child(trans_coll);
@@ -567,7 +567,7 @@ dump_func(GNode *node, gpointer data)
     guint depth = g_node_depth(node);
 
     if (depth == 2) {
-      printf("NEW TRANS\n");
+      fprintf(out_stream,"NEW TRANS\n");
     }
 
     gpointer gp = ((GNode*)node)->data;
@@ -575,57 +575,57 @@ dump_func(GNode *node, gpointer data)
       int i;
 
       if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
-	printf("-");
+	fprintf(out_stream,"-");
       }
       else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
-	printf("+");
+	fprintf(out_stream,"+");
       }
       else if (IS_SET(((struct VyattaNode*)gp)->_data._operation)) {
-	printf(">");
+	fprintf(out_stream,">");
       }
       else {
-	printf(" ");
+	fprintf(out_stream," ");
       }
       for (i = 0; i < depth; ++i) {
-	printf("  ");
+	fprintf(out_stream,"  ");
       }
-      printf("%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority);
+      fprintf(out_stream,"%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority);
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
-	printf(" [VALUE]");
+	fprintf(out_stream," [VALUE]");
       }
       if (((struct VyattaNode*)gp)->_config._multi == TRUE) {
-	printf(" [MULTI]");
+	fprintf(out_stream," [MULTI]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
 	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
-	printf(" [SYNTAX]");
+	fprintf(out_stream," [SYNTAX]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[create_act].vtw_list_head) {
-	printf(" [CREATE]");
+	fprintf(out_stream," [CREATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[activate_act].vtw_list_head) {
-	printf(" [ACTIVATE]");
+	fprintf(out_stream," [ACTIVATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[update_act].vtw_list_head) {
-	printf(" [UPDATE]");
+	fprintf(out_stream," [UPDATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[delete_act].vtw_list_head) {
-	printf(" [DELETE]");
+	fprintf(out_stream," [DELETE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
 	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
-	printf(" [COMMIT]");
+	fprintf(out_stream," [COMMIT]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[begin_act].vtw_list_head) {
-	printf(" [BEGIN]");
+	fprintf(out_stream," [BEGIN]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[end_act].vtw_list_head) {
-	printf(" [END]");
+	fprintf(out_stream," [END]");
       }
       if (((struct VyattaNode*)gp)->_config._help != NULL) {
-	//	printf("[help: %s]",((struct VyattaNode*)gp)->_config._help);
+	//	fprintf(out_stream,"[help: %s]",((struct VyattaNode*)gp)->_config._help);
       }
-      printf("\n");
+      fprintf(out_stream,"\n");
     }
     
   }
