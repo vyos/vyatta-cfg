@@ -69,6 +69,7 @@ my %type_handler = (
 		    'ipv6net_negate' => \&validate_ipv6net_negate,
 		    'hex16' => \&validate_hex_16_bits,
 		    'hex32' => \&validate_hex_32_bits,
+                    'ipv6_addr_param' => \&validate_ipv6_addr_param,
                    );
 
 sub validate_ipv4 {
@@ -236,6 +237,36 @@ sub validate_hex_32_bits {
   my $value = shift;
   $value = lc $value;
   return 1 if ($value =~ /^[0-9a-f]{8}$/)
+}
+
+# Validate the overloaded IPv6 source and destination address parameter in
+# the firewall configuration tree.
+sub validate_ipv6_addr_param {
+  my $value = shift;
+
+  # leading exclamation point is valid in all three formats
+  if ($value =~ m/^\!(.*)$/) {
+    $value = $1;
+  }
+
+  if ($value =~ m/^(.*)-(.*)$/) {
+    # first format: <ipv6addr>-<ipv6-addr>
+    if (validate_ipv6($1)) {
+      return validate_ipv6($2);
+    } else {
+      return 0;
+    }
+  } 
+
+  elsif ($value =~ m/^(.*)\/(.*)$/) {
+    # Second format:  <ipv6addr>/<prefix-len>
+    return validate_ipv6net($value);
+  }
+
+  else {
+    # third format:  <ipv6addr>
+    return validate_ipv6($value)
+  }
 }
 
 sub validateType {
