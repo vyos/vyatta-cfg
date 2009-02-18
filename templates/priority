@@ -1,4 +1,4 @@
-200 firewall/group/node.tag
+200 firewall/group
 210 firewall
 300 protocols/bgp/disable
 301 protocols/ospf/disable
