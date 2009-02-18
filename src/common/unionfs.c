@@ -381,7 +381,9 @@ value_exists(char *path)
 void
 common_set_parent_context(char *cpath, char *dpath)
 {
-  printf("common_set_parent_context(incoming): %s, %s\n",cpath,dpath);
+  if (g_debug) {
+    printf("common_set_parent_context(incoming): %s, %s\n",cpath,dpath);
+  }
   //strip off last path and set
   int index = strlen(cpath)-1;
   if (cpath[index] == '/') {
@@ -412,7 +414,9 @@ common_set_parent_context(char *cpath, char *dpath)
     *ptr = '\0';
   }
   set_path(dpath,FALSE);
-  printf("common_set_parent_context: %s, %s\n",cpath,dpath);
+  if (g_debug) {
+    printf("common_set_parent_context: %s, %s\n",cpath,dpath);
+  }
 }
 
 /**
@@ -421,7 +425,9 @@ common_set_parent_context(char *cpath, char *dpath)
 void
 common_set_context(char *cpath, char *dpath)
 {
-  printf("common_set_context: %s, %s\n",cpath,dpath);
+  if (g_debug) {
+    printf("common_set_context: %s, %s\n",cpath,dpath);
+  }
   set_path(cpath,TRUE);
   set_path(dpath,FALSE);
 }

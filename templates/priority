@@ -26,4 +26,7 @@
 630 protocols
 700 vpn
 900 cluster
+900 qos-policy
+900 test-definition
+900 content-inspection
 900 load-balancing
