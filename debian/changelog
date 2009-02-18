@@ -1,3 +1,15 @@
+vyatta-cfg (0.14.17) unstable; urgency=low
+
+  [ slioch ]
+  * fixed vrrp configuration error by placing vrrp under vif after vif
+    interface is created. this
+  * removing incorrect placement of node.tag on firewall/group priority
+
+  [ Stephen Hemminger ]
+  * Add Vyatta::Interface::get_interfaces
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 18 Feb 2009 10:18:57 -0800
+
 vyatta-cfg (0.14.16) unstable; urgency=low
 
   [ Stephen Hemminger ]
