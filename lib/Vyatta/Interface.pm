@@ -71,6 +71,13 @@ my %net_prefix = (
     'wlm[\d]+' => { path => 'wireless-modem' },
 );
 
+# get list of interface types
+sub interface_types {
+    my @types = map { $net_prefix{$_}{path} } keys %net_prefix;
+    return @types;
+}
+
+# new interface description object
 sub new {
     my $that  = shift;
     my $name  = pop;
