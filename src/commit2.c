@@ -8,16 +8,30 @@
 boolean g_debug = FALSE;
 boolean g_display_error_node = FALSE;
 boolean g_coverage = FALSE;
+boolean g_dump_trans = FALSE;
+
+int ActionOrder[top_act] = {
+  4,
+  5,
+  6,
+  0,
+  1,
+  2,
+  3,
+  7
+};
+
+
 
 char* ActionNames[top_act] = {
-  "delete",
-  "create",
-  "activate",
-  "update",
-  "syntax",
-  "commit",
-  "begin",
-  "end"
+  "delete",   //0
+  "create",   //1
+  "activate", //2
+  "update",   //3
+  "syntax",   //4
+  "commit",   //5
+  "begin",    //6
+  "end"       //7
 };
 
 extern boolean 
@@ -98,7 +112,6 @@ int
 main(int argc, char** argv)
 {
   int ch;
-  boolean dump_trans = TRUE;
   boolean priority_mode = TRUE;
   boolean test_mode = FALSE;
 
@@ -119,7 +132,7 @@ main(int argc, char** argv)
       test_mode = TRUE;
       break;
     case 's':
-      dump_trans = TRUE;
+      g_dump_trans = TRUE;
       break;
     case 'e':
       g_display_error_node = TRUE;
@@ -154,8 +167,10 @@ main(int argc, char** argv)
     exit(0);
   }
 
-  if (dump_trans == TRUE) {
-    printf("Dumping transactions\n");
+  if (g_debug == TRUE || g_dump_trans == TRUE) {
+    if (g_dump_trans == TRUE) {
+      fprintf(out_stream,"Dumping transactions\n");
+    }
     //iterate over config_data and dump...
     g_node_traverse(trans_coll,
 		    G_PRE_ORDER,
@@ -163,7 +178,9 @@ main(int argc, char** argv)
 		    -1,
 		    (GNodeTraverseFunc)dump_func,
 		    (gpointer)NULL);
-    //    exit(0);
+    if (g_dump_trans == TRUE) {
+	exit(0);
+      }
   }
 
   GNode *trans_child_node = (GNode*)g_node_first_child(trans_coll);
@@ -178,13 +195,24 @@ main(int argc, char** argv)
   do {
     boolean success = TRUE;
     if (g_debug == TRUE) {
-      printf("commit2: Starting new transaction processing pass on root\n");
+      if (trans_child_node != NULL && trans_child_node->data != NULL && ((struct VyattaNode*)(trans_child_node->data))->_data._name != NULL) {
+	printf("commit2: Starting new transaction processing pass on root: %s\n", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
+      }
+      else {
+	printf("commit2: Starting new transaction processing pass on root:\n");
+      }
     }
     
     //on each priority node now execute actions
     if ((success = process_priority_node(trans_child_node)) == TRUE) {
       //this below copies the node directory from the local to active location
-      complete(trans_child_node, test_mode);
+      //if this is true root skip
+      if (trans_child_node != NULL && trans_child_node->data != NULL && strcmp(((struct VyattaNode*)(trans_child_node->data))->_data._path,"/") == 0) {
+	//no op, need better way to define true root
+      }
+      else {
+	complete(trans_child_node, test_mode);
+      }
     }
 
     if (success == FALSE) {
@@ -202,6 +230,10 @@ main(int argc, char** argv)
       printf("commit2: successful commit, now cleaning up temp directories\n");
     }
   }
+  else {
+    fprintf(out_stream,"Commit failed\n");
+  }
+
   set_in_commit(FALSE);
 
   cleanup(config_data);
@@ -559,11 +591,19 @@ cleanup(GNode *root_node)
 gboolean
 dump_func(GNode *node, gpointer data)
 {
+  FILE *out;
+  if (g_dump_trans) {
+    out = out_stream;
+  }
+  else {
+    out = stdout;
+  }
+
   if (node != NULL) {
     guint depth = g_node_depth(node);
 
     if (depth == 2) {
-      printf("NEW TRANS\n");
+      fprintf(out,"NEW TRANS\n");
     }
 
     gpointer gp = ((GNode*)node)->data;
@@ -571,57 +611,57 @@ dump_func(GNode *node, gpointer data)
       int i;
 
       if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
-	printf("-");
+	fprintf(out,"-");
       }
       else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
-	printf("+");
+	fprintf(out,"+");
       }
       else if (IS_SET(((struct VyattaNode*)gp)->_data._operation)) {
-	printf(">");
+	fprintf(out,">");
       }
       else {
-	printf(" ");
+	fprintf(out," ");
       }
       for (i = 0; i < depth; ++i) {
-	printf("  ");
+	fprintf(out,"  ");
       }
-      printf("%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority);
+      fprintf(out,"%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority);
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
-	printf(" [VALUE]");
+	fprintf(out," [VALUE]");
       }
       if (((struct VyattaNode*)gp)->_config._multi == TRUE) {
-	printf(" [MULTI]");
+	fprintf(out," [MULTI]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
 	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
-	printf(" [SYNTAX]");
+	fprintf(out," [SYNTAX]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[create_act].vtw_list_head) {
-	printf(" [CREATE]");
+	fprintf(out," [CREATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[activate_act].vtw_list_head) {
-	printf(" [ACTIVATE]");
+	fprintf(out," [ACTIVATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[update_act].vtw_list_head) {
-	printf(" [UPDATE]");
+	fprintf(out," [UPDATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[delete_act].vtw_list_head) {
-	printf(" [DELETE]");
+	fprintf(out," [DELETE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
 	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
-	printf(" [COMMIT]");
+	fprintf(out," [COMMIT]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[begin_act].vtw_list_head) {
-	printf(" [BEGIN]");
+	fprintf(out," [BEGIN]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[end_act].vtw_list_head) {
-	printf(" [END]");
+	fprintf(out," [END]");
       }
       if (((struct VyattaNode*)gp)->_config._help != NULL) {
-	//	printf("[help: %s]",((struct VyattaNode*)gp)->_config._help);
+	//	fprintf(out,"[help: %s]",((struct VyattaNode*)gp)->_config._help);
       }
-      printf("\n");
+      fprintf(out,"\n");
     }
     
   }
@@ -677,7 +717,7 @@ process_priority_node(GNode *priority_node)
       order = G_POST_ORDER;
     }
     
-    result._action = i;
+    result._action = ActionOrder[i];
     g_node_traverse((GNode*)priority_node,
 		    order,
 		    G_TRAVERSE_ALL,
@@ -733,7 +773,7 @@ enclosing_process_func(GNode *node, gpointer data)
 	order = G_POST_ORDER;
       }
 
-      result->_action = i;
+      result->_action = ActionOrder[i];
       g_node_traverse((GNode*)node,
 		      order,
 		      G_TRAVERSE_ALL,

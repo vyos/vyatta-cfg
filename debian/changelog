@@ -1,3 +1,18 @@
+vyatta-cfg (0.14.16) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * change bgp disable node priority
+
+  [ slioch ]
+  * added generic commit failed message on any portion of the
+    configuration failing. To get
+  * added dump transaction support to write to stdout rather than
+    redirected /tmp/cfg-stdout.log
+  * added additional debug output and fixed dumping of trans nodes to
+    screen. added default
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 17 Feb 2009 16:47:46 -0800
+
 vyatta-cfg (0.14.15) unstable; urgency=low
 
   [ slioch ]
