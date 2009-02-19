@@ -823,6 +823,7 @@ vyatta_config_complete ()
     generate_pipe_help
     vyatta_completions=( "${_vyatta_pipe_completions[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
 
@@ -863,6 +864,7 @@ vyatta_config_complete ()
     generate_help_text hitems hstrs
     vyatta_completions=( "${hitems[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
 
@@ -886,6 +888,7 @@ vyatta_config_complete ()
   if [ "$command" == "exit" ]; then
     if (( num_comp > 1 || ( end_space && num_comp > 0 ) )); then
       COMPREPLY=()
+      eval $restore_shopts
       return
     fi
     declare -a hitems=( "discard" )
@@ -893,6 +896,7 @@ vyatta_config_complete ()
     generate_help_text hitems hstrs
     vyatta_completions=( "discard" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
 
@@ -950,6 +954,7 @@ vyatta_config_complete ()
   if (( idx < last_idx || ( idx == last_idx && end_space ) )); then
     # TODO error message?
     COMPREPLY=()
+    eval $restore_shopts
     return
   fi
 
@@ -987,6 +992,7 @@ vyatta_config_complete ()
     fi
     vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
 
@@ -1007,8 +1013,10 @@ vyatta_config_complete ()
       get_tmpl_subdir_help $_tpath matches
       vyatta_completions=( "${matches[@]}" )
       vyatta_do_complete
+      eval $restore_shopts
       return
     fi
+    eval $restore_shopts
     return
   fi
   
@@ -1025,6 +1033,7 @@ vyatta_config_complete ()
     get_node_value_help $_tpath fmatches
     vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
   
@@ -1067,6 +1076,7 @@ vyatta_config_complete ()
     fi
     vyatta_completions=( "${matches[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
   
@@ -1081,6 +1091,7 @@ vyatta_config_complete ()
     get_tmpl_subdir_help $_tpath fmatches
     vyatta_completions=( "${fmatches[@]}" )
     vyatta_do_complete
+    eval $restore_shopts
     return
   fi
 
