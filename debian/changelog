@@ -1,3 +1,24 @@
+vyatta-cfg (0.14.19) unstable; urgency=low
+
+  * fix for bug 4138: reset *glob after completion
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 18 Feb 2009 16:58:03 -0800
+
+vyatta-cfg (0.14.18) unstable; urgency=low
+
+  [ slioch ]
+  * need to add service to priority file.
+
+  [ Bob Gilligan ]
+  * Add type check function for firewall IPv6 src/dst address parameters
+
+  [ Stephen Hemminger ]
+  * Remove no longer used protocol/disable entries
+
+  [ Bob Gilligan ]
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 18 Feb 2009 16:52:03 -0800
+
 vyatta-cfg (0.14.17) unstable; urgency=low
 
   [ slioch ]
