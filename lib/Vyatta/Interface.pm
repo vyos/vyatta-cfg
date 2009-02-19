@@ -62,7 +62,7 @@ my %net_prefix = (
     'lo'         => { path => 'loopback' },
     'ml[\d]+'    => { path => 'multilink',
 		      vif => 'vif', },
-    'vtun[\d]+]' => { path => 'openvpn' },
+    'vtun[\d]+'  => { path => 'openvpn' },
     'wan[\d]+'   => {
         path => 'serial',
         vif  => ( 'cisco-hdlc vif', 'ppp vif', 'frame-relay vif' ),
