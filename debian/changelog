@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.21) unstable; urgency=low
+
+  * changes in priority to support bgp process start/stop.
+  * adjust priority file to push root nodes of protocol before sub nodes
+    to ensure that daemons stop/stop are
+
+ -- slioch <slioch@eng-140.vyatta.com>  Thu, 19 Feb 2009 20:45:24 -0800
+
 vyatta-cfg (0.14.20) unstable; urgency=low
 
   * Typo in regex for vtun
