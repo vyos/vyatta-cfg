@@ -1,5 +1,7 @@
 200 firewall/group
 210 firewall
+300 protocols/ospf
+301 protocols/rip
 310 interfaces/bonding/node.tag
 320 interfaces/bridge/node.tag
 330 interfaces/ethernet/node.tag
@@ -16,7 +18,6 @@
 510 protocols/bgp/node.tag/parameters
 520 protocols/bgp/node.tag/neighbor/node.tag
 530 protocols/bgp/node.tag
-600 protocols/ospf
 610 protocols/ospf/parameters
 620 protocols/ospf/access-list
 620 protocols/ospf/area
@@ -33,7 +34,6 @@
 620 protocols/ospf/redistribute
 620 protocols/ospf/refresh
 620 protocols/ospf/timers
-630 protocols/rip
 640 protocols
 700 vpn
 800 interfaces/ethernet/node.tag/vif/node.tag/vrrp
