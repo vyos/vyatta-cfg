@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.22) unstable; urgency=low
+
+  * move ospf/rip before interface
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 20 Feb 2009 16:22:18 -0800
+
 vyatta-cfg (0.14.21) unstable; urgency=low
 
   * changes in priority to support bgp process start/stop.
