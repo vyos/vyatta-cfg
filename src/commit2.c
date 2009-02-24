@@ -202,7 +202,10 @@ main(int argc, char** argv)
 	printf("commit2: Starting new transaction processing pass on root:\n");
       }
     }
-    
+
+    //complete() now requires a undisturbed copy of the trans_child_node tree
+    GNode *comp_cp_node = g_node_copy(trans_child_node);
+
     //on each priority node now execute actions
     if ((success = process_priority_node(trans_child_node)) == TRUE) {
       //this below copies the node directory from the local to active location
@@ -211,7 +214,7 @@ main(int argc, char** argv)
 	//no op, need better way to define true root
       }
       else {
-	complete(trans_child_node, test_mode);
+	complete(comp_cp_node, test_mode);
       }
     }
 
@@ -321,7 +324,7 @@ process_func(GNode *node, gpointer data)
       if (g_coverage) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
-	printf("[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
+	fprintf(out_stream,"[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
       }
 
       if (result->_action == delete_act) {
@@ -335,7 +338,7 @@ process_func(GNode *node, gpointer data)
       if (g_coverage) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
-	printf("[END] %lu\n",t.tv_sec);
+	fprintf(out_stream,"[END] %lu\n",t.tv_sec);
       }
 
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
@@ -363,14 +366,15 @@ complete(GNode *node, boolean test_mode)
   gpointer gp = ((GNode*)node)->data;
   if (g_debug) {
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
-      printf("commit2::complete(): %s\n",((struct VyattaNode*)gp)->_data._name);
+      printf("commit2::complete():name: %s\n",((struct VyattaNode*)gp)->_data._name);
+      printf("commit2::complete():path: %s\n",((struct VyattaNode*)gp)->_data._path);
     }
     else {
       printf("commit2::complete()\n");
     }
   }
   //on transactional nodes only, note to avoid calling this if a headless root
-  common_commit_copy_to_live_config(((struct VyattaNode*)gp)->_data._path, test_mode);
+  common_commit_copy_to_live_config(node, test_mode);
   return TRUE;
 }
 

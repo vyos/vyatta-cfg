@@ -42,7 +42,7 @@ common_set_parent_context(char *cpath, char *dpath);
  *
  **/
 void
-common_commit_copy_to_live_config(char *path, boolean test_mode);
+common_commit_copy_to_live_config(GNode *root_node, boolean test_mode);
 
 /**
  *

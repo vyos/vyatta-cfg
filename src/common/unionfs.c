@@ -39,6 +39,13 @@ insert_sibling_in_order(GNode *parent, GNode *child);
 
 void
 piecewise_remove(char* cbuf_root, char* abuf_root, char* path, boolean test_mode);
+
+static gboolean
+copy_func(GNode *node, gpointer data);
+
+static gboolean
+delete_func(GNode *node, gpointer data);
+
 /**
  *
  *
@@ -508,21 +515,12 @@ set_path(char *path, boolean config)
  * IN CURRENT HIERARCHICAL STRUCTURE WITHOUT CHANGING HOW UNDERLYING
  * SYSTEM MAINTAINS DATA.
  *
-original commands:
-  static const char format1[]="cp -r -f %s/* %s"; //mdirp, tmpp
-  static const char format2[]="sudo umount %s"; //mdirp
-  static const char format3[]="rm -f %s/" MOD_NAME " >&/dev/null ; /bin/true";
-                        //tmpp
-  static const char format4[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; //cdirp
-  static const char format5[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; //adirp
-  static const char format6[]="mv -f %s/* -t %s";//tmpp, adirp
-  static const char format7[]="sudo mount -t $UNIONFS -o dirs=%s=rw:%s=ro $UNIONFS %s"; //cdirp, adirp, mdirp
-  *
  **/
 void
-common_commit_copy_to_live_config(char *path, boolean test_mode)
+common_commit_copy_to_live_config(GNode *node, boolean test_mode)
 {
   //first check for existence of path before committing
+  char *path = ((struct VyattaNode*)(node->data))->_data._path;
 
   if (g_debug) {
     printf("common_commit_copy_to_live_config(): %s\n",path);
@@ -569,6 +567,7 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
     return;
   }
 
+  //mkdir temp merge
   sprintf(command,format0,tbuf);
   if (g_debug) {
     printf("%s\n",command);
@@ -578,6 +577,7 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
     system(command);
   }
 
+  //cp merge to temp merge
   sprintf(command, format1, mbuf, tbuf);
   if (g_debug) {
     printf("%s\n",command);
@@ -587,6 +587,7 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
     system(command);
   }
 
+  //unmount temp (i.e. rm merge)
   sprintf(command, format2, mbuf_root);
   if (g_debug) {
     printf("%s\n",command);
@@ -596,6 +597,9 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
     system(command);
   }
 
+  //I DON'T THINK I NEED THIS....
+  /*
+  //mkdir active
   sprintf(command,format0,abuf);
   if (g_debug) {
     printf("%s\n",command);
@@ -604,9 +608,13 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
   if (test_mode == FALSE) {
     system(command);
   }
+  */
 
-  piecewise_remove(cbuf_root,abuf_root,path,test_mode);
 
+  //special piecewise operation
+  //walk down tree and perform command where siblings diverge btwn tbuf and abuf
+  //  piecewise_remove(cbuf_root,abuf_root,path,test_mode);
+  /*
   sprintf(command,  format4, cbuf);
   if (g_debug) {
     printf("%s\n",command);
@@ -615,37 +623,8 @@ common_commit_copy_to_live_config(char *path, boolean test_mode)
   if (test_mode == FALSE) {
     system(command);
   }
-  /*
-  sprintf(command,  format5, abuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
   */
-  //special piecewise operation
-  //walk down tree and perform command where siblings diverge btwn tbuf and abuf
-
-  sprintf(command,  format6, tbuf, abuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
-
-
-  sprintf(command,  format7, tbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
+  piecewise_copy(node, test_mode);
 
   sprintf(command, format8, cbuf_root,abuf_root,mbuf_root);
   if (g_debug) {
@@ -1089,4 +1068,154 @@ insert_sibling_in_order(GNode *parent, GNode *child)
   }
   GNode *new_node = g_node_insert_after(parent, sibling, child);
   return new_node;
+}
+
+//needed for iteration below
+struct SrcDst {
+  char *_src;
+  char *_dst;
+  boolean _test_mode;
+};
+
+/**
+ *
+ **/
+void
+piecewise_copy(GNode *root_node, boolean test_mode)
+{
+  struct SrcDst sd;
+  sd._src = get_tmpp(); //copy of merged config
+  sd._dst = get_adirp(); //active config
+  sd._test_mode = test_mode;
+  
+  //COPY FROM TOP DOWN
+  g_node_traverse(root_node,
+		  G_PRE_ORDER,
+		  G_TRAVERSE_ALL,
+		  -1,
+		  (GNodeTraverseFunc)copy_func,
+		  (gpointer)&sd);
+  
+  //delete needs to apply to changes only as src
+  sd._src = get_cdirp(); //changes only config
+  //DELETE FROM BOTTOM UP, stop on finding children
+  g_node_traverse(root_node,
+		  G_POST_ORDER,
+		  G_TRAVERSE_ALL,
+		  -1,
+		  (GNodeTraverseFunc)delete_func,
+		  (gpointer)&sd);
+}
+
+/**
+ *
+ *
+ **/
+static gboolean
+copy_func(GNode *node, gpointer data)
+{
+  if (node == NULL) {
+    return FALSE;
+  }
+
+  char *command = malloc(MAX_LENGTH_DIR_PATH);
+
+  struct SrcDst *sd = (struct SrcDst*)data;
+  static const char format[]="mkdir %s%s";/*tmpp, adirp*/ 
+  static const char format_value[]="cp %s%snode.val %s%s.";/*tmpp, adirp*/ 
+  char *path = ((struct VyattaNode*)(node->data))->_data._path;
+
+  //might not work for terminating multinodes as the node.val won't be copied
+  if (((struct VyattaNode*)(node->data))->_data._value == TRUE &&
+      ((struct VyattaNode*)(node->data))->_config._def.tag == FALSE) {
+    //THIS IS ONLY FOR NODE.VAL (or leafs, term multis)
+    char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
+    sprintf(command,format_value,sd->_src,parent_path,sd->_dst,parent_path);
+    if (g_debug) {
+      printf("%s\n",command);
+      fflush(NULL);
+    }
+    if (sd->_test_mode == FALSE) {
+      system(command);
+    }
+  }
+  else {
+    if (!IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation)) {
+      sprintf(command,format,sd->_dst,path);
+      if (g_debug) {
+	printf("%s\n",command);
+	fflush(NULL);
+      }
+      if (sd->_test_mode == FALSE) {
+	system(command);
+      }
+    }
+  }
+  free(command);
+  return FALSE;
+}
+
+/**
+ *
+ *
+ **/
+static gboolean
+delete_func(GNode *node, gpointer data)
+{
+  if (node == NULL) {
+    return FALSE;
+  }
+
+  char *command = malloc(MAX_LENGTH_DIR_PATH);
+
+  struct SrcDst *sd = (struct SrcDst*)data;
+  static const char format[]="rm -fv %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
+  static const char format_force_delete[]="rm -fv %s%s{*,.*} >&/dev/null;rm -fr %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
+  static const char delete_format[]="rm %s%s../.wh.%s >&/dev/null"; 
+  
+  char *path = ((struct VyattaNode*)(node->data))->_data._path;
+
+  //does this node have any children that have not been copied????
+
+  //NEED RM -FV on changes only directory!!!! for normal removal!!!
+
+
+  //WILL ONLY REMOVE DIRS WITHOUT CHILD DIRS--just what we want..
+  sprintf(command,format,sd->_src,path,sd->_src,path);
+  if (g_debug) {
+    printf("%s\n",command);
+    fflush(NULL);
+  }
+  if (sd->_test_mode == FALSE) {
+    system(command);
+  }
+
+  //if this is a deletion operation, need to remove
+  if (IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation) && 
+      !IS_ACTIVE(((struct VyattaNode*)(node->data))->_data._operation)) {
+
+    //DO NOT PERFORM THIS STEP IF THERE ARE SUBDIRECTORIES (only the whiteout file)
+
+    //remove .whiteout file in c directory if encountered in walk.
+    sprintf(command,delete_format,sd->_src,path,((struct VyattaNode*)(node->data))->_data._name);
+    if (g_debug) {
+      printf("%s\n",command);
+      fflush(NULL);
+    }
+    if (sd->_test_mode == FALSE) {
+      system(command);
+    }
+    //if delete then remove entry in active configuration!
+    sprintf(command,format_force_delete,sd->_dst,path,sd->_dst,path);
+    if (g_debug) {
+      printf("%s\n",command);
+      fflush(NULL);
+    }
+    if (sd->_test_mode == FALSE) {
+      system(command);
+    }
+  }
+  free(command);
+
+  return FALSE;
 }
