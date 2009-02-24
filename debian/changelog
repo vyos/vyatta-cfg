@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.23) unstable; urgency=low
+
+  * replace unionfs synchronization code with piecewise copy. this
+    should fix most of the problems related to nested priorities (but
+    not all). also moved node profiling output from debug file
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 24 Feb 2009 13:15:46 -0800
+
 vyatta-cfg (0.14.22) unstable; urgency=low
 
   * move ospf/rip before interface
