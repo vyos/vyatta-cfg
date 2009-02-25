@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.25) unstable; urgency=low
+
+  * Adjust priorities
+  * Change protocols to protocols/snmp
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 25 Feb 2009 10:21:18 -0800
+
 vyatta-cfg (0.14.24) unstable; urgency=low
 
   * nested priority case under interfaces need mkdir with -p option to
