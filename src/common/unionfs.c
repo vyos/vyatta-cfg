@@ -37,9 +37,6 @@ match_priority_node(GNode *node, gchar** tok_str, int pri);
 GNode*
 insert_sibling_in_order(GNode *parent, GNode *child);
 
-void
-piecewise_remove(char* cbuf_root, char* abuf_root, char* path, boolean test_mode);
-
 static gboolean
 copy_func(GNode *node, gpointer data);
 
@@ -597,33 +594,6 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
     system(command);
   }
 
-  //I DON'T THINK I NEED THIS....
-  /*
-  //mkdir active
-  sprintf(command,format0,abuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
-  */
-
-
-  //special piecewise operation
-  //walk down tree and perform command where siblings diverge btwn tbuf and abuf
-  //  piecewise_remove(cbuf_root,abuf_root,path,test_mode);
-  /*
-  sprintf(command,  format4, cbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
-  */
   piecewise_copy(node, test_mode);
 
   sprintf(command, format8, cbuf_root,abuf_root,mbuf_root);
@@ -975,82 +945,6 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   new_vn->_config._def = vn_parent->_config._def;
 }
 
-/**
- *
- **/
-void
-piecewise_remove(char* cbuf_root, char* abuf_root, char* path, boolean test_mode)
-{
-  char cbuf[MAX_LENGTH_DIR_PATH];
-  char abuf[MAX_LENGTH_DIR_PATH];
-
-  sprintf(cbuf,"%s/%s",cbuf_root,path);
-  sprintf(abuf,"%s/%s",abuf_root,path);
-
-  //iterate over directory here
-  DIR *dp;
-  if ((dp = opendir(cbuf)) == NULL){
-    if (g_debug) {
-      //could also be a terminating value now
-      printf("piecewise_remove(), failed to open directory: %s\n", cbuf);
-    }
-
-    //if failed, then check if this is a whiteout directory itself, if so remove and return
-    //only can really happen on initial call
-    char tmp[MAX_LENGTH_DIR_PATH];
-    sprintf(tmp,"%s/%s%s",cbuf_root,DELETED_NODE,path+1); //need to skip first slash
-    tmp[strlen(tmp)-1] = '\0'; //drop last slash too
-    struct stat s;
-    if ((lstat(tmp,&s) == 0) && S_ISREG(s.st_mode)) {
-      //whiteout root, remove and return
-      static const char format5[]="rm -fr %s >&/dev/null ; /bin/true"; /*adirp*/
-      //remove these guys
-      char command[MAX_LENGTH_DIR_PATH];
-      sprintf(command,  format5, abuf);
-      if (g_debug) {
-	printf("%s\n",command);
-	fflush(NULL);
-      }
-      if (test_mode == FALSE) {
-	system(command);
-      }
-    }
-    return;
-  }
-
-  //finally iterate over valid child directory entries
-  struct dirent *dirp = NULL;
-  char local_path[MAX_LENGTH_DIR_PATH];
-  while ((dirp = readdir(dp)) != NULL) {
-
-    //    printf("F: comparing: %s to %s up to %d\n",DELETED_NODE, dirp->d_name, strlen(DELETED_NODE));
-    if (strncmp(DELETED_NODE,dirp->d_name,strlen(DELETED_NODE)) == 0) {
-      static const char format5[]="rm -fr %s >&/dev/null ; /bin/true"; /*adirp*/
-      //remove these guys
-      char command[MAX_LENGTH_DIR_PATH];
-      char tmp[MAX_LENGTH_DIR_PATH];
-      sprintf(tmp,"%s/%s",abuf,dirp->d_name+strlen(DELETED_NODE));
-
-      sprintf(command,  format5, tmp);
-      if (g_debug) {
-	printf("%s\n",command);
-	fflush(NULL);
-      }
-      if (test_mode == FALSE) {
-	system(command);
-      }
-    }
-    else if (strcmp(dirp->d_name, ".") != 0 && 
-	     strcmp(dirp->d_name, "..") != 0 &&
-	     strcmp(dirp->d_name, MODIFIED_FILE) != 0 &&
-	     strcmp(dirp->d_name, DEF_FILE) != 0 &&
-	     strcmp(dirp->d_name, VALUE_FILE) != 0) {
-      sprintf(local_path,"%s/%s",path,dirp->d_name);
-      piecewise_remove(cbuf_root,abuf_root,local_path,test_mode);
-    }
-  }
-  closedir(dp);
-}
 
 /**
  *
