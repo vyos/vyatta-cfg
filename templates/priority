@@ -16,10 +16,13 @@
 400 system
 450 protocols/static
 470 policy
-500 protocols/bgp
+500 protocols/bgp/node.tag
 510 protocols/bgp/node.tag/parameters
 520 protocols/bgp/node.tag/neighbor/node.tag
-530 protocols/bgp/node.tag
+530 protocols/bgp/node.tag/ipv6
+530 protocols/bgp/node.tag/network
+530 protocols/bgp/node.tag/redistribute
+530 protocols/bgp/node.tag/timers
 610 protocols/ospf/parameters
 620 protocols/ospf/access-list
 620 protocols/ospf/area
