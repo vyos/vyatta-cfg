@@ -274,7 +274,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	strcmp(dirp->d_name, VALUE_FILE) != 0) {
       processed = TRUE;
       char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
-      if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
+      if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) { 
 	strcpy(data_buf,dirp->d_name+4); //SKIP THE .WH.
 	
 	//create new node and insert...
@@ -1121,7 +1121,7 @@ copy_func(GNode *node, gpointer data)
   char *command = malloc(MAX_LENGTH_DIR_PATH);
 
   struct SrcDst *sd = (struct SrcDst*)data;
-  static const char format[]="mkdir %s%s";/*tmpp, adirp*/ 
+  static const char format[]="mkdir -p %s%s";/*tmpp, adirp*/ 
   static const char format_value[]="cp %s%snode.val %s%s.";/*tmpp, adirp*/ 
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
 
