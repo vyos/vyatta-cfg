@@ -1063,8 +1063,8 @@ delete_func(GNode *node, gpointer data)
   char *command = malloc(MAX_LENGTH_DIR_PATH);
 
   struct SrcDst *sd = (struct SrcDst*)data;
-  static const char format[]="rm -fv %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
-  static const char format_force_delete[]="rm -fv %s%s{*,.*} >&/dev/null;rm -fr %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
+  static const char format[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
+  static const char format_force_delete[]="rm -f %s%s{*,.*} >&/dev/null;rm -fr %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
   static const char delete_format[]="rm %s%s../.wh.%s >&/dev/null"; 
   
   char *path = ((struct VyattaNode*)(node->data))->_data._path;

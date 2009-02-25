@@ -63,6 +63,7 @@
 650 protocols/ripng/timers
 700 vpn
 800 interfaces/ethernet/node.tag/vif/node.tag/vrrp
+900 interfaces
 900 protocols/snmp
 900 cluster
 900 qos-policy
