@@ -760,6 +760,9 @@ apply_priority(GNode *root_node)
     char str[1025];
     while (fgets(str, 1024, fp) != 0) {
       gchar** tok_str = g_strsplit(str," ",3);
+      if (tok_str[0] == NULL || tok_str[1] == NULL) {
+	continue;
+      }
       char *path = tok_str[1];
       if (g_debug) {
 	printf("unionfs::apply_priority(), working on this %s\n",path);
