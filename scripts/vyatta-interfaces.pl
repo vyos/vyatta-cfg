@@ -46,7 +46,7 @@ use warnings;
 my $dhcp_daemon = '/sbin/dhclient';
 
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
-my ($check_name, $show_names, $intf_cli_path);
+my ($check_name, $show_names, $intf_cli_path, $vif_name);
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
@@ -57,6 +57,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "op-command=s"      => \$op_dhclient,
 	   "check=s"	       => \$check_name,
 	   "show=s"	       => \$show_names,
+	   "vif=s"	       => \$vif_name,
 );
 
 if ($eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -453,8 +454,13 @@ sub show_interfaces {
     foreach my $name (@interfaces) {
 	my $intf = new Vyatta::Interface($name);
 	next unless $intf;
-	
 	next unless ($type eq 'all' || $type eq $intf->type());
+
+	if ($vif_name) {
+	    next unless ($vif_name eq $intf->physicalDevice() && $intf->vif());
+	} else {
+	    next if $intf->vif();
+	}
 	print $name, ' ';
     }
     print "\n";
