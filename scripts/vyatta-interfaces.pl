@@ -142,10 +142,9 @@ sub is_domain_name_set {
 }
 
 sub get_mtu {
-    my $intf = shift;
-    my $config = new Vyatta::Config;
-    $config->setLevel("interfaces $intf");
-    return $config->returnValue("mtu");
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+    return $intf->mtu();
 }
 
 sub dhcp_update_config {
@@ -164,19 +163,9 @@ sub dhcp_update_config {
        $output .= ", domain-name";
     } 
 
-    ## FIXME more code depending on name
-    my $mtu;
-    if ($intf =~ m/^eth[0-9]+$/) {
-	## XXX what about vif?
-	$mtu = get_mtu("ethernet $intf");
-    } elsif ($intf =~ m/^bond[0-9]+$/) {
-	$mtu = get_mtu("bonding $intf");
-    } elsif ($intf =~ m/^br[0-9]+$/) {
-	## bridge doesn't have mtu yet 
-	$mtu = get_mtu("bridge $intf");
-    }
+    my $mtu = get_mtu($intf);
+    $output .= ", interface-mtu" unless $mtu;
 
-    $mtu or $output .= ", interface-mtu";
     $output .= ";\n";
     $output .= "}\n\n";
 
