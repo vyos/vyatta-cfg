@@ -88,7 +88,7 @@ sub new {
     return unless $name;
 
     # Strip off vif from name
-    if ( $name =~ m/(\w)+\.(\d)+/ ) {
+    if ( $name =~ m/(\w+)\.(\d+)/ ) {
         $dev = $1;
         $vif = $2;
     } else {
