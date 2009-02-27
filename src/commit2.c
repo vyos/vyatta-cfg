@@ -95,13 +95,14 @@ void
 usage()
 {
   printf("commit2\n");
-  printf("-d\t\tdebug mode\n");
-  printf("-s\t\tdump sorted transactions and exit\n");
-  printf("-p\t\tdisable priority mode\n");
-  printf("-t\t\ttest mode (don't apply directory modifications)\n");
-  printf("-e\t\tprint node where error occurred\n");
-  printf("-c\t\tdump node coverage and execution times\n");
-  printf("-h\t\thelp\n");
+  printf("\t-d\t\tdebug mode\n");
+  printf("\t-s\t\tdump sorted transactions and exit\n");
+  printf("\t-p\t\tdisable priority mode\n");
+  printf("\t-t\t\ttest mode (don't apply directory modifications)\n");
+  printf("\t-e\t\tprint node where error occurred\n");
+  printf("\t-c\t\tdump node coverage and execution times\n");
+  printf("\t-o\t\tdisable partial commit\n");
+  printf("\t-h\t\thelp\n");
 }
 
 /**
@@ -114,9 +115,10 @@ main(int argc, char** argv)
   int ch;
   boolean priority_mode = TRUE;
   boolean test_mode = FALSE;
+  boolean disable_partial_commit = FALSE;
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsec")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthseco")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -139,6 +141,9 @@ main(int argc, char** argv)
       break;
     case 'c':
       g_coverage = TRUE;
+      break;
+    case 'o':
+      disable_partial_commit = TRUE;
       break;
     default:
       usage();
@@ -214,7 +219,9 @@ main(int argc, char** argv)
 	//no op, need better way to define true root
       }
       else {
-	complete(comp_cp_node, test_mode);
+	if (disable_partial_commit == FALSE) {
+	  complete(comp_cp_node, test_mode);
+	}
       }
     }
 
