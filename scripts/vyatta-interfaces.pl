@@ -439,21 +439,23 @@ sub is_valid_name {
 sub show_interfaces {
     my $type = shift;
     my @interfaces = getInterfaces();
+    my @match;
 
     foreach my $name (@interfaces) {
 	my $intf = new Vyatta::Interface($name);
-	next unless $intf;
+	next unless $intf;		# skip unknown types
 	next unless ($type eq 'all' || $type eq $intf->type());
 
 	if ($vif_name) {
-	    next unless ($vif_name eq $intf->physicalDevice() && $intf->vif());
+	    next unless $intf->vif();
+	    push @match, $intf->vif()
+		if ($vif_name eq $intf->physicalDevice());
 	} else {
-	    next if $intf->vif();
+	    push @match, $name
+		unless $intf->vif();
 	}
-	print $name, ' ';
     }
-    print "\n";
-    exit 0;
+    print join(' ', @match), "\n";
 }
 
 exit 0;
