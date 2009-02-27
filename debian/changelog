@@ -1,3 +1,16 @@
+vyatta-cfg (0.14.27) unstable; urgency=low
+
+  [ slioch ]
+  * added protocols to root nodes at end of priority listing.
+  * handle seg violation if an empty line is found in the priority file.
+
+  [ Stephen Hemminger ]
+  * Fix regex for VIF name extraction
+  * Add option to show VIF for interface
+  * Handle MTU on all types of interface
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 26 Feb 2009 14:12:19 -0800
+
 vyatta-cfg (0.14.26) unstable; urgency=low
 
   [ slioch ]
