@@ -727,7 +727,7 @@ process_priority_node(GNode *priority_node)
   int i;
   for (i = 0; i < top_act; ++i) {
     int order;
-    if (i != delete_act) {
+    if (delete_act != ActionOrder[i]) {
       order = G_PRE_ORDER;
     }
     else {
@@ -783,7 +783,7 @@ enclosing_process_func(GNode *node, gpointer data)
     int i;
     for (i = 0; i < top_act; ++i) {
       int order;
-      if (i != delete_act) {
+      if (delete_act != ActionOrder[i]) {
 	order = G_PRE_ORDER;
       }
       else {
