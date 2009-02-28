@@ -1,3 +1,21 @@
+vyatta-cfg (0.14.28) unstable; urgency=low
+
+  [ slioch ]
+  * new option added to commit to disable partial commit behavior. This
+    allows the
+
+  [ Stephen Hemminger ]
+  * Fix --vif option
+
+  [ slioch ]
+  * Added environment variable that can be accessed in executing
+    node.def script to check whether commit is in a delete or set
+    action. The environmental variable is
+  * fixed node walk for delete of nodes--error introduced when adding
+    ordering indirection for actions in commit head.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 27 Feb 2009 20:51:52 -0800
+
 vyatta-cfg (0.14.27) unstable; urgency=low
 
   [ slioch ]
