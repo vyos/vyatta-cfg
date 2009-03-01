@@ -22,6 +22,7 @@ package Vyatta::Interface;
 use strict;
 use warnings;
 use Vyatta::Config;
+use Vyatta::Misc;
 use base 'Exporter';
 our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK 
 	          IFF_POINTOPOINT IFF_RUNNING IFF_NOARP
