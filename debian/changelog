@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.29) unstable; urgency=low
+
+  * Fix call to Vyatta::Misc::getIP()
+  * Fix bareword error for missing constants.
+
+ -- Stig Thormodsrud <stig@io.vyatta.com>  Sun, 01 Mar 2009 12:13:10 -0800
+
 vyatta-cfg (0.14.28) unstable; urgency=low
 
   [ slioch ]
