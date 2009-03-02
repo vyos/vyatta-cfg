@@ -127,11 +127,12 @@ my %type_hash = (
     'broadcast'	   => 'is_broadcast',
     'multicast'	   => 'is_multicast',
     'pointtopoint' => 'is_pointtopoint',
+    'loopback'     => 'is_loopback',
 );
 
 # getInterfacesIPadresses() returns IPv4 addresses for the interface type
-# possible type of interfaces : 'broadcast', 'pointopoint', 'multicast', 'all'
-# the loopback IP address is never returned with any of the above parameters
+# possible type of interfaces : 'broadcast', 'pointtopoint', 'multicast', 'all'
+# and 'loopback'
 sub getInterfacesIPadresses {
     my $type = shift;
     my $type_func;

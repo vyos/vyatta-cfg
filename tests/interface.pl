@@ -13,7 +13,7 @@ my @interfaces = getInterfaces();
 print "Interfaces: ", join(' ',@interfaces),"\n";
 
 print "IP\n";
-foreach my $type (qw/all broadcast multicast pointtopoint/) {
+foreach my $type (qw/all broadcast multicast pointtopoint loopback/) {
     print "\t$type = ";
     foreach my $addr (Vyatta::Misc::getInterfacesIPadresses($type)) {
 	print $addr, '(', is_ip_v4_or_v6($addr), ') ';
