@@ -1,3 +1,18 @@
+vyatta-cfg (0.14.30) unstable; urgency=low
+
+  [ slioch ]
+  * fixed preservation of def file when committing configuration.
+    default leafs
+
+  [ Stig Thormodsrud ]
+  * Remove duplicate constants.
+  * When an IP address is configured on a loopback,
+    getInterfacesIPadresses('all') doesn't include them.  Include
+    loopback addresses.
+  * Add loopback as a type for getInterfacesIPadresses().
+
+ -- Stig Thormodsrud <stig@io.vyatta.com>  Mon, 02 Mar 2009 15:53:28 -0800
+
 vyatta-cfg (0.14.29) unstable; urgency=low
 
   * Fix call to Vyatta::Misc::getIP()
