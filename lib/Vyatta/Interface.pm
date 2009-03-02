@@ -216,6 +216,26 @@ sub flags {
     return hex($val);
 }
 
+sub is_broadcast {
+    my $self = shift;
+    return $self->flags() & IFF_BROADCAST;
+}
+
+sub is_multicast {
+    my $self = shift;
+    return $self->flags() & IFF_MULTICAST;
+}
+
+sub is_pointtopoint {
+    my $self = shift;
+    return $self->flags() & IFF_POINTOPOINT;
+}
+
+sub is_loopback {
+    my $self = shift;
+    return $self->flags() & IFF_LOOPBACK;
+}
+
 # device exists and is online
 sub up {
     my $self  = shift;
