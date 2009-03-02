@@ -1019,7 +1019,7 @@ copy_func(GNode *node, gpointer data)
 
   struct SrcDst *sd = (struct SrcDst*)data;
   static const char format[]="mkdir -p %s%s";/*tmpp, adirp*/ 
-  static const char format_value[]="cp %s%snode.val %s%s.";/*tmpp, adirp*/ 
+  static const char format_value[]="cp %s%s{node.val,def} %s%s. 2>/dev/null";/*tmpp, adirp*/ 
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
 
   //might not work for terminating multinodes as the node.val won't be copied
