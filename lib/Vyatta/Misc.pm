@@ -148,7 +148,6 @@ sub getInterfacesIPadresses {
     foreach my $name (getInterfaces()) {
 	my $intf = new Vyatta::Interface($name);
 	next unless $intf;
-	next if $intf->loopback();
 	if (defined $type_func) {
 	    next unless $intf->$type_func();
 	}
