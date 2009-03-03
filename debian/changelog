@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.31) unstable; urgency=low
+
+  * Use iproute link to setup vif
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 02 Mar 2009 16:22:29 -0800
+
 vyatta-cfg (0.14.30) unstable; urgency=low
 
   [ slioch ]
