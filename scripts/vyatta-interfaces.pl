@@ -48,6 +48,16 @@ my $dhcp_daemon = '/sbin/dhclient';
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
 my ($check_name, $show_names, $intf_cli_path, $vif_name);
 
+sub usage() {
+    print "Usage: $0 --dev=<interface> --check=<type>\n";
+    print "       $0 --dev=<interface> --valid-mac=<aa:aa:aa:aa:aa:aa>\n";
+    print "       $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>\n";
+    print "       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>\n";
+    print "       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}\n";
+    print "       $0 --show=<type>\n";
+    exit 1;
+}
+
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
 	   "valid-addr=s"      => \$addr,
@@ -58,7 +68,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "check=s"	       => \$check_name,
 	   "show=s"	       => \$show_names,
 	   "vif=s"	       => \$vif_name,
-);
+) or usage();
 
 if ($eth_update)       { update_eth_addrs($eth_update, $dev); }
 if ($eth_delete)       { delete_eth_addrs($eth_delete, $dev);  }
@@ -66,7 +76,7 @@ if ($addr)             { is_valid_addr($addr, $dev); }
 if ($mac)	       { is_valid_mac($mac, $dev); }
 if ($mac_update)       { update_mac($mac_update, $dev); }
 if ($op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
-if ($check_name)       { is_valid_name($check_name); }
+if ($check_name)       { is_valid_name($check_name, $dev); }
 if ($show_names)       { show_interfaces($show_names); }
 
 sub is_ip_configured {
@@ -427,12 +437,17 @@ sub op_dhcp_command {
 }
 
 sub is_valid_name {
-    my $name = shift;
+    my ($type, $name) = @_;
+    die "Missing --dev argument\n" unless $name;
+
     my $intf = new Vyatta::Interface($name);
-
-    exit 0 if $intf;
-
-    die "$name: is not a known interface name\n";
+    die "$name does not match any known interface name type\n"
+	unless $intf;
+    die "$name is a ", $intf->type(), " interface not an $type interface\n"
+	if ($intf->type() ne $type);
+    die "$type interface $name does not exist on system\n"
+	unless grep { $name eq $_ } getInterfaces();
+    exit 0;
 }
 
 # generate one line with all known interfaces (for allowed)
