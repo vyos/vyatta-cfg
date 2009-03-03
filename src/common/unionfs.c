@@ -1066,8 +1066,10 @@ delete_func(GNode *node, gpointer data)
   char *command = malloc(MAX_LENGTH_DIR_PATH);
 
   struct SrcDst *sd = (struct SrcDst*)data;
+  //DONT HAVE THE COMMAND BELOW BLOW AWAY WHITEOUT FILES!!!!!
   static const char format[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
-  static const char format_force_delete[]="rm -f %s%s{*,.*} >&/dev/null;rm -fr %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
+  static const char format_force_delete[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
+
   static const char delete_format[]="rm %s%s../.wh.%s >&/dev/null"; 
   
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
@@ -1078,13 +1080,23 @@ delete_func(GNode *node, gpointer data)
 
 
   //WILL ONLY REMOVE DIRS WITHOUT CHILD DIRS--just what we want..
-  sprintf(command,format,sd->_src,path,sd->_src,path);
-  if (g_debug) {
-    printf("%s\n",command);
-    fflush(NULL);
+  //NEED TO PREVENT THE COMMAND BELOW FROM DELETING WHITEOUT FILES....
+
+  if (IS_NOOP(((struct VyattaNode*)(node->data))->_data._operation)) {
+    return FALSE; //see if we can skip this node here
   }
-  if (sd->_test_mode == FALSE) {
-    system(command);
+
+
+  //DOESN'T QUITE FIX THE PROBLEM, THE PARENT IS CALLED (AND PROBABLY SHOULDN'T BE)
+  if (!IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation)) {
+    sprintf(command,format,sd->_src,path,sd->_src,path);
+    if (g_debug) {
+      printf("%s\n",command);
+      fflush(NULL);
+    }
+    if (sd->_test_mode == FALSE) {
+      system(command);
+    }
   }
 
   //if this is a deletion operation, need to remove
