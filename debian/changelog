@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.33) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Need to do bridge before ethernet
+
+ -- Stig Thormodsrud <stig@io.vyatta.com>  Mon, 02 Mar 2009 19:00:47 -0800
+
 vyatta-cfg (0.14.32) unstable; urgency=low
 
   * Ignore /sys/class/net/bonding_masters
