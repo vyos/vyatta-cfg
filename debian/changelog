@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.35) unstable; urgency=low
+
+  * Use vyatta-interfaces to generate allowed list
+  * Extend vyatta-interfaces to do device name checking
+  * Use check option to vyatta-interfaces.pl
+  * Need to setup bonding before ethernet
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 03 Mar 2009 10:55:57 -0800
+
 vyatta-cfg (0.14.34) unstable; urgency=low
 
   * added fix for nested priority and deletion failure. also priorities
