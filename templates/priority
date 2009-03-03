@@ -5,6 +5,7 @@
 302 protocols/rip
 303 protocols/ripng
 310 interfaces/bridge
+315 interfaces/bonding
 320 interfaces/ethernet
 320 interfaces/loopback
 330 interfaces/adsl
@@ -12,7 +13,6 @@
 350 interfaces/wirelessmodem
 380 interfaces/tunnel
 380 interfaces/openvpn
-390 interfaces/bonding
 400 system
 450 protocols/static
 470 policy
