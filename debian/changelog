@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.32) unstable; urgency=low
+
+  * Ignore /sys/class/net/bonding_masters
+  * Fix delete of VIF
+  * Rearrange interfaces in priority table
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 02 Mar 2009 17:18:48 -0800
+
 vyatta-cfg (0.14.31) unstable; urgency=low
 
   * Use iproute link to setup vif
