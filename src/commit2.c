@@ -34,9 +34,6 @@ char* ActionNames[top_act] = {
   "end"       //7
 };
 
-extern boolean 
-check_syn(vtw_node *cur);
-
 GNode*
 get_transactions(GNode*, boolean priority);
 
@@ -76,15 +73,6 @@ also, the algorithm for collapsing the tree into a transaction list is:
 1) iterate through tree and mark all explicit transactions
 2) when done, prune the tree of all root explicit transactions
 3) Now iterate through remaining tree and remove each node and append to transaction list.
-
-
-TODO:
-> Implement transactional sorting functions (test)
-> possibly add back validation sequence (difference in committing failed user w/o pw)
-> memory handling code (i.e. all the frees I left out)
-> test on boot by having boot call load rather than running through boot (and adding priority file)
-> 
-
  */
 
 /**
@@ -164,6 +152,11 @@ main(int argc, char** argv)
     fprintf(out_stream, "No configuration changes to commit\n");
     return 0;
   }
+  
+  GNode *orig_node_tree = NULL;
+  if (disable_partial_commit == TRUE) {
+    orig_node_tree = g_node_copy(config_data);
+  }
 
   // Get collection of transactions, i.e. trans nodes that have been activated. 
   GNode *trans_coll = get_transactions(config_data, priority_mode);
@@ -235,6 +228,9 @@ main(int argc, char** argv)
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
 
   if (no_errors == TRUE) {
+    if (disable_partial_commit == TRUE) {
+      complete(orig_node_tree, test_mode);
+    }
     common_commit_clean_temp_config(test_mode);
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
@@ -303,6 +299,11 @@ process_func(GNode *node, gpointer data)
 
       //let's skip the case where this is active and it's a delete--shouldn't be done, but needs to be include in the rule set above
       if (IS_DELETE(d->_operation) && IS_ACTIVE(d->_operation) && result->_action == delete_act) {
+	return FALSE;
+      }
+
+      //let's skip any multi-node that does not have have a value (an empty multi-node)
+      if (c->_multi && node->children == NULL) {
 	return FALSE;
       }
 
@@ -379,8 +380,7 @@ complete(GNode *node, boolean test_mode)
   gpointer gp = ((GNode*)node)->data;
   if (g_debug) {
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
-      printf("commit2::complete():name: %s\n",((struct VyattaNode*)gp)->_data._name);
-      printf("commit2::complete():path: %s\n",((struct VyattaNode*)gp)->_data._path);
+      printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
     }
     else {
       printf("commit2::complete()\n");
