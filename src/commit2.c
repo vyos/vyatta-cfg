@@ -337,12 +337,15 @@ process_func(GNode *node, gpointer data)
 
 
       if (result->_action == delete_act) {
-	setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
 	set_in_delete_action(TRUE);
+      }
+      if (IS_DELETE(d->_operation)) {
+	setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
       }
       else {
 	setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
       }
+
       status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
       if (result->_action == delete_act) {
 	set_in_delete_action(FALSE);
