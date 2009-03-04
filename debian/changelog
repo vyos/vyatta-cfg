@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.37) unstable; urgency=low
+
+  * modified environment variable setting for action on nodes.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 04 Mar 2009 09:46:20 -0800
+
 vyatta-cfg (0.14.36) unstable; urgency=low
 
   * fixed -o option on commit. modified empty multinode behavior so
