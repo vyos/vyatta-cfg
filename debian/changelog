@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.36) unstable; urgency=low
+
+  * fixed -o option on commit. modified empty multinode behavior so
+    action is NOT executed if a multinode does not possess a value.
+    Other source cleanup.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 03 Mar 2009 17:07:36 -0800
+
 vyatta-cfg (0.14.35) unstable; urgency=low
 
   * Use vyatta-interfaces to generate allowed list
