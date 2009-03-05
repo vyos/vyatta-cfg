@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.38) unstable; urgency=low
+
+  * limit unescape command to embedded multinodes--fixes problem in qos-
+    walkthrough regression test. haven't tried it but system probably
+    inherently prevents percents from
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 04 Mar 2009 17:17:24 -0800
+
 vyatta-cfg (0.14.37) unstable; urgency=low
 
   * modified environment variable setting for action on nodes.
