@@ -452,7 +452,7 @@ sub show_interfaces {
 		if ($vif_name eq $intf->physicalDevice());
 	} else {
 	    push @match, $name
-		unless $intf->vif();
+		unless $intf->vif() and $type ne 'all';
 	}
     }
     print join(' ', @match), "\n";
