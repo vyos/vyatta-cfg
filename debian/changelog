@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.39) unstable; urgency=low
+
+  * Fix show_interfaces() so that it includes vlans for $type='all'.
+  * Fix is_valid_name() to support any valid interface type (--check
+    all).
+
+ -- Stig Thormodsrud <stig@io.vyatta.com>  Thu, 05 Mar 2009 15:07:07 -0800
+
 vyatta-cfg (0.14.38) unstable; urgency=low
 
   * limit unescape command to embedded multinodes--fixes problem in qos-
