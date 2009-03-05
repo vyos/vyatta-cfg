@@ -1,19 +1,9 @@
 tag:
 type: txt
 help: Set ethernet interface
-syntax:expression: pattern $VAR(@) "^eth[0-9]+$" \
-		   ; "interface must be (eth0 - eth999)"
-syntax:expression: exec " \
-	if [ -f /sys/class/net/$VAR(@) ]; then \
-	echo \"Ethernet interface does not exist: $VAR(@)\"; \
-	exit 1; \
-	fi"
-
+syntax:expression: exec \
+   "/opt/vyatta/sbin/vyatta-interfaces.pl --dev=$VAR(@) --check=ethernet"
+allowed: /opt/vyatta/sbin/vyatta-interfaces.pl --show=ethernet
 update: sudo ip link set "$VAR(@)" up
 	/opt/vyatta/sbin/vyatta-link-detect $VAR(@) on
 delete: sudo ip link set "$VAR(@)" down
-allowed: for dev in /sys/class/net/eth*; 
-         do if [[ -d $dev && -L $dev/device ]]
-	    then echo -n ${dev##*/} " "
-            fi
-         done
