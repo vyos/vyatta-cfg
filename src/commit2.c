@@ -309,10 +309,14 @@ process_func(GNode *node, gpointer data)
 
       //look at parent for multi tag
       if (d->_value && d->_name) {
-	if (g_debug) {
-	  printf("commit2::process_func(): @ value: %s\n",(char*)clind_unescape(d->_name));
+	char *val = d->_name;
+	if (c->_def.tag) { //need to handle the embedded multinode as a special case--should be fixed!
+	  val = (char*)clind_unescape(d->_name);
 	}
-	set_at_string((char*)clind_unescape(d->_name)); //embedded multinode value
+	if (g_debug) {
+	  printf("commit2::process_func(): @ value: %s\n",(char*)val);
+	}
+	set_at_string(val); //embedded multinode value
       }
       else {
 	if (g_debug) {
