@@ -1,3 +1,16 @@
+vyatta-cfg (0.14.40) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * Change tag node to use 'create' instead of 'update' since the cli
+    orders them differently.
+
+  [ slioch ]
+  * fix for qos-walkthrough. manage def file during commit--should
+    handle general case, just happened to show up on qos-walkthrough
+    (after def files were supported in the new
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 09 Mar 2009 12:20:22 -0700
+
 vyatta-cfg (0.14.39) unstable; urgency=low
 
   * Fix show_interfaces() so that it includes vlans for $type='all'.
