@@ -231,6 +231,9 @@ main(int argc, char** argv)
     if (disable_partial_commit == TRUE) {
       complete(orig_node_tree, test_mode);
     }
+    /*
+     * Need to add to the following func below to clean up dangling .wh. files
+     */
     common_commit_clean_temp_config(test_mode);
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
