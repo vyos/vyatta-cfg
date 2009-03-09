@@ -4,6 +4,6 @@ help: Set ethernet interface
 syntax:expression: exec \
    "/opt/vyatta/sbin/vyatta-interfaces.pl --dev=$VAR(@) --check=ethernet"
 allowed: /opt/vyatta/sbin/vyatta-interfaces.pl --show=ethernet
-update: sudo ip link set "$VAR(@)" up
+create: sudo ip link set "$VAR(@)" up
 	/opt/vyatta/sbin/vyatta-link-detect $VAR(@) on
 delete: sudo ip link set "$VAR(@)" down
