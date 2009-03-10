@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <sys/time.h>
 #include <glib-2.0/glib.h>
 #include "common/common.h"
@@ -231,6 +232,9 @@ main(int argc, char** argv)
     if (disable_partial_commit == TRUE) {
       complete(orig_node_tree, test_mode);
     }
+    /*
+     * Need to add to the following func below to clean up dangling .wh. files
+     */
     common_commit_clean_temp_config(test_mode);
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
@@ -363,6 +367,7 @@ process_func(GNode *node, gpointer data)
       }
 
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
 	if (g_display_error_node) {
 	  fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
 	}

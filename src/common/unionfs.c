@@ -524,6 +524,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   }
   char *command = malloc(MAX_LENGTH_DIR_PATH);
   static const char format0[]="mkdir -p %s ; /bin/true";
+  static const char formatpoint5[]="rm -fr %s"; /*tmpp*/
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
 
   static const char format2[]="sudo umount %s"; //mdirp
@@ -564,6 +565,16 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
     return;
   }
 
+  //have to clean out tbuf before copying
+  sprintf(command, formatpoint5, tbuf);
+  if (g_debug) {
+    printf("%s\n",command);
+    fflush(NULL);
+  }
+  if (test_mode == FALSE) {
+    system(command);
+  }
+
   //mkdir temp merge
   sprintf(command,format0,tbuf);
   if (g_debug) {
@@ -573,6 +584,8 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   if (test_mode == FALSE) {
     system(command);
   }
+
+
 
   //cp merge to temp merge
   sprintf(command, format1, mbuf, tbuf);
@@ -622,6 +635,13 @@ common_commit_clean_temp_config(boolean test_mode)
   }
   //first clean up the root
   //  common_commit_copy_to_live_config("/");
+  
+  /*
+   * Need to add to the following func below to clean up dangling .wh. files.
+   * This pass needs to be prior to the commands below (but after the umount).
+   * This fixes a bug when higher priority root nodes are deleted and not removed.
+   */
+  
 
   char *command;
   command = malloc(MAX_LENGTH_DIR_PATH);
@@ -1020,12 +1040,28 @@ copy_func(GNode *node, gpointer data)
   struct SrcDst *sd = (struct SrcDst*)data;
   static const char format[]="mkdir -p %s%s";/*tmpp, adirp*/ 
   static const char format_value[]="cp %s%s{node.val,def} %s%s. 2>/dev/null";/*tmpp, adirp*/ 
+  static const char clear_def[]="rm %s%sdef 2>/dev/null";/*adirp*/ 
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
 
   //might not work for terminating multinodes as the node.val won't be copied
   if (((struct VyattaNode*)(node->data))->_data._value == TRUE &&
       ((struct VyattaNode*)(node->data))->_config._def.tag == FALSE) {
     //THIS IS ONLY FOR NODE.VAL (or leafs, term multis)
+
+    //before copy also need to clear out def file in active directory (will copy over current if found)
+    //this is for the case where it is set by default, then unset at the node--i.e. no longer a default value.
+    if (((struct VyattaNode*)(node->data))->_config._multi == FALSE) { //only for leaf
+      char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
+      sprintf(command,clear_def,sd->_dst,parent_path,sd->_dst,parent_path);
+      if (g_debug) {
+	printf("%s\n",command);
+	fflush(NULL);
+      }
+      if (sd->_test_mode == FALSE) {
+	system(command);
+      }
+    }
+
     char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
     sprintf(command,format_value,sd->_src,parent_path,sd->_dst,parent_path);
     if (g_debug) {
