@@ -104,6 +104,11 @@ reboot ()
   echo "Exit from configure mode before rebooting."
 }
 
+shutdown ()
+{
+  echo "Exit from configure mode before shutting down system."
+}
+
 declare vyatta_cfg_prompt_level=''
 set_config_ps1 ()
 {
