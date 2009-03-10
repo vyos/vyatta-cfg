@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <sys/time.h>
 #include <glib-2.0/glib.h>
 #include "common/common.h"
@@ -366,6 +367,7 @@ process_func(GNode *node, gpointer data)
       }
 
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
 	if (g_display_error_node) {
 	  fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
 	}
