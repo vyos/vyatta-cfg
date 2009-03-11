@@ -242,7 +242,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     char buf[MAX_LENGTH_HELP_STR];
     sprintf(buf,"%s/%s",get_adirp(),rel_data_path);
     struct stat s;
-    if ((lstat(buf,&s) != 0) && S_ISREG(s.st_mode)) {
+    if (lstat(buf,&s) != 0) {
       struct VyattaNode* vn = (struct VyattaNode*)node->data;
       vn->_data._operation = K_CREATE_OP;
     }
@@ -559,12 +559,6 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(abuf_root,"%s",get_adirp());
 
   //only operate on path if it exists
-  struct stat s;
-  if ((lstat(mbuf,&s) != 0) && S_ISREG(s.st_mode)) {
-    printf("common_commit_copy_to_live_config(): failed to find: %s, aborting copy\n",mbuf);
-    return;
-  }
-
   //have to clean out tbuf before copying
   sprintf(command, formatpoint5, tbuf);
   if (g_debug) {
