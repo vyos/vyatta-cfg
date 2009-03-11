@@ -1,3 +1,19 @@
+vyatta-cfg (0.14.41) unstable; urgency=low
+
+  [ slioch ]
+  * added action and location of error to syslog on commit. error
+    message string will need to be added later after some reworking of
+    the old node
+
+  [ Stephen Hemminger ]
+  * Block shutdown in configure mode
+
+  [ slioch ]
+  * buggy file exist test--thanx stig for test case to repro. fixes
+    vpn_smoke regression failure.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 10 Mar 2009 21:31:05 -0700
+
 vyatta-cfg (0.14.40) unstable; urgency=low
 
   [ Stig Thormodsrud ]
