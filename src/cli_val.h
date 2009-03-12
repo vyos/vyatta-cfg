@@ -4,8 +4,12 @@
 #define BITWISE 0 /* no partial commit */
 
 #define boolean int
-#define TRUE 1
+#ifndef FALSE
 #define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE (!FALSE)
+#endif
 
 /* allocation unit for vals in valstruct */
 #define MULTI_ALLOC 5 /* we have room if cnt%MULTI_ALLOC != 0 */

@@ -2,16 +2,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <string.h>
 #include <sys/time.h>
 #include <glib-2.0/glib.h>
 #include "common/common.h"
+#include "cli_path_utils.h"
 
 boolean g_debug = FALSE;
 boolean g_display_error_node = FALSE;
 boolean g_coverage = FALSE;
 boolean g_dump_trans = FALSE;
 
-int ActionOrder[top_act] = {
+const int ActionOrder[top_act] = {
   4,
   5,
   6,
@@ -24,7 +26,7 @@ int ActionOrder[top_act] = {
 
 
 
-char* ActionNames[top_act] = {
+const char* ActionNames[top_act] = {
   "delete",   //0
   "create",   //1
   "activate", //2
@@ -81,7 +83,7 @@ also, the algorithm for collapsing the tree into a transaction list is:
  *
  **/
 void 
-usage()
+usage(void)
 {
   printf("commit2\n");
   printf("\t-d\t\tdebug mode\n");
