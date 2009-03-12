@@ -1,3 +1,16 @@
+vyatta-cfg (0.14.42) unstable; urgency=low
+
+  * Disable creating vlan on disabled interface
+  * fix email in changelog
+  * Block disabling interface with VIF
+  * Fix warnings from redefining TRUE
+  * Fix compiler warnings in commit2
+  * Fix compiler warnings in unionfs
+  * Fix vif delete
+  * Fix argument to show-interfaces to find vif
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 11 Mar 2009 21:35:45 -0700
+
 vyatta-cfg (0.14.41) unstable; urgency=low
 
   [ slioch ]
