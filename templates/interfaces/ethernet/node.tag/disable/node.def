@@ -1,6 +1,6 @@
 help: Set interface disabled
-create: vif=`/opt/vyatta/sbin/vyatta-interfaces.pl --vif=$VAR(../@) --show`
-        if [ ! -z $vif ]; then
+create: vif=`/opt/vyatta/sbin/vyatta-interfaces.pl --vif=$VAR(../@) --show=all`
+        if [ ! -z "$vif" ]; then
           echo "Can not disable interface " $VAR(../@) " with vif:" $vif
           exit 1
         fi
