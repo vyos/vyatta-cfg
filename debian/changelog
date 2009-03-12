@@ -283,7 +283,7 @@ vyatta-cfg (0.14.13) unstable; urgency=low
   * Add new option for checking name validity
   * Remove script for vyatta-cfg-reload
 
- -- Stephen Hemminger <shemminger@debian>  Wed, 11 Feb 2009 21:54:57 -0800
+ -- Stephen Hemminger <shemminger@vyatta.com>  Wed, 11 Feb 2009 21:54:57 -0800
 
 vyatta-cfg (0.14.12) unstable; urgency=low
 
