@@ -43,6 +43,9 @@ copy_func(GNode *node, gpointer data);
 static gboolean
 delete_func(GNode *node, gpointer data);
 
+static void
+piecewise_copy(GNode *root_node, boolean test_mode);
+
 /**
  *
  *
@@ -528,14 +531,6 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
 
   static const char format2[]="sudo umount %s"; //mdirp
-  
-  static const char format4[]="rm -rf %s/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
-
-  //walk up tree until diverge or skip
-  static const char format6[]="cp -rf %s/* -t %s";/*tmpp, adirp*/ 
-
-  static const char format7[]="rm -fr %s >&/dev/null ; /bin/true"; /*tmpp*/
-  
   static const char format8[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
 
   set_echo(TRUE);
@@ -991,7 +986,7 @@ struct SrcDst {
 /**
  *
  **/
-void
+static void
 piecewise_copy(GNode *root_node, boolean test_mode)
 {
   struct SrcDst sd;
@@ -1046,7 +1041,7 @@ copy_func(GNode *node, gpointer data)
     //this is for the case where it is set by default, then unset at the node--i.e. no longer a default value.
     if (((struct VyattaNode*)(node->data))->_config._multi == FALSE) { //only for leaf
       char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
-      sprintf(command,clear_def,sd->_dst,parent_path,sd->_dst,parent_path);
+      sprintf(command,clear_def,sd->_dst,parent_path);
       if (g_debug) {
 	printf("%s\n",command);
 	fflush(NULL);
