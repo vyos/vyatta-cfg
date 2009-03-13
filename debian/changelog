@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.43) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Use create rather than update on multi-node (loopback)
+
+  [ Stig Thormodsrud ]
+  * Tweak some priorities to get vlans created before vrrp.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 12 Mar 2009 17:32:45 -0700
+
 vyatta-cfg (0.14.42) unstable; urgency=low
 
   * Disable creating vlan on disabled interface
