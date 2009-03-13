@@ -6,7 +6,8 @@
 303 protocols/ripng
 310 interfaces/bridge
 315 interfaces/bonding
-320 interfaces/ethernet
+318 interfaces/ethernet
+319 interfaces/ethernet/node.tag/vif
 320 interfaces/loopback
 330 interfaces/adsl
 340 interfaces/serial
@@ -65,6 +66,7 @@
 650 protocols/ripng/route
 650 protocols/ripng/timers
 700 vpn
+800 interfaces/ethernet/node.tag/vrrp
 800 interfaces/ethernet/node.tag/vif/node.tag/vrrp
 900 interfaces
 900 protocols/snmp
