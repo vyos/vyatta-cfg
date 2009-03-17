@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.44) unstable; urgency=low
+
+  * isClusterIP() needs to strip off the /mask/interface/bcast.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 16 Mar 2009 18:10:25 -0700
+
 vyatta-cfg (0.14.43) unstable; urgency=low
 
   [ Stephen Hemminger ]
