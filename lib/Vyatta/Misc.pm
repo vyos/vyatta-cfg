@@ -213,7 +213,7 @@ sub isClusterIP {
     foreach my $cluster_group (@cluster_groups) {
 	my @services = $vc->returnValues("cluster group $cluster_group service");
 	foreach my $service (@services) {
-	    if ($ip eq $service) {
+	    if ($ip eq substr($service,0,index($service,'/'))) {
 		return 1;
 	    }
 	}
