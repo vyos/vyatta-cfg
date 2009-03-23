@@ -1,6 +1,6 @@
-#!/usr/bin/perl
-
-# Module Vyatta::Interface.pm
+# Author: Stephen Hemminger <shemminger@vyatta.com>
+# Date: 2009
+# Description: vyatta interface management
 
 # **** License ****
 # This program is free software; you can redistribute it and/or modify

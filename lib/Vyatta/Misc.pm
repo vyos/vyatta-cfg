@@ -1,5 +1,3 @@
-#!/usr/bin/perl
-
 # Module: VyattaMisc.pm
 #
 # Author: Marat <marat@vyatta.com>

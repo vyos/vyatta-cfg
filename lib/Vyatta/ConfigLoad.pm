@@ -1,5 +1,3 @@
-#!/usr/bin/perl
-
 # Author: An-Cheng Huang <ancheng@vyatta.com>
 # Date: 2007
 # Description: Perl module for loading configuration.
