@@ -12,6 +12,7 @@ boolean g_debug = FALSE;
 boolean g_display_error_node = FALSE;
 boolean g_coverage = FALSE;
 boolean g_dump_trans = FALSE;
+boolean g_dump_actions = FALSE;
 
 const int ActionOrder[top_act] = {
   4,
@@ -88,6 +89,7 @@ usage(void)
   printf("commit2\n");
   printf("\t-d\t\tdebug mode\n");
   printf("\t-s\t\tdump sorted transactions and exit\n");
+  printf("\t-a\t\tdump ordered node actions and exit\n");
   printf("\t-p\t\tdisable priority mode\n");
   printf("\t-t\t\ttest mode (don't apply directory modifications)\n");
   printf("\t-e\t\tprint node where error occurred\n");
@@ -109,7 +111,7 @@ main(int argc, char** argv)
   boolean disable_partial_commit = FALSE;
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthseco")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoa")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -135,6 +137,9 @@ main(int argc, char** argv)
       break;
     case 'o':
       disable_partial_commit = TRUE;
+      break;
+    case 'a':
+      g_dump_actions = TRUE;
       break;
     default:
       usage();
@@ -207,6 +212,10 @@ main(int argc, char** argv)
     //complete() now requires a undisturbed copy of the trans_child_node tree
     GNode *comp_cp_node = g_node_copy(trans_child_node);
 
+    if (g_dump_actions == TRUE) {
+      fprintf(out_stream,"\n"); //add an extra line here
+    }
+
     //on each priority node now execute actions
     if ((success = process_priority_node(trans_child_node)) == TRUE) {
       //this below copies the node directory from the local to active location
@@ -215,10 +224,14 @@ main(int argc, char** argv)
 	//no op, need better way to define true root
       }
       else {
-	if (disable_partial_commit == FALSE) {
+	if (disable_partial_commit == FALSE && g_dump_actions == FALSE) {
 	  complete(comp_cp_node, test_mode);
 	}
       }
+    }
+
+    if (g_dump_actions == FALSE) {
+      success = TRUE; //FORCE SUCCESS ON DISPLAY MODE OF ACTIONS
     }
 
     if (success == FALSE) {
@@ -231,13 +244,15 @@ main(int argc, char** argv)
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
 
   if (no_errors == TRUE) {
-    if (disable_partial_commit == TRUE) {
+    if (disable_partial_commit == TRUE && g_dump_actions == FALSE) {
       complete(orig_node_tree, test_mode);
     }
     /*
      * Need to add to the following func below to clean up dangling .wh. files
      */
-    common_commit_clean_temp_config(test_mode);
+    if (g_dump_actions == FALSE) {
+      common_commit_clean_temp_config(test_mode);
+    }
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
     }
@@ -356,7 +371,19 @@ process_func(GNode *node, gpointer data)
 	setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
       }
 
-      status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+      if (g_dump_actions == FALSE) {
+	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+      }
+      else {
+	if (c->_def.actions[syntax_act].vtw_list_head &&
+	    c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
+	  fprintf(out_stream,"commit\t:\t%s\n",d->_path);
+	}
+	else {
+	  fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
+	}
+	status = 1;
+      }
       if (result->_action == delete_act) {
 	set_in_delete_action(FALSE);
       }
