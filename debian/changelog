@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.47) unstable; urgency=low
+
+  * Cleanup description string
+  * Move interface metric configuration until after protocols
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 23 Mar 2009 16:23:45 -0700
+
 vyatta-cfg (0.14.46) unstable; urgency=low
 
   [ Stephen Hemminger ]
