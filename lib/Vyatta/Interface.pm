@@ -260,6 +260,8 @@ sub description {
 	or return;
     my $description = <$ifalias>;
     close $ifalias;
+    chomp $description if $description;
+
     return $description;
 }
 
