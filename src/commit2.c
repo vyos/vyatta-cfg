@@ -230,7 +230,7 @@ main(int argc, char** argv)
       }
     }
 
-    if (g_dump_actions == FALSE) {
+    if (g_dump_actions == TRUE) {
       success = TRUE; //FORCE SUCCESS ON DISPLAY MODE OF ACTIONS
     }
 
