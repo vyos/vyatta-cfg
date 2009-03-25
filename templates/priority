@@ -1,58 +1,89 @@
-#
-# This file controls the processing of the Vyatta config file when it
-# is processed by the "load" command and at boot time.  This file has
-# two purposes.  First, it breaks the statements in the Vyatta config
-# file into groups that are applied in distinct transactions.  Second,
-# it defines the order in which these transactions are applied.
-#
-# Breaking the config file into multiple transactions is important
-# because transactions have all-or-nothing semantics.  If the file
-# were processed in a single transaction, a failure of any service would
-# mean that no services would be configured.  Processing the config
-# file in multiple transactions means that failures in one area do not
-# necessary prevent a service in another area from being configured.
-#
+# 
+# Vyatta Configuration Priority File.
+# 
+# This file controls the processing of the statements in the Vyatta
+# config file when it is first read during system startup, or during
+# system operation when it is read with the "load" command.  It also
+# applies when configuration changes are entered by users in config
+# mode.
+# 
+# It primarily affects the way in which actions are preformed at the
+# time the "commit" command is issued.  These actions are encoded into
+# the config templates, and consist of code executed at the "update:",
+# "delete:", "create", "begin:", and "end:" tags.
+# 
+# The priority file provides a few imporant benefits.  First, it breaks
+# the configuration statements to be committed into groups whose "commit
+# actions" are applied together in a "transaction".
+# Second, it defines the order in which these transactions are
+# performed.
+# 
+# Breaking the config statements into multiple transactions is important
+# because transactions have all-or-nothing semantics.  If all the
+# statements to be committed were processed in a single transaction, a
+# failure of any service would mean that no services would be
+# configured.  Processing the statements in multiple transactions means
+# that failures in one area do not necessary prevent a service in
+# another area from being configured.  Note that this means that the
+# "commit" command executes multiple "transactions" despite what might
+# be implied by the command's name.
+# 
 # Ordering the transactions is important because some services are
 # dependent on other services being configured before they are.
-#
-# The format of this file is as a sequence of one-line entries that
-# have the following format:
-#
-#    <priority> <config-sub-tree>
-#
+# 
+# The format of this file is as a sequence of one-line entries that have
+# the following format:
+# 
+#   <priority> <config-sub-tree> 
+# 
 # The <priority> field is number in the range 0 - 1000, and is used to
-# order the processing of of the config file.
-#
-# The <config-sub-tree> field is the path to a sub-tree of the
-# configuration tree.
-#
-# The "load" command first sorts the entries in increasing order by
-# their <priority> field.  We usually try to maintain this file in
-# sorted in increasing <priority> order so that we can redily see what
-# order the entries will be processed in.  Next, the "load" command
+# order the processing of of the config statements.  The
+# <config-sub-tree> field is the path to a sub-tree of the configuration
+# tree.
+# 
+# When the Vyatta config file is processed at system startup, or when a
+# new config file is loaded via the "load" command, the system first
+# applies each entry in the file to the proposed configuration tree via
+# a "set" command.  After all parameters have been set, it issues the
+# "commit" command.
+# 
+# The "commit" command reads this priority file and sorts the entries in
+# increasing order by their <priority> field.  We usually try to
+# maintain this file sorted in increasing <priority> order so that we
+# can redily see the order in which entries will be processed.  Next, it
 # processes each entry, starting from the lowest priority entry, and
-# proceeding in increasing prioriy order.  For each entry, it checks
-# to see if the <config-sub-tree> exists in the config file.  If it
-# does, it takes the config statements under that sub-tree and removes
-# any statements that match a deeper sub-tree that was processed
-# earlier or will be processed later.  If any statements remain, they
-# are applied using "set" commands.  Then the entire group is
-# committed as a transaction using the "commit" command.  After
-# processing this entire file, if any un-applied configuration
+# proceeding in increasing prioriy order.  For each entry, it checks to
+# see if the <config-sub-tree> exists in the tree of parameters to be
+# committed.  If it does, it takes the config statements under that
+# sub-tree and removes any statements that match a deeper sub-tree that
+# was processed earlier or will be processed later.  If any statements
+# remain, then those statements are processed together as a group in a
+# "transaction".
+# 
+# To perform the transaction, the "commit" command then iterates through
+# the statements in the group, performing the commit actions associated
+# with each one.  If any of the commit actions fail, then the
+# transaction involving this group is viewed as having failed.  No
+# further commit actions are performed on the remaining statements in
+# the group, and the parameters that make up the group are NOT added to
+# the running configuration.  If no commit actions fail, then the
+# transaction is viewed as having succeeded.
+# 
+# After the "commit" command completes processing one group, it iterates
+# to the next entry in the sorted priority file and repeats the process.
+# If, after processing the entire priority file, any configuration
 # statements remain, they are applied in one final transaction.
-#
-# This process has a few important consequences.  First, every
-# statement in the config file is applied exactly once.
-#
-# Second, each line in this file generates at most one transaction.
-#
-# Third, a config file statement may be applied in a transaction
-# before one of its parent nodes is applied.  Its parent may be a
-# multi-node parameter.  An example of this is if the routing protocol
-# parameters of an interface are applied before the interface itself
-# is applied.  In this case, the parent nodes are created in the
+# 
+# This process has a few important consequences.  First, the commit
+# action for every statement in the proposed config tree is applied
+# exactly once.  Second, each line in this file generates at most one
+# transaction.  Third, a config statement may be applied in a
+# transaction before one of its parent nodes is applied.  Its parent may
+# be a multi-node parameter.  An example of this is if the routing
+# protocol parameters of an interface are applied before the interface
+# itself is applied.  In this case, the parent nodes are created in the
 # "active config" tree at the time the lower-level node is commited.
-#
+# 
 
 200 firewall/group
 210 firewall
