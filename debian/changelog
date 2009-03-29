@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.51) unstable; urgency=low
+
+  * Add all the new ip/ipv6 ospf/rip parameters
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Sat, 28 Mar 2009 17:45:13 -0700
+
 vyatta-cfg (0.14.50) unstable; urgency=low
 
   [ Bob Gilligan ]
