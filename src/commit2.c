@@ -365,11 +365,15 @@ process_func(GNode *node, gpointer data)
       if (result->_action == delete_act) {
 	set_in_delete_action(TRUE);
       }
-      if (IS_DELETE(d->_operation)) {
-	setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
-      }
-      else {
-	setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
+
+      //do not set for promoted actions
+      if (!IS_ACTIVE(d->_operation)) {
+	if (IS_DELETE(d->_operation)) {
+	    setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
+	}
+	else {
+	  setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
+	}
       }
 
       if (g_dump_actions == FALSE) {
@@ -388,7 +392,9 @@ process_func(GNode *node, gpointer data)
       if (result->_action == delete_act) {
 	set_in_delete_action(FALSE);
       }
-      unsetenv(ENV_ACTION_NAME);
+      if (!IS_ACTIVE(d->_operation)) {
+	unsetenv(ENV_ACTION_NAME);
+      }
 
       if (g_coverage) {
 	struct timeval t;
@@ -669,7 +675,10 @@ dump_func(GNode *node, gpointer data)
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
       int i;
 
-      if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
+      if (IS_ACTIVE(((struct VyattaNode*)gp)->_data._operation)) {
+	fprintf(out,"*");
+      }
+      else if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
 	fprintf(out,"-");
       }
       else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
