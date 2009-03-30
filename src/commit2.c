@@ -269,7 +269,8 @@ main(int argc, char** argv)
   if (g_debug) {
     printf("DONE\n");
   }
-  exit(0);
+  
+  exit (no_errors == FALSE);
 }
 
 /**
