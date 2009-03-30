@@ -170,7 +170,6 @@
 810 interfaces/serial/node.tag/ppp/vif/node.tag/ip
 810 interfaces/serial/node.tag/cisco-hdlc/vif
 810 interfaces/serial/node.tag/cisco-hdlc/vif/node.tag/ip
-810 interfaces/ethernet/node.tag/vif
 810 interfaces/ethernet/node.tag/vif/node.tag/ip
 810 interfaces/ethernet/node.tag/vif/node.tag/pppoe/node.tag/ip
 810 interfaces/ethernet/node.tag/ip
@@ -195,7 +194,6 @@
 820 interfaces/serial/node.tag/ppp/vif/node.tag/ipv6
 820 interfaces/serial/node.tag/cisco-hdlc/vif
 820 interfaces/serial/node.tag/cisco-hdlc/vif/node.tag/ipv6
-820 interfaces/ethernet/node.tag/vif
 820 interfaces/ethernet/node.tag/vif/node.tag/ipv6
 820 interfaces/ethernet/node.tag/vif/node.tag/pppoe/node.tag/ipv6
 820 interfaces/ethernet/node.tag/ipv6
