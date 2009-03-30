@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.52) unstable; urgency=low
+
+  [ slioch ]
+  * propagate commit failure error to commit return status.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 30 Mar 2009 11:24:36 -0700
+
 vyatta-cfg (0.14.51) unstable; urgency=low
 
   * Add all the new ip/ipv6 ospf/rip parameters
