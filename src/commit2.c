@@ -375,6 +375,9 @@ process_func(GNode *node, gpointer data)
 	  setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
 	}
       }
+      else {
+	  setenv(ENV_ACTION_NAME,ENV_ACTION_NOOP,1);
+      }
 
       if (g_dump_actions == FALSE) {
 	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
@@ -392,9 +395,8 @@ process_func(GNode *node, gpointer data)
       if (result->_action == delete_act) {
 	set_in_delete_action(FALSE);
       }
-      if (!IS_ACTIVE(d->_operation)) {
-	unsetenv(ENV_ACTION_NAME);
-      }
+
+      unsetenv(ENV_ACTION_NAME);
 
       if (g_coverage) {
 	struct timeval t;

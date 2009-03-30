@@ -14,7 +14,7 @@
 #define ENV_ACTION_NAME "COMMIT_ACTION"
 #define ENV_ACTION_DELETE "DELETE"
 #define ENV_ACTION_SET "SET"
-
+#define ENV_ACTION_NOOP "NOOP"
 
 struct Result
 {
