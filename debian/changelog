@@ -1,3 +1,16 @@
+vyatta-cfg (0.14.54) unstable; urgency=low
+
+  [ slioch ]
+  * added noop state to commit_action env variable to make scripts
+    happy.
+  * change noop to active for env variable--this is more consistent with
+    the action being applied.
+
+  [ An-Cheng Huang ]
+  * make bridge address a different rank to match new priority scheme.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 31 Mar 2009 14:57:12 -0700
+
 vyatta-cfg (0.14.53) unstable; urgency=low
 
   [ slioch ]
