@@ -39,8 +39,8 @@ my %config_rank  = (
     'protocols ospf'            => 1055,
     'protocols rip'             => 1050,
     'interfaces'                => 1000,
+    'interfaces bonding'        => 995,
     'interfaces bridge'         => 990,
-    'interfaces bonding'	=> 995,
     'interfaces ethernet'       => 980,
     'interfaces tunnel'         => 910,
     'system gateway-address'    => 890,
@@ -62,6 +62,7 @@ my %regex_rank = (
     'protocols bgp \d+ parameters'                  => 810,
     'protocols bgp \d+ neighbor \d+\.\d+\.\d+\.\d+' => 800,
     'protocols bgp \d+ neighbor \w+'                => 801,
+    'interfaces bridge \S* address'                 => 920,
 );
 
 my @all_nodes = ();
