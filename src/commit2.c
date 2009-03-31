@@ -376,7 +376,7 @@ process_func(GNode *node, gpointer data)
 	}
       }
       else {
-	  setenv(ENV_ACTION_NAME,ENV_ACTION_NOOP,1);
+	  setenv(ENV_ACTION_NAME,ENV_ACTION_ACTIVE,1);
       }
 
       if (g_dump_actions == FALSE) {
