@@ -37,6 +37,7 @@ my %config_rank  = (
     'system host-name'          => 1070,
     'protocols ospf parameters' => 1060,
     'protocols ospf'            => 1055,
+    'protocols rip interface'   => 905,
     'protocols rip'             => 1050,
     'interfaces'                => 1000,
     'interfaces bonding'        => 995,
