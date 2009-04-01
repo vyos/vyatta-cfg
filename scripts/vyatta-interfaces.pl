@@ -46,10 +46,11 @@ use warnings;
 my $dhcp_daemon = '/sbin/dhclient';
 
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
-my ($check_name, $show_names, $intf_cli_path, $vif_name);
+my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name);
 
 sub usage() {
     print "Usage: $0 --dev=<interface> --check=<type>\n";
+    print "       $0 --dev=<interface> --warn\n";
     print "       $0 --dev=<interface> --valid-mac=<aa:aa:aa:aa:aa:aa>\n";
     print "       $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>\n";
     print "       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>\n";
@@ -68,6 +69,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "check=s"	       => \$check_name,
 	   "show=s"	       => \$show_names,
 	   "vif=s"	       => \$vif_name,
+	   "warn",	       => \$warn_name,
 ) or usage();
 
 if ($eth_update)       { update_eth_addrs($eth_update, $dev); }
@@ -77,6 +79,7 @@ if ($mac)	       { is_valid_mac($mac, $dev); }
 if ($mac_update)       { update_mac($mac_update, $dev); }
 if ($op_dhclient)      { op_dhcp_command($op_dhclient, $dev); }
 if ($check_name)       { is_valid_name($check_name, $dev); }
+if ($warn_name)        { exists_name($dev); }
 if ($show_names)       { show_interfaces($show_names); }
 
 sub is_ip_configured {
@@ -446,6 +449,15 @@ sub is_valid_name {
     die "$name is a ", $intf->type(), " interface not an $type interface\n"
 	if ($type ne 'all' and $intf->type() ne $type);
     die "$type interface $name does not exist on system\n"
+	unless grep { $name eq $_ } getInterfaces();
+    exit 0;
+}
+
+sub exists_name {
+    my $name = shift;
+    die "Missing --dev argument\n" unless $name;
+
+    warn "interface $name does not exist on system\n"
 	unless grep { $name eq $_ } getInterfaces();
     exit 0;
 }
