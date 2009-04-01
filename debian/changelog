@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.55) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * Change rank value such that tunnels get created before "protocols
+    rip interface".
+
+  [ Stephen Hemminger ]
+  * Add --warn option for vyatta-interfaces
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 01 Apr 2009 12:25:44 -0700
+
 vyatta-cfg (0.14.54) unstable; urgency=low
 
   [ slioch ]
