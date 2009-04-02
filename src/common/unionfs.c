@@ -43,6 +43,9 @@ copy_func(GNode *node, gpointer data);
 static gboolean
 delete_func(GNode *node, gpointer data);
 
+static gboolean
+delete_wh_func(GNode *node, gpointer data);
+
 static void
 piecewise_copy(GNode *root_node, boolean test_mode);
 
@@ -613,11 +616,19 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   return;
 }  
 
+
+//needed for iteration below
+struct SrcDst {
+  char *_src;
+  char *_dst;
+  boolean _test_mode;
+};
+
 /**
  *
  **/
 void
-common_commit_clean_temp_config(boolean test_mode)
+common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
 {
   if (g_debug) {
     printf("common_commit_clean_temp_config()\n");
@@ -625,13 +636,6 @@ common_commit_clean_temp_config(boolean test_mode)
   //first clean up the root
   //  common_commit_copy_to_live_config("/");
   
-  /*
-   * Need to add to the following func below to clean up dangling .wh. files.
-   * This pass needs to be prior to the commands below (but after the umount).
-   * This fixes a bug when higher priority root nodes are deleted and not removed.
-   */
-  
-
   char *command;
   command = malloc(MAX_LENGTH_DIR_PATH);
   static const char format2[]="sudo umount %s"; //mdirp
@@ -661,6 +665,27 @@ common_commit_clean_temp_config(boolean test_mode)
     system(command);
   }
 
+  /*
+   * Need to add to the following func below to clean up dangling .wh. files.
+   * This pass needs to be prior to the commands below (but after the umount).
+   * This fixes a bug when higher priority root nodes are deleted and not removed.
+   */
+  
+  //Iterate through node hierarchy and remove deleted nodes from active config--insurance
+  //to protect against priority whiteouts in parent/child order
+  //TOP DOWN
+  if (root_node != NULL) {
+    struct SrcDst sd;
+    sd._test_mode = test_mode;
+    
+    g_node_traverse(root_node,
+		    G_PRE_ORDER,
+		    G_TRAVERSE_ALL,
+		    -1,
+		    (GNodeTraverseFunc)delete_wh_func,
+		    (gpointer)&sd);
+  }
+  
   sprintf(command, format3, tbuf);
   if (g_debug) {
     printf("%s\n",command);
@@ -976,13 +1001,6 @@ insert_sibling_in_order(GNode *parent, GNode *child)
   return new_node;
 }
 
-//needed for iteration below
-struct SrcDst {
-  char *_src;
-  char *_dst;
-  boolean _test_mode;
-};
-
 /**
  *
  **/
@@ -1088,9 +1106,10 @@ delete_func(GNode *node, gpointer data)
     return FALSE;
   }
 
+  struct SrcDst *sd = (struct SrcDst*)data;
+
   char *command = malloc(MAX_LENGTH_DIR_PATH);
 
-  struct SrcDst *sd = (struct SrcDst*)data;
   //DONT HAVE THE COMMAND BELOW BLOW AWAY WHITEOUT FILES!!!!!
   static const char format[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
   static const char format_force_delete[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
@@ -1153,3 +1172,64 @@ delete_func(GNode *node, gpointer data)
 
   return FALSE;
 }
+
+
+/**
+ *
+ *
+ **/
+static gboolean
+delete_wh_func(GNode *node, gpointer data)
+{
+  if (node == NULL) {
+    return FALSE;
+  }
+
+  char abuf[MAX_LENGTH_DIR_PATH];
+  static const char format0[]="rm -fr %s >&/dev/null ; /bin/true";
+  struct SrcDst *sd = (struct SrcDst*)data;
+
+  GNode *parent_node = node->parent;
+  
+  //on node where operation is delete and parent is noop or active then remove directory from active config
+  //if this is a deletion operation, need to remove
+  if (parent_node != NULL) {
+    if (IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation) && 
+	!IS_ACTIVE(((struct VyattaNode*)(node->data))->_data._operation) && 
+	!IS_DELETE(((struct VyattaNode*)(parent_node->data))->_data._operation)) {
+
+      char *path = ((struct VyattaNode*)(node->data))->_data._path;
+      sprintf(abuf,"%s%s",get_adirp(),path);
+      //mkdir temp merge
+      char command[MAX_LENGTH_DIR_PATH];
+      sprintf(command,format0,abuf);
+      if (g_debug) {
+	printf("%s\n",command);
+	fflush(NULL);
+      }
+      if (sd->_test_mode == FALSE) {
+	system(command);
+      }
+
+    }
+  }
+  else {
+    if (IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation) &&
+	!IS_ACTIVE(((struct VyattaNode*)(node->data))->_data._operation)) {
+      char *path = ((struct VyattaNode*)(node->data))->_data._path;
+      sprintf(abuf,"%s%s",get_adirp(),path);
+      //mkdir temp merge
+      char command[MAX_LENGTH_DIR_PATH];
+      sprintf(command,format0,abuf);
+      if (g_debug) {
+	printf("%s\n",command);
+	fflush(NULL);
+      }
+      if (sd->_test_mode == FALSE) {
+	system(command);
+      }
+    }
+  }
+  return FALSE;
+}
+

@@ -156,15 +156,12 @@ main(int argc, char** argv)
   //get local session data plus configuration data
   GNode *config_data = common_get_local_session_data();
   if (g_node_n_children(config_data) == 0) {
-    common_commit_clean_temp_config(test_mode);
+    common_commit_clean_temp_config(NULL, test_mode);
     fprintf(out_stream, "No configuration changes to commit\n");
     return 0;
   }
   
-  GNode *orig_node_tree = NULL;
-  if (disable_partial_commit == TRUE) {
-    orig_node_tree = g_node_copy(config_data);
-  }
+  GNode *orig_node_tree = g_node_copy(config_data);
 
   // Get collection of transactions, i.e. trans nodes that have been activated. 
   GNode *trans_coll = get_transactions(config_data, priority_mode);
@@ -251,7 +248,7 @@ main(int argc, char** argv)
      * Need to add to the following func below to clean up dangling .wh. files
      */
     if (g_dump_actions == FALSE) {
-      common_commit_clean_temp_config(test_mode);
+      common_commit_clean_temp_config(orig_node_tree, test_mode);
     }
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
