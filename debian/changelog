@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.59) unstable; urgency=low
+
+  * Fix cut/paste syntax of priority which is different than rank.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 03 Apr 2009 17:21:32 -0700
+
 vyatta-cfg (0.14.58) unstable; urgency=low
 
   * UNRELEASED
