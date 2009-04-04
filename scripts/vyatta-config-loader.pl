@@ -73,7 +73,7 @@ foreach (@all_nodes) {
   my ($path_ref, $rank) = @$_;
   if ($rank != $cur_rank) {
     # commit all nodes with the same rank together.
-    $ret = system("$commit_cmd");
+    $ret = 0; #system("$commit_cmd");
     if ($ret >> 8) {
       print OLDOUT "Commit failed at rank $cur_rank\n";
       print WARN "Commit failed at rank $cur_rank\n";
