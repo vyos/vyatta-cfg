@@ -25,6 +25,9 @@ else
   export UNIONFS=unionfs
 fi
 
+# permissions
+## note: this script should be running as the vyattacfg group, e.g., with "sg".
+## otherwise there may be permission problems with the files created.
 UMASK_SAVE=`umask`
 umask 0002
 
@@ -71,6 +74,10 @@ case "$1" in
     ;;
   commit)
     /opt/vyatta/sbin/my_commit
+    RET_STATUS=$?
+    ;;
+  save)
+    /opt/vyatta/sbin/vyatta-save-config.pl "${@:2}"
     RET_STATUS=$?
     ;;
   *)
