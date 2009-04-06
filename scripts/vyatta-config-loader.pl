@@ -65,6 +65,9 @@ if ($? >> 8) {
   exit 1;
 }
 
+#cmd below is added to debug last set of command ordering
+my $commit_cmd_debug_noop = "$CWRAPPER commit -a > /tmp/bar";
+my $commit_cmd_debug = "$CWRAPPER commit -d";
 my $commit_cmd = "$CWRAPPER commit";
 my $cleanup_cmd = "$CWRAPPER cleanup";
 my $ret = 0;
@@ -91,7 +94,8 @@ foreach (@all_nodes) {
     # continue after set failure (or should we abort?)
   }
 }
-$ret = system("$commit_cmd");
+system("$commit_cmd_debug_noop");
+$ret = system("$commit_cmd_debug");
 if ($ret >> 8) {
   print OLDOUT "Commit failed at rank $cur_rank\n";
   print WARN "Commit failed at rank $cur_rank\n";
