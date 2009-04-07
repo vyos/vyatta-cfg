@@ -791,13 +791,13 @@ process_priority_node(GNode *priority_node)
 		    -1,
 		    (GNodeTraverseFunc)process_func,
 		    (gpointer)&result);
-  }
 
-  if (result._err_code != 0) {
-    if (g_debug) {
-      printf("commit2::process_priority_node(): failure on processing pass: %d\n", i);
+    if (result._err_code != 0) {
+      if (g_debug) {
+	printf("commit2::process_priority_node(): failure on processing pass: %d\n", i);
+      }
+      return FALSE;
     }
-    return FALSE;
   }
   return TRUE;
 }
@@ -847,13 +847,13 @@ enclosing_process_func(GNode *node, gpointer data)
 		      -1,
 		      (GNodeTraverseFunc)process_func,
 		      (gpointer)result);
-    }
     
-    if (result->_err_code != 0) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-      if (g_debug) {
-	printf("commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
+      if (result->_err_code != 0) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+	if (g_debug) {
+	  printf("commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
+	}
+	return TRUE; //WILL STOP AT THIS POINT
       }
-      return TRUE; //WILL STOP AT THIS POINT
     }
   }
   return FALSE;
