@@ -151,6 +151,7 @@ main(int argc, char** argv)
   init_paths(TRUE);
   if (g_debug) {
     printf("commit2: starting up\n");
+    syslog(LOG_DEBUG,"commit2: starting up");
   }
 
   //get local session data plus configuration data
@@ -173,6 +174,7 @@ main(int argc, char** argv)
   if (g_debug == TRUE || g_dump_trans == TRUE) {
     if (g_dump_trans == TRUE) {
       fprintf(out_stream,"Dumping transactions\n");
+      syslog(LOG_DEBUG,"Dumping transactions");
     }
     //iterate over config_data and dump...
     g_node_traverse(trans_coll,
@@ -200,9 +202,11 @@ main(int argc, char** argv)
     if (g_debug == TRUE) {
       if (trans_child_node != NULL && trans_child_node->data != NULL && ((struct VyattaNode*)(trans_child_node->data))->_data._name != NULL) {
 	printf("commit2: Starting new transaction processing pass on root: %s\n", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
+	syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root: %s", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
       }
       else {
 	printf("commit2: Starting new transaction processing pass on root:\n");
+	syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root:");
       }
     }
 
@@ -235,6 +239,7 @@ main(int argc, char** argv)
       no_errors = FALSE;
       if (g_debug == TRUE) {
 	printf("commit2: Failed in processing node\n");
+	syslog(LOG_DEBUG,"commit2: Failed in processing node\n");
       }
     }
     ++i;
@@ -252,6 +257,7 @@ main(int argc, char** argv)
     }
     if (g_debug == TRUE) {
       printf("commit2: successful commit, now cleaning up temp directories\n");
+      syslog(LOG_DEBUG,"commit2: successful commit, now cleaning up temp directories");
     }
   }
   else {
@@ -265,6 +271,7 @@ main(int argc, char** argv)
 
   if (g_debug) {
     printf("DONE\n");
+    syslog(LOG_DEBUG,"DONE");
   }
   
   exit (no_errors == FALSE);
@@ -293,9 +300,11 @@ process_func(GNode *node, gpointer data)
     if (g_debug) {
       if (d->_name != NULL) {
 	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s\n",d->_name,result->_action,c->_def.def_type, d->_operation, d->_path);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s",d->_name,result->_action,c->_def.def_type, d->_operation, d->_path);
       }
       else {
 	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s\n",result->_action, d->_operation, d->_path);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s",result->_action, d->_operation, d->_path);
       }
     }
 
@@ -334,22 +343,27 @@ process_func(GNode *node, gpointer data)
 	}
 	if (g_debug) {
 	  printf("commit2::process_func(): @ value: %s\n",(char*)val);
+	  syslog(LOG_DEBUG,"commit2::process_func(): @ value: %s",(char*)val);
 	}
 	set_at_string(val); //embedded multinode value
       }
       else {
 	if (g_debug) {
 	  printf("commit2::process_func(): boolean value is: %d\n",d->_value);
+	  syslog(LOG_DEBUG,"commit2::process_func(): boolean value is: %d",d->_value);
 	  if (node->parent != NULL && ((struct VyattaNode*)(node->parent->data))->_data._name != NULL) {
 	    printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+	    syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
 	  }
 	  printf("commit2::process_func(): @ value: [NULL]\n");
+	  syslog(LOG_DEBUG,"commit2::process_func(): @ value: [NULL]\n");
 	}
       }
       
       common_set_context(c->_path,d->_path);
       if (g_debug) {
 	printf("Executing %s on this node\n", ActionNames[result->_action]);
+	syslog(LOG_DEBUG,"Executing %s on this node\n", ActionNames[result->_action]);
       }
 
       if (g_coverage) {
@@ -409,6 +423,7 @@ process_func(GNode *node, gpointer data)
 	result->_err_code = 1;
 	if (g_debug) {
 	  printf("commit2::process_func(): FAILURE: status: %d\n",status);
+	  syslog(LOG_DEBUG,"commit2::process_func(): FAILURE: status: %d",status);
 	}
 	return TRUE; //WILL STOP AT THIS POINT
       }
@@ -428,9 +443,11 @@ complete(GNode *node, boolean test_mode)
   if (g_debug) {
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
       printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+      syslog(LOG_DEBUG,"commit2::complete():name: %s, path: %s",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
     }
     else {
       printf("commit2::complete()\n");
+      syslog(LOG_DEBUG,"commit2::complete()");
     }
   }
   //on transactional nodes only, note to avoid calling this if a headless root
@@ -473,9 +490,11 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   if (g_debug) {
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
       printf("commit2::sort_func(): %s, node count: %d\n",((struct VyattaNode*)gp)->_data._name,g_node_n_children(root_node));
+      syslog(LOG_DEBUG,"commit2::sort_func(): %s, node count: %d",((struct VyattaNode*)gp)->_data._name,g_node_n_children(root_node));
     }
     else {
       printf("commit2::sort_func(): [n/a], node count: %d\n",g_node_n_children(root_node));
+      syslog(LOG_DEBUG,"commit2::sort_func(): [n/a], node count: %d",g_node_n_children(root_node));
     }
   }
 
@@ -541,6 +560,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
 	  pri = ((struct VyattaNode*)(sibling->data))->_priority;
 	}
 	printf("commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_priority, pri);
+	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_priority, pri);
       }
       g_node_insert_before(root_node,sibling,new_node);
     }
@@ -549,6 +569,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
     if (g_node_depth(node) == 2) {
       if (g_debug) {
 	printf("commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
+	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
       }
       GNode *new_node = g_node_copy(node);
       g_node_insert(root_node,-1,new_node); //make a flat structure for now
@@ -568,6 +589,7 @@ get_transactions(GNode *config, boolean priority_mode)
 {
   if (g_debug) {
     printf("commit2::get_transactions()\n");
+    syslog(LOG_DEBUG,"commit2::get_transactions()\n");
   }
 
   if (config == NULL) {
@@ -795,6 +817,7 @@ process_priority_node(GNode *priority_node)
     if (result._err_code != 0) {
       if (g_debug) {
 	printf("commit2::process_priority_node(): failure on processing pass: %d\n", i);
+	syslog(LOG_DEBUG,"commit2::process_priority_node(): failure on processing pass: %d\n", i);
       }
       return FALSE;
     }
@@ -827,6 +850,7 @@ enclosing_process_func(GNode *node, gpointer data)
 
     if (g_debug) {
       printf("commit2::enclosing_process_func(): enclosing statement found on: %s\n",d->_path);
+      syslog(LOG_DEBUG,"commit2::enclosing_process_func(): enclosing statement found on: %s\n",d->_path);
     }
     //perform recursive calling on new process node...
 
@@ -851,6 +875,7 @@ enclosing_process_func(GNode *node, gpointer data)
       if (result->_err_code != 0) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
 	if (g_debug) {
 	  printf("commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
+	  syslog(LOG_DEBUG,"commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
 	}
 	return TRUE; //WILL STOP AT THIS POINT
       }

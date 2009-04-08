@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <glib-2.0/glib.h>
 #include "common/defs.h"
@@ -90,6 +91,7 @@ get_config_path(GNode *node)
     if (d == NULL) {
       if (g_debug) {
 	printf("unionfs::get_config_path(): data ptr is null\n");
+	syslog(LOG_DEBUG,"unionfs::get_config_path(): data ptr is null");
       }
       return NULL;
     }
@@ -146,6 +148,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 
   if (g_debug) {
     printf("unionfs::retrieve_data(): %s\n", full_data_path);
+    syslog(LOG_DEBUG,"unionfs::retrieve_data(): %s\n", full_data_path);
   }
 
 
@@ -188,6 +191,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     struct stat s;
     if (g_debug) {
       printf("unionfs::retrieve_data(): config path: %s\n",buf);
+      syslog(LOG_DEBUG,"unionfs::retrieve_data(): config path: %s\n",buf);
     }
 
     struct VyattaNode* vn = (struct VyattaNode*)node->data;
@@ -197,6 +201,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
       if (parse_def(&def, buf, FALSE) == 0) {
 	if (g_debug) {
 	  printf("[FOUND node.def]");
+	  syslog(LOG_DEBUG,"[FOUND node.def]");
 	}
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
@@ -261,6 +266,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     if (g_debug) {
       //could also be a terminating value now
       printf("unionfs::retrieve_data(), failed to open directory: %s\n", full_data_path);
+      syslog(LOG_DEBUG,"unionfs::retrieve_data(), failed to open directory: %s\n", full_data_path);
     }
     return;
   }
@@ -393,6 +399,7 @@ common_set_parent_context(char *cpath, char *dpath)
 {
   if (g_debug) {
     printf("common_set_parent_context(incoming): %s, %s\n",cpath,dpath);
+    syslog(LOG_DEBUG,"common_set_parent_context(incoming): %s, %s\n",cpath,dpath);
   }
   //strip off last path and set
   int index = strlen(cpath)-1;
@@ -426,6 +433,7 @@ common_set_parent_context(char *cpath, char *dpath)
   set_path(dpath,FALSE);
   if (g_debug) {
     printf("common_set_parent_context: %s, %s\n",cpath,dpath);
+    syslog(LOG_DEBUG,"common_set_parent_context: %s, %s\n",cpath,dpath);
   }
 }
 
@@ -437,6 +445,7 @@ common_set_context(char *cpath, char *dpath)
 {
   if (g_debug) {
     printf("common_set_context: %s, %s\n",cpath,dpath);
+    syslog(LOG_DEBUG,"common_set_context: %s, %s\n",cpath,dpath);
   }
   set_path(cpath,TRUE);
   set_path(dpath,FALSE);
@@ -463,6 +472,7 @@ set_path(char *path, boolean config)
   if (path == NULL) {
     if (g_debug) {
       printf("unionfs::set_path() null value on entry\n");
+      syslog(LOG_DEBUG,"unionfs::set_path() null value on entry\n");
     }
     return;
   }
@@ -527,6 +537,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
 
   if (g_debug) {
     printf("common_commit_copy_to_live_config(): %s\n",path);
+    syslog(LOG_DEBUG,"common_commit_copy_to_live_config(): %s\n",path);
   }
   char *command = malloc(MAX_LENGTH_DIR_PATH);
   static const char format0[]="mkdir -p %s ; /bin/true";
@@ -561,6 +572,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(command, formatpoint5, tbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -571,6 +583,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(command,format0,tbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -583,6 +596,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(command, format1, mbuf, tbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -593,6 +607,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(command, format2, mbuf_root);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -604,6 +619,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   sprintf(command, format8, cbuf_root,abuf_root,mbuf_root);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -632,6 +648,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
 {
   if (g_debug) {
     printf("common_commit_clean_temp_config()\n");
+    syslog(LOG_DEBUG,"common_commit_clean_temp_config()\n");
   }
   //first clean up the root
   //  common_commit_copy_to_live_config("/");
@@ -658,6 +675,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(command, format2, mbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
 
@@ -689,6 +707,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(command, format3, tbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -698,6 +717,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(command, format3, cbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -707,6 +727,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(command, format5, cbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -716,6 +737,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(command, format7, cbuf,abuf,mbuf);
   if (g_debug) {
     printf("%s\n",command);
+    syslog(LOG_DEBUG,"%s\n",command);
     fflush(NULL);
   }
   if (test_mode == FALSE) {
@@ -789,6 +811,7 @@ apply_priority(GNode *root_node)
   if (fp != NULL) {
     if (g_debug) {
       printf("unionfs::apply_priority(), found priority file\n");
+      syslog(LOG_DEBUG,"unionfs::apply_priority(), found priority file\n");
     }
 
     char str[1025];
@@ -800,6 +823,7 @@ apply_priority(GNode *root_node)
       char *path = tok_str[1];
       if (g_debug) {
 	printf("unionfs::apply_priority(), working on this %s\n",path);
+	syslog(LOG_DEBUG,"unionfs::apply_priority(), working on this %s\n",path);
       }
 
       //now apply to node
@@ -1062,6 +1086,7 @@ copy_func(GNode *node, gpointer data)
       sprintf(command,clear_def,sd->_dst,parent_path);
       if (g_debug) {
 	printf("%s\n",command);
+	syslog(LOG_DEBUG,"%s\n",command);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
@@ -1073,6 +1098,7 @@ copy_func(GNode *node, gpointer data)
     sprintf(command,format_value,sd->_src,parent_path,sd->_dst,parent_path);
     if (g_debug) {
       printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
@@ -1084,6 +1110,7 @@ copy_func(GNode *node, gpointer data)
       sprintf(command,format,sd->_dst,path);
       if (g_debug) {
 	printf("%s\n",command);
+	syslog(LOG_DEBUG,"%s\n",command);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
@@ -1136,6 +1163,7 @@ delete_func(GNode *node, gpointer data)
     sprintf(command,format,sd->_src,path,sd->_src,path);
     if (g_debug) {
       printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
@@ -1153,6 +1181,7 @@ delete_func(GNode *node, gpointer data)
     sprintf(command,delete_format,sd->_src,path,((struct VyattaNode*)(node->data))->_data._name);
     if (g_debug) {
       printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
@@ -1162,6 +1191,7 @@ delete_func(GNode *node, gpointer data)
     sprintf(command,format_force_delete,sd->_dst,path,sd->_dst,path);
     if (g_debug) {
       printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
@@ -1205,6 +1235,7 @@ delete_wh_func(GNode *node, gpointer data)
       sprintf(command,format0,abuf);
       if (g_debug) {
 	printf("%s\n",command);
+	syslog(LOG_DEBUG,"%s\n",command);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
@@ -1223,6 +1254,7 @@ delete_wh_func(GNode *node, gpointer data)
       sprintf(command,format0,abuf);
       if (g_debug) {
 	printf("%s\n",command);
+	syslog(LOG_DEBUG,"%s\n",command);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
