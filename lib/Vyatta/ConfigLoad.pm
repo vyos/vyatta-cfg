@@ -44,6 +44,7 @@ my %config_rank  = (
     'interfaces bridge'         => 990,
     'interfaces ethernet'       => 980,
     'interfaces tunnel'         => 910,
+    'zone-policy zone'          => 900,
     'system gateway-address'    => 890,
     'system name-server'        => 880,
     'system login user'         => 870,
@@ -70,6 +71,9 @@ my %regex_rank = (
     'protocols bgp \d+ neighbor \d+\.\d+\.\d+\.\d+' => 800,
     'protocols bgp \d+ neighbor \w+'                => 801,
     'interfaces bridge \S* address'                 => 920,
+    'zone-policy zone \S* interface'                => 899,
+    'zone-policy zone \S* local-zone'               => 899,
+    'zone-policy zone \S* from'                     => 898,
 );
 
 my @all_nodes = ();

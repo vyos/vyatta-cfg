@@ -222,3 +222,5 @@
 916 service/telnet
 917 service/webproxy
 960 cluster
+970 zone-policy/zone/node.tag/from
+975 zone-policy
