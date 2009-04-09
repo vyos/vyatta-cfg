@@ -29,7 +29,7 @@ use Vyatta::ConfigLoad;
 umask 0002;
 
 if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
-    || !open(STDOUT, "|/usr/bin/logger -t config-loader -p local0.debug")
+    || !open(STDOUT, "|/usr/bin/logger -t config-loader -p local0.notice")
     || !open(STDERR, ">&STDOUT")) {
   print STDERR "Cannot dup STDOUT/STDERR: $!\n";
   exit 1;
