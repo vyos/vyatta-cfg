@@ -1,3 +1,35 @@
+vyatta-cfg (0.14.60) unstable; urgency=low
+
+  [ Mohit Mehta ]
+  * maintain increasing order of priority file
+
+  [ slioch ]
+  * remove rank loading from loadconfig. rank load is disabled--will
+    remove ordering code (that has no effect) in a future submission.
+
+  [ An-Cheng Huang ]
+  * add "save" command to cfg-cmd-wrapper
+
+  [ slioch ]
+  * for fans of the new priority|commit system, debug output is now
+    enabled on config boot. -a action is activated and last output is
+    written to
+  * Handle commit failure processing within priority group correctly.
+    Processing now stops on failure within priority group (expected
+    behavior).
+
+  [ Mohit Mehta ]
+  * add priorities and ranks for zone based firewall
+
+  [ slioch ]
+  * added syslog entries for debug statements.
+
+  [ Bob Gilligan ]
+  * Bugfix 4272: Set log level to "notice" so messages are logged by
+    default.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Thu, 09 Apr 2009 11:40:28 -0700
+
 vyatta-cfg (0.14.59) unstable; urgency=low
 
   * Fix cut/paste syntax of priority which is different than rank.
