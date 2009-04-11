@@ -771,6 +771,9 @@ match_priority_node(GNode *node, gchar** tok_str, int pri)
     else if (strncmp(NODE_TAG_FILE,tok_str[index],strlen(NODE_TAG_FILE)) == 0) {
       match_priority_node(child,tok_str,pri);
     }
+    else if (strncmp("*",tok_str[index],1) == 0) {     //wildcard
+      match_priority_node(child,tok_str,pri);
+    }
     child = g_node_next_sibling(child);
   }
   return;
