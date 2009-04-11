@@ -63,6 +63,7 @@ share_perl5_DATA += lib/Vyatta/ConfigDOMTree.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
 share_perl5_DATA += lib/Vyatta/ConfigLoad.pm
 share_perl5_DATA += lib/Vyatta/Keepalived.pm
+share_perl5_DATA += lib/Vyatta/Zone.pm
 
 default_DATA = etc/default/vyatta-cfg
 
