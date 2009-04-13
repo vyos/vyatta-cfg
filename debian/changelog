@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.63) unstable; urgency=low
+
+  * Add separate priority for 4 firewall trees, since the "end"
+    processing
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 13 Apr 2009 14:25:13 -0700
+
 vyatta-cfg (0.14.62) unstable; urgency=low
 
   * wild cards are now supported on terminating nodes in the priority
