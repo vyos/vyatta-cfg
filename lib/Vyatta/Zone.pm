@@ -74,8 +74,14 @@ sub is_local_zone {
     return $config->$value_func("zone-policy zone $zone_name local-zone");
 }
 
+sub get_zone_default_policy {
+    my ($value_func, $zone_name) = @_;
+    my $config = new Vyatta::Config;
+    return $config->$value_func("zone-policy zone $zone_name default-policy");
+}
+
 sub rule_exists {
-    my ($command, $table, $tree, $chain_name, $target, $interface) = @_;
+    my ($command, $table, $chain_name, $target, $interface) = @_;
     my $cmd =
         "sudo $command -t $table -L " .
         "$chain_name -v 2>/dev/null | grep \" $target \" ";
@@ -104,7 +110,7 @@ sub get_zone_chain {
 }
 
 sub count_iptables_rules {
-    my ($command, $table,$type, $chain) = @_;
+    my ($command, $table, $chain) = @_;
     my @lines = `sudo $command -t $table -L $chain -n --line`;
     my $cnt = 0;
     foreach my $line (@lines) {
