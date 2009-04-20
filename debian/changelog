@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.66) unstable; urgency=low
+
+  * Move disable-link-detect from vytta-cfg-quagga to here
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 20 Apr 2009 09:22:35 -0700
+
 vyatta-cfg (0.14.65) unstable; urgency=low
 
   * add env override for default session id
