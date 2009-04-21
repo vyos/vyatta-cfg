@@ -85,12 +85,8 @@ exit 0;
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
-    my $wc = `ip addr show $intf | grep -c $ip`;
-    if (defined $wc and $wc > 0) {
-	return 1;
-    } else {
-	return 0;
-    }
+    my @found = grep $ip, getIP($intf);
+    return $#found;
 }
 
 sub is_ip_duplicate {
