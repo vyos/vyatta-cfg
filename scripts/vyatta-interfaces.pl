@@ -86,7 +86,7 @@ exit 0;
 sub is_ip_configured {
     my ($intf, $ip) = @_;
     my @found = grep $ip, getIP($intf);
-    return $#found;
+    return ($#found > 0);
 }
 
 sub is_ip_duplicate {
@@ -99,17 +99,12 @@ sub is_ip_duplicate {
     chomp @ipaddrs;
     my %ipaddrs_hash = map { $_ => 1 } @ipaddrs;
 
-    if (defined $ipaddrs_hash{$ip}) {
-	#
-	# allow dup if it's the same interface
-	#
-	if (is_ip_configured($intf, $ip)) {
-	    return 0;
-	}
-	return 1;
-    } else {
-	return 0;
-    }
+    return unless($ipaddrs_hash{$ip});
+
+    #
+    # allow dup if it's the same interface
+    #
+    return is_ip_configured($intf, $ip);
 }
 
 sub touch {
