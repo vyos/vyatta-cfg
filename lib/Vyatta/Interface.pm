@@ -51,6 +51,10 @@ use constant {
     IFF_ECHO		=> 0x40000,	# echo sent packets
 };
 
+#
+# Mapping from name to attributes
+#   path: configuration level below interfaces
+#   vif:  places to look for vif (if any)
 my %net_prefix = (
     'adsl[\d]+'  => { path => 'adsl',
 		      vif => 'vif',    },
@@ -70,6 +74,7 @@ my %net_prefix = (
     },
     'tun[\d]+' => { path => 'tunnel' },
     'wlm[\d]+' => { path => 'wireless-modem' },
+    'veth[\d]+' => {  path => 'ethernet',    vif => 'vif', },
 );
 
 # get list of interface types
