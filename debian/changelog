@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.67) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix vyatta-interfaces
+
+  [ Stig Thormodsrud ]
+  * Add some debug files to help diagnose boot issue with new cli
+    ordering.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 21 Apr 2009 17:30:22 -0700
+
 vyatta-cfg (0.14.66) unstable; urgency=low
 
   * Move disable-link-detect from vytta-cfg-quagga to here

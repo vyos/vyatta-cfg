@@ -80,7 +80,10 @@ case "$1" in
     RET_STATUS=$?
     ;;
   commit)
-    /opt/vyatta/sbin/my_commit
+    # debug file /tmp/bar should be deleted before release
+    /opt/vyatta/sbin/my_commit -a >> /tmp/bar
+    /opt/vyatta/sbin/my_commit -s >> /tmp/bar
+    /opt/vyatta/sbin/my_commit -e -d >> /tmp/bar
     RET_STATUS=$?
     ;;
   save)

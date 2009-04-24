@@ -66,8 +66,6 @@ if ($? >> 8) {
 }
 
 #cmd below is added to debug last set of command ordering
-my $commit_cmd_debug_noop = "$CWRAPPER commit -a > /tmp/bar";
-my $commit_cmd_debug = "$CWRAPPER commit -d";
 my $commit_cmd = "$CWRAPPER commit";
 my $cleanup_cmd = "$CWRAPPER cleanup";
 my $ret = 0;
@@ -86,6 +84,8 @@ foreach (@all_nodes) {
     $cur_rank = $rank;
   }
   my $cmd = "$CWRAPPER set " . (join ' ', @$path_ref);
+  # this debug file should be deleted before release
+  system("echo [$cmd] >> /tmp/foo");
   $ret = system("$cmd");
   if ($ret >> 8) {
     $cmd =~ s/^.*?set /set /;
@@ -94,11 +94,10 @@ foreach (@all_nodes) {
     # continue after set failure (or should we abort?)
   }
 }
-system("$commit_cmd_debug_noop");
-$ret = system("$commit_cmd_debug");
+$ret = system("$commit_cmd");
 if ($ret >> 8) {
-  print OLDOUT "Commit failed at rank $cur_rank\n";
-  print WARN "Commit failed at rank $cur_rank\n";
+  print OLDOUT "Commit failed at boot\n";
+  print WARN "Commit failed at boot\n";
   system("$cleanup_cmd");
   # exit normally after cleanup (or should we exit with error?)
 }
