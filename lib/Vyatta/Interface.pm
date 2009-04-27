@@ -68,13 +68,13 @@ my %net_prefix = (
     'ml[\d]+'    => { path => 'multilink',
 		      vif => 'vif', },
     'vtun[\d]+'  => { path => 'openvpn' },
-    'wan[\d]+'   => {
-        path => 'serial',
-        vif  => ( 'cisco-hdlc vif', 'ppp vif', 'frame-relay vif' ),
-    },
-    'tun[\d]+' => { path => 'tunnel' },
-    'wlm[\d]+' => { path => 'wireless-modem' },
-    'veth[\d]+' => {  path => 'ethernet',    vif => 'vif', },
+    'wan[\d]+'   => { path => 'serial',
+		      vif  => ( 'cisco-hdlc vif', 'ppp vif', 
+				'frame-relay vif' ), },
+    'tun[\d]+'   => { path => 'tunnel' },
+    'wlm[\d]+'   => { path => 'wireless-modem' },
+    'veth[\d]+'  => { path => 'virtual-ethernet',
+		      vif => 'vif', },
 );
 
 # get list of interface types
