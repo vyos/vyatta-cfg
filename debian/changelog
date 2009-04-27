@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.69) unstable; urgency=low
+
+  * Use getIP rather than call 'ip addr'
+  * Use undef for false
+  * Add method to show configured mtu
+  * Handle errors better in show_mtu
+  * vyatta-interfaces changes for DHCP
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 27 Apr 2009 10:19:03 -0700
+
 vyatta-cfg (0.14.68) unstable; urgency=low
 
   [ Stephen Hemminger ]
