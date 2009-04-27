@@ -46,7 +46,7 @@ use warnings;
 my $dhcp_daemon = '/sbin/dhclient';
 
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
-my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name, $show_mtu);
+my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name, $show_path);
 
 sub usage {
     print "Usage: $0 --dev=<interface> --check=<type>\n";
@@ -55,7 +55,7 @@ sub usage {
     print "       $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>\n";
     print "       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>\n";
     print "       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}\n";
-    print "       $0 --dev=<interface> --mtu\n";
+    print "       $0 --dev=<interface> --path\n";
     print "       $0 --show=<type>\n";
     exit 1;
 }
@@ -71,7 +71,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "show=s"	       => \$show_names,
 	   "vif=s"	       => \$vif_name,
 	   "warn"	       => \$warn_name,
-	   "mtu"	       => \$show_mtu,
+	   "path"	       => \$show_path,
 ) or usage();
 
 update_eth_addrs($eth_update, $dev)	if ($eth_update);
@@ -83,7 +83,7 @@ op_dhcp_command($op_dhclient, $dev)	if ($op_dhclient);
 is_valid_name($check_name, $dev)	if ($check_name);
 exists_name($dev)			if ($warn_name);
 show_interfaces($show_names)		if ($show_names);
-show_mtu($dev)	       			if ($show_mtu);
+show_config_level($dev)	       		if ($show_path);
 exit 0;
 
 sub is_ip_configured {
@@ -153,16 +153,6 @@ sub get_mtu {
     my $name = shift;
     my $intf = new Vyatta::Interface($name);
     return $intf->mtu();
-}
-
-sub show_mtu {
-    my $name = shift;
-    my $intf = new Vyatta::Interface($name);
-    die "$name does not match any known interface name type\n"
-	unless $intf;
-
-    my $mtu = $intf->mtu();
-    print "$mtu\n" if $mtu;
 }
 
 sub dhcp_update_config {
@@ -489,3 +479,13 @@ sub show_interfaces {
     }
     print join(' ', @match), "\n";
 }
+
+sub show_config_level {
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+    die "$name does not match any known interface name type\n"
+	unless $intf;
+
+    print $intf->path(), "\n";
+}
+
