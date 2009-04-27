@@ -86,11 +86,11 @@
 # 
 
 200 firewall/group
-210 firewall/name
-210 firewall/modify
-210 firewall/ipv6-name
-210 firewall/ipv6-modify
-210 firewall
+210 firewall/name/node.tag
+210 firewall/modify/node.tag
+210 firewall/ipv6-name/node.tag
+210 firewall/ipv6-modify/node.tag
+215 firewall
 300 protocols/ospf
 301 protocols/ospfv3
 302 protocols/rip
