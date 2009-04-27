@@ -32,7 +32,9 @@
 
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::Config;
-use Vyatta::Misc;
+use Vyatta::Misc qw(generate_dhclient_intf_files
+		    getInterfaces getIP get_sysfs_value
+ 		    is_address_enabled is_dhcp_enabled is_ip_v4_or_v6);
 use Vyatta::Interface;
 
 use Getopt::Long;
@@ -200,7 +202,8 @@ sub is_intf_disabled {
 sub run_dhclient {
     my $intf = shift;
 
-    my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = Vyatta::Misc::generate_dhclient_intf_files($intf);
+    my ($intf_config_file, $intf_process_id_file, $intf_leases_file) 
+	= generate_dhclient_intf_files($intf);
     dhcp_update_config($intf_config_file, $intf);
     if (!(is_intf_disabled($intf))) {
       my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
@@ -213,7 +216,8 @@ sub run_dhclient {
 sub stop_dhclient {
     my $intf = shift;
     if (!(is_intf_disabled($intf))) {
-      my ($intf_config_file, $intf_process_id_file, $intf_leases_file) = Vyatta::Misc::generate_dhclient_intf_files($intf);
+      my ($intf_config_file, $intf_process_id_file, $intf_leases_file)
+	  = generate_dhclient_intf_files($intf);
       my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
       system ($release_cmd) == 0
 	or warn "stop $dhcp_daemon failed: $?\n";
@@ -326,7 +330,7 @@ sub is_valid_addr {
 	    print "Error: can't use dhcp client on loopback interface\n";
 	    exit 1;
 	}
-	if (Vyatta::Misc::is_dhcp_enabled($intf)) {
+	if (is_dhcp_enabled($intf)) {
 	    print "Error: dhcp already configured for $intf\n";
 	    exit 1;
 	}
@@ -372,7 +376,7 @@ sub is_valid_addr {
        }
     }
 
-    if (Vyatta::Misc::is_dhcp_enabled($intf)) {
+    if (is_dhcp_enabled($intf)) {
 	print "Error: remove dhcp before adding static addresses for $intf\n";
 	exit 1;
     }
@@ -398,12 +402,12 @@ sub is_valid_addr {
 sub op_dhcp_command {
     my ($op_command, $intf) = @_;
 
-    if (!Vyatta::Misc::is_dhcp_enabled($intf)) {
+    if (!is_dhcp_enabled($intf)) {
         print "$intf is not using DHCP to get an IP address\n";
         exit 1;
     }
     
-    my $flags = Vyatta::Misc::get_sysfs_value($intf, 'flags');
+    my $flags = get_sysfs_value($intf, 'flags');
     my $hex_flags = hex($flags);
     if (!($hex_flags & 0x1)) {
      print "$intf is disabled. Unable to release/renew lease\n"; 

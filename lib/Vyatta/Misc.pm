@@ -24,10 +24,12 @@ use strict;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT =
-  qw(get_sysfs_value getInterfaces getNetAddIP isIpAddress is_ip_v4_or_v6 is_dhcp_enabled is_address_enabled);
-our @EXPORT_OK = qw(get_sysfs_value getNetAddIP isIpAddress is_ip_v4_or_v6
-  getInterfacesIPadresses getPortRuleString);
+our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
+		 is_address_enabled is_dhcp_enabled
+		 isIpAddress is_ip_v4_or_v6);
+our @EXPORT_OK = qw(generate_dhclient_intf_files 
+		    getInterfacesIPadresses
+		    getPortRuleString);
 
 use Vyatta::Config;
 use Vyatta::Interface;
