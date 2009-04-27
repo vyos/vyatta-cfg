@@ -157,7 +157,11 @@ sub get_mtu {
 
 sub show_mtu {
     my $name = shift;
-    my $mtu = get_mtu($name);
+    my $intf = new Vyatta::Interface($name);
+    die "$name does not match any known interface name type\n"
+	unless $intf;
+
+    my $mtu = $intf->mtu();
     print "$mtu\n" if $mtu;
 }
 
