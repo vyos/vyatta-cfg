@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.68) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Add support for virtual-ethernets
+
+  [ Stig Thormodsrud ]
+  * Add more firewall priorities.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Sun, 26 Apr 2009 19:02:45 -0700
+
 vyatta-cfg (0.14.67) unstable; urgency=low
 
   [ Stephen Hemminger ]
