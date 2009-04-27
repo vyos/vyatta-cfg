@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.70) unstable; urgency=low
+
+  * fix broken call to getIP
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Mon, 27 Apr 2009 14:24:11 -0700
+
 vyatta-cfg (0.14.69) unstable; urgency=low
 
   * Use getIP rather than call 'ip addr'
