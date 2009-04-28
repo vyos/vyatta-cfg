@@ -25,6 +25,7 @@ package Vyatta::Zone;
 
 use Vyatta::Config;
 use Vyatta::Misc;
+use Vyatta::Interface;
 
 use strict;
 use warnings;
@@ -153,8 +154,20 @@ sub validity_checks {
           $returnstring = "local-zone cannot have interfaces defined";
           return($returnstring, );
         }
-        # make sure an interface is not defined under two zones
         foreach my $interface (@zone_intfs) {
+          # make sure firewall is not applied to this interface
+          my $intf = new Vyatta::Interface($interface);
+          if ($intf) {
+            my $config = new Vyatta::Config;
+            $config->setLevel($intf->path());
+            if ($config->exists("firewall")) {
+              $returnstring = 
+			"interface $interface has firewall configured, " .
+			"cannot be defined under a zone";
+              return($returnstring, );
+            }
+          }
+          # make sure an interface is not defined under two zones
           if (scalar(grep(/^$interface$/, @all_interfaces)) > 0) {
             return ("$interface defined under two zones", );
           } else {
