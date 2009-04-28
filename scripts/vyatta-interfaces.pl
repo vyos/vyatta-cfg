@@ -402,40 +402,29 @@ sub is_valid_addr {
 sub op_dhcp_command {
     my ($op_command, $intf) = @_;
 
-    if (!is_dhcp_enabled($intf)) {
-        print "$intf is not using DHCP to get an IP address\n";
-        exit 1;
-    }
+    die "$intf is not using DHCP to get an IP address\n"
+	unless is_dhcp_enabled($intf);
     
-    my $flags = get_sysfs_value($intf, 'flags');
-    my $hex_flags = hex($flags);
-    if (!($hex_flags & 0x1)) {
-     print "$intf is disabled. Unable to release/renew lease\n"; 
-     exit 1;
-    }
+    die "$intf is disabled. Unable to release/renew lease\n"
+	if is_intf_disabled($intf);
 
     my $tmp_dhclient_dir = '/var/run/vyatta/dhclient/';
     my $release_file = $tmp_dhclient_dir . 'dhclient_release_' . $intf;
     if ($op_command eq "dhcp-release") {
-        if (-e $release_file) {
-          print "IP address for $intf has already been released.\n";
-          exit 1;
-        } else {
-          print "Releasing DHCP lease on $intf ...\n";
-          stop_dhclient($intf);
-	  mkdir ($tmp_dhclient_dir) if (! -d $tmp_dhclient_dir );
-	  touch ($release_file);
-          exit 0;
-        }
+	die "IP address for $intf has already been released.\n"
+	    if (-e $release_file);
+
+	print "Releasing DHCP lease on $intf ...\n";
+	stop_dhclient($intf);
+	mkdir ($tmp_dhclient_dir) if (! -d $tmp_dhclient_dir );
+	touch ($release_file);
     } elsif ($op_command eq "dhcp-renew") {
         print "Renewing DHCP lease on $intf ...\n";
         run_dhclient($intf);
 	unlink ($release_file);
-        exit 0;
     }
 
     exit 0;
-
 }
 
 sub is_valid_name {
