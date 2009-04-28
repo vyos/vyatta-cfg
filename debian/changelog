@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.73) unstable; urgency=low
+
+  * Need to convert path to have slashes
+  * DHCP should be checking config not flags
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 28 Apr 2009 11:24:42 -0700
+
 vyatta-cfg (0.14.72) unstable; urgency=low
 
   [ Stephen Hemminger ]
