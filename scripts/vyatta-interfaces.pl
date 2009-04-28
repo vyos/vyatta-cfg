@@ -85,7 +85,7 @@ op_dhcp_command($op_dhclient, $dev)	if ($op_dhclient);
 is_valid_name($check_name, $dev)	if ($check_name);
 exists_name($dev)			if ($warn_name);
 show_interfaces($show_names)		if ($show_names);
-show_config_level($dev)	       		if ($show_path);
+show_config_path($dev)	       		if ($show_path);
 exit 0;
 
 sub is_ip_configured {
@@ -484,12 +484,14 @@ sub show_interfaces {
     print join(' ', @match), "\n";
 }
 
-sub show_config_level {
+sub show_config_path {
     my $name = shift;
+    die "Missing --dev argument\n" unless $name;
     my $intf = new Vyatta::Interface($name);
     die "$name does not match any known interface name type\n"
 	unless $intf;
-
-    print $intf->path(), "\n";
+    my $level = $intf->path();
+    $level =~ s/ /\//g;
+    print "/opt/vyatta/config/active/$level\n";
 }
 
