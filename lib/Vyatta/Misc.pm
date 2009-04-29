@@ -102,12 +102,18 @@ sub getInterfaces {
     return @interfaces;
 }
 
+# get list of IPv4 and IPv6 addresses
+# if name is defined then get the addresses on that interface
+# if type is defined then restrict to that type (inet, inet6)
 sub getIP {
     my ( $name, $type ) = @_;
+    my @args = qw(ip addr show);
     my @addresses;
 
-    open my $ipcmd,                 '-|'
-      or exec qw(ip addr show dev), $name
+    push @args, ('dev', $name) if $name;
+
+    open my $ipcmd, '-|'
+      or exec @args
       or die "ip addr command failed: $!";
 
     <$ipcmd>;

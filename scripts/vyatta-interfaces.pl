@@ -90,25 +90,19 @@ exit 0;
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
-    my @found = grep $ip, Vyatta::Misc::getIP($intf);
-    return ($#found > 0);
+    my $found = grep { $_ eq $ip } Vyatta::Misc::getIP($intf);
+    return ($found > 0);
 }
 
 sub is_ip_duplicate {
     my ($intf, $ip) = @_;
 
-    # 
-    # get a list of all ipv4 and ipv6 addresses
-    #
-    my @ipaddrs = `ip addr show | grep inet | cut -d" " -f6`;
-    chomp @ipaddrs;
-    my %ipaddrs_hash = map { $_ => 1 } @ipaddrs;
+    # get a map of all ipv4 and ipv6 addresses
+    my %ipaddrs_hash = map { $_ => 1 } getIP();
 
     return unless($ipaddrs_hash{$ip});
 
-    #
-    # allow dup if it's the same interface
-    #
+    # if ip exists but on another interface, that is okay
     return is_ip_configured($intf, $ip);
 }
 
@@ -233,9 +227,8 @@ sub update_eth_addrs {
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
-    if (!defined $version) {
-	exit 1;
-    }
+    die "Unknown address not IPV4 or IPV6" unless $version;
+
     if (is_ip_configured($intf, $addr)) {
 	#
 	# treat this as informational, don't fail
@@ -250,8 +243,7 @@ sub update_eth_addrs {
     if ($version == 6) {
 	return system("ip -6 addr add $addr dev $intf");
     }
-    print "Error: Invalid address/prefix [$addr] for interface $intf\n";
-    exit 1;
+    die "Error: Invalid address/prefix [$addr] for interface $intf\n";
 }
 
 sub delete_eth_addrs {
@@ -380,6 +372,7 @@ sub is_valid_addr {
 	print "Error: remove dhcp before adding static addresses for $intf\n";
 	exit 1;
     }
+
     if (is_ip_duplicate($intf, $addr_net)) {
 	print "Error: duplicate address/prefix [$addr_net]\n";
 	exit 1;
