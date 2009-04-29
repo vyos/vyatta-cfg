@@ -73,7 +73,7 @@ my %net_prefix = (
 				'frame-relay vif' ), },
     'tun[\d]+'   => { path => 'tunnel' },
     'wlm[\d]+'   => { path => 'wireless-modem' },
-    'veth[\d]+'  => { path => 'virtual-ethernet',
+    'peth[\d]+'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
 );
 
