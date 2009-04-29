@@ -24,7 +24,8 @@ Depends: sed (>= 4.1.5),
  vlan,
  libglib2.0-0,
  curl
-Replaces: vyatta-cfg-firewall
+Replaces: vyatta-cfg-firewall, 
+ vyatta-cfg-quagga
 Suggests: util-linux (>= 2.13-5),
  net-tools,
  ethtool,
