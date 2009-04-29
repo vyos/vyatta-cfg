@@ -97,18 +97,12 @@ sub is_ip_configured {
 sub is_ip_duplicate {
     my ($intf, $ip) = @_;
 
-    # 
-    # get a list of all ipv4 and ipv6 addresses
-    #
-    my @ipaddrs = `ip addr show | grep inet | cut -d" " -f6`;
-    chomp @ipaddrs;
-    my %ipaddrs_hash = map { $_ => 1 } @ipaddrs;
+    # get a map of all ipv4 and ipv6 addresses
+    my %ipaddrs_hash = map { $_ => 1 } getIP();
 
     return unless($ipaddrs_hash{$ip});
 
-    #
-    # allow dup if it's the same interface
-    #
+    # if ip exists but on another interface, that is okay
     return is_ip_configured($intf, $ip);
 }
 
@@ -378,6 +372,7 @@ sub is_valid_addr {
 	print "Error: remove dhcp before adding static addresses for $intf\n";
 	exit 1;
     }
+
     if (is_ip_duplicate($intf, $addr_net)) {
 	print "Error: duplicate address/prefix [$addr_net]\n";
 	exit 1;
