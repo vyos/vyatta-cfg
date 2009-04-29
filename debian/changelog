@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.74) unstable; urgency=low
+
+  * Extend getIP() to be able to get all addresses
+  * Fix bug in is_ip_configured
+  * Catch incorrect address format
+  * Use getIP() to check for duplicates
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 28 Apr 2009 23:01:55 -0700
+
 vyatta-cfg (0.14.73) unstable; urgency=low
 
   * Need to convert path to have slashes
