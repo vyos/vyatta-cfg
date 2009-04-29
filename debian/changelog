@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.76) unstable; urgency=low
+
+  * testing if this fixes diable-link-detect file move problem
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Wed, 29 Apr 2009 14:48:20 -0700
+
 vyatta-cfg (0.14.75) unstable; urgency=low
 
   * Rename virtual-ethernet to pseudo-ethernet
