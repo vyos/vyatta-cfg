@@ -233,9 +233,8 @@ sub update_eth_addrs {
 	return;
     } 
     my $version = is_ip_v4_or_v6($addr);
-    if (!defined $version) {
-	exit 1;
-    }
+    die "Unknown address not IPV4 or IPV6" unless $version;
+
     if (is_ip_configured($intf, $addr)) {
 	#
 	# treat this as informational, don't fail
@@ -250,8 +249,7 @@ sub update_eth_addrs {
     if ($version == 6) {
 	return system("ip -6 addr add $addr dev $intf");
     }
-    print "Error: Invalid address/prefix [$addr] for interface $intf\n";
-    exit 1;
+    die "Error: Invalid address/prefix [$addr] for interface $intf\n";
 }
 
 sub delete_eth_addrs {
