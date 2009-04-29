@@ -90,8 +90,8 @@ exit 0;
 
 sub is_ip_configured {
     my ($intf, $ip) = @_;
-    my @found = grep $ip, Vyatta::Misc::getIP($intf);
-    return ($#found > 0);
+    my $found = grep { $_ eq $ip } Vyatta::Misc::getIP($intf);
+    return ($found > 0);
 }
 
 sub is_ip_duplicate {
