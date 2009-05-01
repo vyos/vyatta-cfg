@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.77) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix spelling errors in priority file comments
+
+  [ An-Cheng Huang ]
+  * add "load" support in vyatta-cfg-cmd-wrapper
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 01 May 2009 11:05:56 -0700
+
 vyatta-cfg (0.14.76) unstable; urgency=low
 
   * testing if this fixes diable-link-detect file move problem
