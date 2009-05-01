@@ -90,6 +90,10 @@ case "$1" in
     /opt/vyatta/sbin/vyatta-save-config.pl "${@:2}"
     RET_STATUS=$?
     ;;
+  load)
+    /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
+    RET_STATUS=$?
+    ;;
   *)
     echo "Invalid command \"$1\" for vyatta-cfg-cmd-wrapper"
     RET_STATUS=1  
