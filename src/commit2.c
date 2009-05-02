@@ -319,7 +319,7 @@ process_func(GNode *node, gpointer data)
      */
     if ((IS_SET(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action != delete_act && result->_action != create_act)) ||
 	(IS_CREATE(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action == syntax_act || result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
-	(IS_SET_OR_CREATE(d->_operation) && IS_ACTIVE(d->_operation) && ((result->_action != delete_act) && (result->_action != create_act))) ||
+	(IS_ACTIVE(d->_operation) && ((result->_action == begin_act) || (result->_action == end_act))) ||
 	//	(IS_DELETE(d->_operation) && ((result->_action == delete_act) || (result->_action == syntax_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
 	(IS_DELETE(d->_operation) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
       //NEED TO ADD IF CREATE, THEN CREATE OR UPDATE
