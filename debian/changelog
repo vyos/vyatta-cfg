@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.78) unstable; urgency=low
+
+  * fix for bug 4338. update was being called on active nodes that
+    contained
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 01 May 2009 22:57:05 -0700
+
 vyatta-cfg (0.14.77) unstable; urgency=low
 
   [ Stephen Hemminger ]
