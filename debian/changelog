@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.79) unstable; urgency=low
+
+  * * add flag to print commands to STDOUT for debugging
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Tue, 05 May 2009 11:49:38 -0700
+
 vyatta-cfg (0.14.78) unstable; urgency=low
 
   * fix for bug 4338. update was being called on active nodes that
