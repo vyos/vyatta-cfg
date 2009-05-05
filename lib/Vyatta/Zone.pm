@@ -31,15 +31,20 @@ use strict;
 use warnings;
 
 my $debug="false";
+my $syslog="false";
 my $logger = 'sudo logger -t zone.pm -p local0.warn --';
 
 sub run_cmd {
     my $cmd = shift;
-
     my $error = system("$cmd");
-    if ($debug eq "true") {
+
+    if ($syslog eq "true") {
         my $func = (caller(1))[3];
         system("$logger [$func] [$cmd] = [$error]");
+    }
+    if ($debug eq "true") {
+        my $func = (caller(1))[3];
+        print "[$func] [$cmd] = [$error]\n";
     }
     return $error;
 }
@@ -96,15 +101,15 @@ sub rule_exists {
 
 sub get_zone_chain {
     my ($value_func, $zone, $localout) = @_;
-    my $chain = "zone-$zone";
+    my $chain = "VZONE_$zone";
     if (defined(is_local_zone($value_func, $zone))) {
       # local zone
       if (defined $localout) {
         # local zone out chain
-        $chain .= "-out";
+        $chain .= "_OUT";
       } else {
         # local zone in chain
-        $chain .= "-in";
+        $chain .= "_IN";
       }
     }
     return $chain;
