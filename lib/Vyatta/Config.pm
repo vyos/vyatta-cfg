@@ -73,17 +73,16 @@ sub listNodes {
   my ($self, $path) = @_;
   my @nodes = ();
 
-  if (defined $path) { 
+  if ($path) { 
     $path =~ s/\//%2F/g;
     $path =~ s/\s+/\//g;
     $path = $self->{_new_config_dir_base} . $self->{_current_dir_level} . "/" . $path;
-  }
-  else {
+  }  else {
     $path = $self->{_new_config_dir_base} . $self->{_current_dir_level};
   }
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir my $dir, "$path" or return ();
+  opendir my $dir, $path or return ();
   @nodes = grep !/^\./, readdir $dir;
   closedir $dir;
 
@@ -153,7 +152,7 @@ sub listOrigNodesNoDef {
   }
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir my $dir, "$path" or return ();
+  opendir my $dir, $path or return ();
   @nodes = grep !/^\./, readdir $dir;
   closedir $dir;
 
@@ -302,8 +301,8 @@ sub isDeleted {
 # "level" defaults to current
 sub listDeleted {
   my ($self, $path) = @_;
-  my @new_nodes = $self->listNodes("$path");
-  my @orig_nodes = $self->listOrigNodes("$path");
+  my @new_nodes = $self->listNodes($path);
+  my @orig_nodes = $self->listOrigNodes($path);
   my %new_hash = map { $_ => 1 } @new_nodes;
   my @deleted = grep { !defined($new_hash{$_}) } @orig_nodes;
   return @deleted;
@@ -381,20 +380,22 @@ sub listNodeStatus {
   my %nodehash = ();
 
   # find deleted nodes first
-  @nodes = $self->listDeleted("$path");
+  @nodes = $self->listDeleted($path);
   foreach my $node (@nodes) {
     if ($node =~ /.+/) { $nodehash{$node} = "deleted" };
   }
 
   @nodes = ();
-  @nodes = $self->listNodes("$path");
+  @nodes = $self->listNodes($path);
   foreach my $node (@nodes) {
     if ($node =~ /.+/) {
-      #print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
-      # No deleted nodes -- added, changed, ot static only.
-      if    ($self->isAdded("$path $node"))   { $nodehash{$node} = "added"; }
-      elsif ($self->isChanged("$path $node")) { $nodehash{$node} = "changed"; }
-      else { $nodehash{$node} = "static"; }
+	my $nodepath = $node;
+	$nodepath = "$path $node" if ($path);
+	#print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
+	# No deleted nodes -- added, changed, ot static only.
+	if    ($self->isAdded($nodepath))   { $nodehash{$node} = "added"; }
+	elsif ($self->isChanged($nodepath)) { $nodehash{$node} = "changed"; }
+	else { $nodehash{$node} = "static"; }
     }
   }
 
