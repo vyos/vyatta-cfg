@@ -148,6 +148,15 @@ sub validity_checks {
 				"and it's not a local-zone";
           return($returnstring, );
         }
+        # zone defined as a local-zone
+        my @zone_intfs_orig = get_zone_interfaces("returnOrigValues", $zone);
+        if (scalar(@zone_intfs_orig) != 0) {
+          # can't change change transit zone to local-zone on the fly
+          $returnstring = "Zone $zone is a transit zone. " .
+                "Cannot convert it to local-zone.\n" .
+                "Please define another zone to create local-zone";
+          return($returnstring, );
+        }
         $num_local_zones++;
         # make sure only one zone is a local-zone
         if ($num_local_zones > 1) {
@@ -157,6 +166,12 @@ sub validity_checks {
         # zone has interfaces, make sure it is not set as a local-zone
         if (defined(is_local_zone("exists", $zone))) {
           $returnstring = "local-zone cannot have interfaces defined";
+          return($returnstring, );
+        }
+        # make sure you're not converting local-zone to transit zone either
+        if (defined(is_local_zone("existsOrig", $zone))) {
+          $returnstring = "Cannot convert local-zone $zone to transit zone" .  
+				"\nPlease define another zone for it";
           return($returnstring, );
         }
         foreach my $interface (@zone_intfs) {
