@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.80) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix warnings from using undefined variable
+
+  [ Mohit Mehta ]
+  * * don't allow user to change zone-type on the fly
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Wed, 06 May 2009 16:52:23 -0700
+
 vyatta-cfg (0.14.79) unstable; urgency=low
 
   * * add flag to print commands to STDOUT for debugging
