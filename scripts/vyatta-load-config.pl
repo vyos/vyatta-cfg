@@ -25,6 +25,7 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use POSIX;
 use IO::Prompt;
+use Getopt::Long;
 use Sys::Syslog qw(:standard :macros);
 use Vyatta::ConfigLoad;
 
@@ -36,9 +37,20 @@ my $bootpath     = $etcdir . "/config";
 my $load_file    = $bootpath . "/config.boot";
 my $url_tmp_file = $bootpath . "/config.boot.$$";
 
-if ( $#ARGV > 0 ) {
-    print "Usage: load <config_file_name>\n";
-    exit 1;
+
+sub usage() {
+    print "Usage: $0 --merge=<root>\n";
+    exit 0;
+}
+
+my $merge;
+GetOptions(
+    "merge:s"              => \$merge,
+    ) or usage();
+
+my $merge_mode = 'false';
+if (defined $merge) {
+    $merge_mode = 'true';
 }
 
 my $mode = 'local';
@@ -164,18 +176,20 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
 }
 
 my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier );
-
-my @delete_list = @{ $cfg_diff{'delete'} };
 my @set_list    = @{ $cfg_diff{'set'} };
 
-foreach (@delete_list) {
-    my ( $cmd_ref, $rank ) = @{$_};
-    my @cmd = ( "$sbindir/my_delete", @{$cmd_ref} );
-    my $cmd_str = join ' ', @cmd;
-    system("$cmd_str");
-    if ( $? >> 8 ) {
-        $cmd_str =~ s/^$sbindir\/my_//;
-        print "\"$cmd_str\" failed\n";
+if ($merge_mode eq 'false') {
+    my @delete_list = @{ $cfg_diff{'delete'} };
+    
+    foreach (@delete_list) {
+	my ( $cmd_ref, $rank ) = @{$_};
+	my @cmd = ( "$sbindir/my_delete", @{$cmd_ref} );
+	my $cmd_str = join ' ', @cmd;
+	system("$cmd_str");
+	if ( $? >> 8 ) {
+	    $cmd_str =~ s/^$sbindir\/my_//;
+	    print "\"$cmd_str\" failed\n";
+	}
     }
 }
 
