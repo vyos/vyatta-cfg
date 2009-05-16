@@ -163,7 +163,7 @@ syslog( "warning", "Load config [$orig_load_file] by $login" );
 system("$sbindir/vyatta_config_migrate.pl $load_file");
 
 print "Loading config file $load_file...\n";
-my %cfg_hier = Vyatta::ConfigLoad::loadConfigHierarchy($load_file);
+my %cfg_hier = Vyatta::ConfigLoad::loadConfigHierarchy($load_file,$merge);
 if ( scalar( keys %cfg_hier ) == 0 ) {
     print "The specified file does not contain any configuration.\n";
     print

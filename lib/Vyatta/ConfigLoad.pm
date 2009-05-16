@@ -225,10 +225,21 @@ sub loadConfigHierarchy {
   if (!defined($load_cfg)) {
     return ();
   }
+
+  #allows loading from arbritary root
+  my $root_node = shift;
   
   my $xcp = new XorpConfigParser();
   $xcp->parse($load_cfg);
-  my $root = $xcp->get_node( () );
+  my $root;
+  if (defined($root_node)) {
+      my $tmp = [$root_node];
+      $root = $xcp->get_node($tmp);
+      #root_path= --except last node and needs to be passed to enumerate_branch
+  }
+  else {
+      $root = $xcp->get_node( () );
+  }
   if (!defined($root)) {
     return ();
   }
