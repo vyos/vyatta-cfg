@@ -232,10 +232,13 @@ sub loadConfigHierarchy {
   my $xcp = new XorpConfigParser();
   $xcp->parse($load_cfg);
   my $root;
+  my @root_path;
   if (defined($root_node)) {
-      my $tmp = [$root_node];
+      my $tmp = [split("/",$root_node)];
       $root = $xcp->get_node($tmp);
-      #root_path= --except last node and needs to be passed to enumerate_branch
+      my @tmp2 = split("/",$root_node);
+      @root_path = pop(@tmp2);
+      @root_path = @tmp2;
   }
   else {
       $root = $xcp->get_node( () );
@@ -243,7 +246,7 @@ sub loadConfigHierarchy {
   if (!defined($root)) {
     return ();
   }
-  enumerate_branch($root, ( ));
+  enumerate_branch($root, @root_path);
 
   return generateHierarchy(\@all_naked_nodes);
 }
