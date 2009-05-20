@@ -169,8 +169,14 @@ case "$1" in
 	    exit 1
 	fi
 
+	if [ -e /proc/irq/default_smp_affinity ]; then
+	    defmask=`cat /proc/irq/default_smp_affinity`
+	else
+	    defmask=$maxmaskhex
+	fi
+
 	for irqnum in $irqnums ; do
-	    echo $maxmaskhex > /proc/irq/$irqnum/smp_affinity
+	    echo $defmask > /proc/irq/$irqnum/smp_affinity
 	    if [ $? -ne 0 ]; then
 		echo "Couldn't assign smp_affinity for IRQ $irqnum.  Exit status: $?"
 		exit 1
