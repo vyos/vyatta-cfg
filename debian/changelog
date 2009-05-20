@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.82) unstable; urgency=low
+
+  * Use the default_smp_affinity /proc file if it is available.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 20 May 2009 16:41:25 -0700
+
 vyatta-cfg (0.14.81) unstable; urgency=low
 
   [ slioch ]
