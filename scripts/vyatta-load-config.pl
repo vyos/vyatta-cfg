@@ -38,6 +38,19 @@ my $load_file    = $bootpath . "/config.boot";
 my $url_tmp_file = $bootpath . "/config.boot.$$";
 
 
+#
+# Note: to get merge to work on arbitrary nodes
+# within the configuration multinodes need to be escaped.
+# i.e.:
+# load --merge='load-balancing/wan/interface-health\ eth0'
+#
+# will start loading of the configuration node from:
+#
+# load-balancing/wan/interface-health:eth0
+#
+# Note current loading is limited to first new
+# multinode.
+#
 sub usage() {
     print "Usage: $0 --merge=<root>\n";
     exit 0;
