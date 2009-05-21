@@ -1,3 +1,25 @@
+vyatta-cfg (0.14.82) unstable; urgency=low
+
+  * Use the default_smp_affinity /proc file if it is available.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 20 May 2009 16:41:25 -0700
+
+vyatta-cfg (0.14.81) unstable; urgency=low
+
+  [ slioch ]
+  * merge option added to load script. "load [configfile] --merge" adds
+    configuration to current
+  * root node support on load merge operation. additional work needed
+    for deeper merge path support
+  * now explicit root merge works up to first multinode with explicit
+    path
+  * notes on arbitrary root node loading in merge operations.
+
+  [ Bob Gilligan ]
+  * Bugfix 4427: Handle multiqueue NICs.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 20 May 2009 16:21:53 -0700
+
 vyatta-cfg (0.14.80) unstable; urgency=low
 
   [ Stephen Hemminger ]
