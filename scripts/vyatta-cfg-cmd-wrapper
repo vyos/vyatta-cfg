@@ -66,7 +66,7 @@ case "$1" in
     rm -rf ${VYATTA_CONFIG_TMP}
     rm -rf ${VYATTA_TEMP_CONFIG_DIR}
     ;;
-  cleanup)
+  cleanup|discard)
     sudo umount ${VYATTA_TEMP_CONFIG_DIR}
     rm -rf $VYATTA_CHANGES_ONLY_DIR/* $VYATTA_CHANGES_ONLY_DIR/.modified
     sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
