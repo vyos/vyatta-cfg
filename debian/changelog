@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.83) unstable; urgency=low
+
+  * Add wireless device to table
+  * Allow creating vlan on disabled device
+  * Add script option to check if interface is up
+  * Only bring up VIF if real device is up
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 21 May 2009 10:40:00 -0700
+
 vyatta-cfg (0.14.82) unstable; urgency=low
 
   * Use the default_smp_affinity /proc file if it is available.
