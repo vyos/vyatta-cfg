@@ -1,3 +1,16 @@
+vyatta-cfg (0.14.84) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add "discard" command to cmd wrapper
+
+  [ slioch ]
+  * added load-merge command to configuration mode
+
+  [ Bob Gilligan ]
+  * Bugfix 4432: Don't validate interface name in "check" sub-command.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Thu, 21 May 2009 17:28:48 -0700
+
 vyatta-cfg (0.14.83) unstable; urgency=low
 
   * Add wireless device to table
