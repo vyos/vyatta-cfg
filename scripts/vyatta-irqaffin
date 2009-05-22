@@ -21,14 +21,18 @@
 
 # Provides sub-commands to:
 #   - Check the validity of an interface name and affinity mask value
-#   - Set the affinity mask to the IRQ being used by an interface
-#   - Reset the affinity mask of the IRQ being used by an interface to the
+#   - Set the affinity mask to the IRQs being used by an interface
+#   - Reset the affinity mask of the IRQs being used by an interface to the
 #     system default value of all-ones.
-#   - Print the affinity mask of the IRQ being used by an interface
+#   - Print the affinity mask of the IRQs being used by an interface
+#
+# If the NIC in question supports multiple IRQs, the "set" sub-command
+# sets all IRQs to the same mask.  The "print" sub-command displays
+# the mask of each IRQ individually.
 #
 
-# Max number of hex characters in an IRQ affinity mask.  Support up to 16 CPUs.
-MAX_MASK=4
+# Max number of hex characters in an IRQ affinity mask.  Support up to 64 CPUs.
+MAX_MASK=16
 
 # Set up some global values...
 numcpus=`grep -c -e "^processor" /proc/cpuinfo`
@@ -45,10 +49,10 @@ print_usage()
     echo -e "\t$0 print <ifname>"
 }
 
-get_irqnum()
+get_irqnums()
 {
-    irqnum=`cat /sys/class/net/$1/device/irq`
-    if [ -z "$irqnum" ]; then
+    irqnums=`grep $1 /proc/interrupts | awk -F ': ' '{ print $1 }'`
+    if [ -z "$irqnums" ]; then
 	echo "Invalid interface name: $1"
 	return 1
     fi
@@ -118,7 +122,7 @@ case "$1" in
 		exit 1
 	fi
 
-	if ! get_irqnum $2 ; then
+	if ! get_irqnums $2 ; then
 	    exit 1
 	fi
 
@@ -138,7 +142,7 @@ case "$1" in
 		exit 1
 	fi
 
-	if ! get_irqnum $2 ; then
+	if ! get_irqnums $2 ; then
 	    exit 1
 	fi
 
@@ -146,7 +150,9 @@ case "$1" in
 	    exit 1
 	fi
 
-	echo $mask > /proc/irq/$irqnum/smp_affinity
+	for irqnum in $irqnums ; do
+	    echo $mask > /proc/irq/$irqnum/smp_affinity
+	done
 
 	if [ $? -ne 0 ]; then
 	    echo "Couldn't assign smp_affinity.  Exit status: $?"
@@ -159,15 +165,23 @@ case "$1" in
 		print_usage
 		exit 1
 	fi
-	if ! get_irqnum $2 ; then
+	if ! get_irqnums $2 ; then
 	    exit 1
 	fi
 
-	echo $maxmaskhex > /proc/irq/$irqnum/smp_affinity
-	if [ $? -ne 0 ]; then
-	    echo "Couldn't assign smp_affinity.  Exit status: $?"
-	    exit 1
+	if [ -e /proc/irq/default_smp_affinity ]; then
+	    defmask=`cat /proc/irq/default_smp_affinity`
+	else
+	    defmask=$maxmaskhex
 	fi
+
+	for irqnum in $irqnums ; do
+	    echo $defmask > /proc/irq/$irqnum/smp_affinity
+	    if [ $? -ne 0 ]; then
+		echo "Couldn't assign smp_affinity for IRQ $irqnum.  Exit status: $?"
+		exit 1
+	    fi
+	done
 	;;
      
 
@@ -176,19 +190,20 @@ case "$1" in
 		print_usage
 		exit 1
 	fi
-	if ! get_irqnum $2 ; then
+	if ! get_irqnums $2 ; then
 	    exit 1
 	fi
 
-	mask=`cat /proc/irq/$irqnum/smp_affinity`
+	for irqnum in $irqnums ; do
+	    mask=`cat /proc/irq/$irqnum/smp_affinity`
 	
-	if [ -z $mask ]; then
-	    echo "Couldn't get smp_affinity for interface $2, irq $irqnum"
-	    exit 1
-	fi
+	    if [ -z $mask ]; then
+		echo "Couldn't get smp_affinity for interface $2, irq $irqnum"
+		exit 1
+	    fi
 
-	echo "Interface $2 is using IRQ: $irqnum"
-	echo "SMP affinity mask for IRQ $irqnum is: $mask"
+	    echo "Interface: $2 IRQ: $irqnum Mask: $mask"
+	done
 	;;
 
     *)

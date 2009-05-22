@@ -48,7 +48,8 @@ use warnings;
 my $dhcp_daemon = '/sbin/dhclient';
 
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
-my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name, $show_path);
+my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name);
+my ($check_up, $show_path);
 
 sub usage {
     print "Usage: $0 --dev=<interface> --check=<type>\n";
@@ -58,6 +59,7 @@ sub usage {
     print "       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>\n";
     print "       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}\n";
     print "       $0 --dev=<interface> --path\n";
+    print "	  $0 --dev=<interface> --isup\n";
     print "       $0 --show=<type>\n";
     exit 1;
 }
@@ -74,6 +76,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "vif=s"	       => \$vif_name,
 	   "warn"	       => \$warn_name,
 	   "path"	       => \$show_path,
+	   "isup"	       => \$check_up,
 ) or usage();
 
 update_eth_addrs($eth_update, $dev)	if ($eth_update);
@@ -86,6 +89,7 @@ is_valid_name($check_name, $dev)	if ($check_name);
 exists_name($dev)			if ($warn_name);
 show_interfaces($show_names)		if ($show_names);
 show_config_path($dev)	       		if ($show_path);
+is_up($dev)			        if ($check_up);
 exit 0;
 
 sub is_ip_configured {
@@ -104,6 +108,16 @@ sub is_ip_duplicate {
 
     # if ip exists but on another interface, that is okay
     return is_ip_configured($intf, $ip);
+}
+
+sub is_up {
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+    
+    die "Unknown interface type for $name" unless $intf;
+    
+    exit 0 if ($intf->up());
+    exit 1;
 }
 
 sub touch {

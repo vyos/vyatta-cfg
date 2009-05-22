@@ -75,6 +75,7 @@ my %net_prefix = (
     'wlm[\d]+'   => { path => 'wireless-modem' },
     'peth[\d]+'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
+    'wlan[\d]+'  => { path => 'wireless', vif => 'vif' },
 );
 
 # get list of interface types
