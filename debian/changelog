@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.85) unstable; urgency=low
+
+  * Update priority file
+  * Simplify ospf/rip priority
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 22 May 2009 10:49:47 -0700
+
 vyatta-cfg (0.14.84) unstable; urgency=low
 
   [ An-Cheng Huang ]
