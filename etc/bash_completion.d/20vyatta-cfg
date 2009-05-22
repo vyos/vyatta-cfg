@@ -46,7 +46,7 @@ declare last_idx=0
 declare -a comp_words=()
 
 # commands to unalias
-declare -a unalias_cmds=( clear configure date debug edit exit load \
+declare -a unalias_cmds=( clear configure date debug edit exit load load-merge \
                           no run set show save terminal undebug up top )
 for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
@@ -136,6 +136,21 @@ load ()
   export VYATTA_TEMPLATE_LEVEL="/"
   set_config_ps1 ''
   eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
+}
+
+load-merge ()
+{
+  # don't load if there are uncommitted changes.
+  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+    echo "Cannot load: configuration modified."
+    echo "Commit or discard the changes before loading a config file."
+    return 1
+  fi
+  # return to top level.
+  export VYATTA_EDIT_LEVEL="/"
+  export VYATTA_TEMPLATE_LEVEL="/"
+  set_config_ps1 ''
+  eval "${vyatta_sbindir}/vyatta-load-config.pl $@ --merge"
 }
 
 top ()
@@ -840,6 +855,7 @@ vyatta_config_complete ()
                         "edit" \
                         "exit" \
                         "load" \
+                        "load-merge" \
                         "rename" \
                         "run" \
                         "save" \
@@ -852,7 +868,8 @@ vyatta_config_complete ()
       "Discard uncommitted changes" \
       "Edit a sub-element" \
       "Exit from this configuration level" \
-      "Load configuration from a file" \
+      "Load configuration from a file and replace running configuration" \
+      "Load configuration from a file and merge running configuration" \
       "Rename a configuration element" \
       "Run an operational-mode command" \
       "Save configuration to a file" \
