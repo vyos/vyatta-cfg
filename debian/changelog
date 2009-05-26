@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.86) unstable; urgency=low
+
+  * Bugfix 4428: Disable copybreak in selected drivers to improve
+    performance.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 26 May 2009 20:42:25 +0000
+
 vyatta-cfg (0.14.85) unstable; urgency=low
 
   * Update priority file
