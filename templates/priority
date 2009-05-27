@@ -91,8 +91,6 @@
 210 firewall/ipv6-name/node.tag
 210 firewall/ipv6-modify/node.tag
 215 firewall
-300 protocols/ospf
-301 protocols/ospfv3
 310 interfaces/bridge
 315 interfaces/bonding
 318 interfaces/ethernet
@@ -119,7 +117,7 @@
 530 protocols/bgp/node.tag/timers
 610 protocols/ospf/parameters
 620 protocols/ospf
-630 protocols/ospfv3/area
+630 protocols/ospfv3/parameters
 640 protocols/ospfv3
 650 protocols/rip
 660 protocols/ripng
