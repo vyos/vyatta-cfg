@@ -1,3 +1,15 @@
+vyatta-cfg (0.14.88) unstable; urgency=low
+
+  * fix for bug 4212 and bug 4434.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Thu, 28 May 2009 13:26:05 -0700
+
+vyatta-cfg (0.14.87) unstable; urgency=low
+
+  * Fix ordering of ospf
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 27 May 2009 16:01:23 -0700
+
 vyatta-cfg (0.14.86) unstable; urgency=low
 
   * Bugfix 4428: Disable copybreak in selected drivers to improve
