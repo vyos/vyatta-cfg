@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.88) unstable; urgency=low
+
+  * fix for bug 4212 and bug 4434.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Thu, 28 May 2009 13:26:05 -0700
+
 vyatta-cfg (0.14.87) unstable; urgency=low
 
   * Fix ordering of ospf
