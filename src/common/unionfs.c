@@ -273,8 +273,12 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
   //finally iterate over valid child directory entries
 
   boolean processed = FALSE;
+  boolean whiteout_file_found = FALSE;
   struct dirent *dirp = NULL;
   while ((dirp = readdir(dp)) != NULL) {
+    if (strcmp(dirp->d_name,WHITEOUT_FILE) == 0) {
+      whiteout_file_found = TRUE;
+    }
     if (strcmp(dirp->d_name, ".") != 0 && 
 	strcmp(dirp->d_name, "..") != 0 &&
 	strcmp(dirp->d_name, MODIFIED_FILE) != 0 &&
@@ -345,8 +349,48 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
       ((struct VyattaNode*)node->data)->_data._operation = K_CREATE_OP;
     }
   }
-
   closedir(dp);
+
+  //if there is a ".wh.__dir_opaque" and were not already 
+  //iterating the active dir then test for a hidden deletion
+  if (whiteout_file_found == TRUE && op != K_DEL_OP) {
+    //scan active dir for entry not found in tmp
+    DIR *dp_wo;
+    //build active directory for this...
+    char active_data_path[MAX_LENGTH_DIR_PATH];
+    sprintf(active_data_path,"%s%s",get_adirp(),rel_data_path);
+    if ((dp_wo = opendir(active_data_path)) != NULL) {
+      if (g_debug) {
+	//could also be a terminating value now
+	syslog(LOG_DEBUG,"unionfs::retrieve_data(), failed to open directory: %s\n", active_data_path);
+	printf("unionfs::retrieve_data(), failed to open directory: %s\n", active_data_path);
+      } 
+      struct dirent *dirp_wo = NULL;
+      while ((dirp_wo = readdir(dp_wo)) != NULL) {
+	char tmp_new_data_path[MAX_LENGTH_DIR_PATH];
+	sprintf(tmp_new_data_path,"%s/%s/%s",get_cdirp(),rel_data_path,dirp_wo->d_name);
+	struct stat s;
+	if (lstat(tmp_new_data_path,&s) != 0) {
+	  //create new node and insert...
+	  struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
+	  char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+	  strcpy(data_buf,dirp_wo->d_name); 
+	  vn->_data._name = data_buf;
+	  vn->_data._value = FALSE;
+	  vn->_data._operation = K_DEL_OP;
+	  vn->_priority = LOWEST_PRIORITY;
+	  
+	  GNode *new_node = g_node_new(vn);
+	  new_node = insert_sibling_in_order(node,new_node);
+	  char new_data_path[MAX_LENGTH_DIR_PATH];
+	  sprintf(new_data_path,"%s/%s",rel_data_path,dirp_wo->d_name);
+	  retrieve_data(new_data_path,new_node,root,K_DEL_OP);
+	}
+      }
+      closedir(dp_wo);
+    }
+  }
+  
   return;
 }
 
