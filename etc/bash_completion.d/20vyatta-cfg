@@ -973,11 +973,52 @@ vyatta_config_complete ()
     return
   fi
 
+  local start_idx=0
+
+  # handle "copy" and "rename"
+  if [ "$command" == "copy" -o "$command" == "rename" ]; then
+      # Syntax of copy and rename commands are:
+      #
+      #     copy/rename <param1> <sub-param1> to <param2> <sub-param2>
+      #
+      # where <param1> and <param2> are configuration parameters 
+      # in the tree at the current edit level.
+      #
+      # If parsing index 1 or 2 (i.e. <param1> or <sub-param1>),
+      # fall through this test to the parameter parsing code below.
+      #
+      if (( ( end_space && num_comp == 2 ) || 
+	    ( !end_space && num_comp == 3 ) )); then
+	  # If parsing index 3, there's only one option.
+	  declare -a hitems=( "to" )
+	  declare -a hstrs=( "Set destination" )
+	  generate_help_text hitems hstrs
+	  vyatta_completions=( "to" )
+	  vyatta_do_complete
+	  eval $restore_shopts
+	  return
+      elif (( ( num_comp > 2 ) &&
+	      ( ( num_comp < 5 ) || ( !end_space && num_comp == 5 ) ) )); then
+	  # If parsing index 4 or 5, we set start_idx so that
+	  # the parameter parsing code will start parsing at
+	  # <param2>.  Parsing these parameters should follow
+	  # the same rules as the "set" command.
+	  start_idx=3
+	  is_set=1
+      elif (( ( end_space && num_comp == 5 ) ||
+	      ( num_comp > 5 ) )); then
+	  # If parsing after index 5, there are no more valid parameters
+	  COMPREPLY=()
+	  eval $restore_shopts
+	  return
+      fi
+  fi
+
   local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
   local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
   local last_tag=0
-  local idx=0
-  for (( idx=0; idx < num_comp; idx++ )); do
+  local idx=$start_idx
+  for (( idx=$start_idx; idx < num_comp; idx++ )); do
     last_tag=0
     local comp=${comp_words[$idx]}
     vyatta_escape comp comp
@@ -1220,6 +1261,8 @@ complete -F vyatta_config_complete exit
 complete -F vyatta_run_complete run
 complete -F vyatta_save_complete save
 complete -F vyatta_load_complete load
+complete -F vyatta_config_complete copy
+complete -F vyatta_config_complete rename
 
 # Local Variables:
 # mode: shell-script
