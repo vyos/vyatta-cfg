@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.90) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Remove priorities from unnecessary bgp steps
+  * Fix BGP priority
+
+  [ Bob Gilligan ]
+  * Bugfix 4235: Add help for "copy" and "rename" commands.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 29 May 2009 15:42:28 -0700
+
 vyatta-cfg (0.14.89) unstable; urgency=low
 
   * Bugfix 4235: Add help text for "load" and "save" commands in config
