@@ -373,22 +373,36 @@ vyatta_run_complete ()
   eval $restore_shopts
 }
 
-vyatta_save_complete()
+vyatta_loadsave_complete()
 {
-  # Generate completion help for the "save" command
+  # Generate completion help for the "load" and "save" commands
+
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
 
-  if (( $COMP_CWORD <= 1 )); then
+  # Only provide completions after command name has been typed, but
+  # before any characters of the command argument have been entered.
+  # File name completion, and completion of the various URL formats
+  # is not supported yet.
+  #
+  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
       echo
       echo "Possible completions:"
-      echo -e "  <file>\t\t\t\tSave to file on local machine"
-      echo -e "  scp://<user>:<passwd>@<host>/<file>\tSave to file on remote machine"
-      echo -e "  ftp://<user>:<passwd>@<host>/<file>\tSave to file on remote machine"
-      echo -e "  tftp://<host>/<file>\t\t\tSave to file on remote machine"
+      if [ "${COMP_WORDS[0]}" = "load" ]; then
+	  echo -e "  <Enter>\t\t\t\tLoad from system config file"
+	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
+	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  http://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
+      elif [ "${COMP_WORDS[0]}" = "save" ]; then
+	  echo -e "  <Enter>\t\t\t\tSave to system config file"
+	  echo -e "  <file>\t\t\t\tSave to file on local machine"
+	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tSave to file on remote machine"
+	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tSave to file on remote machine"
+	  echo -e "  tftp://<host>/<file>\t\t\tSave to file on remote machine"
+      fi
   
-      COMP_WORDS=( "${COMP_WORDS[@]:1}" )
-      (( COMP_CWORD -= 1 ))
       COMPREPLY=( "" " " )
   else
       COMPREPLY=()
@@ -396,33 +410,6 @@ vyatta_save_complete()
 
   eval $restore_shopts
 }
-
-vyatta_load_complete()
-{
-  # Generate completion help for the "load" command
-  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
-  shopt -s extglob nullglob
-
-  if (( $COMP_CWORD <= 1 )); then
-      echo
-      echo "Possible completions:"
-      echo -e "  <file>\t\t\t\tLoad from file on local machine"
-      echo -e "  scp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-      echo -e "  ftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-      echo -e "  http://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-      echo -e "  tftp://<host>/<file>\t\t\tLoad from to file on remote machine"
-  
-      COMP_WORDS=( "${COMP_WORDS[@]:1}" )
-      (( COMP_CWORD -= 1 ))
-      COMPREPLY=( "" " " )
-  else
-      COMPREPLY=()
-  fi
-
-  eval $restore_shopts
-}
-
-
 
 declare v_cfg_completion_debug=0
 decho ()
@@ -1259,8 +1246,8 @@ complete -F vyatta_config_complete show
 complete -F vyatta_config_complete edit
 complete -F vyatta_config_complete exit
 complete -F vyatta_run_complete run
-complete -F vyatta_save_complete save
-complete -F vyatta_load_complete load
+complete -F vyatta_loadsave_complete save
+complete -F vyatta_loadsave_complete load
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 
