@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.92) unstable; urgency=low
+
+  * UNRELEASED
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 29 May 2009 18:35:41 -0700
+
 vyatta-cfg (0.14.91) unstable; urgency=low
 
   * Bugfix 4235: Code cleanup.
