@@ -980,8 +980,10 @@ get_term_data_values(GNode *node)
     data = (struct ValueData*)calloc(1, sizeof(struct ValueData));
     if ((tok_str_active == NULL || tok_str_active[0] == NULL) &&
 	(tok_str_new == NULL || tok_str_new[0] == NULL)) {
-  //      data->_state = K_NO_OP;
-  //      g_datalist_set_data(&datalist, tok_str_active[0], data);
+      cp = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+      cp[0] = '\0';
+      data->_state = ((struct VyattaNode*)node->parent->data)->_data._operation;
+      g_datalist_set_data(&datalist, cp, data);
     }
     else if (tok_str_active == NULL || tok_str_active[0] == NULL) {
       data->_state = K_CREATE_OP;
