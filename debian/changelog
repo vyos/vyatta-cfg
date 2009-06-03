@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.91+jenner4) unstable; urgency=low
+
+  [ Mohit Mehta ]
+  * change default-policy to default-action for zones
+
+  [ Stephen Hemminger ]
+  * Handle speed/duplex settings better
+  * Allow delete of ethernet settings when device does not exist
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 03 Jun 2009 16:27:13 -0700
+
 vyatta-cfg (0.14.91+jenner3) unstable; urgency=low
 
   [ slioch ]
