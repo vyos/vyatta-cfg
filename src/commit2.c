@@ -377,6 +377,16 @@ process_func(GNode *node, gpointer data)
 	set_in_delete_action(TRUE);
       }
 
+      //do last sibling check
+      GNode *n = g_node_last_sibling(node);
+      if (n == node) {
+	setenv(ENV_SIBLING_POSITION,"LAST",1);
+      }
+      n = g_node_first_sibling(node);
+      if (n == node) {
+	setenv(ENV_SIBLING_POSITION,"FIRST",1);
+      }
+
       //do not set for promoted actions
       if (!IS_ACTIVE(d->_operation)) {
 	if (IS_DELETE(d->_operation)) {
@@ -408,6 +418,7 @@ process_func(GNode *node, gpointer data)
       }
 
       unsetenv(ENV_ACTION_NAME);
+      unsetenv(ENV_SIBLING_POSITION);
 
       if (g_coverage) {
 	struct timeval t;
