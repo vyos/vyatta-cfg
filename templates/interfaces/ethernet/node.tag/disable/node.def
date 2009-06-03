@@ -5,7 +5,8 @@ create: /etc/netplug/linkdown.d/dhclient $VAR(../@)
           /etc/netplug/linkup.d/dhclient $VAR(../@)
           exit 1
         fi
-delete: if ! sudo ip link set $VAR(../@) up; then
-          echo "Error enabling dev $VAR(../@)"
-          exit 1
+delete: [ -d /sys/class/net/$VAR(../@) ] || exit 0
+	if ! sudo ip link set $VAR(../@) up; then
+             echo "Error enabling dev $VAR(../@)"
+             exit 1
         fi
