@@ -24,9 +24,8 @@ update:
 	   exit 1
 	fi
 
-delete:
-	sudo /opt/vyatta/sbin/vyatta-irqaffin reset $VAR(../@)
-	if [ $? -ne 0 ]; then
+delete: [ -d /sys/class/net/$VAR(../@) ] || exit 0
+	if ! sudo /opt/vyatta/sbin/vyatta-irqaffin reset $VAR(../@); then
 	    echo "Error deleting CPU affinity mask on interface $VAR(../@)"
 	    exit 1
 	fi

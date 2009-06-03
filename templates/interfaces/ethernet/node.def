@@ -6,4 +6,5 @@ syntax:expression: exec \
 allowed: /opt/vyatta/sbin/vyatta-interfaces.pl --show=ethernet
 create: sudo ip link set "$VAR(@)" up
 	/opt/vyatta/sbin/vyatta-link-detect $VAR(@) on
-delete: sudo ip link set "$VAR(@)" down
+delete: [ -d /sys/class/net/$VAR(../@) ] || exit 0
+        sudo ip link set $VAR(@) down
