@@ -83,7 +83,7 @@ sub is_local_zone {
 sub get_zone_default_policy {
     my ($value_func, $zone_name) = @_;
     my $config = new Vyatta::Config;
-    return $config->$value_func("zone-policy zone $zone_name default-policy");
+    return $config->$value_func("zone-policy zone $zone_name default-action");
 }
 
 sub rule_exists {
