@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner8) unstable; urgency=low
+
+  * Manage speed duplex in vyatta-interfaces.pl
+  * Make sure interface name regex are anchored
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 04 Jun 2009 16:06:41 -0700
+
 vyatta-cfg (0.14.91+jenner7) unstable; urgency=low
 
   * Make sure interface name regex are anchored
