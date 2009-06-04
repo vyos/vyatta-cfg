@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner7) unstable; urgency=low
+
+  * Make sure interface name regex are anchored
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 04 Jun 2009 14:50:39 -0700
+
 vyatta-cfg (0.14.91+jenner6) unstable; urgency=low
 
   * Bugfix 4235: Improve help text.
