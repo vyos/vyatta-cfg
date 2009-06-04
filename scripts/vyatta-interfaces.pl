@@ -50,17 +50,21 @@ my $dhcp_daemon = '/sbin/dhclient';
 my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
 my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name);
 my ($check_up, $show_path);
+my @speed_duplex;
 
 sub usage {
-    print "Usage: $0 --dev=<interface> --check=<type>\n";
-    print "       $0 --dev=<interface> --warn\n";
-    print "       $0 --dev=<interface> --valid-mac=<aa:aa:aa:aa:aa:aa>\n";
-    print "       $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>\n";
-    print "       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>\n";
-    print "       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}\n";
-    print "       $0 --dev=<interface> --path\n";
-    print "	  $0 --dev=<interface> --isup\n";
-    print "       $0 --show=<type>\n";
+    print <<EOF;
+Usage: $0 --dev=<interface> --check=<type>
+       $0 --dev=<interface> --warn
+       $0 --dev=<interface> --valid-mac=<aa:aa:aa:aa:aa:aa>
+       $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>
+       $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>
+       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}
+       $0 --dev=<interface> --speed-duplex=speed,duplex
+       $0 --dev=<interface> --path
+       $0 --dev=<interface> --isup
+       $0 --show=<type>
+EOF
     exit 1;
 }
 
@@ -77,6 +81,7 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 	   "warn"	       => \$warn_name,
 	   "path"	       => \$show_path,
 	   "isup"	       => \$check_up,
+	   "speed-duplex=s{2}" => \@speed_duplex,
 ) or usage();
 
 update_eth_addrs($eth_update, $dev)	if ($eth_update);
@@ -90,6 +95,7 @@ exists_name($dev)			if ($warn_name);
 show_interfaces($show_names)		if ($show_names);
 show_config_path($dev)	       		if ($show_path);
 is_up($dev)			        if ($check_up);
+set_speed_duplex($dev, @speed_duplex)   if (@speed_duplex);
 exit 0;
 
 sub is_ip_configured {
@@ -491,3 +497,57 @@ sub show_config_path {
     print "/opt/vyatta/config/active/$level\n";
 }
 
+sub get_ethtool {
+    my $dev = shift;
+
+    open( my $ethtool, "sudo /usr/sbin/ethtool $dev 2>/dev/null |" )
+      or die "ethtool failed: $!\n";
+
+    # ethtool produces:
+    #
+    # Settings for eth1:
+    # Supported ports: [ TP ]
+    # ...
+    # Speed: 1000Mb/s
+    # Duplex: Full
+    # ...
+    # Auto-negotiation: on
+    my ($rate, $duplex, $autoneg);
+    while (<$ethtool>) {
+	chomp;
+        if ( /^\s+Speed:\s([0-9]+)Mb\/s/ ) {
+	    $rate = $1;
+	} elsif ( /^\s+Duplex:\s(.*)$/ ) {
+	    $duplex = lc $1;
+        } elsif ( /^\s+Auto-negotiation: on/ ) {
+	    $autoneg = 1;
+	}
+    }
+    close $ethtool;
+    return ($rate, $duplex, $autoneg);
+}
+
+sub set_speed_duplex {
+    my ($intf, $nspeed, $nduplex) = @_;
+    die "Missing --dev argument\n" unless $intf;
+
+    my ($ospeed, $oduplex, $autoneg) = get_ethtool($intf);
+
+    # Don't change settings if already okay.
+    if ($autoneg) {
+	return if ($nspeed eq 'auto');
+    } else {
+	return if (defined $ospeed && defined $oduplex &&
+		   $nspeed eq $ospeed && $nduplex eq $oduplex);
+    }
+
+    my @cmd = ('sudo', 'ethtool', '-s', $intf );
+    if ($nspeed eq 'auto') {
+	push @cmd, qw(autoneg on);
+    } else {
+	push @cmd, 'speed', $nspeed, 'duplex', $nduplex, 'autoneg', 'off';
+    }
+    exec @cmd;
+
+    die "Command failed: ", join(' ', @cmd);
+}

@@ -5,21 +5,9 @@ syntax:expression: $VAR(@) in "auto", "half", "full"; "duplex must be auto, half
 commit:expression: ( $VAR(@) == "auto" && $VAR(../speed/@) == "auto" ) || \
 		   ( $VAR(@) != "auto" && $VAR(../speed/@) != "auto" ) ; \
 	"if duplex is hardcoded, speed must also be hardcoded"
-
-update: if [ "$VAR(@)" = "auto" ]
-	then 
-           if ! sudo ethtool $VAR(../@) | grep -q 'Auto-negotiation: on'
-	   then sudo ethtool -s $VAR(../@) autoneg on
-	   fi
-        else 
-           sudo ethtool -s $VAR(../@) \
-	           speed $VAR(../speed/@) duplex $VAR(@) autoneg off
-	fi
-
-delete: if [ -d /sys/class/net/$VAR(../@) ]; then
-           sudo ethtool -s $VAR(../@) autoneg on
-	fi
+update: /opt/vyatta/sbin/vyatta-interfaces.pl --dev=$(../@) \
+	--speed-duplex $VAR(../speed/@) $VAR(@)
 comp_help:Possible completions:
-  auto\t\tAuto negotiation
+  auto\t\tAuto negotiation (default)
   half\t\tHalf duplex
   full\t\tFull duplex
