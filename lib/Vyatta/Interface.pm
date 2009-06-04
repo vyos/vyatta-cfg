@@ -56,26 +56,26 @@ use constant {
 #   path: configuration level below interfaces
 #   vif:  places to look for vif (if any)
 my %net_prefix = (
-    'adsl[\d]+'  => { path => 'adsl',
+    '^adsl[\d]+$'  => { path => 'adsl',
 		      vif => 'vif',    },
-    'bond[\d]+'  => { path => 'bonding', 
+    '^bond[\d]+$'  => { path => 'bonding', 
 		      vif => 'vif', },
-    'br[\d]+'    => { path => 'bridge',
+    '^br[\d]+$'    => { path => 'bridge',
 		      vif => 'vif' },
-    'eth[\d]+'   => { path => 'ethernet',
+    '^eth[\d]+$'   => { path => 'ethernet',
 		      vif => 'vif', },
-    'lo'         => { path => 'loopback' },
-    'ml[\d]+'    => { path => 'multilink',
+    '^lo$'         => { path => 'loopback' },
+    '^ml[\d]+$'    => { path => 'multilink',
 		      vif => 'vif', },
-    'vtun[\d]+'  => { path => 'openvpn' },
-    'wan[\d]+'   => { path => 'serial',
+    '^vtun[\d]+$'  => { path => 'openvpn' },
+    '^wan[\d]+$'   => { path => 'serial',
 		      vif  => ( 'cisco-hdlc vif', 'ppp vif', 
 				'frame-relay vif' ), },
-    'tun[\d]+'   => { path => 'tunnel' },
-    'wlm[\d]+'   => { path => 'wireless-modem' },
-    'peth[\d]+'  => { path => 'pseudo-ethernet',
+    '^tun[\d]+$'   => { path => 'tunnel' },
+    '^wlm[\d]+$'   => { path => 'wireless-modem' },
+    '^peth[\d]+$'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
-    'wlan[\d]+'  => { path => 'wireless', vif => 'vif' },
+    '^wlan[\d]+$'  => { path => 'wireless', vif => 'vif' },
 );
 
 # get list of interface types
