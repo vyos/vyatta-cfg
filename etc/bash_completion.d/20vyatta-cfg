@@ -46,7 +46,7 @@ declare last_idx=0
 declare -a comp_words=()
 
 # commands to unalias
-declare -a unalias_cmds=( clear configure date debug edit exit load load-merge \
+declare -a unalias_cmds=( clear configure date debug edit exit load merge \
                           no run set show save terminal undebug up top )
 for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
@@ -138,7 +138,7 @@ load ()
   eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
 }
 
-load-merge ()
+merge ()
 {
   # don't load if there are uncommitted changes.
   if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
@@ -395,6 +395,13 @@ vyatta_loadsave_complete()
 	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
 	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
 	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
+      elif [ "${COMP_WORDS[0]}" = "merge" ]; then
+	  echo -e "  <Enter>\t\t\t\tMerge from system config file"
+	  echo -e "  <file>\t\t\t\tMerge from file on local machine"
+	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tMerge from file on remote machine"
+	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tMerge from file on remote machine"
+	  echo -e "  http://<host>/<file>\t\t\tMerge from file on remote machine"
+	  echo -e "  tftp://<host>/<file>\t\t\tMerge from file on remote machine"
       elif [ "${COMP_WORDS[0]}" = "save" ]; then
 	  echo -e "  <Enter>\t\t\t\tSave to system config file"
 	  echo -e "  <file>\t\t\t\tSave to file on local machine"
@@ -892,7 +899,7 @@ vyatta_config_complete ()
                         "edit" \
                         "exit" \
                         "load" \
-                        "load-merge" \
+                        "merge" \
                         "rename" \
                         "run" \
                         "save" \
@@ -1247,6 +1254,7 @@ complete -F vyatta_config_complete exit
 complete -F vyatta_run_complete run
 complete -F vyatta_loadsave_complete save
 complete -F vyatta_loadsave_complete load
+complete -F vyatta_loadsave_complete merge
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 
