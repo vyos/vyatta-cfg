@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner10) unstable; urgency=low
+
+  * fix for bug 4505 merge is now called merge.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 05 Jun 2009 16:43:57 -0700
+
 vyatta-cfg (0.14.91+jenner9) unstable; urgency=low
 
   * fix for bug 4444.
