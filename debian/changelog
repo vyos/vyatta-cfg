@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner9) unstable; urgency=low
+
+  * fix for bug 4444.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 05 Jun 2009 16:10:57 -0700
+
 vyatta-cfg (0.14.91+jenner8) unstable; urgency=low
 
   * Manage speed duplex in vyatta-interfaces.pl
