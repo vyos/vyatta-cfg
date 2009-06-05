@@ -42,7 +42,7 @@ GNode*
 get_transactions(GNode*, boolean priority);
 
 boolean
-complete(GNode *node, boolean test_mode);
+complete(GSList *node_coll, boolean test_mode);
 
 gboolean
 sort_func(GNode *node, gpointer data, boolean priority_mode);
@@ -194,6 +194,7 @@ main(int argc, char** argv)
     exit(0);
   }
 
+  GSList *completed_root_node_coll = NULL;
   boolean no_errors = TRUE;
   set_in_commit(TRUE);
   int i = 0;
@@ -226,7 +227,8 @@ main(int argc, char** argv)
       }
       else {
 	if (disable_partial_commit == FALSE && g_dump_actions == FALSE) {
-	  complete(comp_cp_node, test_mode);
+	  //	  complete(comp_cp_node, test_mode);
+	  completed_root_node_coll = g_slist_append(completed_root_node_coll,comp_cp_node);
 	}
       }
     }
@@ -247,12 +249,13 @@ main(int argc, char** argv)
 
   if (no_errors == TRUE) {
     if (disable_partial_commit == TRUE && g_dump_actions == FALSE) {
-      complete(orig_node_tree, test_mode);
+      completed_root_node_coll = g_slist_append(completed_root_node_coll,orig_node_tree);
     }
     /*
      * Need to add to the following func below to clean up dangling .wh. files
      */
     if (g_dump_actions == FALSE) {
+      complete(completed_root_node_coll, test_mode);
       common_commit_clean_temp_config(orig_node_tree, test_mode);
     }
     if (g_debug == TRUE) {
@@ -262,6 +265,7 @@ main(int argc, char** argv)
   }
   else {
     fprintf(out_stream,"Commit failed\n");
+    complete(completed_root_node_coll, test_mode);
   }
 
   set_in_commit(FALSE);
@@ -448,21 +452,24 @@ process_func(GNode *node, gpointer data)
  *
  **/
 boolean
-complete(GNode *node, boolean test_mode)
+complete(GSList *node_coll, boolean test_mode)
 {
-  gpointer gp = ((GNode*)node)->data;
-  if (g_debug) {
-    if (((struct VyattaNode*)gp)->_data._name != NULL) {
-      printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
-      syslog(LOG_DEBUG,"commit2::complete():name: %s, path: %s",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+  GSList *l;
+  for (l = node_coll; l; l = g_slist_next (l)) {
+    gpointer gp = ((GNode*)l->data)->data;
+    if (g_debug) {
+      if (((struct VyattaNode*)gp)->_data._name != NULL) {
+	printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+	syslog(LOG_DEBUG,"commit2::complete():name: %s, path: %s",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+      }
+      else {
+	printf("commit2::complete()\n");
+	syslog(LOG_DEBUG,"commit2::complete()");
+      }
     }
-    else {
-      printf("commit2::complete()\n");
-      syslog(LOG_DEBUG,"commit2::complete()");
-    }
+    //on transactional nodes only, note to avoid calling this if a headless root
+    common_commit_copy_to_live_config(l->data, test_mode);
   }
-  //on transactional nodes only, note to avoid calling this if a headless root
-  common_commit_copy_to_live_config(node, test_mode);
   return TRUE;
 }
 
