@@ -115,18 +115,6 @@ get_config_path(GNode *node)
   return buf;
 }
 
-
-/**
- * Recurse from node identified as deleted
- **/
-void
-retrieve_delete_data(char* rel_data_path, GNode *node)
-{
-  //switch root
-
-  return;
-}
-
 /**
  *
  **/
@@ -336,7 +324,12 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	GNode *new_node = g_node_new(vn);
 	//	new_node = g_node_insert(node, -1, new_node);
 	new_node = insert_sibling_in_order(node,new_node);
-	retrieve_data(new_data_path,new_node,root,vn->_data._operation);
+	if (op == K_DEL_OP) {
+	  retrieve_data(new_data_path,new_node,get_adirp(),vn->_data._operation);
+	}
+	else {
+	  retrieve_data(new_data_path,new_node,root,vn->_data._operation);
+	}
       }
     }
   }
@@ -384,7 +377,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	  new_node = insert_sibling_in_order(node,new_node);
 	  char new_data_path[MAX_LENGTH_DIR_PATH];
 	  sprintf(new_data_path,"%s/%s",rel_data_path,dirp_wo->d_name);
-	  retrieve_data(new_data_path,new_node,root,K_DEL_OP);
+	  retrieve_data(new_data_path,new_node,get_adirp(),K_DEL_OP);
 	}
       }
       closedir(dp_wo);
