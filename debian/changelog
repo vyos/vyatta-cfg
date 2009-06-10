@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner11) unstable; urgency=low
+
+  * additional fix for bug 4212. root dirs needed to be reversed on del
+    event. passes regression
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 09 Jun 2009 20:16:30 -0700
+
 vyatta-cfg (0.14.91+jenner10) unstable; urgency=low
 
   * fix for bug 4505 merge is now called merge.
