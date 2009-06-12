@@ -68,6 +68,7 @@ my %type_handler = (
 		    'hex16' => \&validate_hex_16_bits,
 		    'hex32' => \&validate_hex_32_bits,
                     'ipv6_addr_param' => \&validate_ipv6_addr_param,
+                    'restrictive_filename' => \&validate_restrictive_filename
                    );
 
 sub validate_ipv4 {
@@ -265,6 +266,12 @@ sub validate_ipv6_addr_param {
     # third format:  <ipv6addr>
     return validate_ipv6($value)
   }
+}
+
+# validate a restrictive filename
+sub validate_restrictive_filename {
+  my $value = shift;
+  return (($value =~ /^[-_.a-zA-Z0-9]+$/) ? 1 : 0);
 }
 
 sub validateType {
