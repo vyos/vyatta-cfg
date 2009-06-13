@@ -1,3 +1,26 @@
+vyatta-cfg (0.14.96) unstable; urgency=low
+
+  [ slioch ]
+  * fix for bug 4444.
+  * fix for bug 4505 merge is now called merge.
+  * additional fix for bug 4212. root dirs needed to be reversed on del
+    event. passes regression
+
+  [ An-Cheng Huang ]
+  * add "restrictive_filename" to TypeChecker
+
+  [ Stephen Hemminger ]
+  * Fix update on multi-node
+  * Handle speed/duplex settings better
+  * Allow delete of ethernet settings when device does not exist
+  * Make sure interface name regex are anchored
+  * Manage speed duplex in vyatta-interfaces.pl
+  * Make sure interface name regex are anchored
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 12 Jun 2009 17:09:25 -0700
+
 vyatta-cfg (0.14.95) unstable; urgency=low
 
   * Bugfix 4235: Improve help text.
