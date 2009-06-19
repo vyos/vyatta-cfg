@@ -408,7 +408,8 @@ process_func(GNode *node, gpointer data)
 	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
       }
       else {
-	if (c->_def.actions[syntax_act].vtw_list_head &&
+	if ((result->_action == syntax_act || result->_action == commit_act) && 
+	    c->_def.actions[syntax_act].vtw_list_head &&
 	    c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
 	  fprintf(out_stream,"commit\t:\t%s\n",d->_path);
 	}
