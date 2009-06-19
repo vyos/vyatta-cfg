@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.91+jenner12) unstable; urgency=low
+
+  * fix -a option for displaying actions when commit or syntax check is
+    present in the node.def. This change only affects display of nodes
+    when -a option is used.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 19 Jun 2009 14:13:13 -0700
+
 vyatta-cfg (0.14.91+jenner11) unstable; urgency=low
 
   * additional fix for bug 4212. root dirs needed to be reversed on del
