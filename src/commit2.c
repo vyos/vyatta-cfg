@@ -14,13 +14,15 @@ boolean g_coverage = FALSE;
 boolean g_dump_trans = FALSE;
 boolean g_dump_actions = FALSE;
 
-const int ActionOrder[top_act] = {
-  4,
-  5,
+#define g_num_actions 5
+
+const int ActionOrder[g_num_actions] = {
+  //  4, //syntax
+  //  5, //commit
   6,
   0,
   1,
-  2,
+  //  2, //activate
   3,
   7
 };
@@ -70,6 +72,9 @@ process_priority_node(GNode *priority_node);
 
 static gboolean
 enclosing_process_func(GNode *node, gpointer data);
+
+static gboolean
+validate_func(GNode *node, gpointer data);
 /*
 NOTES: reverse: use the n-nary tree in commit2.c and only encapuslate data store. pass in func pointer for processing of commands below.
 
@@ -95,6 +100,7 @@ usage(void)
   printf("\t-e\t\tprint node where error occurred\n");
   printf("\t-c\t\tdump node coverage and execution times\n");
   printf("\t-o\t\tdisable partial commit\n");
+  printf("\t-f\t\tfull iteration over configuration on commit check\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -109,9 +115,10 @@ main(int argc, char** argv)
   boolean priority_mode = TRUE;
   boolean test_mode = FALSE;
   boolean disable_partial_commit = FALSE;
+  boolean full_commit_check = FALSE;
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoa")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoaf")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -141,6 +148,9 @@ main(int argc, char** argv)
     case 'a':
       g_dump_actions = TRUE;
       break;
+    case 'f':
+      full_commit_check = TRUE;
+      break;
     default:
       usage();
       exit(0);
@@ -160,6 +170,16 @@ main(int argc, char** argv)
     common_commit_clean_temp_config(NULL, test_mode);
     fprintf(out_stream, "No configuration changes to commit\n");
     return 0;
+  }
+
+
+  if (g_dump_trans == FALSE) { //DISABLE VALIDATION ON TREE DUMP
+    set_in_commit(TRUE);
+    // Perform syntax and commit check on tree
+    if (validate_configuration(config_data, full_commit_check) == FALSE) {
+      fprintf(out_stream, "Commit failed\n");
+      return 0;
+    }
   }
   
   GNode *orig_node_tree = g_node_copy(config_data);
@@ -196,7 +216,6 @@ main(int argc, char** argv)
 
   GSList *completed_root_node_coll = NULL;
   boolean no_errors = TRUE;
-  set_in_commit(TRUE);
   int i = 0;
   do {
     boolean success = TRUE;
@@ -322,9 +341,8 @@ process_func(GNode *node, gpointer data)
       if a node is DELETE, is a DELETE ACTION or a END ACTION, or a BEGIN ACTION
      */
     if ((IS_SET(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action != delete_act && result->_action != create_act)) ||
-	(IS_CREATE(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action == syntax_act || result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
+	(IS_CREATE(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
 	(IS_ACTIVE(d->_operation) && ((result->_action == begin_act) || (result->_action == end_act))) ||
-	//	(IS_DELETE(d->_operation) && ((result->_action == delete_act) || (result->_action == syntax_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
 	(IS_DELETE(d->_operation) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
       //NEED TO ADD IF CREATE, THEN CREATE OR UPDATE
       //IF SET THEN UPDATE
@@ -398,14 +416,7 @@ process_func(GNode *node, gpointer data)
 	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
       }
       else {
-	if ((result->_action == syntax_act || result->_action == commit_act) && 
-	    c->_def.actions[syntax_act].vtw_list_head &&
-	    c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
-	  fprintf(out_stream,"commit\t:\t%s\n",d->_path);
-	}
-	else {
-	  fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
-	}
+	fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
 	status = 1;
       }
       if (result->_action == delete_act) {
@@ -518,8 +529,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
     while (TRUE) {
       n = n->parent;
       vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
-      if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head ||
-	  (def.actions[syntax_act].vtw_list_head && def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1)) {
+      if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
 	enclosing = TRUE;
 	break;
       }
@@ -535,8 +545,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
 	n = n->parent;
 	vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
 	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation | K_ACTIVE_OP;
-	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head || 
-	    (def.actions[syntax_act].vtw_list_head && def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1)) {
+	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
 	  break;
 	}
 	if (G_NODE_IS_ROOT(n) == TRUE) {
@@ -805,7 +814,7 @@ process_priority_node(GNode *priority_node)
   }
   //now perform processing on what's left outside of the enclosing begin/end statements
   int i;
-  for (i = 0; i < top_act; ++i) {
+  for (i = 0; i < g_num_actions; ++i) {
     int order;
     if (delete_act != ActionOrder[i]) {
       order = G_PRE_ORDER;
@@ -863,7 +872,7 @@ enclosing_process_func(GNode *node, gpointer data)
     //perform recursive calling on new process node...
 
     int i;
-    for (i = 0; i < top_act; ++i) {
+    for (i = 0; i < g_num_actions; ++i) {
       int order;
       if (delete_act != ActionOrder[i]) {
 	order = G_PRE_ORDER;
@@ -893,3 +902,135 @@ enclosing_process_func(GNode *node, gpointer data)
 }
 
 
+
+/**
+ *
+ **/
+boolean
+validate_configuration(GNode *root_node, boolean mode) 
+{
+  if (root_node == NULL) {
+    return FALSE;
+  }
+
+  struct Result result;
+  result._err_code = 0;
+  result._mode = (int)mode;
+
+  //handles both syntax and commit
+  result._action = syntax_act;
+  g_node_traverse((GNode*)root_node,
+		  G_PRE_ORDER,
+		  G_TRAVERSE_ALL,
+		  -1,
+		  (GNodeTraverseFunc)validate_func,
+		  (gpointer)&result);
+  
+  if (result._err_code != 0) {
+    if (g_debug) {
+      printf("commit2::process_priority_node(): failure on processing pass: %d\n", syntax_act);
+      syslog(LOG_DEBUG,"commit2::process_priority_node(): failure on processing pass: %d\n", syntax_act);
+    }
+    return FALSE;
+  }
+  return TRUE;
+}
+
+
+/**
+ * Execute syntax and commit checks
+ *
+ **/
+static gboolean
+validate_func(GNode *node, gpointer data)
+{
+  if (node == NULL) {
+    return TRUE;
+  }
+
+  gpointer gp = ((GNode*)node)->data;
+  struct Config *c = &((struct VyattaNode*)gp)->_config;
+  struct Data *d = &((struct VyattaNode*)gp)->_data;
+  struct Result *result = (struct Result*)data;
+  
+  if (IS_DELETE(d->_operation)) {
+    return FALSE; //will not perform validation checks on deleted nodes
+  }
+
+  if (!c->_def.actions  ||
+      !c->_def.actions[result->_action].vtw_list_head){
+    return FALSE;
+  }
+
+  //will not call term multi if it is a noop--shouldn't show up in tree in the first place, but 
+  //will require more rework of unionfs code to fix this.
+  if (c->_def.multi && IS_NOOP(d->_operation)) {
+    return FALSE;
+  }
+  
+  //look at parent for multi tag
+  if (d->_value && d->_name) {
+    char *val = d->_name;
+    if (c->_def.tag) { //need to handle the embedded multinode as a special case--should be fixed!
+      val = (char*)clind_unescape(d->_name);
+    }
+    if (g_debug) {
+      printf("commit2::process_func(): @ value: %s\n",(char*)val);
+      syslog(LOG_DEBUG,"commit2::process_func(): @ value: %s",(char*)val);
+    }
+    set_at_string(val); //embedded multinode value
+  }
+  else {
+    if (g_debug) {
+      printf("commit2::process_func(): boolean value is: %d\n",d->_value);
+      syslog(LOG_DEBUG,"commit2::process_func(): boolean value is: %d",d->_value);
+      if (node->parent != NULL && ((struct VyattaNode*)(node->parent->data))->_data._name != NULL) {
+	printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+	syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+      }
+      printf("commit2::process_func(): @ value: [NULL]\n");
+      syslog(LOG_DEBUG,"commit2::process_func(): @ value: [NULL]\n");
+    }
+  }
+
+  common_set_context(c->_path,d->_path);
+  if (g_debug) {
+    printf("Executing %s on this node\n", ActionNames[result->_action]);
+    syslog(LOG_DEBUG,"Executing %s on this node\n", ActionNames[result->_action]);
+  }
+  
+  if (g_coverage) {
+    struct timeval t;
+    gettimeofday(&t,NULL);
+    fprintf(out_stream,"[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
+  }
+
+  boolean status = 1;
+  if (g_dump_actions == FALSE) {
+    status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+  }
+  else {
+    fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
+    status = 1;
+  }
+
+  if (g_coverage) {
+    struct timeval t;
+    gettimeofday(&t,NULL);
+    fprintf(out_stream,"[END] %lu\n",t.tv_sec);
+  }
+
+  if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+    syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
+    if (g_display_error_node) {
+      fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
+    }
+    result->_err_code = 1;
+    if (g_debug) {
+      printf("commit2::validate_func(): FAILURE: status: %d\n",status);
+      syslog(LOG_DEBUG,"commit2::validate_func(): FAILURE: status: %d",status);
+    }
+    return result->_mode ? FALSE: TRUE; //WILL STOP AT THIS POINT if mode is not set for full syntax check
+  }
+  return FALSE;
+}

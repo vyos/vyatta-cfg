@@ -21,6 +21,7 @@ struct Result
   int _err_code;
   char *_err_str;
   int _action;
+  int _mode;
 };
 
 typedef enum {
