@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner13) unstable; urgency=low
+
+  * Commit check now behaves like IslaVista.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 24 Jun 2009 11:49:07 -0700
+
 vyatta-cfg (0.14.91+jenner12) unstable; urgency=low
 
   * fix -a option for displaying actions when commit or syntax check is
