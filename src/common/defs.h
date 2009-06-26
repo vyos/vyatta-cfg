@@ -24,6 +24,7 @@ struct Result
   char *_err_str;
   int _action;
   int _mode;
+  void* _data;
 };
 
 typedef enum {

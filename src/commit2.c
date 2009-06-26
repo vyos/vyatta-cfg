@@ -172,16 +172,6 @@ main(int argc, char** argv)
     return 0;
   }
 
-
-  if (g_dump_trans == FALSE) { //DISABLE VALIDATION ON TREE DUMP
-    set_in_commit(TRUE);
-    // Perform syntax and commit check on tree
-    if (validate_configuration(config_data, full_commit_check) == FALSE) {
-      fprintf(out_stream, "Commit failed\n");
-      return 0;
-    }
-  }
-  
   GNode *orig_node_tree = g_node_copy(config_data);
 
   // Get collection of transactions, i.e. trans nodes that have been activated. 
@@ -208,17 +198,28 @@ main(int argc, char** argv)
       }
   }
 
+  set_in_commit(TRUE);
+
   GNode *trans_child_node = (GNode*)g_node_first_child(trans_coll);
   if (trans_child_node == NULL) {
     printf("commit2: No child nodes to process, exiting\n");
     exit(0);
   }
 
+  //open the changes file and clear
+  FILE *fp_changes = fopen("/tmp/.changes","w");
+  if (fp_changes == NULL) {
+    printf("commit2: Cannot access changes file, exiting\n");
+    syslog(LOG_ERR,"commit2: Cannot access changes file, exiting");
+    exit(0);
+  }
+
   GSList *completed_root_node_coll = NULL;
+  GSList *nodes_visited_coll = NULL;
   boolean no_errors = TRUE;
   int i = 0;
   do {
-    boolean success = TRUE;
+    boolean success = FALSE;
     if (g_debug == TRUE) {
       if (trans_child_node != NULL && trans_child_node->data != NULL && ((struct VyattaNode*)(trans_child_node->data))->_data._name != NULL) {
 	printf("commit2: Starting new transaction processing pass on root: %s\n", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
@@ -238,7 +239,9 @@ main(int argc, char** argv)
     }
 
     //on each priority node now execute actions
-    if ((success = process_priority_node(trans_child_node)) == TRUE) {
+
+    nodes_visited_coll = NULL;
+    if ((validate_configuration(trans_child_node, full_commit_check, &nodes_visited_coll) == TRUE) && (success = process_priority_node(trans_child_node)) == TRUE) {
       //this below copies the node directory from the local to active location
       //if this is true root skip
       if (trans_child_node != NULL && trans_child_node->data != NULL && strcmp(((struct VyattaNode*)(trans_child_node->data))->_data._path,"/") == 0) {
@@ -263,6 +266,10 @@ main(int argc, char** argv)
 	syslog(LOG_DEBUG,"commit2: Failed in processing node\n");
       }
     }
+
+    //now update the changes file
+    update_change_file(fp_changes,nodes_visited_coll);
+
     ++i;
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
 
@@ -297,6 +304,9 @@ main(int argc, char** argv)
     syslog(LOG_DEBUG,"DONE");
   }
   
+  if (fp_changes != NULL) {
+    fclose(fp_changes);
+  }
   exit (no_errors == FALSE);
 }
 
@@ -918,7 +928,7 @@ enclosing_process_func(GNode *node, gpointer data)
  *
  **/
 boolean
-validate_configuration(GNode *root_node, boolean mode) 
+validate_configuration(GNode *root_node, boolean mode, GSList **nodes_visited_coll) 
 {
   if (root_node == NULL) {
     return FALSE;
@@ -927,6 +937,7 @@ validate_configuration(GNode *root_node, boolean mode)
   struct Result result;
   result._err_code = 0;
   result._mode = (int)mode;
+  result._data = (void*)nodes_visited_coll;
 
   //handles both syntax and commit
   result._action = syntax_act;
@@ -944,6 +955,9 @@ validate_configuration(GNode *root_node, boolean mode)
     }
     return FALSE;
   }
+
+  GList **c_tmp = (GList**)result._data;
+  *nodes_visited_coll = (GSList*)*c_tmp;
   return TRUE;
 }
 
@@ -963,6 +977,23 @@ validate_func(GNode *node, gpointer data)
   struct Config *c = &((struct VyattaNode*)gp)->_config;
   struct Data *d = &((struct VyattaNode*)gp)->_data;
   struct Result *result = (struct Result*)data;
+
+  //since this visits all working nodes, let's maintain a set of nodes to commit
+  GList **c_tmp = (GList**)result->_data;
+  GList *coll = *c_tmp;
+  if (d->_path != NULL) {
+    char *buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+    if (IS_DELETE(d->_operation)) {
+      sprintf(buf,"- %s",d->_path);
+      coll = g_slist_append(coll,buf);
+      result->_data = (void*)&coll;
+    }
+    else if (IS_SET_OR_CREATE(d->_operation)) {
+      sprintf(buf,"+ %s",d->_path);
+      coll = g_slist_append(coll,buf);
+      result->_data = (void*)&coll;
+    }
+  }
   
   if (IS_DELETE(d->_operation)) {
     return FALSE; //will not perform validation checks on deleted nodes
@@ -1044,4 +1075,26 @@ validate_func(GNode *node, gpointer data)
     return result->_mode ? FALSE: TRUE; //WILL STOP AT THIS POINT if mode is not set for full syntax check
   }
   return FALSE;
+}
+
+/**
+ *
+ *
+ **/
+void
+update_change_file(FILE *fp, GSList *coll) 
+{
+  if (coll == NULL || fp == NULL) {
+    return;
+  }
+  GSList *l;
+  for (l = coll; l; l = g_slist_next (l)) {
+    if (l->data) {
+      char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+      sprintf(buf,"%s\n",(char*)l->data);
+      fwrite(buf,1,strlen((char*)buf),fp);
+      free(l->data);
+    }
+  }
+  g_slist_free(coll);
 }
