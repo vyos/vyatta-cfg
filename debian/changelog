@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner14) unstable; urgency=low
+
+  * The SYNTAX and COMMIT tags will be executed before an actions
+    (UPDATE,
+
+ -- slioch <slioch@eng-140.vyatta.com>  Fri, 26 Jun 2009 15:06:27 -0700
+
 vyatta-cfg (0.14.91+jenner13) unstable; urgency=low
 
   * Commit check now behaves like IslaVista.
