@@ -98,6 +98,66 @@ sub listNodes {
   return @nodes_modified;
 }
 
+## listNodes("level")
+# return array of all nodes (active plus currently committed) at "level"
+# level is relative
+sub listOrigPlusComNodes {
+  my ($self, $path) = @_;
+  my @nodes = ();
+
+  my @nodes_modified = $self->listNodes();
+
+  #convert array to hash
+  my %coll;
+  my $coll;
+  @coll{@nodes_modified} = @nodes_modified;
+
+  my $level = $self->{_level};
+
+  #now test against the inprocess file in the system
+#  my $com_file = "/tmp/.changes_$$";
+  my $com_file = "/tmp/.changes";
+  open FILE, "<", $com_file;
+  if (-e $com_file) {
+      foreach my $line (<FILE>) {
+	  my @node = split " ", $line; #split on space
+	  #$node[1] is of the form: system/login/blah
+	  #$coll is of the form: blah
+
+	  #first only consider $path matches against $node[1]
+	  if (!defined $level || $node[1] =~ m/^$level/) {
+	      #or does $node[1] match the beginning of the line for $path
+	      
+	      #if yes, then split the right side and find against the hash for the value...
+	      my $tmp;
+	      if (defined $level) {
+		  $tmp = substr($node[1],length($level)+1);
+	      }
+	      else {
+		  $tmp = $node[1];
+	      }
+
+	      #now can we find this entry in the hash?
+	      #if '-' this is a delete and need to remove from hash
+	      if ($node[0] eq "-") {
+		  delete($coll{$tmp});
+	      }
+	      #if '+' this is a set and need to add to hash
+	      elsif ($node[0] eq "+") {
+		  $coll{$tmp} = '1';
+	      }
+	  }
+      }
+  }
+
+#print "coll count: ".keys(%coll);
+
+  #now convert hash to array and return
+  @nodes_modified = ();
+  @nodes_modified = keys(%coll);
+  return @nodes_modified;
+}
+
 ## listOrigNodes("level")
 # return array of all original nodes (i.e., before any current change; i.e.,
 # in "working") at "level"

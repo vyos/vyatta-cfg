@@ -426,7 +426,13 @@ process_func(GNode *node, gpointer data)
 	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
       }
       else {
-	fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
+	char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+	sprintf(buf,"%s\t:\t%s",ActionNames[result->_action],d->_path);
+	if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
+	  char *val = (char*)clind_unescape(d->_name);
+	  strcat(buf,val);
+	}
+	fprintf(out_stream,"%s\n",buf);
 	status = 1;
       }
       if (result->_action == delete_act) {
@@ -974,11 +980,19 @@ validate_func(GNode *node, gpointer data)
     char *buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
     if (IS_DELETE(d->_operation)) {
       sprintf(buf,"- %s",d->_path);
+      if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
+	char *val = (char*)clind_unescape(d->_name);
+	strcat(buf,val);
+      }
       coll = g_slist_append(coll,buf);
       result->_data = (void*)&coll;
     }
     else if (IS_SET_OR_CREATE(d->_operation)) {
       sprintf(buf,"+ %s",d->_path);
+      if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
+	char *val = (char*)clind_unescape(d->_name);
+	strcat(buf,val);
+      }
       coll = g_slist_append(coll,buf);
       result->_data = (void*)&coll;
     }
@@ -1041,7 +1055,13 @@ validate_func(GNode *node, gpointer data)
     status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
   }
   else {
-    fprintf(out_stream,"%s\t:\t%s\n",ActionNames[result->_action],d->_path);
+    char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+    sprintf(buf,"%s\t:\t%s",ActionNames[result->_action],d->_path);
+    if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
+      char *val = (char*)clind_unescape(d->_name);
+      strcat(buf,val);
+    }
+    fprintf(out_stream,"%s\n",buf);
     status = 1;
   }
 
