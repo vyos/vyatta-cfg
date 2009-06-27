@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner15) unstable; urgency=low
+
+  * make changes to work with dhcp 4.1.0
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 26 Jun 2009 18:49:30 -0700
+
 vyatta-cfg (0.14.91+jenner14) unstable; urgency=low
 
   * The SYNTAX and COMMIT tags will be executed before an actions
