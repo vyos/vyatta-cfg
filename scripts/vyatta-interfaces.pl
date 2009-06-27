@@ -220,7 +220,8 @@ sub run_dhclient {
 	= generate_dhclient_intf_files($intf);
     dhcp_update_config($intf_config_file, $intf);
     if (!(is_intf_disabled($intf))) {
-      my $cmd = "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
+      my $cmd = "$dhcp_daemon -pf $intf_process_id_file -x $intf 2> /dev/null; rm -f $intf_process_id_file 2> /dev/null;";
+      $cmd .= "$dhcp_daemon -q -nw -cf $intf_config_file -pf $intf_process_id_file  -lf $intf_leases_file $intf 2> /dev/null &";
       # adding & at the end to make the process into a daemon immediately
       system ($cmd) == 0
 	or warn "start $dhcp_daemon failed: $?\n";
@@ -232,7 +233,8 @@ sub stop_dhclient {
     if (!(is_intf_disabled($intf))) {
       my ($intf_config_file, $intf_process_id_file, $intf_leases_file)
 	  = generate_dhclient_intf_files($intf);
-      my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null";
+      my $release_cmd = "$dhcp_daemon -q -cf $intf_config_file -pf $intf_process_id_file -lf $intf_leases_file -r $intf 2> /dev/null;";
+      $release_cmd .= "rm -f $intf_process_id_file 2> /dev/null";
       system ($release_cmd) == 0
 	or warn "stop $dhcp_daemon failed: $?\n";
     }
