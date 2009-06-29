@@ -1,3 +1,18 @@
+vyatta-cfg (0.14.98) unstable; urgency=low
+
+  [ slioch ]
+  * fix -a option for displaying actions when commit or syntax check is
+    present in the node.def. This change only affects display of nodes
+    when -a option is used.
+  * Commit check now behaves like IslaVista.
+  * The SYNTAX and COMMIT tags will be executed before an actions
+    (UPDATE,
+
+  [ Mohit Mehta ]
+  * make changes to work with dhcp 4.1.0
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Mon, 29 Jun 2009 10:05:13 -0700
+
 vyatta-cfg (0.14.97) unstable; urgency=low
 
   * add validation for bash special characters
