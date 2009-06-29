@@ -124,27 +124,44 @@ sub listOrigPlusComNodes {
 	  #$node[1] is of the form: system/login/blah
 	  #$coll is of the form: blah
 
+	  my $dir_path = $level;
+	  $dir_path =~ s/ /\//g;
+	  $dir_path = "/".$dir_path;
+
+#	  print("comparing: $dir_path and $level to $node[1]\n");
+
 	  #first only consider $path matches against $node[1]
-	  if (!defined $level || $node[1] =~ m/^$level/) {
+	  if (!defined $dir_path || $node[1] =~ m/^$dir_path/) {
 	      #or does $node[1] match the beginning of the line for $path
 	      
 	      #if yes, then split the right side and find against the hash for the value...
 	      my $tmp;
-	      if (defined $level) {
-		  $tmp = substr($node[1],length($level)+1);
+	      if (defined $dir_path) {
+		  $tmp = substr($node[1],length($dir_path));
 	      }
 	      else {
 		  $tmp = $node[1];
 	      }
+	      
+	      my @child = split "/",$tmp;
+	      my $child;
+#	      print("tmp: $tmp, $child[0], $child[1]\n");
+	      if ($child[0] =~ /^\s*$/ || !defined $child[0] || $child[0] eq '') {
+		  shift(@child);
+	      }
+
+#	      print("child value is: >$child[0]<\n");
 
 	      #now can we find this entry in the hash?
 	      #if '-' this is a delete and need to remove from hash
 	      if ($node[0] eq "-") {
-		  delete($coll{$tmp});
+		  if (!defined $child[1]) {
+		      delete($coll{$child[0]});
+		  }
 	      }
 	      #if '+' this is a set and need to add to hash
-	      elsif ($node[0] eq "+") {
-		  $coll{$tmp} = '1';
+	      elsif ($node[0] eq "+" && $child[0] ne '') {
+		  $coll{$child[0]} = '1';
 	      }
 	  }
       }
