@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.91+jenner18) unstable; urgency=low
+
+  [ slioch ]
+  * bugsfixed in active+working node merge for perl api.
+
+  [ Stig Thormodsrud ]
+  * Fix 4664: 'set failed' is returned when duplicated interface IP
+    address is set
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 30 Jun 2009 12:01:52 -0700
+
 vyatta-cfg (0.14.91+jenner17) unstable; urgency=low
 
   * UNRELEASED
