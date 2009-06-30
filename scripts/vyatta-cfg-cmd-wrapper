@@ -46,6 +46,67 @@ export VYATTA_CHANGES_ONLY_DIR=/tmp/changes_only_$SID;
 export VYATTA_TEMP_CONFIG_DIR=/opt/vyatta/config/tmp/new_config_$SID;
 export VYATTA_CONFIG_TMP=/opt/vyatta/config/tmp/tmp_$SID;
 
+vyatta_escape ()
+{
+  # copied over from /etc/bash_completion.d/20vyatta-cfg
+  # $1: \$original
+  # $2: \$escaped
+  eval "$2=\${$1//\%/%25}"
+  eval "$2=\${$2//\*/%2A}"
+  eval "$2=\${$2//\//%2F}"
+}
+
+mvcp ()
+{
+  # copied over from /etc/bash_completion.d/20vyatta-cfg
+  local str=$1
+  shift
+  local Str=$1
+  shift
+  local cmd=$1
+  shift
+  local _otag=$1
+  local _ovalu=$2
+  local _to=$3
+  local _ntag=$4
+  local _nvalu=$5
+  local _oval=''
+  local _nval=''
+  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
+  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
+  vyatta_escape _ovalu _oval
+  vyatta_escape _nvalu _nval
+  if [ "$_to" != 'to' ] || [ -z "$_ntag" ] || [ -z "$_nval" ]; then
+    echo "Invalid $str command"
+    return 1
+  fi
+  if [ "$_otag" != "$_ntag" ]; then
+    echo "Cannot $str from \"$_otag\" to \"$_ntag\""
+    return 1
+  fi
+  if [ ! -d "$_tpath/$_otag/$VYATTA_TAG_NAME" ]; then
+    echo "Cannot $str under \"$_otag\""
+    return 1
+  fi
+  if [ ! -d "$_mpath/$_otag/$_oval" ]; then
+    echo "Configuration \"$_otag $_ovalu\" does not exist"
+    return 1
+  fi
+  if [ -d "$_mpath/$_ntag/$_nval" ]; then
+    echo "Configuration \"$_ntag $_nvalu\" already exists"
+    return 1
+  fi
+  if ! /opt/vyatta/sbin/my_set $_ntag "$_nvalu"; then
+    echo "$Str failed"
+    return 1
+  fi
+  /opt/vyatta/sbin/my_delete $_ntag "$_nvalu" >&/dev/null 3>&1
+
+  $cmd "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
+
+  return 0
+}
+
 RET_STATUS=0
 
 case "$1" in
@@ -92,6 +153,20 @@ case "$1" in
     ;;
   load)
     /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
+    RET_STATUS=$?
+    ;;
+  firewall-rule-rename)
+    # this option is to be used for renaming firewall rules only
+    # usage for this option specified on the next line -
+    # firewall-rule-rename $firewall_ruleset rule $rule_num to rule $rename_rulenum
+
+    VYATTA_TEMPLATE_LEVEL=/firewall/name/node.tag;
+    VYATTA_EDIT_LEVEL="/firewall/name/$2";
+    _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
+    _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
+    VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
+    VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
+    mvcp rename Rename mv "${@:3}"
     RET_STATUS=$?
     ;;
   *)
