@@ -580,7 +580,7 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
   static const char format0[]="mkdir -p %s ; /bin/true";
   static const char formatpoint5[]="rm -fr %s"; /*tmpp*/
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
-
+  
   static const char format2[]="sudo umount %s"; //mdirp
   static const char format8[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
 
@@ -1038,7 +1038,8 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   }
   else {
     new_vn = vn;
-    strcat(new_vn->_data._path,"/");
+    //    strcat(new_vn->_data._path,"/");
+    strcat(new_vn->_data._path,"/value");
   }
   new_vn->_data._value = TRUE;
   strcpy(new_vn->_data._name,(char*)g_quark_to_string(key_id));
