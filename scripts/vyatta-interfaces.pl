@@ -112,8 +112,8 @@ sub is_ip_duplicate {
 
     return unless($ipaddrs_hash{$ip});
 
-    # if ip exists but on another interface, that is okay
-    return is_ip_configured($intf, $ip);
+    # allow dup if it's the same interface
+    return !is_ip_configured($intf, $ip);
 }
 
 sub is_up {
