@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.100) unstable; urgency=low
+
+  * Fix 4664: 'set failed' is returned when duplicated interface IP
+    address is set
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 30 Jun 2009 12:08:55 -0700
+
 vyatta-cfg (0.14.99) unstable; urgency=low
 
   * add option for renaming firewall rules to cmd-wrapper script
