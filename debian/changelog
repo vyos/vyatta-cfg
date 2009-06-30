@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.99) unstable; urgency=low
+
+  * add option for renaming firewall rules to cmd-wrapper script
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Tue, 30 Jun 2009 11:39:01 -0700
+
 vyatta-cfg (0.14.98) unstable; urgency=low
 
   [ slioch ]
