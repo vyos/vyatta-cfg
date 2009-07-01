@@ -98,6 +98,29 @@ sub listNodes {
   return @nodes_modified;
 }
 
+## isActive("path")
+# return true|false based on whether node path has
+# been processed or is active
+sub isActive {
+  my ($self, $path) = @_;  
+  my @nodes = ();
+
+  my @comp_node = split " ", $path;
+
+  my $comp_node = $comp_node[-1];
+  if (!defined $comp_node) {
+      return 1;
+  }
+
+  my @nodes_modified = $self->listOrigPlusComNodes();
+  foreach my $node (@nodes_modified) {
+      if ($node eq $comp_node) {
+	  return 0;
+      }
+  }
+  return 1;
+}
+
 ## listNodes("level")
 # return array of all nodes (active plus currently committed) at "level"
 # level is relative
@@ -113,6 +136,9 @@ sub listOrigPlusComNodes {
   @coll{@nodes_modified} = @nodes_modified;
 
   my $level = $self->{_level};
+  if (! defined $level) {
+      $level = "";
+  }
 
   #now test against the inprocess file in the system
 #  my $com_file = "/tmp/.changes_$$";
