@@ -95,7 +95,9 @@
 315 interfaces/bonding
 318 interfaces/ethernet
 319 interfaces/ethernet/node.tag/vif
+319 interfaces/ethernet/node.tag/bond-group
 320 interfaces/ethernet/node.tag/vif/node.tag/bridge-group
+320 interfaces/bonding/node.tag/bridge-group
 320 interfaces/bridge/node.tag/address
 320 interfaces/loopback
 330 interfaces/adsl
