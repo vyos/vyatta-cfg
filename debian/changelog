@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner22) unstable; urgency=low
+
+  * added isActive function in perl code to allow a comparison of active
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 01 Jul 2009 10:32:21 -0700
+
 vyatta-cfg (0.14.91+jenner21) unstable; urgency=low
 
   * Updated bridging/bonding priorites.
