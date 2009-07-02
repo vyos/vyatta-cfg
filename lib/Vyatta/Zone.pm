@@ -49,6 +49,12 @@ sub run_cmd {
     return $error;
 }
 
+sub is_fwruleset_active {
+    my ($value_func, $ruleset_type, $fw_ruleset) = @_;
+    my $config = new Vyatta::Config;
+    return $config->$value_func("firewall $ruleset_type $fw_ruleset");
+}
+
 sub get_all_zones {
     my $value_func = shift;
     my $config = new Vyatta::Config;
