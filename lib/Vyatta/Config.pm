@@ -107,12 +107,14 @@ sub isActive {
 
   my @comp_node = split " ", $path;
 
-  my $comp_node = $comp_node[-1];
+  my $comp_node = pop(@comp_node);
   if (!defined $comp_node) {
       return 1;
   }
+  
+  my $rel_path = join(" ",@comp_node);
 
-  my @nodes_modified = $self->listOrigPlusComNodes();
+  my @nodes_modified = $self->listOrigPlusComNodes($rel_path);
   foreach my $node (@nodes_modified) {
       if ($node eq $comp_node) {
 	  return 0;
@@ -128,7 +130,7 @@ sub listOrigPlusComNodes {
   my ($self, $path) = @_;
   my @nodes = ();
 
-  my @nodes_modified = $self->listNodes();
+  my @nodes_modified = $self->listNodes($path);
 
   #convert array to hash
   my %coll;
@@ -151,6 +153,9 @@ sub listOrigPlusComNodes {
 	  #$coll is of the form: blah
 
 	  my $dir_path = $level;
+	  if (defined $path) {
+	      $dir_path .= " " . $path;
+	  }
 	  $dir_path =~ s/ /\//g;
 	  $dir_path = "/".$dir_path;
 
@@ -169,8 +174,13 @@ sub listOrigPlusComNodes {
 		  $tmp = $node[1];
 	      }
 	      
+	      if (!defined $tmp || $tmp eq '') {
+		  next;
+	      }
+
 	      my @child = split "/",$tmp;
 	      my $child;
+
 #	      print("tmp: $tmp, $child[0], $child[1]\n");
 	      if ($child[0] =~ /^\s*$/ || !defined $child[0] || $child[0] eq '') {
 		  shift(@child);
