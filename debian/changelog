@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner23) unstable; urgency=low
+
+  * fixed isActive() api to now support mixed level and passed in
+    relative path values.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Thu, 02 Jul 2009 09:49:23 -0700
+
 vyatta-cfg (0.14.91+jenner22) unstable; urgency=low
 
   * added isActive function in perl code to allow a comparison of active
