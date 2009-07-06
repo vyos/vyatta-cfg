@@ -1,3 +1,13 @@
+vyatta-cfg (0.14.102) unstable; urgency=low
+
+  * updated perl api for new cli to support working node representation.
+    not yet functional without additional testing.
+  * bugsfixed in active+working node merge for perl api.
+  * fix for bug 4669. Revert string back to value for terminating
+    multinodes.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 06 Jul 2009 14:09:20 -0700
+
 vyatta-cfg (0.14.101) unstable; urgency=low
 
   * add function to check if a firewall ruleset isActive
