@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.101) unstable; urgency=low
+
+  * add function to check if a firewall ruleset isActive
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Thu, 02 Jul 2009 12:23:19 -0700
+
 vyatta-cfg (0.14.100) unstable; urgency=low
 
   * Fix 4664: 'set failed' is returned when duplicated interface IP
