@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner26) unstable; urgency=low
+
+  * Start bonding vif after bond-group is created
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 07 Jul 2009 13:49:35 -0700
+
 vyatta-cfg (0.14.91+jenner25) unstable; urgency=low
 
   * fix for ptr magic on 64 bit system. looks like double ptr was
