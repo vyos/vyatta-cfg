@@ -932,7 +932,7 @@ validate_configuration(GNode *root_node, boolean mode, GSList **nodes_visited_co
   struct Result result;
   result._err_code = 0;
   result._mode = (int)mode;
-  result._data = (void*)nodes_visited_coll;
+  result._data = (void*)*nodes_visited_coll;
 
   //handles both syntax and commit
   result._action = syntax_act;
@@ -952,7 +952,7 @@ validate_configuration(GNode *root_node, boolean mode, GSList **nodes_visited_co
   }
 
   GList **c_tmp = (GList**)result._data;
-  *nodes_visited_coll = (GSList*)*c_tmp;
+  *nodes_visited_coll = (GSList*)c_tmp;
   return TRUE;
 }
 
@@ -974,8 +974,7 @@ validate_func(GNode *node, gpointer data)
   struct Result *result = (struct Result*)data;
 
   //since this visits all working nodes, let's maintain a set of nodes to commit
-  GList **c_tmp = (GList**)result->_data;
-  GList *coll = *c_tmp;
+  GList *coll = (GList*)result->_data;
   if (d->_path != NULL) {
     char *buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
     if (IS_DELETE(d->_operation)) {
@@ -985,7 +984,7 @@ validate_func(GNode *node, gpointer data)
 	strcat(buf,val);
       }
       coll = g_slist_append(coll,buf);
-      result->_data = (void*)&coll;
+      result->_data = (void*)coll;
     }
     else if (IS_SET_OR_CREATE(d->_operation)) {
       sprintf(buf,"+ %s",d->_path);
@@ -994,7 +993,7 @@ validate_func(GNode *node, gpointer data)
 	strcat(buf,val);
       }
       coll = g_slist_append(coll,buf);
-      result->_data = (void*)&coll;
+      result->_data = (void*)coll;
     }
   }
   
