@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.103) unstable; urgency=low
+
+  * fix for ptr magic on 64 bit system. looks like double ptr was
+    getting the missing the last 4 bytes on 64 bit copy.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 06 Jul 2009 17:51:15 -0700
+
 vyatta-cfg (0.14.102) unstable; urgency=low
 
   * updated perl api for new cli to support working node representation.
