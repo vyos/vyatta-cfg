@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner25) unstable; urgency=low
+
+  * fix for ptr magic on 64 bit system. looks like double ptr was
+    getting the missing the last 4 bytes on 64 bit copy.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 06 Jul 2009 17:52:24 -0700
+
 vyatta-cfg (0.14.91+jenner24) unstable; urgency=low
 
   * add function to check if a firewall ruleset isActive
