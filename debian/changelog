@@ -1,3 +1,21 @@
+vyatta-cfg (0.14.104) unstable; urgency=low
+
+  [ Mark O'Brien ]
+  * Updated bridging/bonding priorites.
+
+  [ slioch ]
+  * added isActive function in perl code to allow a comparison of active
+  * fixed isActive() api to now support mixed level and passed in
+    relative path values.
+
+  [ Stephen Hemminger ]
+  * Start bonding vif after bond-group is created
+  * Use ip command rather than sysfs to set ifalias
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 08 Jul 2009 16:55:51 -0700
+
 vyatta-cfg (0.14.103) unstable; urgency=low
 
   * fix for ptr magic on 64 bit system. looks like double ptr was
