@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.1) unstable; urgency=low
+
+  * load requires additional environment variables
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 08 Jul 2009 18:29:31 -0700
+
 vyatta-cfg (0.14.104) unstable; urgency=low
 
   [ Mark O'Brien ]
