@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner28) unstable; urgency=low
+
+  * Add more system priorities so that 1 system failure doesn't affect
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 09 Jul 2009 14:01:28 -0700
+
 vyatta-cfg (0.14.91+jenner27) unstable; urgency=low
 
   * Use ip command rather than sysfs to set ifalias
