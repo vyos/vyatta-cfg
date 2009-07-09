@@ -152,6 +152,8 @@ case "$1" in
     RET_STATUS=$?
     ;;
   load)
+    export vyatta_sysconfdir=/opt/vyatta/etc
+    export vyatta_sbindir=/opt/vyatta/sbin
     /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
     RET_STATUS=$?
     ;;
