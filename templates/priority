@@ -108,7 +108,6 @@
 380 interfaces/openvpn
 390 interfaces/pseudo-ethernet
 391 interfaces/pseudo-ethernet/node.tag/vif
-395 interfaces/bonding/node.tag/vif
 400 system/domain-name
 400 system/domain-search
 400 system/gateway-address
