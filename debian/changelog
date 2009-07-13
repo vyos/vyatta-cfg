@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner30) unstable; urgency=low
+
+  * Bugfix 4717: Remove duplicate entries in priority file.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Mon, 13 Jul 2009 16:41:57 -0700
+
 vyatta-cfg (0.14.91+jenner29) unstable; urgency=low
 
   [ Stephen Hemminger ]
