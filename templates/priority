@@ -140,10 +140,6 @@
 810 interfaces/serial/node.tag/ppp
 810 interfaces/serial/node.tag/ppp/vif
 810 interfaces/serial/node.tag/cisco-hdlc/vif
-820 interfaces/serial/node.tag/frame-relay/vif
-820 interfaces/serial/node.tag/ppp
-820 interfaces/serial/node.tag/ppp/vif
-820 interfaces/serial/node.tag/cisco-hdlc/vif
 850 interfaces
 900 protocols/snmp
 900 vpn
