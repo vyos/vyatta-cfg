@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner32) unstable; urgency=low
+
+  * Fix 4722: Output inconsistent from 'save' and 'load' commands
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 14 Jul 2009 14:56:24 -0700
+
 vyatta-cfg (0.14.91+jenner31) unstable; urgency=low
 
   * fix for bug 4255. commit check was not being called on active node
