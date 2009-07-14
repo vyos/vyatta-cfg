@@ -997,7 +997,7 @@ validate_func(GNode *node, gpointer data)
     }
   }
   
-  if (IS_DELETE(d->_operation)) {
+  if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
     return FALSE; //will not perform validation checks on deleted nodes
   }
 
