@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner31) unstable; urgency=low
+
+  * fix for bug 4255. commit check was not being called on active node
+    that had deleted children. This change only affects
+
+ -- slioch <slioch@eng-140.vyatta.com>  Tue, 14 Jul 2009 10:58:33 -0700
+
 vyatta-cfg (0.14.91+jenner30) unstable; urgency=low
 
   * Bugfix 4717: Remove duplicate entries in priority file.
