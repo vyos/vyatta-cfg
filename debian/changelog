@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.0+islavista3) unstable; urgency=low
+
+  * UNRELEASED
+  * make it work with dhcp 4.1.0
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Wed, 15 Jul 2009 16:40:45 -0700
+
 vyatta-cfg (0.14.0+islavista2) unstable; urgency=low
 
 	  3.3.1
