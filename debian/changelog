@@ -1,3 +1,16 @@
+vyatta-cfg (0.15.4) unstable; urgency=low
+
+  [ slioch ]
+  * fix for bug 4255. commit check was not being called on active node
+    that had deleted children. This change only affects
+
+  [ Stig Thormodsrud ]
+  * Fix 4722: Output inconsistent from 'save' and 'load' commands
+
+  [ Mohit Mehta ]
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 24 Jul 2009 14:27:06 -0700
+
 vyatta-cfg (0.15.3) unstable; urgency=low
 
   * Bugfix 4717: Remove duplicate entries in priority file.
