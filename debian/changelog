@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.6) unstable; urgency=low
+
+  * update cli-expand-var script to match current variable reference
+    syntax.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 29 Jul 2009 12:02:31 -0700
+
 vyatta-cfg (0.15.5) unstable; urgency=low
 
   * alter rename rule option to work for firewall and nat rules
