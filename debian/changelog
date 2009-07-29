@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner33) unstable; urgency=low
+
+  * Add hw_address method for use in bonding
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 29 Jul 2009 15:20:47 -0700
+
 vyatta-cfg (0.14.91+jenner32) unstable; urgency=low
 
   * Fix 4722: Output inconsistent from 'save' and 'load' commands
