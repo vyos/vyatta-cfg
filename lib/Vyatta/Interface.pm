@@ -222,6 +222,18 @@ sub flags {
     return hex($val);
 }
 
+sub hw_address {
+    my $self = shift;
+
+    open my $addrf, '<', "/sys/class/net/$self->{name}/address"
+	or return;
+    my $address = <$addrf>;
+    close $addrf;
+
+    chomp $address if $address;
+    return $address;
+}
+
 sub is_broadcast {
     my $self = shift;
     return $self->flags() & IFF_BROADCAST;
