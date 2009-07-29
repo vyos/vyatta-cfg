@@ -34,7 +34,7 @@ $_ = $ARGV[0];
 # basic format check:
 # '(' ')' not allowed in reference.
 # only allow absolute path for now.
-if (!/^\$\(\/([^()]+)\)$/) {
+if (!/^\$VAR\(\/([^()]+)\)$/) {
   print STDERR "invalid variable reference (invalid format)\n";
   exit 1;
 }
