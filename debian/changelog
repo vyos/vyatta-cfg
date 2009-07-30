@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner34) unstable; urgency=low
+
+  * Fix [Bug 4760] New: members were removed after an in-use firewall
+    group
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 29 Jul 2009 19:02:03 -0700
+
 vyatta-cfg (0.14.91+jenner33) unstable; urgency=low
 
   * Add hw_address method for use in bonding
