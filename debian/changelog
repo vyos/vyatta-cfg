@@ -1,3 +1,40 @@
+vyatta-cfg (0.15.7) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Add hw_address method for use in bonding
+
+  [ Stig Thormodsrud ]
+  * Fix [Bug 4760] New: members were removed after an in-use firewall
+    group
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 30 Jul 2009 11:43:34 -0700
+
+vyatta-cfg (0.15.6) unstable; urgency=low
+
+  * update cli-expand-var script to match current variable reference
+    syntax.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 29 Jul 2009 12:02:31 -0700
+
+vyatta-cfg (0.15.5) unstable; urgency=low
+
+  * alter rename rule option to work for firewall and nat rules
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Tue, 28 Jul 2009 17:08:03 -0700
+
+vyatta-cfg (0.15.4) unstable; urgency=low
+
+  [ slioch ]
+  * fix for bug 4255. commit check was not being called on active node
+    that had deleted children. This change only affects
+
+  [ Stig Thormodsrud ]
+  * Fix 4722: Output inconsistent from 'save' and 'load' commands
+
+  [ Mohit Mehta ]
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 24 Jul 2009 14:27:06 -0700
+
 vyatta-cfg (0.15.3) unstable; urgency=low
 
   * Bugfix 4717: Remove duplicate entries in priority file.
