@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner36) unstable; urgency=low
+
+  * Another attempt to fix 4760.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 31 Jul 2009 16:03:18 -0700
+
 vyatta-cfg (0.14.91+jenner35) unstable; urgency=low
 
   * Revert "Fix [Bug 4760] New: members were removed after an in-use
