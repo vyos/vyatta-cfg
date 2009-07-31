@@ -32,23 +32,14 @@ my $conf_file = '/opt/vyatta/etc/config/config.boot';
 $conf_file = $ARGV[0] if defined $ARGV[0];
 
 # get a list of all config statement in the startup config file
-# (sorted by rank).
 my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($conf_file);
 if (scalar(@all_nodes) == 0) {
   # no config statements
   exit 1;
 }
-my $cur_rank = ${$all_nodes[0]}[1];
 
 my $ret = 0;
-# higher-ranked statements committed before lower-ranked.
 foreach (@all_nodes) {
-  my ($path_ref, $rank) = @$_;
-  if ($rank != $cur_rank) {
-    # commit all nodes with the same rank together.
-    print "commit\n";
-    $cur_rank = $rank;
-  }
   my $cmd = "set " . (join ' ', @$path_ref);
   print "$cmd\n";  
 }

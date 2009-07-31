@@ -27,55 +27,6 @@ use lib "/opt/vyatta/share/perl5";
 use XorpConfigParser; 
 use Vyatta::Config;
 
-# configuration ordering. higher rank configured before lower rank.
-my $default_rank = 0;
-my %config_rank  = (
-    'qos-policy'                => 1110,
-    'firewall group'            => 1100,
-    'firewall'                  => 1090,
-    'service nat'               => 1080,
-    'system host-name'          => 1070,
-    'protocols ospf parameters' => 1060,
-    'protocols ospf'            => 1055,
-    'protocols rip interface'   => 905,
-    'protocols rip'             => 1050,
-    'interfaces'                => 1000,
-    'interfaces bonding'        => 995,
-    'interfaces bridge'         => 990,
-    'interfaces ethernet'       => 980,
-    'interfaces tunnel'         => 910,
-    'zone-policy zone'          => 900,
-    'system gateway-address'    => 890,
-    'system name-server'        => 880,
-    'system login user'         => 870,
-    'system'                    => 860,
-    'protocols static'          => 850,
-    'service ssh'               => 840,
-    'service telnet'            => 830,
-    'service webproxy'          => 828,
-    'service http'              => 827,
-    'service dhcp-relay'        => 826,
-    'service dhcp-server'       => 825,
-    'service dns'               => 824,
-    'service nat'               => 823,
-    'policy'                    => 820,
-    'protocols bgp'             => 790,
-    'vpn'                       => 600,
-);
-
-my %regex_rank = (
-    'interfaces ethernet \S* vrrp'                  => 500,
-    'interfaces ethernet \S* vif \S* vrrp'          => 500,
-    'interfaces ethernet \S* pppo[ea]'              => 400,
-    'protocols bgp \d+ parameters'                  => 810,
-    'protocols bgp \d+ neighbor \d+\.\d+\.\d+\.\d+' => 800,
-    'protocols bgp \d+ neighbor \w+'                => 801,
-    'interfaces bridge \S* address'                 => 920,
-    'zone-policy zone \S* interface'                => 899,
-    'zone-policy zone \S* local-zone'               => 899,
-    'zone-policy zone \S* from'                     => 898,
-);
-
 my @all_nodes = ();
 my @all_naked_nodes = ();
 
@@ -85,30 +36,6 @@ sub match_regex {
   return ($str =~ m/$pattern/) ? 1 : 0;
 }
 
-sub get_regex_rank {
-  my ($str) = @_;
-  foreach (keys %regex_rank) {
-    if (match_regex($_, $str)) {
-      return $regex_rank{$_};
-    }
-  }
-  return; # undef if no match
-}
-
-sub get_config_rank {
-  # longest prefix match
-  my @path = @_;
-  while ((scalar @path) > 0) {
-    my $path_str = join ' ', @path;
-    if (defined($config_rank{$path_str})) {
-      return ($config_rank{$path_str});
-    }
-    my $wrank = get_regex_rank($path_str);
-    return $wrank if (defined($wrank));
-    pop @path;
-  }
-  return $default_rank;
-}
 
 sub applySingleQuote {
   my @return = ();
@@ -161,12 +88,12 @@ sub enumerate_branch {
     }
     push @all_naked_nodes, [ @cur_path ];
     my @qpath = applySingleQuote(@cur_path);
-    push @all_nodes, [\@qpath, get_config_rank(@cur_path)];
+    push @all_nodes, [\@qpath, 0];
   }
 }
 
 # $0: config file to load
-# return: list of all config statement sorted by rank
+# return: list of all config statement
 sub getStartupConfigStatements {
   # clean up the lists first
   @all_nodes = ();
@@ -185,7 +112,6 @@ sub getStartupConfigStatements {
   }
   enumerate_branch($root, ( ));
 
-  @all_nodes = sort { ${$b}[1] <=> ${$a}[1] } @all_nodes;
   return @all_nodes;
 }
 
@@ -280,8 +206,7 @@ sub getSortedMultiValues {
     my $key = "$path_str $_";
     push @list, [ $_, $node_order{$key} ];
   }
-  my @slist = sort { ${$a}[1] <=> ${$b}[1] } @list;
-  @slist = map { ${$_}[0] } @slist;
+  my @slist = map { ${$_}[0] } @list;
   return @slist;
 }
 
@@ -309,7 +234,7 @@ sub findDeletedValues {
     my %comp_hash = $active_cfg->compareValueLists(\@ovals, \@nvals);
     foreach (@{$comp_hash{'deleted'}}) {
       my @plist = applySingleQuote(@active_path, $_);
-      push @delete_list, [\@plist, get_config_rank(@active_path, $_)];
+      push @delete_list, [\@plist, 0];
     }
   } else {
     # do nothing. if a single-value leaf node is deleted, it should have
@@ -336,7 +261,7 @@ sub findDeletedNodes {
     }
     if (!defined($new_ref->{$_})) {
       my @plist = applySingleQuote(@active_path, $_);
-      push @delete_list, [\@plist, get_config_rank(@active_path, $_)];
+      push @delete_list, [\@plist, 0];
     } else {
       findDeletedNodes($new_ref->{$_}, [ @active_path, $_ ]);
     }
@@ -364,7 +289,7 @@ sub findSetValues {
     my %comp_hash = $active_cfg->compareValueLists(\@ovals, \@nvals);
     foreach (@{$comp_hash{'added'}}) {
       my @plist = applySingleQuote(@active_path, $_);
-      push @set_list, [\@plist, get_config_rank(@active_path, $_)];
+      push @set_list, [\@plist, 0];
     }
   } else {
     my @nvals = keys %{$new_ref};
@@ -375,7 +300,7 @@ sub findSetValues {
     my $oval = $active_cfg->returnOrigValue('');
     if (!defined($oval) || ($nval ne $oval)) {
       my @plist = applySingleQuote(@active_path, $nval);
-      push @set_list, [\@plist, get_config_rank(@active_path, $nval)];
+      push @set_list, [\@plist, 0];
     }
   }
 }
@@ -400,7 +325,7 @@ sub findSetNodes {
       # check if we need to add this node.
       if (!defined($active_hash{$_})) {
         my @plist = applySingleQuote(@active_path, $_);
-        push @set_list, [\@plist, get_config_rank(@active_path, $_)];
+        push @set_list, [\@plist, 0];
       } else {
         # node already present. do nothing.
       }
@@ -423,10 +348,6 @@ sub getConfigDiff {
   @delete_list = ();
   findDeletedNodes($new_cfg_ref, [ ]);
   findSetNodes($new_cfg_ref, [ ]);
-  # don't really need to sort the lists by rank since we have to commit
-  # everything together anyway.
-  @delete_list = sort { ${$a}[1] <=> ${$b}[1] } @delete_list;
-  @set_list = sort { ${$b}[1] <=> ${$a}[1] } @set_list;
 
   # need to filter out deletions of nodes with default values
   my @new_delete_list = ();
