@@ -85,7 +85,9 @@
 # "active config" tree at the time the lower-level node is committed.
 # 
 
-200 firewall/group
+200 firewall/group/address-group
+200 firewall/group/network-group
+200 firewall/group/port-group
 210 firewall/name/node.tag
 210 firewall/modify/node.tag
 210 firewall/ipv6-name/node.tag
