@@ -1,3 +1,18 @@
+vyatta-cfg (0.15.8) unstable; urgency=low
+
+  [ slioch ]
+  * cleaned out more of the islavista rank code. closing bug 4473 as a
+    result
+
+  [ Stig Thormodsrud ]
+  * Revert "Fix [Bug 4760] New: members were removed after an in-use
+    firewall group"
+  * Another attempt to fix 4760.
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 06 Aug 2009 12:18:18 -0700
+
 vyatta-cfg (0.15.7) unstable; urgency=low
 
   [ Stephen Hemminger ]
