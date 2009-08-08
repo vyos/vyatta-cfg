@@ -358,7 +358,15 @@ sub getPortRuleString {
                 return ( undef, $err );
             }
         }
-        ( $success, $err ) = isValidPortName( $port_spec, $proto );
+        if ($proto eq 'tcp_udp') {
+          ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
+          if (defined $success) {
+            # only do udp test if the tcp test was a success
+            ( $success, $err ) = isValidPortName( $port_spec, 'udp' )
+          }
+        } else {
+          ( $success, $err ) = isValidPortName( $port_spec, $proto );
+        }
         if ( defined($success) ) {
             $num_ports += 1;
             next;
