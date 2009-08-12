@@ -106,6 +106,7 @@
 330 interfaces/adsl
 340 interfaces/serial
 350 interfaces/wirelessmodem
+350 interfaces/wireless
 380 interfaces/tunnel
 380 interfaces/openvpn
 390 interfaces/pseudo-ethernet
