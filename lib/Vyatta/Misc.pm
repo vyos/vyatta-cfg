@@ -93,11 +93,17 @@ sub generate_dhclient_intf_files {
 
 }
 
+# get list of interfaces on the system via sysfs
+# skip dot files (and any interfaces name .xxx)
+#  and bond_masters file used by bonding
+#  and pseudo-interface wmaster used by wireless (will disappear in 2.6.32)
 sub getInterfaces {
     opendir( my $sys_class, '/sys/class/net' )
       or die "can't open /sys/class/net: $!";
-    my @interfaces =
-      grep { ( !/^\./ ) && ( $_ ne 'bonding_masters' ) } readdir $sys_class;
+    my @interfaces = grep { ( !/^\./ ) && 
+			    ( $_ ne 'bonding_masters' ) &&
+			    ! ( $_ =~ '^wmaster\d+$')
+			  } readdir $sys_class;
     closedir $sys_class;
     return @interfaces;
 }
