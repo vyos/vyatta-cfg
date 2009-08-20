@@ -1,3 +1,11 @@
+vyatta-cfg (0.15.10) unstable; urgency=low
+
+  * Add priority for wireless
+  * Skip wmaster interface in operational commands
+  * Add ability to disable flow-control
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 20 Aug 2009 11:51:01 -0700
+
 vyatta-cfg (0.15.9) unstable; urgency=low
 
   * check if port name is valid for both tcp and udp when protocol
