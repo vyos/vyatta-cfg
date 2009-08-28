@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.13) unstable; urgency=low
+
+  * Bugfix 4793: Load the acpi_cpufreq module on certain processors.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 28 Aug 2009 15:43:00 -0700
+
 vyatta-cfg (0.15.12) unstable; urgency=low
 
   * add no copybreak for more drivers
