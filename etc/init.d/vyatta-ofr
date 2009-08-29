@@ -132,9 +132,9 @@ cleanup_raid()
 #
 load_acpi_cpufreq()
 {
-    manuf=`dmidecode -s processor-manufacturer`
-    family=`dmidecode -s processor-family`
-    if [ "$manuf" = "Intel" -a "$family" = "Xeon" ]; then
+    manuf=`dmidecode -s system-manufacturer`
+    prod=`dmidecode -s system-product-name`
+    if [ "$manuf" = "Vyatta" -a "$prod" = "Series 2500" ]; then
 	logger -t "$progname" -p user.notice "loading acpi_cpufreq module"
 	modprobe acpi_cpufreq
     fi
