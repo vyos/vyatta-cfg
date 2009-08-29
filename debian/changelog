@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner38) unstable; urgency=low
+
+  * Bugfix 4793: Narrow the set of platforms on which module is loaded.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 28 Aug 2009 17:48:55 -0700
+
 vyatta-cfg (0.14.91+jenner37) unstable; urgency=low
 
   * Bugfix 4793: Load the acpi_cpufreq module on certain processors.
