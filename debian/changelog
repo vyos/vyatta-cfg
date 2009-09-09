@@ -1,3 +1,12 @@
+vyatta-cfg (0.15.15) unstable; urgency=low
+
+  * added data path to environment during commit. value key is
+    "NODE_DATA_PATH". nodes are delimited by "/" rather than spaces.
+  * fix for bug 4697. Added range value check that start must be less
+    than or equal to stop address
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 09 Sep 2009 09:29:14 -0700
+
 vyatta-cfg (0.15.14) unstable; urgency=low
 
   * Bugfix 4793: Narrow the set of platforms on which module is loaded.
