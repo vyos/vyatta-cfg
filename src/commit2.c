@@ -409,6 +409,9 @@ process_func(GNode *node, gpointer data)
 	set_in_delete_action(TRUE);
       }
 
+      //set location env
+      setenv(ENV_DATA_PATH,d->_path,1);
+
       //do last sibling check
       GNode *n = g_node_last_sibling(node);
       if (n == node) {
@@ -451,6 +454,7 @@ process_func(GNode *node, gpointer data)
 
       unsetenv(ENV_ACTION_NAME);
       unsetenv(ENV_SIBLING_POSITION);
+      unsetenv(ENV_DATA_PATH);
 
       if (g_coverage) {
 	struct timeval t;
@@ -1008,7 +1012,7 @@ validate_func(GNode *node, gpointer data)
     }
   }
   
-  if (IS_DELETE(d->_operation)) {
+  if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
     return FALSE; //will not perform validation checks on deleted nodes
   }
 
@@ -1062,7 +1066,10 @@ validate_func(GNode *node, gpointer data)
 
   boolean status = 1;
   if (g_dump_actions == FALSE) {
+    //set location env
+    setenv(ENV_DATA_PATH,d->_path,1);
     status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+    unsetenv(ENV_DATA_PATH);
   }
   else {
     char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];

@@ -152,21 +152,33 @@ case "$1" in
     RET_STATUS=$?
     ;;
   load)
+    export vyatta_sysconfdir=/opt/vyatta/etc
+    export vyatta_sbindir=/opt/vyatta/sbin
     /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
     RET_STATUS=$?
     ;;
-  firewall-rule-rename)
-    # this option is to be used for renaming firewall rules only
-    # usage for this option specified on the next line -
-    # firewall-rule-rename $firewall_ruleset rule $rule_num to rule $rename_rulenum
+  rule-rename)
+    # this option is to be used for renaming firewall and nat rules only
+    # usage for this option specified on the next two lines -
+    # rule-rename firewall $firewall_ruleset rule $rule_num to rule $rename_rulenum
+    # rule-rename nat rule $rule_num to rule $rename_rulenum
 
-    VYATTA_TEMPLATE_LEVEL=/firewall/name/node.tag;
-    VYATTA_EDIT_LEVEL="/firewall/name/$2";
+    if [ "$2" == "firewall" ]; then
+      VYATTA_TEMPLATE_LEVEL=/firewall/name/node.tag;
+      VYATTA_EDIT_LEVEL="/firewall/name/$3";
+    elif [ "$2" == "nat" ]; then
+      VYATTA_TEMPLATE_LEVEL=/service/nat;
+      VYATTA_EDIT_LEVEL=/service/nat;
+    fi
     _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
     _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
     VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
     VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
-    mvcp rename Rename mv "${@:3}"
+    if [ $2 == "firewall" ]; then
+      mvcp rename Rename mv "${@:4}"
+    elif [ $2 == "nat" ]; then
+      mvcp rename Rename mv "${@:3}"
+    fi
     RET_STATUS=$?
     ;;
   *)

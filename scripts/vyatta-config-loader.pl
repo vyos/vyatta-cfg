@@ -46,14 +46,12 @@ sub restore_fds {
 }
 
 # get a list of all config statement in the startup config file
-# (sorted by rank).
 my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0]);
 if (scalar(@all_nodes) == 0) {
   # no config statements
   restore_fds();
   exit 1;
 }
-my $cur_rank = ${$all_nodes[0]}[1];
 
 # set up the config environment
 my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
@@ -69,20 +67,9 @@ if ($? >> 8) {
 my $commit_cmd = "$CWRAPPER commit";
 my $cleanup_cmd = "$CWRAPPER cleanup";
 my $ret = 0;
-# higher-ranked statements committed before lower-ranked.
+my $rank; #not used
 foreach (@all_nodes) {
   my ($path_ref, $rank) = @$_;
-  if ($rank != $cur_rank) {
-    # commit all nodes with the same rank together.
-    $ret = 0; #system("$commit_cmd");
-    if ($ret >> 8) {
-      print OLDOUT "Commit failed at rank $cur_rank\n";
-      print WARN "Commit failed at rank $cur_rank\n";
-      system("$cleanup_cmd");
-      # continue after cleanup (or should we abort?)
-    }
-    $cur_rank = $rank;
-  }
   my $cmd = "$CWRAPPER set " . (join ' ', @$path_ref);
   # this debug file should be deleted before release
   system("echo [$cmd] >> /tmp/foo");

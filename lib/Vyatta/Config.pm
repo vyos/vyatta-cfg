@@ -98,6 +98,31 @@ sub listNodes {
   return @nodes_modified;
 }
 
+## isActive("path")
+# return true|false based on whether node path has
+# been processed or is active
+sub isActive {
+  my ($self, $path) = @_;  
+  my @nodes = ();
+
+  my @comp_node = split " ", $path;
+
+  my $comp_node = pop(@comp_node);
+  if (!defined $comp_node) {
+      return 1;
+  }
+  
+  my $rel_path = join(" ",@comp_node);
+
+  my @nodes_modified = $self->listOrigPlusComNodes($rel_path);
+  foreach my $node (@nodes_modified) {
+      if ($node eq $comp_node) {
+	  return 0;
+      }
+  }
+  return 1;
+}
+
 ## listNodes("level")
 # return array of all nodes (active plus currently committed) at "level"
 # level is relative
@@ -105,7 +130,7 @@ sub listOrigPlusComNodes {
   my ($self, $path) = @_;
   my @nodes = ();
 
-  my @nodes_modified = $self->listNodes();
+  my @nodes_modified = $self->listNodes($path);
 
   #convert array to hash
   my %coll;
@@ -113,6 +138,9 @@ sub listOrigPlusComNodes {
   @coll{@nodes_modified} = @nodes_modified;
 
   my $level = $self->{_level};
+  if (! defined $level) {
+      $level = "";
+  }
 
   #now test against the inprocess file in the system
 #  my $com_file = "/tmp/.changes_$$";
@@ -125,6 +153,9 @@ sub listOrigPlusComNodes {
 	  #$coll is of the form: blah
 
 	  my $dir_path = $level;
+	  if (defined $path) {
+	      $dir_path .= " " . $path;
+	  }
 	  $dir_path =~ s/ /\//g;
 	  $dir_path = "/".$dir_path;
 
@@ -143,8 +174,13 @@ sub listOrigPlusComNodes {
 		  $tmp = $node[1];
 	      }
 	      
+	      if (!defined $tmp || $tmp eq '') {
+		  next;
+	      }
+
 	      my @child = split "/",$tmp;
 	      my $child;
+
 #	      print("tmp: $tmp, $child[0], $child[1]\n");
 	      if ($child[0] =~ /^\s*$/ || !defined $child[0] || $child[0] eq '') {
 		  shift(@child);

@@ -260,10 +260,12 @@ sub update_eth_addrs {
     }
 
     if ($version == 4) {
-	return system("ip addr add $addr broadcast + dev $intf");
+	exec (qw(ip addr add),$addr,qw(broadcast + dev), $intf)
+	    or die "ip addr command failed: $!";
     }
     if ($version == 6) {
-	return system("ip -6 addr add $addr dev $intf");
+	exec (qw(ip -6 addr add), $addr, 'dev', $intf)
+	    or die "ip addr command failed: $!";
     }
     die "Error: Invalid address/prefix [$addr] for interface $intf\n";
 }
@@ -316,7 +318,8 @@ sub update_mac {
 	system "sudo ip link set $intf up"
 	    and die "Could not set $intf up ($!)\n";
     } else {
-	exec "sudo ip link set $intf address $mac";
+	system "sudo ip link set $intf address $mac"
+	    and die "Could not set $intf address ($!)\n";
     }
     exit 0;
 }

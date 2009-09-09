@@ -93,11 +93,18 @@ sub generate_dhclient_intf_files {
 
 }
 
+# get list of interfaces on the system via sysfs
+# skip dot files (and any interfaces name .xxx)
+#  and bond_masters file used by bonding
+#  and wireless control interfaces
 sub getInterfaces {
     opendir( my $sys_class, '/sys/class/net' )
       or die "can't open /sys/class/net: $!";
-    my @interfaces =
-      grep { ( !/^\./ ) && ( $_ ne 'bonding_masters' ) } readdir $sys_class;
+    my @interfaces = grep { ( !/^\./ ) && 
+			    ( $_ ne 'bonding_masters' ) &&
+			    ! ( $_ =~ '^mon.wlan\d$') &&
+			    ! ( $_ =~ '^wmaster\d+$')
+			  } readdir $sys_class;
     closedir $sys_class;
     return @interfaces;
 }
@@ -225,7 +232,10 @@ sub isClusterIP {
         my @services =
           $vc->returnValues("cluster group $cluster_group service");
         foreach my $service (@services) {
-            if ( $ip eq substr( $service, 0, index( $service, '/' ) ) ) {
+	    if ($service =~ /\//) {
+		$service = substr( $service, 0, index( $service, '/' ));
+	    }
+            if ( $ip eq $service ) {
                 return 1;
             }
         }
@@ -355,7 +365,15 @@ sub getPortRuleString {
                 return ( undef, $err );
             }
         }
-        ( $success, $err ) = isValidPortName( $port_spec, $proto );
+        if ($proto eq 'tcp_udp') {
+          ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
+          if (defined $success) {
+            # only do udp test if the tcp test was a success
+            ( $success, $err ) = isValidPortName( $port_spec, 'udp' )
+          }
+        } else {
+          ( $success, $err ) = isValidPortName( $port_spec, $proto );
+        }
         if ( defined($success) ) {
             $num_ports += 1;
             next;

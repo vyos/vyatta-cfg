@@ -91,6 +91,12 @@ sub validate_ipv4range {
   return 0 if (!/^([^-]+)-([^-]+)$/);
   my ($a1, $a2) = ($1, $2);
   return 0 if (!validate_ipv4($a1) || !validate_ipv4($a2));
+  #need to check that range is in ascending order
+  $a1 =~ m/^(\d\d?\d?)\.(\d\d?\d?)\.(\d\d?\d?)\.(\d\d?\d?)/;
+  my $v1 = $1*256*256*256+$2*256*256+$3*256+$4;
+  $a2 =~ m/^(\d\d?\d?)\.(\d\d?\d?)\.(\d\d?\d?)\.(\d\d?\d?)/;
+  my $v2 = $1*256*256*256+$2*256*256+$3*256+$4;
+  return 0 if ($v1 > $v2);
   return 1;
 }
 

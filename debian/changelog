@@ -1,3 +1,162 @@
+vyatta-cfg (0.15.16) unstable; urgency=low
+
+  * Allow empty description
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 09 Sep 2009 14:39:25 -0700
+
+vyatta-cfg (0.15.15) unstable; urgency=low
+
+  * added data path to environment during commit. value key is
+    "NODE_DATA_PATH". nodes are delimited by "/" rather than spaces.
+  * fix for bug 4697. Added range value check that start must be less
+    than or equal to stop address
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 09 Sep 2009 09:29:14 -0700
+
+vyatta-cfg (0.15.14) unstable; urgency=low
+
+  * Bugfix 4793: Narrow the set of platforms on which module is loaded.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 28 Aug 2009 17:51:04 -0700
+
+vyatta-cfg (0.15.13) unstable; urgency=low
+
+  * Bugfix 4793: Load the acpi_cpufreq module on certain processors.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 28 Aug 2009 15:43:00 -0700
+
+vyatta-cfg (0.15.12) unstable; urgency=low
+
+  * add no copybreak for more drivers
+  * Failure to set address should fail the commit
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 27 Aug 2009 10:07:06 -0700
+
+vyatta-cfg (0.15.11) unstable; urgency=low
+
+  * Skip more wireless interfaces
+  * Add a small script to test for node existance
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 24 Aug 2009 12:16:12 -0700
+
+vyatta-cfg (0.15.10) unstable; urgency=low
+
+  * Add priority for wireless
+  * Skip wmaster interface in operational commands
+  * Add ability to disable flow-control
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 20 Aug 2009 11:51:01 -0700
+
+vyatta-cfg (0.15.9) unstable; urgency=low
+
+  * check if port name is valid for both tcp and udp when protocol
+    tcp_udp
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 07 Aug 2009 18:56:01 -0700
+
+vyatta-cfg (0.15.8) unstable; urgency=low
+
+  [ slioch ]
+  * cleaned out more of the islavista rank code. closing bug 4473 as a
+    result
+
+  [ Stig Thormodsrud ]
+  * Revert "Fix [Bug 4760] New: members were removed after an in-use
+    firewall group"
+  * Another attempt to fix 4760.
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 06 Aug 2009 12:18:18 -0700
+
+vyatta-cfg (0.15.7) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Add hw_address method for use in bonding
+
+  [ Stig Thormodsrud ]
+  * Fix [Bug 4760] New: members were removed after an in-use firewall
+    group
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 30 Jul 2009 11:43:34 -0700
+
+vyatta-cfg (0.15.6) unstable; urgency=low
+
+  * update cli-expand-var script to match current variable reference
+    syntax.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 29 Jul 2009 12:02:31 -0700
+
+vyatta-cfg (0.15.5) unstable; urgency=low
+
+  * alter rename rule option to work for firewall and nat rules
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Tue, 28 Jul 2009 17:08:03 -0700
+
+vyatta-cfg (0.15.4) unstable; urgency=low
+
+  [ slioch ]
+  * fix for bug 4255. commit check was not being called on active node
+    that had deleted children. This change only affects
+
+  [ Stig Thormodsrud ]
+  * Fix 4722: Output inconsistent from 'save' and 'load' commands
+
+  [ Mohit Mehta ]
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 24 Jul 2009 14:27:06 -0700
+
+vyatta-cfg (0.15.3) unstable; urgency=low
+
+  * Bugfix 4717: Remove duplicate entries in priority file.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Mon, 13 Jul 2009 16:42:48 -0700
+
+vyatta-cfg (0.15.2) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * Add more system priorities so that 1 system failure doesn't affect
+
+  [ Stephen Hemminger ]
+  * Fix duplicate bonding vif entry
+
+  [ Stig Thormodsrud ]
+  * Fix 4623: Removing IPSEC VPN config without removing cluster ipsec
+    config drops all interfaces.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 10 Jul 2009 14:11:49 -0700
+
+vyatta-cfg (0.15.1) unstable; urgency=low
+
+  * load requires additional environment variables
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 08 Jul 2009 18:29:31 -0700
+
+vyatta-cfg (0.14.104) unstable; urgency=low
+
+  [ Mark O'Brien ]
+  * Updated bridging/bonding priorites.
+
+  [ slioch ]
+  * added isActive function in perl code to allow a comparison of active
+  * fixed isActive() api to now support mixed level and passed in
+    relative path values.
+
+  [ Stephen Hemminger ]
+  * Start bonding vif after bond-group is created
+  * Use ip command rather than sysfs to set ifalias
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 08 Jul 2009 16:55:51 -0700
+
+vyatta-cfg (0.14.103) unstable; urgency=low
+
+  * fix for ptr magic on 64 bit system. looks like double ptr was
+    getting the missing the last 4 bytes on 64 bit copy.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 06 Jul 2009 17:51:15 -0700
+
 vyatta-cfg (0.14.102) unstable; urgency=low
 
   * updated perl api for new cli to support working node representation.
