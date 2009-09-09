@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.16) unstable; urgency=low
+
+  * Allow empty description
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 09 Sep 2009 14:39:25 -0700
+
 vyatta-cfg (0.15.15) unstable; urgency=low
 
   * added data path to environment during commit. value key is
