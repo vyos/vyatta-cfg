@@ -1039,7 +1039,8 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   else {
     new_vn = vn;
     //    strcat(new_vn->_data._path,"/");
-    strcat(new_vn->_data._path,"/value");
+    strcat(new_vn->_data._path,"/value:");
+    strcat(new_vn->_data._path,(char*)g_quark_to_string(key_id));
   }
   new_vn->_data._value = TRUE;
   strcpy(new_vn->_data._name,(char*)g_quark_to_string(key_id));
