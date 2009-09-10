@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner39) unstable; urgency=low
+
+  * Allow empty description
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 10 Sep 2009 13:16:55 -0700
+
 vyatta-cfg (0.14.91+jenner38) unstable; urgency=low
 
   * Bugfix 4793: Narrow the set of platforms on which module is loaded.
