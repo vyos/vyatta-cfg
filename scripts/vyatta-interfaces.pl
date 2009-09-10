@@ -47,7 +47,7 @@ use warnings;
 
 my $dhcp_daemon = '/sbin/dhclient';
 
-my ($eth_update, $eth_delete, $addr, $dev, $mac, $mac_update, $op_dhclient);
+my ($eth_update, $eth_delete, $addr_set, @addr_commit, $dev, $mac, $mac_update, $op_dhclient);
 my ($check_name, $show_names, $intf_cli_path, $vif_name, $warn_name);
 my ($check_up, $show_path);
 my @speed_duplex;
@@ -59,7 +59,8 @@ Usage: $0 --dev=<interface> --check=<type>
        $0 --dev=<interface> --valid-mac=<aa:aa:aa:aa:aa:aa>
        $0 --dev=<interface> --eth-addr-update=<aa:aa:aa:aa:aa:aa>
        $0 --dev=<interface> --eth-addr-delete=<aa:aa:aa:aa:aa:aa>
-       $0 --dev=<interface> --valid-addr={<a.b.c.d>|dhcp}
+       $0 --dev=<interface> --valid-addr-set={<a.b.c.d>|dhcp}
+       $0 --dev=<interface> --valid-addr-commit={addr1 addr2 ...}
        $0 --dev=<interface> --speed-duplex=speed,duplex
        $0 --dev=<interface> --path
        $0 --dev=<interface> --isup
@@ -70,7 +71,8 @@ EOF
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
-	   "valid-addr=s"      => \$addr,
+	   "valid-addr-set=s"  => \$addr_set,
+	   "valid-addr-commit=s{,}" => \@addr_commit,
            "dev=s"             => \$dev,
 	   "valid-mac=s"       => \$mac,
 	   "set-mac=s"	       => \$mac_update,
@@ -86,7 +88,8 @@ GetOptions("eth-addr-update=s" => \$eth_update,
 
 update_eth_addrs($eth_update, $dev)	if ($eth_update);
 delete_eth_addrs($eth_delete, $dev)	if ($eth_delete);
-is_valid_addr($addr, $dev)		if ($addr);
+is_valid_addr_set($addr_set, $dev)	if ($addr_set);
+is_valid_addr_commit($dev, @addr_commit) if (@addr_commit);
 is_valid_mac($mac, $dev)		if ($mac);
 update_mac($mac_update, $dev)		if ($mac_update);
 op_dhcp_command($op_dhclient, $dev)	if ($op_dhclient);
@@ -339,20 +342,18 @@ sub is_valid_mac {
     exit 0;
 }
 
-sub is_valid_addr {
+# Validate an address parameter at the time the user enters it via
+# a "set" command.  This validates the parameter for syntax only.
+# It does not validate it in combination with other parameters.
+# Valid values are:  "dhcp", <ipv4-address>/<prefix-len>, or 
+# <ipv6-address>/<prefix-len>
+#
+sub is_valid_addr_set {
     my ($addr_net, $intf) = @_;
 
     if ($addr_net eq "dhcp") { 
 	if ($intf eq "lo") {
 	    print "Error: can't use dhcp client on loopback interface\n";
-	    exit 1;
-	}
-	if (is_dhcp_enabled($intf)) {
-	    print "Error: dhcp already configured for $intf\n";
-	    exit 1;
-	}
-	if (is_address_enabled($intf)) {
-	    print "Error: remove static addresses before enabling dhcp for $intf\n";
 	    exit 1;
 	}
 	exit 0; 
@@ -393,11 +394,6 @@ sub is_valid_addr {
        }
     }
 
-    if (is_dhcp_enabled($intf)) {
-	print "Error: remove dhcp before adding static addresses for $intf\n";
-	exit 1;
-    }
-
     if (is_ip_duplicate($intf, $addr_net)) {
 	print "Error: duplicate address/prefix [$addr_net]\n";
 	exit 1;
@@ -415,6 +411,39 @@ sub is_valid_addr {
     }
 
     exit 1;
+}
+
+# Validate the set of address values configured on an interface at commit
+# time.  Syntax of address values is checked at set time, so is not
+# checked here.  Instead, we check that full set of address address
+# values are consistent.  The only rule that we enforce here is that
+# one may not configure an interface with both a DHCP address and a static
+# IPv4 address.
+#
+sub is_valid_addr_commit {
+    my ($intf, @addrs) = @_;
+
+    my $static_v4 = 0;
+    my $dhcp = 0;
+
+    foreach my $addr (@addrs) {
+	if ($addr eq "dhcp") {
+	    $dhcp = 1;
+	} else {
+	    my $version = is_ip_v4_or_v6($addr);
+	    if ($version == 4) {
+		$static_v4 = 1;
+	    }
+	}
+    }
+
+    if ($static_v4 == 1 && $dhcp == 1) {
+	printf("Error configuring interface $intf: Can't configure static\n");
+	printf("IPv4 address and DHCP on the same interface.\n");
+	exit 1;
+    }
+
+    exit 0;
 }
 
 sub op_dhcp_command {
