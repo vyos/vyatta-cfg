@@ -71,6 +71,7 @@ EOF
 
 GetOptions("eth-addr-update=s" => \$eth_update,
 	   "eth-addr-delete=s" => \$eth_delete,
+	   "valid-addr=s"  => \$addr_set,
 	   "valid-addr-set=s"  => \$addr_set,
 	   "valid-addr-commit=s{,}" => \@addr_commit,
            "dev=s"             => \$dev,
