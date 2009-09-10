@@ -1,3 +1,19 @@
+vyatta-cfg (0.15.17) unstable; urgency=low
+
+  [ Michael Larson ]
+  * fix for ptr magic on 64 bit system. looks like double ptr was
+    getting the missing the last 4 bytes on 64 bit copy.
+  *        Priority file generator. This program will iterate over the
+    complete template tree and build the
+
+  [ Bob Gilligan ]
+  * Bugfix 4700, 4269: Fix set and commit-time checks of ethernet
+    address values
+  * Bugfix 4700, 4269: Fix set and commit-time checks for ethernet vif
+    addresses too
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 09 Sep 2009 17:39:26 -0700
+
 vyatta-cfg (0.15.16) unstable; urgency=low
 
   * Allow empty description
