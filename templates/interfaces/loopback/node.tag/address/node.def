@@ -1,7 +1,10 @@
 multi:
+
 type: txt
+
 help: Set an IP address for this interface
-syntax:expression: exec "/opt/vyatta/sbin/vyatta-interfaces.pl --valid-addr $VAR(@) --dev $VAR(../@)"; \
+
+syntax:expression: exec "/opt/vyatta/sbin/vyatta-interfaces.pl --valid-addr-set $VAR(@) --dev $VAR(../@)"; \
        "Invalid IP address/prefix [$VAR(@)] for interface $VAR(../@)"
 
 create:expression: "sudo /opt/vyatta/sbin/vyatta-interfaces.pl --eth-addr-update $VAR(@) --dev $VAR(../@)"; \

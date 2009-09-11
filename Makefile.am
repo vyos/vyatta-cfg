@@ -27,14 +27,15 @@ CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 LDADD = src/libvyatta-cfg.la
 LDADD += /usr/lib/libglib-2.0.la
 
-
-sbin_PROGRAMS = src/my_commit1
+sbin_PROGRAMS = src/priority
+sbin_PROGRAMS += src/my_commit1
 sbin_PROGRAMS += src/my_commit2
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
 sbin_PROGRAMS += src/check_tmpl
+src_priority_SOURCES = src/priority.c
 src_my_commit1_SOURCES = src/commit.c
 src_my_commit2_SOURCES = src/commit2.c
 src_exe_action_SOURCES = src/exe_action.c
