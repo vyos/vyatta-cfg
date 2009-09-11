@@ -1,3 +1,14 @@
+vyatta-cfg (0.15.18) unstable; urgency=low
+
+  [ Michael Larson ]
+  *     add leaf values to path data structures. will show in disgnostic
+    output from commit and via .changes
+
+  [ Stephen Hemminger ]
+  * Add group vyatta-op
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 11 Sep 2009 08:59:24 -0700
+
 vyatta-cfg (0.15.17) unstable; urgency=low
 
   [ Michael Larson ]
