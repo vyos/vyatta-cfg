@@ -356,7 +356,7 @@ sub returnOrigPlusComValue {
 	  if (index($node[1],$dir_path) != -1) {
 	      #found, now figure out if this a set or delete
 	      if ($node[0] eq '+') {
-		  my $pos = rindex($node[1],"/");
+		  my $pos = rindex($node[1],"/value:");
 		  $tmp = substr($node[1],$pos+7);
 	      }
 	      else {
@@ -400,6 +400,63 @@ sub returnValues {
   my @values = ();
   if (defined($val)) {
     @values = split("\n", $val);
+  }
+  return @values;
+}
+
+## returnValues("node")
+# returns an array of all the values of "node", or an empty array if the values do not exist.
+# node is relative
+sub returnOrigPlusComValues {
+  my ( $self, $path ) = @_;
+  my @values = returnValues($self,$path);
+
+  #now parse the commit accounting file.
+  my $level = $self->{_level};
+  if (! defined $level) {
+      $level = "";
+  }
+  my $dir_path = $level;
+  if (defined $path) {
+      $dir_path .= " " . $path;
+  }
+  $dir_path =~ s/ /\//g;
+  $dir_path = "/".$dir_path."/value";
+
+  #now need to compare this against what I've done
+  my $com_file = "/tmp/.changes";
+  if (-e $com_file) {
+      open FILE, "<", $com_file;
+      foreach my $line (<FILE>) {
+	  my @node = split " ", $line; #split on space
+	  if (index($node[1],$dir_path) != -1) {
+	      #found, now figure out if this a set or delete
+	      my $pos = rindex($node[1],"/value:");
+	      my $tmp = substr($node[1],$pos+7);
+	      my $i = 0;
+	      my $match = 0;
+	      foreach my $v (@values) {
+		  if ($v eq $tmp) {
+		      $match = 1;
+		      last;
+		  }
+		  $i = $i + 1;
+	      }
+	      if ($node[0] eq '+') {
+		  #add value
+		  if ($match == 0) {
+		      push(@values,$tmp);
+		  }
+	      }
+	      else {
+		  #remove value
+		  if ($match == 1) {
+		      splice(@values,$i);
+		  }
+	      }
+	  }
+      }
+      close $com_file;
   }
   return @values;
 }
