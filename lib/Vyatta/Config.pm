@@ -142,22 +142,22 @@ sub listOrigPlusComNodes {
       $level = "";
   }
 
+  my $dir_path = $level;
+  if (defined $path) {
+      $dir_path .= " " . $path;
+  }
+  $dir_path =~ s/ /\//g;
+  $dir_path = "/".$dir_path;
+
   #now test against the inprocess file in the system
 #  my $com_file = "/tmp/.changes_$$";
   my $com_file = "/tmp/.changes";
-  open FILE, "<", $com_file;
   if (-e $com_file) {
+      open FILE, "<", $com_file;
       foreach my $line (<FILE>) {
 	  my @node = split " ", $line; #split on space
 	  #$node[1] is of the form: system/login/blah
 	  #$coll is of the form: blah
-
-	  my $dir_path = $level;
-	  if (defined $path) {
-	      $dir_path .= " " . $path;
-	  }
-	  $dir_path =~ s/ /\//g;
-	  $dir_path = "/".$dir_path;
 
 #	  print("comparing: $dir_path and $level to $node[1]\n");
 
@@ -201,6 +201,7 @@ sub listOrigPlusComNodes {
 	      }
 	  }
       }
+      close $com_file;
   }
 
 #print "coll count: ".keys(%coll);
@@ -326,6 +327,49 @@ sub returnValue {
   $tmp =~ s/\n$//;
   return $tmp;
 }
+
+## returnOrigPlusComValue("node")
+# returns the value of "node" or undef if the node doesn't exist .
+# node is relative
+sub returnOrigPlusComValue {
+  my ( $self, $path ) = @_;
+
+  my $tmp = returnValue($self,$path);
+
+  my $level = $self->{_level};
+  if (! defined $level) {
+      $level = "";
+  }
+  my $dir_path = $level;
+  if (defined $path) {
+      $dir_path .= " " . $path;
+  }
+  $dir_path =~ s/ /\//g;
+  $dir_path = "/".$dir_path."/value";
+
+  #now need to compare this against what I've done
+  my $com_file = "/tmp/.changes";
+  if (-e $com_file) {
+      open FILE, "<", $com_file;
+      foreach my $line (<FILE>) {
+	  my @node = split " ", $line; #split on space
+	  if (index($node[1],$dir_path) != -1) {
+	      #found, now figure out if this a set or delete
+	      if ($node[0] eq '+') {
+		  my $pos = rindex($node[1],"/");
+		  $tmp = substr($node[1],$pos+7);
+	      }
+	      else {
+		  $tmp = "";
+	      }
+	      last;
+	  }
+      }
+      close $com_file;
+  }
+  return $tmp;
+}
+
 
 ## returnOrigValue("node")
 # returns the original value of "node" (i.e., before the current change; i.e.,
