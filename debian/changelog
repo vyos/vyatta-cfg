@@ -1,3 +1,15 @@
+vyatta-cfg (0.15.19) unstable; urgency=low
+
+  [ Michael Larson ]
+  * leaf node support for new commit. Returns reconciled processed node
+    returnOrigPlusComValue()
+  * add support for value tags on term multinodes. used in debugging
+    output and accounting file.
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 11 Sep 2009 15:43:00 -0700
+
 vyatta-cfg (0.15.18) unstable; urgency=low
 
   [ Michael Larson ]
