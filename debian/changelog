@@ -1,3 +1,14 @@
+vyatta-cfg (0.15.20) unstable; urgency=low
+
+  [ Michael Larson ]
+  * term multinodes perl api support to provide currently committed
+    values.
+
+  [ Mohit Mehta ]
+  * Fix Bug 4919 "service dns" branch of configuration file missing ...
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 11 Sep 2009 18:11:11 -0700
+
 vyatta-cfg (0.15.19) unstable; urgency=low
 
   [ Michael Larson ]
