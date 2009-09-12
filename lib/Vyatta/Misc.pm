@@ -58,7 +58,7 @@ sub is_dhcp_enabled {
       if ($outside_cli);
 
     $config->setLevel( $intf->path() );
-    foreach my $addr ( $config->returnOrigValues('address') ) {
+    foreach my $addr ( $config->returnOrigPlusComValues('address') ) {
         return 1 if ( $addr && $addr eq "dhcp" );
     }
 
