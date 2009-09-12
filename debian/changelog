@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner40) unstable; urgency=low
+
+  * Add group vyatta-op
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 11 Sep 2009 17:14:05 -0700
+
 vyatta-cfg (0.14.91+jenner39) unstable; urgency=low
 
   * Allow empty description
