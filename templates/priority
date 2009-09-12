@@ -153,12 +153,13 @@
 900 service
 910 service/dhcp-relay
 911 service/dhcp-server
-912 service/dns
 913 service/https
 914 service/nat
 915 service/ssh
 916 service/telnet
 917 service/webproxy
+918 service/dns/forwarding
+919 service/dns/dynamic
 960 cluster
 970 zone-policy/zone/node.tag/from
 975 zone-policy
