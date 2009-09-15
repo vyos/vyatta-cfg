@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.91+jenner42) unstable; urgency=low
+
+  *     add leaf values to path data structures. will show in disgnostic
+    output from commit and via .changes
+  * leaf node support for new commit. Returns reconciled processed node
+    returnOrigPlusComValue()
+  * term multinodes perl api support to provide currently committed
+    values.
+
+ -- Michael Larson <mike@ft1.vyatta.com>  Tue, 15 Sep 2009 13:24:38 -0700
+
 vyatta-cfg (0.14.91+jenner41) unstable; urgency=low
 
   * Bugfix 4700, 4269: Fix set and commit-time checks of ethernet
