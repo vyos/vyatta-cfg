@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner43) unstable; urgency=low
+
+  * Fix Bug 4919 "service dns" branch of configuration file missing ...
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Tue, 15 Sep 2009 13:55:10 -0700
+
 vyatta-cfg (0.14.91+jenner42) unstable; urgency=low
 
   *     add leaf values to path data structures. will show in disgnostic
