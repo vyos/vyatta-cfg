@@ -1,3 +1,10 @@
+vyatta-cfg (0.14.91+jenner44) unstable; urgency=low
+
+  * add support for value tags on term multinodes. used in debugging
+    output and accounting file.
+
+ -- Michael Larson <mike@ft1.vyatta.com>  Wed, 16 Sep 2009 10:37:53 -0700
+
 vyatta-cfg (0.14.91+jenner43) unstable; urgency=low
 
   * Fix Bug 4919 "service dns" branch of configuration file missing ...
