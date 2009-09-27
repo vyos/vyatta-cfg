@@ -153,10 +153,18 @@ sub vrrp_get_config {
     my $path;
     my $config = new Vyatta::Config;
     
-    if ($intf =~ m/(eth\d+)\.(\d+)/) {
-	$path = "interfaces ethernet $1 vif $2";
+    if ($intf =~ m/bond/) {
+	if ($intf =~ m/(bond\d+)\.(\d+)/) {
+	    $path = "interfaces bonding $1 vif $2";
+	} else {
+	    $path = "interfaces bonding $intf";
+	}
     } else {
-	$path = "interfaces ethernet $intf";
+	if ($intf =~ m/(eth\d+)\.(\d+)/) {
+	    $path = "interfaces ethernet $1 vif $2";
+	} else {
+	    $path = "interfaces ethernet $intf";
+	}
     }
 
     $config->setLevel($path);
