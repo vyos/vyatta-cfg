@@ -1041,7 +1041,10 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
     //    strcat(new_vn->_data._path,"/");
     strcat(new_vn->_data._path,"/value:");
     if (vn_parent->_config._def.multi == FALSE) {
-      strcat(new_vn->_data._path,(char*)g_quark_to_string(key_id));
+      char *tmp = (char*)g_quark_to_string(key_id); 
+      if (strchr(tmp,'/') == NULL) {
+	strcat(new_vn->_data._path,tmp);
+      }
     }
   }
   new_vn->_data._value = TRUE;
