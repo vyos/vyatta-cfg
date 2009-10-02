@@ -35,9 +35,9 @@ static const char opaque_name[] = OPQ_NAME;
 static int fin_commit(boolean ok);
 static boolean commit_value(vtw_def *defp, char *cp, 
 			    vtw_cmode mode, boolean in_txn);
-static void perform_create_node();
-static void perform_delete_node();
-static void perform_move();
+static void perform_create_node(void);
+static void perform_delete_node(void);
+static void perform_move(void);
 static boolean commit_delete_child(vtw_def *pdefp, char *child, 
 				   boolean deleting, boolean in_txn);
 static boolean commit_delete_children(vtw_def *defp, boolean deleting, 
@@ -48,7 +48,7 @@ static boolean commit_update_children(vtw_def *defp, boolean creating,
 extern char *cli_operation_name;
 
 #if BITWISE
-static void make_dir()
+static void make_dir(void)
 {
   struct stat    statbuf;
   if (lstat(m_path.path, &statbuf) < 0) {
@@ -83,7 +83,7 @@ compare_dirname_reverse_priority(const void *p, const void *q)
   return ((long)a->priority - (long)b->priority);
 }
 
-struct DirIndex*
+static struct DirIndex*
 init_next_filtered_dirname(DIR *dp, int sort_order, int exclude_wh) 
 {
   struct DirIndex *di = malloc(sizeof(struct DirIndex));
@@ -143,7 +143,7 @@ get_next_filtered_dirname(struct DirIndex *di)
   return di->dirname[di->dirname_index++]->name;
 }
 
-void
+static void
 release_dir_index(struct DirIndex *di)
 {
   if (di != NULL) {
@@ -167,7 +167,7 @@ release_dir_index(struct DirIndex *di)
    returns TRUE if OK, FASLE if errors
    exits with status != 0 in case of parse error
 */
-static boolean validate_dir_for_commit()
+static boolean validate_dir_for_commit(void)
 {
     struct stat    statbuf;
     int            status=0;
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
        remove node and descendent from woring path
        and create a new node
 *************************************************************/
-static void perform_create_node()
+static void perform_create_node(void)
 {
 #if BITWISE
   static const char format[]="rm -f -r %s;mkdir %s";
@@ -438,7 +438,7 @@ static void perform_create_node()
     perform_delete_node - 
        delete node in current path
 *************************************************************/
-static void perform_delete_node()
+static void perform_delete_node(void)
 {
 #if BITWISE
   static const char format[]="rm -f -r %s";
@@ -448,7 +448,7 @@ static void perform_delete_node()
 #endif
 }
 
-static void perform_move()
+static void perform_move(void)
 {
 #if BITWISE
   static const char format[] = "rm -r -f %s;mkdir %s;mv %s/" VAL_NAME " %s";
