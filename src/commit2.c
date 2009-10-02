@@ -28,8 +28,7 @@ const int ActionOrder[g_num_actions] = {
 };
 
 
-
-const char* ActionNames[top_act] = {
+static const char* ActionNames[top_act] = {
   "delete",   //0
   "create",   //1
   "activate", //2
@@ -75,6 +74,14 @@ enclosing_process_func(GNode *node, gpointer data);
 
 static gboolean
 validate_func(GNode *node, gpointer data);
+
+static boolean
+validate_configuration(GNode *root_node, boolean mode,
+		       GSList **nodes_visited_coll);
+
+static void
+update_change_file(FILE *fp, GSList *coll);
+
 /*
 NOTES: reverse: use the n-nary tree in commit2.c and only encapuslate data store. pass in func pointer for processing of commands below.
 
@@ -937,8 +944,9 @@ enclosing_process_func(GNode *node, gpointer data)
 /**
  *
  **/
-boolean
-validate_configuration(GNode *root_node, boolean mode, GSList **nodes_visited_coll) 
+static boolean
+validate_configuration(GNode *root_node, boolean mode,
+		       GSList **nodes_visited_coll) 
 {
   if (root_node == NULL) {
     return FALSE;
@@ -1107,7 +1115,7 @@ validate_func(GNode *node, gpointer data)
  *
  *
  **/
-void
+static void
 update_change_file(FILE *fp, GSList *coll) 
 {
   if (coll == NULL || fp == NULL) {
