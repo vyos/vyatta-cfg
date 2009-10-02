@@ -56,6 +56,7 @@ main(int argc, char** argv)
     recurse(root_dir,fp);
     fclose(fp);
   }
+  return 0;
 }
 
 
