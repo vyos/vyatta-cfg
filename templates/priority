@@ -144,6 +144,31 @@
 810 interfaces/serial/node.tag/ppp/vif
 810 interfaces/serial/node.tag/cisco-hdlc/vif
 850 interfaces
+
+# Router advertisement daemon startup should take place after interfaces
+# have been fully configured.  We have a router-advert node under just about
+# every interface type, hence the large number of priority nodes in this
+# source file.  They can be removed from this source file once bug 4903
+# is fixed
+860 interfaces/ethernet/node.tag/ipv6/router-advert
+860 interfaces/ethernet/node.tag/pppoe/node.tag/ipv6/router-advert
+860 interfaces/ethernet/node.tag/vif/node.tag/ipv6/router-advert
+860 interfaces/ethernet/node.tag/vif/node.tag/pppoe/node.tag/ipv6/router-advert
+860 interfaces/bonding/node.tag/ipv6/router-advert
+860 interfaces/bonding/node.tag/vif/node.tag/ipv6/router-advert
+860 interfaces/tunnel/node.tag/ipv6/router-advert
+860 interfaces/bridge/node.tag/ipv6/router-advert
+860 interfaces/openvpn/node.tag/ipv6/router-advert
+860 interfaces/wirelessmodem/node.tag/ipv6/router-advert
+860 interfaces/multilink/node.tag/vif/node.tag/ipv6/router-advert
+860 interfaces/adsl/node.tag/pvc/node.tag/bridged-ethernet/ipv6/router-advert
+860 interfaces/adsl/node.tag/pvc/node.tag/classical-ipoa/ipv6/router-advert
+860 interfaces/adsl/node.tag/pvc/node.tag/pppoa/node.tag/ipv6/router-advert
+860 interfaces/adsl/node.tag/pvc/node.tag/pppoe/node.tag/ipv6/router-advert
+860 interfaces/serial/node.tag/cisco-hdlc/vif/node.tag/ipv6/router-advert
+860 interfaces/serial/node.tag/frame-relay/vif/node.tag/ipv6/router-advert
+860 interfaces/serial/node.tag/ppp/vif/node.tag/ipv6/router-advert
+
 900 protocols/snmp
 900 vpn
 900 qos-policy
