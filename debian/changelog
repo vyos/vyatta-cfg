@@ -1,3 +1,20 @@
+vyatta-cfg (0.15.21) unstable; urgency=low
+
+  [ Michael Larson ]
+  *     fix for bug 4969. on leaf nodes scan for '/' and don't make
+    these values available to the partial commit status api (bug fix
+    4919). this approach will
+
+  [ Stephen Hemminger ]
+  * Fix warning from missing return
+  * add missing prototypes
+  * Update function prototypes
+
+  [ Bob Gilligan ]
+  * Add priority nodes to start router advertisement daemon.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 02 Oct 2009 18:03:03 -0700
+
 vyatta-cfg (0.15.20) unstable; urgency=low
 
   [ Michael Larson ]
