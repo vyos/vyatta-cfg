@@ -1034,15 +1034,23 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
     //g_node_insert(node, -1, new_node);
     insert_sibling_in_order(node,new_node);
     new_vn->_config._def = vn->_config._def;
-    //    strcat(new_vn->_data._path,"/value");
   }
   else {
     new_vn = vn;
-    //    strcat(new_vn->_data._path,"/");
     strcat(new_vn->_data._path,"/value:");
     if (vn_parent->_config._def.multi == FALSE) {
       char *tmp = (char*)g_quark_to_string(key_id); 
-      if (strchr(tmp,'/') == NULL) {
+      char *slash = strchr(tmp,'/');
+      if (slash == NULL) {
+	strcat(new_vn->_data._path,tmp);
+      }
+      else {
+	do { 	//escape '/' to %2F
+	  strncat(new_vn->_data._path,tmp,slash - tmp);
+	  strncat(new_vn->_data._path,"%2F",3);
+	  ++slash;
+	  tmp = slash;
+	} while ((slash = strchr(slash,'/')) != NULL);
 	strcat(new_vn->_data._path,tmp);
       }
     }
