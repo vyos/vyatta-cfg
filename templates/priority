@@ -169,7 +169,6 @@
 860 interfaces/serial/node.tag/frame-relay/vif/node.tag/ipv6/router-advert
 860 interfaces/serial/node.tag/ppp/vif/node.tag/ipv6/router-advert
 
-900 protocols/snmp
 900 vpn
 900 qos-policy
 900 test-definition
@@ -189,3 +188,4 @@
 960 cluster
 970 zone-policy/zone/node.tag/from
 975 zone-policy
+980 protocols/snmp

@@ -124,6 +124,9 @@ main(int argc, char** argv)
   boolean disable_partial_commit = FALSE;
   boolean full_commit_check = FALSE;
 
+  /* this is needed before calling certain glib functions */
+  g_type_init();
+
   //grab inputs
   while ((ch = getopt(argc, argv, "dpthsecoaf")) != -1) {
     switch (ch) {
