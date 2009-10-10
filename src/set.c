@@ -109,6 +109,9 @@ int main(int argc, char **argv)
   boolean       need_mod = FALSE, not_new = FALSE;
   boolean       empty_val = FALSE;
 
+  /* this is needed before calling certain glib functions */
+  g_type_init();
+
   cli_operation_name = "Set";
 
   if (initialize_output() == -1) {

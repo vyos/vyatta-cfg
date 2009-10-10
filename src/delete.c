@@ -148,6 +148,9 @@ int main(int argc, char **argv)
   char          *cp, *delp, *endp;
   boolean        do_umount;
 
+  /* this is needed before calling certain glib functions */
+  g_type_init();
+
   cli_operation_name = "Delete";
 
   if (initialize_output() == -1) {

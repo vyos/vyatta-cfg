@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <glib-2.0/glib.h>
+#include <gio/gio.h>
 #include "common/defs.h"
 #include "common/unionfs.h"
 
@@ -13,6 +14,43 @@ boolean g_debug;
 
 extern vtw_path m_path;
 extern vtw_path t_path;
+
+/*** functions for filesystem operations ***/
+/* these functions replace the system() invocations that were a major source
+ * of commit overhead. note that they currently duplicate the previous
+ * behavior so no status is returned (since system() return code was not
+ * checked). this should probably be changed so each invocation is checked
+ * for error.
+ */
+static inline void
+sys_mkdir_p(const char *path)
+{
+  if (g_mkdir_with_parents(path, 0775) != 0) {
+    /* error */
+    return;
+  }
+}
+
+static inline void
+sys_rm(const char *file)
+{
+  GFile *target = g_file_new_for_path(file);
+  if (!g_file_delete(target, NULL, NULL)) {
+    /* error */
+    return;
+  }
+}
+
+static inline void
+sys_cp(const char *src_file, const char *dst_file)
+{
+  GFile *src = g_file_new_for_path(src_file);
+  GFile *dst = g_file_new_for_path(dst_file);
+  if (!g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL)) {
+    /* error */
+    return;
+  }
+}
 
 void
 retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op);
@@ -1119,63 +1157,79 @@ piecewise_copy(GNode *root_node, boolean test_mode)
 static gboolean
 copy_func(GNode *node, gpointer data)
 {
+  char buf[MAX_LENGTH_DIR_PATH];
+  
   if (node == NULL) {
     return FALSE;
   }
 
-  char *command = malloc(MAX_LENGTH_DIR_PATH);
-
   struct SrcDst *sd = (struct SrcDst*)data;
-  static const char format[]="mkdir -p %s%s";/*tmpp, adirp*/ 
-  static const char format_value[]="cp %s%s{node.val,def} %s%s. 2>/dev/null";/*tmpp, adirp*/ 
-  static const char clear_def[]="rm %s%sdef 2>/dev/null";/*adirp*/ 
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
 
   //might not work for terminating multinodes as the node.val won't be copied
   if (((struct VyattaNode*)(node->data))->_data._value == TRUE &&
       ((struct VyattaNode*)(node->data))->_config._def.tag == FALSE) {
+    char *parent_path;
+    char buf1[MAX_LENGTH_DIR_PATH];
+
     //THIS IS ONLY FOR NODE.VAL (or leafs, term multis)
 
     //before copy also need to clear out def file in active directory (will copy over current if found)
     //this is for the case where it is set by default, then unset at the node--i.e. no longer a default value.
     if (((struct VyattaNode*)(node->data))->_config._multi == FALSE) { //only for leaf
       char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
-      sprintf(command,clear_def,sd->_dst,parent_path);
       if (g_debug) {
-	printf("%s\n",command);
-	syslog(LOG_DEBUG,"%s\n",command);
+	printf("rm %s%sdef\n", sd->_dst, parent_path);
+	syslog(LOG_DEBUG, "rm %s%sdef", sd->_dst, parent_path);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
-	system(command);
+        if (snprintf(buf, MAX_LENGTH_DIR_PATH, "%s%sdef",
+                     sd->_dst, parent_path) < MAX_LENGTH_DIR_PATH) {
+          sys_rm(buf);
+        }
       }
     }
 
-    char *parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
-    sprintf(command,format_value,sd->_src,parent_path,sd->_dst,parent_path);
+    parent_path = ((struct VyattaNode*)(node->parent->data))->_data._path;
     if (g_debug) {
-      printf("%s\n",command);
-      syslog(LOG_DEBUG,"%s\n",command);
+      printf("cp %s%s{node.val,def} %s%s\n", sd->_src, parent_path,
+             sd->_dst, parent_path);
+      syslog(LOG_DEBUG, "cp %s%s{node.val,def} %s%s\n",
+             sd->_src, parent_path, sd->_dst, parent_path);
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
-      system(command);
+      if (snprintf(buf, MAX_LENGTH_DIR_PATH, "%s%snode.val",
+                   sd->_src, parent_path) < MAX_LENGTH_DIR_PATH
+          &&
+          snprintf(buf1, MAX_LENGTH_DIR_PATH, "%s%snode.val",
+                   sd->_dst, parent_path) < MAX_LENGTH_DIR_PATH) {
+        sys_cp(buf, buf1);
+      }
+      if (snprintf(buf, MAX_LENGTH_DIR_PATH, "%s%sdef",
+                   sd->_src, parent_path) < MAX_LENGTH_DIR_PATH
+          &&
+          snprintf(buf1, MAX_LENGTH_DIR_PATH, "%s%sdef",
+                   sd->_dst, parent_path) < MAX_LENGTH_DIR_PATH) {
+        sys_cp(buf, buf1);
+      }
     }
-  }
-  else {
+  } else {
     if (!IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation)) {
-      sprintf(command,format,sd->_dst,path);
       if (g_debug) {
-	printf("%s\n",command);
-	syslog(LOG_DEBUG,"%s\n",command);
+	printf("mkdir_p %s%s\n", sd->_dst, path);
+	syslog(LOG_DEBUG, "mkdir_p %s%s", sd->_dst, path);
 	fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
-	system(command);
+        if (snprintf(buf, MAX_LENGTH_DIR_PATH, "%s%s", sd->_dst, path)
+            < MAX_LENGTH_DIR_PATH) {
+          sys_mkdir_p(buf);
+        }
       }
     }
   }
-  free(command);
   return FALSE;
 }
 
