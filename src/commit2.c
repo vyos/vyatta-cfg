@@ -284,14 +284,15 @@ main(int argc, char** argv)
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
 
   if (no_errors == TRUE) {
-    if (disable_partial_commit == TRUE && g_dump_actions == FALSE) {
-      completed_root_node_coll = g_slist_append(completed_root_node_coll,orig_node_tree);
-    }
+    //    if (disable_partial_commit == TRUE && g_dump_actions == FALSE) {
+    //      completed_root_node_coll = g_slist_append(completed_root_node_coll,orig_node_tree);
+    //    }
     /*
      * Need to add to the following func below to clean up dangling .wh. files
      */
     if (g_dump_actions == FALSE) {
-      complete(completed_root_node_coll, test_mode);
+      //      complete(orig_node_tree, test_mode);
+      common_commit_copy_to_live_config(orig_node_tree, TRUE, test_mode);
       common_commit_clean_temp_config(orig_node_tree, test_mode);
     }
     if (g_debug == TRUE) {
@@ -510,7 +511,7 @@ complete(GSList *node_coll, boolean test_mode)
       }
     }
     //on transactional nodes only, note to avoid calling this if a headless root
-    common_commit_copy_to_live_config(l->data, test_mode);
+    common_commit_copy_to_live_config(l->data, FALSE, test_mode);
   }
   return TRUE;
 }

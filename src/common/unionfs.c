@@ -605,7 +605,7 @@ set_path(char *path, boolean config)
  *
  **/
 void
-common_commit_copy_to_live_config(GNode *node, boolean test_mode)
+common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, boolean test_mode)
 {
   //first check for existence of path before committing
   char *path = ((struct VyattaNode*)(node->data))->_data._path;
@@ -689,7 +689,20 @@ common_commit_copy_to_live_config(GNode *node, boolean test_mode)
     system(command);
   }
 
-  piecewise_copy(node, test_mode);
+  if (suppress_piecewise_copy) {
+    sprintf(command, format1, tbuf_root, abuf_root);
+    if (g_debug) {
+      printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
+      fflush(NULL);
+    }
+    if (test_mode == FALSE) {
+      system(command);
+    }
+  }
+  else {
+    piecewise_copy(node, test_mode);
+  }
 
   sprintf(command, format8, cbuf_root,abuf_root,mbuf_root);
   if (g_debug) {
