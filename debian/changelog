@@ -1,3 +1,13 @@
+vyatta-cfg (0.15.24) unstable; urgency=low
+
+  * escape value slash in leaf value--followon fix to suppression of
+    leaf value with slash in
+  * performance optimization on commit. On successful commits (i.e. no
+    failures) will improve performance by avoiding the piecewise
+    priority based copy and just
+
+ -- slioch <slioch@eng-140.vyatta.com>  Sat, 10 Oct 2009 23:28:36 -0700
+
 vyatta-cfg (0.15.23) unstable; urgency=low
 
   [ Michael Larson ]
