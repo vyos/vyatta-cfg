@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.25) unstable; urgency=low
+
+  * Bugfix 2593: Introduce automatic static IRQ affinity balancing for
+    some NICs.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Mon, 12 Oct 2009 16:45:33 -0700
+
 vyatta-cfg (0.15.24) unstable; urgency=low
 
   * escape value slash in leaf value--followon fix to suppression of
