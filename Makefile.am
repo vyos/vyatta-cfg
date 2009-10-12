@@ -55,6 +55,7 @@ sbin_SCRIPTS  += scripts/vyatta-load-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-interfaces.pl
 sbin_SCRIPTS  += scripts/vyatta-irqaffin
+sbin_SCRIPTS  += scripts/vyatta-auto-irqaffin.pl
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-exists
 

@@ -13,15 +13,29 @@ type: txt
 
 help: Set CPU interrupt affinity mask for this interface
 
-comp_help: Hexidecimal bitmask representing CPUs that this NIC will interrupt
+comp_help: Possible completions:
+  XX\tHexidecimal bitmask representing CPUs that this NIC will interrupt
+  auto\tSet affinity automatically
 
-syntax:expression: exec "/opt/vyatta/sbin/vyatta-irqaffin check $VAR(../@) $VAR(@)"
+default: "auto"
+
+syntax:expression: exec " \
+	if [ $VAR(@) = auto ]; then \
+		exit 0;
+	else \
+		/opt/vyatta/sbin/vyatta-irqaffin check $VAR(../@) $VAR(@); \
+        fi"
 
 update:
-	sudo /opt/vyatta/sbin/vyatta-irqaffin set $VAR(../@) $VAR(@)
-	if [ $? -ne 0 ]; then
-	   echo "Error setting CPU affinity mask $VAR(@) on interface $VAR(../@)"
-	   exit 1
+	if [ "$VAR(@)" = "auto" ]; then
+	    echo "Setting SMP affinity for $VAR(../@) automatically."
+	    sudo /opt/vyatta/sbin/vyatta-auto-irqaffin.pl --setup $VAR(../@)
+	else
+	    sudo /opt/vyatta/sbin/vyatta-irqaffin set $VAR(../@) $VAR(@)
+	    if [ $? -ne 0 ]; then
+		echo "Error setting CPU affinity mask $VAR(@) on interface $VAR(../@)"
+		exit 1
+	    fi
 	fi
 
 delete: [ -d /sys/class/net/$VAR(../@) ] || exit 0
