@@ -1,3 +1,12 @@
+vyatta-cfg (0.15.26) unstable; urgency=low
+
+  [ slioch ]
+  * followup checkin for fast commit on success behavior. Addresses
+    problem with deleted leafs. Partial regression run on changes,
+    results map to 10/10 build.
+
+ -- root <root@eng-140.vyatta.com>  Mon, 12 Oct 2009 17:02:45 -0700
+
 vyatta-cfg (0.15.25) unstable; urgency=low
 
   * Bugfix 2593: Introduce automatic static IRQ affinity balancing for
