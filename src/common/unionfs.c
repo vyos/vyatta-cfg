@@ -618,6 +618,8 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   static const char format0[]="mkdir -p %s ; /bin/true";
   static const char formatpoint5[]="rm -fr %s"; /*tmpp*/
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
+  static const char format1point1[]="mv -f %s/* -t %s"; /*mdirp, tmpp*/
+  static const char format1point5[]="rm -fr %s/*"; /*tmpp*/
   
   static const char format2[]="sudo umount %s"; //mdirp
   static const char format8[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
@@ -690,7 +692,16 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   }
 
   if (suppress_piecewise_copy) {
-    sprintf(command, format1, tbuf_root, abuf_root);
+    sprintf(command, format1point5, abuf_root);
+    if (g_debug) {
+      printf("%s\n",command);
+      syslog(LOG_DEBUG,"%s\n",command);
+      fflush(NULL);
+    }
+    if (test_mode == FALSE) {
+      system(command);
+    }
+    sprintf(command, format1point1, tbuf_root, abuf_root);
     if (g_debug) {
       printf("%s\n",command);
       syslog(LOG_DEBUG,"%s\n",command);
