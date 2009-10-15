@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.27) unstable; urgency=low
+
+  [ slioch ]
+  * modify group ownership on save command
+
+ -- root <root@eng-140.vyatta.com>  Thu, 15 Oct 2009 11:57:14 -0700
+
 vyatta-cfg (0.15.26) unstable; urgency=low
 
   [ slioch ]
