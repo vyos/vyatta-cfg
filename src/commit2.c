@@ -108,6 +108,7 @@ usage(void)
   printf("\t-c\t\tdump node coverage and execution times\n");
   printf("\t-o\t\tdisable partial commit\n");
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
+  printf("\t-b\t\tbreak on each priority node (debug mode)\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -123,12 +124,13 @@ main(int argc, char** argv)
   boolean test_mode = FALSE;
   boolean disable_partial_commit = FALSE;
   boolean full_commit_check = FALSE;
+  boolean break_priority = FALSE;
 
   /* this is needed before calling certain glib functions */
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoaf")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoafb")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -160,6 +162,9 @@ main(int argc, char** argv)
       break;
     case 'f':
       full_commit_check = TRUE;
+      break;
+    case 'b':
+      break_priority = TRUE;
       break;
     default:
       usage();
@@ -239,6 +244,21 @@ main(int argc, char** argv)
 	printf("commit2: Starting new transaction processing pass on root:\n");
 	syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root:");
       }
+    }
+
+    if (break_priority) {
+      g_dump_trans = TRUE;
+      g_node_traverse(trans_child_node,
+		      G_PRE_ORDER,
+		      G_TRAVERSE_ALL,
+		      -1,
+		      (GNodeTraverseFunc)dump_func,
+		      (gpointer)NULL);
+      g_dump_trans = FALSE;
+      fprintf(out_stream,"Press any key to commit...\n");
+      
+      // Wait for single character 
+      char input = getchar(); 
     }
 
     //complete() now requires a undisturbed copy of the trans_child_node tree
