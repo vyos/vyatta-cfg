@@ -1,3 +1,11 @@
+vyatta-cfg (0.15.28) unstable; urgency=low
+
+  * new commit mode for debugging.
+  * add sudo back to save command, and add check to save script that
+    validates vyatta config token at end of file. this will prevent the
+
+ -- slioch <slioch@eng-140.vyatta.com>  Mon, 19 Oct 2009 15:45:34 -0700
+
 vyatta-cfg (0.15.27) unstable; urgency=low
 
   [ slioch ]
