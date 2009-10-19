@@ -70,7 +70,7 @@ show ()
 
 save ()
 {
-  eval "umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@"
+  eval "sudo sg vyattacfg \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
 }
 
 discard ()

@@ -68,6 +68,15 @@ print "Saving configuration to '$save_file'...\n";
 
 my $save;
 if ($mode eq 'local') {
+    # first check if this file exists, and if so ensure this is a config file.
+    if (-e $save_file) {
+	my $result = `grep ' === vyatta-config-version:' $save_file`;
+	if (!defined $result || length($result) == 0) {
+	    print "File exists and is not a Vyatta configuration file, aborting save!\n";
+	    exit 1;
+	}
+    }
+
     # this overwrites the file if it exists. we could create a backup first.
     open $save, '>', $save_file
 	or die "Can not open file '$save_file': $!\n";
