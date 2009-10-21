@@ -1,5 +1,5 @@
-priority: 318
 tag:
+priority: 318
 type: txt
 help: Set ethernet interface
 syntax:expression: exec \

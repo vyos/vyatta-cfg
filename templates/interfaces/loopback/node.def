@@ -1,5 +1,5 @@
-priority: 320
 tag:
+priority: 320
 type: txt
 help: Set loopback interface
 syntax:expression: exec \
