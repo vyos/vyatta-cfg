@@ -195,7 +195,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     vn->_data._name = cp;
     vn->_data._value = FALSE;//TRUE; //data value
     vn->_data._operation = op;
-    vn->_priority = LOWEST_PRIORITY;
+    vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
     vn->_data._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
     sprintf(vn->_data._path,"%s",rel_data_path);
     final_node = TRUE;
@@ -231,7 +231,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	}
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
-	vn->_priority = def.def_priority;
+	vn->_config._priority = def.def_priority;
       }
     }
 
@@ -322,7 +322,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	vn->_data._name = data_buf;
 	vn->_data._value = FALSE;
 	vn->_data._operation = K_DEL_OP;
-	vn->_priority = LOWEST_PRIORITY;
+	vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
 	
 	char new_data_path[MAX_LENGTH_DIR_PATH];
 	sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -340,7 +340,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
 	vn->_data._name = data_buf;
 	vn->_data._value = FALSE;
-	vn->_priority = LOWEST_PRIORITY;
+	vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
 
 	char new_data_path[MAX_LENGTH_DIR_PATH];
 	sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -410,7 +410,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	  vn->_data._name = data_buf;
 	  vn->_data._value = FALSE;
 	  vn->_data._operation = K_DEL_OP;
-	  vn->_priority = LOWEST_PRIORITY;
+	  vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
 	  
 	  GNode *new_node = g_node_new(vn);
 	  new_node = insert_sibling_in_order(node,new_node);
@@ -440,7 +440,7 @@ common_get_local_session_data()
   struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
   vn->_data._name = NULL; //root node has null
   vn->_data._operation = K_NO_OP;
-  vn->_priority = LOWEST_PRIORITY;
+  vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
 
   //create first node
   GNode *root_node = g_node_new(vn);
@@ -957,7 +957,8 @@ copy_vyatta_node(struct VyattaNode* vn)
   new_vn->_data._operation = vn->_data._operation;
   new_vn->_priority = vn->_priority;
 
-  new_vn->_config._multi = new_vn->_config._multi;
+  new_vn->_config._multi = vn->_config._multi;
+  new_vn->_config._priority = vn->_config._priority;
   //  new_vn->_config._def = new_vn->_config._def; //cpy this?
   if (vn->_config._default != NULL) {
     new_vn->_config._default = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
