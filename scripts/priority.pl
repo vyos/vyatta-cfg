@@ -9,8 +9,8 @@ foreach my $f (@files) {
    if (defined $result && length($result) != 0) {
        my @r = split " ", $result;
        if (defined $r[1]) {
-	   $pri{$r[1]} = $f;
 	   #stuff in hash here
+	   push @{$pri{$r[1]}},$f;
        }
     }
 }
@@ -19,7 +19,10 @@ foreach my $f (@files) {
 #now sort
 
 foreach my $key ( sort { $a <=> $b } keys %pri ) {
-    my $loc = substr($pri{$key},0,-10);
-    my $loc = substr($loc,39);
-    print $key," ",$loc,"\n";
+    my @a = @{$pri{$key}};
+    foreach my $val (@a) {
+	my $loc = substr($val,0,-10);
+	my $loc = substr($loc,39);
+	print $key," ",$loc,"\n";
+    }
 } 
