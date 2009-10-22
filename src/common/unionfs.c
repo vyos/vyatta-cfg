@@ -231,7 +231,13 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	}
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
-	vn->_config._priority = def.def_priority;
+	if (def.def_priority == 0) {
+	  vn->_config._priority = LOWEST_PRIORITY;
+	}
+	else {
+	  vn->_config._priority = def.def_priority;
+	}
+
       }
     }
 
@@ -247,6 +253,16 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
       struct VyattaNode* vn_parent = (struct VyattaNode*)node->parent->data;
       if (vn_parent->_config._multi == TRUE) {
 	((struct VyattaNode*)node->data)->_data._value = TRUE;
+
+	//patch up to preserve multinode behavior on value node, can also put node.def on node.tag with priority
+	//Need to do two things:
+	// 1. Come to agreement on where the behavior splits on priority multinodes
+	// 2. Not check for tag node in the def datastructure but use the new datastructure as at some point tag and multi will be the same
+	if (vn_parent->_config._def.tag == TRUE) { //only for embedded multinodes
+	  vn->_config._priority = vn_parent->_config._priority;
+	  vn_parent->_config._priority = LOWEST_PRIORITY;
+	}
+
 
 	//now let's patch up the def multi-nodes
 	//move the def for the multinode from the parent to the value node
