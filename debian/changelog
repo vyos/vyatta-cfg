@@ -1,3 +1,24 @@
+vyatta-cfg (0.15.31) unstable; urgency=low
+
+  [ slioch ]
+  * sorts and generates priority statements from priority node.def
+    entries
+  * fixed script to handle multiple entries for same priority
+  * pull priority from file into data structure
+
+  [ Stephen Hemminger ]
+  * Fix description setting on vif
+
+  [ slioch ]
+  * preserve priorities in hierarchy. old priority still active, but
+    commit -s will now display both priorities:
+  * priorities should match up on all nodes now, except where the
+    priority file diverges from the node.defs
+  * activate priority values from node.def. priority file is now no
+    longer used and should be considered depricated.
+
+ -- slioch <slioch@eng-140.vyatta.com>  Thu, 22 Oct 2009 15:37:21 -0700
+
 vyatta-cfg (0.15.30) unstable; urgency=low
 
   * move priority after tag nodes.
