@@ -618,7 +618,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   }
 
   if (priority_mode) {
-    if (((struct VyattaNode*)gp)->_priority < LOWEST_PRIORITY) { //only if priority is specified.
+    if (((struct VyattaNode*)gp)->_config._priority < LOWEST_PRIORITY) { //only if priority is specified.
       //unlink from original tree
       g_node_unlink(node);
 
@@ -626,9 +626,9 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       GNode *sibling = root_node->children;
       //now iterate through siblings of root_node and compare priority
       
-      while (sibling != NULL && ((struct VyattaNode*)gp)->_priority > ((struct VyattaNode*)(sibling->data))->_priority) {
+      while (sibling != NULL && ((struct VyattaNode*)gp)->_config._priority > ((struct VyattaNode*)(sibling->data))->_config._priority) {
 	sibling = sibling->next;
-	if (sibling == NULL || ((struct VyattaNode*)gp)->_priority < ((struct VyattaNode*)(sibling->data))->_priority) {
+	if (sibling == NULL || ((struct VyattaNode*)gp)->_config._priority < ((struct VyattaNode*)(sibling->data))->_config._priority) {
 	  break;
 	}
       }
@@ -636,10 +636,10 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       if (g_debug) {
 	int pri = LOWEST_PRIORITY;
 	if (sibling != NULL) {
-	  pri = ((struct VyattaNode*)(sibling->data))->_priority;
+	  pri = ((struct VyattaNode*)(sibling->data))->_config._priority;
 	}
-	printf("commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_priority, pri);
-	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_priority, pri);
+	printf("commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
+	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
       }
       g_node_insert_before(root_node,sibling,new_node);
     }
@@ -793,7 +793,7 @@ dump_func(GNode *node, gpointer data)
       for (i = 0; i < depth; ++i) {
 	fprintf(out,"  ");
       }
-      fprintf(out,"%s (t: %d, p: %d,%d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority,((struct VyattaNode*)gp)->_config._priority);
+      fprintf(out,"%s (t: %d, p: %d,%d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._priority,((struct VyattaNode*)gp)->_config._priority);
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
 	fprintf(out," [VALUE]");
       }

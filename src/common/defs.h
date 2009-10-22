@@ -54,7 +54,7 @@ remove _actions and rely on def in the future.
 struct Config
 {
   boolean      _multi;
-  unsigned long _priority;
+  int _priority;
   vtw_def      _def; //keep this here
   char*        _help;
   char*        _default;
