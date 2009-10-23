@@ -56,9 +56,6 @@ void
 retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op);
 
 void
-apply_priority(GNode *root_node);
-
-void
 set_path(char *path, boolean config);
 
 struct VyattaNode*
@@ -69,9 +66,6 @@ get_term_data_values(GNode *node);
 
 void
 dlist_test_func(GQuark key_id,gpointer data,gpointer user_data);
-
-void
-match_priority_node(GNode *node, gchar** tok_str, int pri);
 
 GNode*
 insert_sibling_in_order(GNode *parent, GNode *child);
@@ -195,7 +189,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     vn->_data._name = cp;
     vn->_data._value = FALSE;//TRUE; //data value
     vn->_data._operation = op;
-    vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
+    vn->_config._priority = LOWEST_PRIORITY;
     vn->_data._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
     sprintf(vn->_data._path,"%s",rel_data_path);
     final_node = TRUE;
@@ -338,7 +332,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	vn->_data._name = data_buf;
 	vn->_data._value = FALSE;
 	vn->_data._operation = K_DEL_OP;
-	vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
+	vn->_config._priority = LOWEST_PRIORITY;
 	
 	char new_data_path[MAX_LENGTH_DIR_PATH];
 	sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -356,7 +350,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
 	vn->_data._name = data_buf;
 	vn->_data._value = FALSE;
-	vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
+	vn->_config._priority = LOWEST_PRIORITY;
 
 	char new_data_path[MAX_LENGTH_DIR_PATH];
 	sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -426,7 +420,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	  vn->_data._name = data_buf;
 	  vn->_data._value = FALSE;
 	  vn->_data._operation = K_DEL_OP;
-	  vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
+	  vn->_config._priority = LOWEST_PRIORITY;
 	  
 	  GNode *new_node = g_node_new(vn);
 	  new_node = insert_sibling_in_order(node,new_node);
@@ -456,7 +450,7 @@ common_get_local_session_data()
   struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
   vn->_data._name = NULL; //root node has null
   vn->_data._operation = K_NO_OP;
-  vn->_priority = vn->_config._priority = LOWEST_PRIORITY;
+  vn->_config._priority = LOWEST_PRIORITY;
 
   //create first node
   GNode *root_node = g_node_new(vn);
@@ -464,7 +458,7 @@ common_get_local_session_data()
   //iterate through recursive calls to parse_new() calls (see original commit())
   retrieve_data(data_path,root_node,get_cdirp(),K_SET_OP);
 
-  apply_priority(root_node);
+  //  apply_priority(root_node);
 
   return root_node;
 }
@@ -867,92 +861,6 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   return;
 }
 
-
-void
-match_priority_node(GNode *node, gchar** tok_str, int pri)
-{
-  int index = g_node_depth(node)-1;
-  if (tok_str[index] == NULL) {
-    //MATCHED TO THE END
-    ((struct VyattaNode*)node->data)->_priority = pri;
-    return;
-  }
-  //iterate over children for a potential match
-  GNode *child = g_node_first_child(node);
-  while (child != NULL) {
-    char *compval = ((struct VyattaNode*)child->data)->_data._name;
-    if (strncmp(compval,tok_str[index],strlen(compval)) == 0) {
-      match_priority_node(child,tok_str,pri);
-    }
-    else if (strncmp(NODE_TAG_FILE,tok_str[index],strlen(NODE_TAG_FILE)) == 0) {
-      match_priority_node(child,tok_str,pri);
-    }
-    else if (strncmp("*",tok_str[index],1) == 0) {     //wildcard
-      match_priority_node(child,tok_str,pri);
-    }
-    child = g_node_next_sibling(child);
-  }
-  return;
-}
-
-/**
- *
- *
- **/
-void
-set_node_priority(GNode *root_node,char* path,unsigned long pri)
-{
-  if (root_node == NULL) {
-    return;
-  }
-  gchar** tok_str = g_strsplit(path,"/",MAX_DEPTH);
-
-  struct PriData pri_data;
-
-  pri_data._pri = pri;
-  pri_data._tok_str = tok_str;
-
-  match_priority_node(root_node,tok_str,pri);
-
-  g_strfreev(tok_str);
-  return;
-}
-
-
-/**
- *
- **/
-void
-apply_priority(GNode *root_node)
-{
-  //parse file and find node and set value
-  FILE *fp = fopen(NODE_PRIORITY_FILE, "r");
-  if (fp != NULL) {
-    if (g_debug) {
-      printf("unionfs::apply_priority(), found priority file\n");
-      syslog(LOG_DEBUG,"unionfs::apply_priority(), found priority file\n");
-    }
-
-    char str[1025];
-    while (fgets(str, 1024, fp) != 0) {
-      gchar** tok_str = g_strsplit(str," ",3);
-      if (tok_str[0] == NULL || tok_str[1] == NULL || strncmp(tok_str[0],"#",1) == 0) {
-	continue;
-      }
-      char *path = tok_str[1];
-      if (g_debug) {
-	printf("unionfs::apply_priority(), working on this %s\n",path);
-	syslog(LOG_DEBUG,"unionfs::apply_priority(), working on this %s\n",path);
-      }
-
-      //now apply to node
-      set_node_priority(root_node,path,strtoul(tok_str[0],NULL,10));
-      g_strfreev(tok_str);
-    }
-    fclose(fp);
-  }
-}
-
 /**
  *
  **/
@@ -971,8 +879,6 @@ copy_vyatta_node(struct VyattaNode* vn)
     strcpy(new_vn->_data._path,vn->_data._path);
   }
   new_vn->_data._operation = vn->_data._operation;
-  new_vn->_priority = vn->_priority;
-
   new_vn->_config._multi = vn->_config._multi;
   new_vn->_config._priority = vn->_config._priority;
   //  new_vn->_config._def = new_vn->_config._def; //cpy this?

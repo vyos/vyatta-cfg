@@ -113,7 +113,7 @@ dump_func(GNode *node, gpointer data)
       for (i = 0; i < depth; ++i) {
 	printf("  ");
       }
-      printf("%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_priority);
+      printf("%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._priority);
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
 	printf(" [VALUE]");
       }

@@ -1,3 +1,10 @@
+#
+# IMPORTANT NOTICE!! 
+#
+# This file is no longer used and is therefore 
+# depricated. Priorities are now stored in the specific node.def
+# files.
+#
 # 
 # Vyatta Configuration Priority File.
 # 

@@ -54,7 +54,7 @@ remove _actions and rely on def in the future.
 struct Config
 {
   boolean      _multi;
-  int _priority;
+  int          _priority;
   vtw_def      _def; //keep this here
   char*        _help;
   char*        _default;
@@ -76,7 +76,6 @@ struct VyattaNode
 {
   struct Data   _data;
   struct Config _config;
-  int           _priority; //used for setting priority
 };
 
 #endif //__DEFS_H__
