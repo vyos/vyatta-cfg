@@ -23,22 +23,33 @@
 # **** End License ****
 #
 
-# This script attempts to perform a static affinity assignment for network
-# interfaces.  It is primarily targeted at supporting multi-queue NICs. 
+# This script attempts to set up a static CPU affinity for the IRQs
+# used by network interfaces.  It is primarily targeted at supporting
+# multi-queue NICs, but does include code to handle single-queue NICs.
 # Since different NICs may have different queue organizations, and
 # because there is no standard API for learning the mapping between
-# queues and IRQ numbers, different code is required for each driver.
+# queues and IRQ numbers, different code is required for each of the
+# queue naming conventions.
 #
-# The general strategy includes:
+# The general strategy involves trying to achieve the following goals:
+#
 #  - Spread the receive load among as many CPUs as possible.
-#  - For NICs that provide both rx and tx queue, keep the tx queue
-#    on the same CPU as the corresponding rx queue.
-#  - For all multi-queue NICs in the system, the same tx and rx queue
-#    numbers should interrupt the same CPUs.  I.e. tx and rx queue 0
-#    of all NICs should interrupt the same CPU.
+#    
+#  - For all multi-queue NICs in the system that provide both tx and
+#    rx queues, keep all of the queues that share the same queue
+#    number on same CPUs.  I.e. tx and rx queue 0 of all such NICs
+#    should interrupt one CPU; tx and rx queue 1 should interrupt a
+#    different CPU, etc.
+#    
 #  - If hyperthreading is supported and enabled, avoid assigning
 #    queues to both CPUs of a hyperthreaded pair if there are enough
 #    CPUs available to do that.
+#
+# This strategy yields the greatest MP scaling possible for
+# multi-queue NICs.  It also ensures that an individual skb is
+# processed on the same CPU for the entirity of its lifecycle,
+# including transmit time, which optimally utilizes the cache and
+# keeps performance high.
 #
 
 
@@ -71,24 +82,26 @@ sub log_msg {
 }
 
 
-# Affinity strategy function for the igb driver.  NICs using this
-# driver have an equal number of rx and tx queues.  The first part of
-# the strategy for optimal performance is to assign irq of each queue
-# in a pair of tx and rx queues that have the same queue number to the
-# same CPU.  I.e., assign queue 0 to CPU X, queue 1 to CPU Y, etc.
-# The second part is to avoid assigning any queues to the second CPU
-# in a hyper-threaded pair, if posible.  I.e., if CPU 0 and 1 are
-# hyper-threaded pairs, then assign a queue to CPU 0, but try to avoid
-# assigning one to to CPU 1.  But if we have more queues than CPUs, then
-# it is OK to assign some to the second CPU in a hyperthreaded pair.
+# Affinity assignment function for the Intel igb, ixgb and ixgbe
+# drivers, and any other NICs that follow their queue naming
+# convention.  These NICs have an equal number of rx and tx queues.
+# The first part of the strategy for optimal performance is to select
+# the CPU to assign the IRQs to by mapping from the queue number.
+# This ensures that all queues with the same queue number are assigned
+# to the same CPU.  The second part is to avoid assigning any queues
+# to the second CPU in a hyper-threaded pair, if posible.  I.e., if
+# CPU 0 and 1 are hyper-threaded pairs, then assign a queue to CPU 0,
+# but try to avoid assigning one to to CPU 1.  But if we have more
+# queues than CPUs, then it is OK to assign some to the second CPU in
+# a hyperthreaded pair.
 # 
-sub igb_func{
+sub intel_func{
     my ($ifname, $numcpus, $numcores) = @_;
     my $rx_queues;	# number of rx queues
     my $tx_queues;	# number of tx queues
     my $ht_factor;	# 2 if HT enabled, 1 if not
 
-    log_msg("igb_func was called.\n");
+    log_msg("intel_func was called.\n");
 
     if ($numcpus > $numcores) {
 	$ht_factor = 2;
@@ -157,14 +170,18 @@ sub igb_func{
     }
 };
 
-# Similar strategy as for igb driver, but Broadcom NICs do not have
-# separate receive and transmit queues.
-sub bnx2_func{
+# Affinity assignment function for Broadcom NICs using the bnx2 driver
+# or other multi-queue NICs that follow their queue naming convention.
+# This strategy is similar to that for Intel drivers.  But since
+# Broadcom NICs do not have separate receive and transmit queues we
+# perform one affinity assignment per queue.
+#
+sub broadcom_func{
     my ($ifname, $numcpus, $numcores) = @_;
     my $num_queues;	# number of queues
     my $ht_factor;	# 2 if HT enabled, 1 if not
 
-    log_msg("bnx2_func was called.\n");
+    log_msg("broadcom_func was called.\n");
 
     # Figure out how many queues we have
     $num_queues=`grep "$ifname-" /proc/interrupts | wc -l`;
@@ -219,9 +236,59 @@ sub bnx2_func{
     }
 }
 
-my %driver_hash = ( 'igb' => \&igb_func,
-		    'ixbg' => \&igb_func,
-		    'bnx2' =>\&bnx2_func );
+
+# Affinity assignment function for single-quque NICs.  The strategy
+# here is to just spread the interrupts of different NICs evenly
+# across all CPUs.  That is the best we can do without monitoring the
+# load and traffic patterns.  So we just directly map the NIC unit
+# number into a CPU number.
+#
+sub single_func {
+    my ($ifname, $numcpus, $numcores) = @_;
+    my $cpu;
+    use integer;
+
+    log_msg("single_func was calledn.\n");
+
+    $ifname =~ m/^eth(.*)$/;
+    
+    my $ifunit = $1;
+    log_msg ("ifunit = $ifunit\n");
+
+    # Get the IRQ number for the queue
+    my $irq=`grep "$ifname" /proc/interrupts | awk -F: '{print \$1}'`;
+    $irq =~ s/\n//;
+    $irq =~ s/ //g;
+
+    log_msg("irq = $irq.\n");
+
+    # Figure out what CPU to assign it to
+    if ($numcpus > $numcores) {
+	# Hyperthreaded
+	$cpu = (2 * $ifunit) % $numcpus;
+
+	# every other time it wraps, add one to use the hyper-thread pair
+	# of the CPU selected.
+	my $use_ht = ((2 * $ifunit) / $numcpus) % 2;
+	$cpu += $use_ht;
+    } else {
+	# Not hyperthreaded.  Map it to unit number MOD number of linux CPUs.
+	$cpu = $ifunit % $numcpus;
+    }
+
+    # Generate the hex string for the bitmask representing this CPU
+    my $cpu_bit = 1 << $cpu;
+    my $cpu_hex = sprintf("%x", $cpu_bit);
+    log_msg ("cpu=$cpu cpu_bit=$cpu_bit cpu_hex=$cpu_hex\n");
+
+    # Assign CPU affinity for this IRQs
+    system "echo $cpu_hex > /proc/irq/$irq/smp_affinity";
+}
+
+# Mapping from driver type to function that handles it.
+my %driver_hash = ( 'intel' => \&intel_func,
+		    'broadcom' => \&broadcom_func,
+		    'single' => \&single_func);
 
 if (defined $setup_ifname) {
     # Set up automatic IRQ affinity for the named interface
@@ -233,8 +300,10 @@ if (defined $setup_ifname) {
     my $numcpus;	# Number of Linux "cpus"
     my $numcores;	# Number of unique CPU cores
     my $driver_func;	# Pointer to fuction specific to a driver
+    my $driver_style;	# Style of the driver.  Whether it is multi-queue 
+			# or not, and if it is, how it names its queues.
 
-    # Determine how many CPUs the machine has
+    # Determine how many CPUs the machine has.
     $numcpus=`grep "^processor" /proc/cpuinfo | wc -l`;
     $numcpus =~ s/\n//;
 
@@ -245,32 +314,39 @@ if (defined $setup_ifname) {
 	exit 0;
     }
 
+    # Determine how many cores the machine has.  Could be less than 
+    # the number of CPUs if processor supports hyperthreading.
+    $numcores=`grep "^core id" /proc/cpuinfo | uniq | wc -l`;
+    $numcores =~ s/\n//;
+
+    log_msg("numcores is $numcores.\n");
+
     # Verify that interface exists
     if (! (-e "/proc/sys/net/ipv4/conf/$ifname")) {
 	printf("Error: Interface $ifname does not exist\n");
 	exit 1;
     }
 
-    # Figure out what driver this NIC is using.
-    $drivername=`ethtool -i $ifname | grep "^driver" | awk '{print \$2}'`;
-    $drivername =~ s/\n//;
-
-    log_msg("drivername is $drivername\n");
-
-    $driver_func = $driver_hash{$drivername};
-
-    # We only support a couple of drivers at this time, so just exit
-    # if its not one we support.
-    if (! defined($driver_func)) {
-	printf("Automatic SMP affinity not supported for NICs using the $drivername driver.\n");
-	exit 0;	# not an error
+    # Figure out what style of driver this NIC is using.
+    my $numints=`grep $ifname /proc/interrupts | wc -l`;
+    $numints =~ s/\n//;
+    if ($numints > 1) {
+	# It is a multiqueue NIC.  Now figure out which one.
+	my $rx_queues=`grep "$ifname-rx-" /proc/interrupts | wc -l`;
+	$rx_queues =~ s/\n//;
+	if ($rx_queues > 0) {
+	    # Driver is following the Intel queue naming style
+	    $driver_style="intel";
+	} else {
+	    # The only other queue naming style that we have seen is the
+	    # one used by Broadcom NICs.
+	    $driver_style="broadcom";
+	}
+    } else {
+	# It is a single queue NIC.
+	$driver_style="single";
     }
-
-    # Determine whether machine has hyperthreading enabled
-    $numcores=`grep "^core id" /proc/cpuinfo | uniq | wc -l`;
-    $numcores =~ s/\n//;
-    
-    log_msg("numcores is $numcores.\n");
+    $driver_func = $driver_hash{$driver_style};
 
     &$driver_func($ifname, $numcpus, $numcores);
 
