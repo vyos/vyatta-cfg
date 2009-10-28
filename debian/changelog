@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.33) unstable; urgency=low
+
+  [ slioch ]
+  * removed out of date priority values from priority file
+
+ -- root <root@eng-140.vyatta.com>  Tue, 27 Oct 2009 17:13:25 -0700
+
 vyatta-cfg (0.15.32) unstable; urgency=low
 
   [ slioch ]
