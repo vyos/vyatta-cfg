@@ -82,18 +82,22 @@ init_bootfile () {
 	CURTIME=$(date +%F-%H%M%S)
 	mv $BOOTFILE $BOOTFILE.pre-glendale.$CURTIME
     fi
-    if [ ! -f $BOOTFILE ] ; then
+    if [ ! -r $BOOTFILE ] ; then
 	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
 	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
         else
           $vyatta_sbindir/vyatta_current_conf_ver.pl > $BOOTFILE
         fi
+
+	chgrp ${GROUP} $BOOTFILE
+	chmod 660 $BOOTFILE
     fi
-    chgrp ${GROUP} $BOOTFILE
-    chmod 660 $BOOTFILE
-    ## remove the unnecessary and potentially conflicting
-    ## config-directory statement (i.e. /mnt/floppy vs. /media/floppy
-    sed -i '/^rtrmgr {$/,/^}$/d' $BOOTFILE
+
+    if grep -q -x 'rtrmgr {' $BOOTFILE ; then
+        ## remove the unnecessary and potentially conflicting
+        ## config-directory statement (i.e. /mnt/floppy vs. /media/floppy)
+	sed -i '/^rtrmgr {$/,/^}$/d' $BOOTFILE
+    fi
 }
 
 # if necessary, migrate initial config
