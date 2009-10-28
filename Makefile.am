@@ -46,6 +46,7 @@ src_check_tmpl_SOURCES = src/check_tmpl.c
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
 sbin_SCRIPTS += scripts/vyatta-find-type.pl
+sbin_SCRIPTS += scripts/priority.pl
 sbin_SCRIPTS  += scripts/vyatta-config-loader.pl
 sbin_SCRIPTS  += scripts/vyatta-config-gen-sets.pl
 sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl

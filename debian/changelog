@@ -1,3 +1,20 @@
+vyatta-cfg (0.15.33) unstable; urgency=low
+
+  [ slioch ]
+  * removed out of date priority values from priority file
+
+ -- root <root@eng-140.vyatta.com>  Tue, 27 Oct 2009 17:13:25 -0700
+
+vyatta-cfg (0.15.32) unstable; urgency=low
+
+  [ slioch ]
+  * dismantle old priority file parsing and node matching code. removed
+
+  [ Bob Gilligan ]
+  * Generalize handling of multi-queue NICs.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Mon, 26 Oct 2009 17:09:30 -0700
+
 vyatta-cfg (0.15.31) unstable; urgency=low
 
   [ slioch ]
