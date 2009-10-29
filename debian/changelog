@@ -1,3 +1,11 @@
+vyatta-cfg (0.15.34) unstable; urgency=low
+
+  * Add copybreak option to all ether drivers
+  * Avoid updating config.boot unless necessary
+  * Change how floppy is mounted
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 29 Oct 2009 11:18:09 -0700
+
 vyatta-cfg (0.15.33) unstable; urgency=low
 
   [ slioch ]
