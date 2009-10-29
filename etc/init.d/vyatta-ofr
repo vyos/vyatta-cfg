@@ -66,13 +66,17 @@ have_rl_system () {
 
 # if necessary, provide initial config
 init_bootfile () {
-    if [ ! -d /media/floppy/config ] && grep -q fd /proc/devices
+
+    if [ ! -d /media/floppy/config -a -b /dev/fd0 ]
     then
-        mkdir -p /media/floppy
-	mount /dev/fd0 /media/floppy -o sync ||
-            mount -t ext2 /dev/fd0 /media/floppy -o sync ||
-            mount -t vfat /dev/fd0 /media/floppy
-    fi 2>/dev/null
+        [ -d /media/floppy ] || mkdir -p /media/floppy
+
+	# This mount will try ext2 or fat format
+	# and it will fail if no floppy present
+	# Note: no good way to test for floppy present without causing I/O error
+	mount /dev/fd0 /media/floppy \
+	    -o sync,noexec,nodev,noatime,nosuid 2>/dev/null
+    fi
 
     [ -d /media/floppy/config ] &&
     	mount -o bind /media/floppy/config /opt/vyatta/etc/config
