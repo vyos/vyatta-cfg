@@ -21,14 +21,16 @@ Depends: sed (>= 4.1.5),
  bsdutils (>=1:2.13),
  libc6 (>= 2.7-6),
  libsort-versions-perl,
+ libfile-sync-perl,
  vlan,
+ ethtool,
+ iproute,
  libglib2.0-0,
  curl
 Replaces: vyatta-cfg-firewall, 
  vyatta-cfg-quagga
 Suggests: util-linux (>= 2.13-5),
  net-tools,
- ethtool,
  ncurses-bin (>= 5.5-5),
  ntpdate
 Description: Vyatta configuration system

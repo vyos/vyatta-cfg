@@ -22,6 +22,7 @@
 use strict;
 use lib "/opt/vyatta/share/perl5";
 use Vyatta::ConfigOutput;
+use File::Sync qw(fsync);
 
 my $etcdir = "/opt/vyatta/etc";
 my $bootpath = $etcdir . "/config";
@@ -91,9 +92,10 @@ select $save;
 set_show_all(1);
 outputActiveConfig();
 print $version_str;
-close $save;
-
 select STDOUT;
+
+fsync $save;
+close $save;
 
 if ($mode eq 'url') {
   my $rc = system("curl -# -T $url_tmp_file $save_file");
