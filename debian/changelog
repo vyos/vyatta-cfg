@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.35) unstable; urgency=low
+
+  * Sync config file after saving
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 30 Oct 2009 11:05:03 -0700
+
 vyatta-cfg (0.15.34) unstable; urgency=low
 
   * Add copybreak option to all ether drivers
