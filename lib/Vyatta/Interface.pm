@@ -222,6 +222,17 @@ sub flags {
     return hex($val);
 }
 
+sub carrier {
+    my $self = shift;
+    open my $carrier, '<', "/sys/class/net/$self->{name}/carrier"
+	or return;
+
+    my $val = <$carrier>;
+    chomp $val;
+    close $carrier;
+    return $carrier;
+}
+
 sub hw_address {
     my $self = shift;
 
