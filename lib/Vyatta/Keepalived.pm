@@ -152,21 +152,11 @@ sub vrrp_get_config {
 
     my $path;
     my $config = new Vyatta::Config;
-    
-    if ($intf =~ m/bond/) {
-	if ($intf =~ m/(bond\d+)\.(\d+)/) {
-	    $path = "interfaces bonding $1 vif $2";
-	} else {
-	    $path = "interfaces bonding $intf";
-	}
-    } else {
-	if ($intf =~ m/(eth\d+)\.(\d+)/) {
-	    $path = "interfaces ethernet $1 vif $2";
-	} else {
-	    $path = "interfaces ethernet $intf";
-	}
-    }
 
+    my $interface = new Vyatta::Interface($intf);
+    die "Unknown interface type: $intf" unless $interface;
+ 
+    $path = $interface->path();
     $config->setLevel($path);
     my $primary_addr = $config->returnOrigValue("address"); 
     if (!defined $primary_addr) {
