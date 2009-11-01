@@ -1,3 +1,18 @@
+vyatta-cfg (0.15.36) unstable; urgency=low
+
+  [ David S. Madole ]
+  * Add VRRP capability to bonding interfaces and vifs of bonding
+    interfaces.
+
+  [ Stig Thormodsrud ]
+  * Add method to retrieve carrier value.
+  * Convert keepalived to use Interface infrastructure.
+  * Fix carrier method.
+  * Add natural order sort.
+  * Fix spelling error in carrier method.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Sun, 01 Nov 2009 14:58:58 -0800
+
 vyatta-cfg (0.15.35) unstable; urgency=low
 
   * Sync config file after saving
