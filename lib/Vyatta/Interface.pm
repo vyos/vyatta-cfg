@@ -230,7 +230,7 @@ sub carrier {
     my $val = <$carrier>;
     chomp $val;
     close $carrier;
-    return $carrier;
+    return $var;
 }
 
 sub hw_address {
