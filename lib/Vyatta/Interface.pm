@@ -228,6 +228,7 @@ sub carrier {
 	or return;
 
     my $val = <$carrier>;
+    $val = 0 if ! defined $val  # proc entry not readable on down interface
     chomp $val;
     close $carrier;
     return $val;
