@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.38) unstable; urgency=low
+
+  * Fix uninitialized variable when reading carrier on admin down
+    interface.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 03 Nov 2009 11:22:03 -0800
+
 vyatta-cfg (0.15.37) unstable; urgency=low
 
   [ slioch ]
