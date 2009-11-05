@@ -1,3 +1,12 @@
+vyatta-cfg (0.14.91+jenner46) unstable; urgency=low
+
+  * fix for bug 4969. on leaf nodes scan for '/' and don't make these
+    values available to the partial commit status api (bug fix 4919).
+    this approach will be revised in next
+  * fix for bug 5037. Adjusted priorities for protocols and route map
+
+ -- slioch <slioch@eng-140.vyatta.com>  Wed, 04 Nov 2009 16:12:52 -0800
+
 vyatta-cfg (0.14.91+jenner45) unstable; urgency=low
 
   [ Michael Larson ]
