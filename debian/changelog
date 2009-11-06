@@ -1,3 +1,24 @@
+vyatta-cfg (0.15.39) unstable; urgency=low
+
+  * Fix missing semicolon.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 04 Nov 2009 08:16:11 -0800
+
+vyatta-cfg (0.15.38) unstable; urgency=low
+
+  * Fix uninitialized variable when reading carrier on admin down
+    interface.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 03 Nov 2009 11:22:03 -0800
+
+vyatta-cfg (0.15.37) unstable; urgency=low
+
+  [ slioch ]
+  * fix for missing priority value on embedded multinode. bug behavior
+    was more limited than this--at least tag node.def and multiple
+
+ -- root <root@eng-140.vyatta.com>  Mon, 02 Nov 2009 17:26:42 -0800
+
 vyatta-cfg (0.15.36) unstable; urgency=low
 
   [ David S. Madole ]
