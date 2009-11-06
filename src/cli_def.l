@@ -271,6 +271,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
 #[^\n]*\n {
     /* comment */
     ++yy_cli_def_lineno;
+    return EOL;
   }
 
 \n {
