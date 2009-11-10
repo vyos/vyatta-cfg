@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.41) unstable; urgency=low
+
+  * preserve node.val order for term multinodes. fix for bug 5103
+
+ -- Michael Larson <mike@ft1.vyatta.com>  Tue, 10 Nov 2009 12:06:38 -0800
+
 vyatta-cfg (0.15.40) unstable; urgency=low
 
   * Allow inline comments in config template fields.
