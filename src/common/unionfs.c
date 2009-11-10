@@ -1023,8 +1023,9 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   if (vn->_data._value == TRUE) {
     new_vn = copy_vyatta_node(vn);
     GNode *new_node = g_node_new(new_vn);
-    //g_node_insert(node, -1, new_node);
-    insert_sibling_in_order(node,new_node);
+    //    g_node_insert(node, -1, new_node);
+    g_node_insert_after(node, NULL, new_node);
+    //    insert_sibling_in_order(node,new_node);
     new_vn->_config._def = vn->_config._def;
   }
   else {
