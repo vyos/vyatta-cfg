@@ -225,13 +225,6 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	}
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
-	if (def.def_priority == 0) {
-	  vn->_config._priority = LOWEST_PRIORITY;
-	}
-	else {
-	  vn->_config._priority = def.def_priority;
-	}
-
       }
     }
 
@@ -252,12 +245,6 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	//Need to do two things:
 	// 1. Come to agreement on where the behavior splits on priority multinodes
 	// 2. Not check for tag node in the def datastructure but use the new datastructure as at some point tag and multi will be the same
-	if (vn_parent->_config._def.tag == TRUE) { //only for embedded multinodes
-	  vn->_config._priority = vn_parent->_config._priority;
-	  vn_parent->_config._priority = LOWEST_PRIORITY;
-	}
-
-
 	//now let's patch up the def multi-nodes
 	//move the def for the multinode from the parent to the value node
 	struct VyattaNode* vn2 = (struct VyattaNode*)node->data;
@@ -281,6 +268,25 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
       printf("\n");
     }
   }
+
+
+  if (G_NODE_IS_ROOT(node) == FALSE) {
+    struct VyattaNode* vn_parent = (struct VyattaNode*)node->parent->data;
+    struct VyattaNode* vn = (struct VyattaNode*)node->data;
+    //      vn->_config._priority = vn_parent->_config._def.def_priority;
+    if (vn->_config._def.tag && vn->_config._multi) {
+      vn->_config._priority = LOWEST_PRIORITY;
+    }
+    else if (vn->_config._def.def_priority == 0) {
+      vn->_config._priority = LOWEST_PRIORITY;
+    }
+    else {
+      vn->_config._priority = vn->_config._def.def_priority;
+    }
+  }
+
+
+
 
   if (final_node == TRUE) {
     //move defs to child...
@@ -1017,8 +1023,9 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   if (vn->_data._value == TRUE) {
     new_vn = copy_vyatta_node(vn);
     GNode *new_node = g_node_new(new_vn);
-    //g_node_insert(node, -1, new_node);
-    insert_sibling_in_order(node,new_node);
+    //    g_node_insert(node, -1, new_node);
+    g_node_insert_after(node, NULL, new_node);
+    //    insert_sibling_in_order(node,new_node);
     new_vn->_config._def = vn->_config._def;
   }
   else {

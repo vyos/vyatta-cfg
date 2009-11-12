@@ -1,3 +1,57 @@
+vyatta-cfg (0.15.41) unstable; urgency=low
+
+  * preserve node.val order for term multinodes. fix for bug 5103
+
+ -- Michael Larson <mike@ft1.vyatta.com>  Tue, 10 Nov 2009 12:06:38 -0800
+
+vyatta-cfg (0.15.40) unstable; urgency=low
+
+  * Allow inline comments in config template fields.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Thu, 05 Nov 2009 16:41:12 -0800
+
+vyatta-cfg (0.15.39) unstable; urgency=low
+
+  * Fix missing semicolon.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 04 Nov 2009 08:16:11 -0800
+
+vyatta-cfg (0.15.38) unstable; urgency=low
+
+  * Fix uninitialized variable when reading carrier on admin down
+    interface.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 03 Nov 2009 11:22:03 -0800
+
+vyatta-cfg (0.15.37) unstable; urgency=low
+
+  [ slioch ]
+  * fix for missing priority value on embedded multinode. bug behavior
+    was more limited than this--at least tag node.def and multiple
+
+ -- root <root@eng-140.vyatta.com>  Mon, 02 Nov 2009 17:26:42 -0800
+
+vyatta-cfg (0.15.36) unstable; urgency=low
+
+  [ David S. Madole ]
+  * Add VRRP capability to bonding interfaces and vifs of bonding
+    interfaces.
+
+  [ Stig Thormodsrud ]
+  * Add method to retrieve carrier value.
+  * Convert keepalived to use Interface infrastructure.
+  * Fix carrier method.
+  * Add natural order sort.
+  * Fix spelling error in carrier method.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Sun, 01 Nov 2009 14:58:58 -0800
+
+vyatta-cfg (0.15.35) unstable; urgency=low
+
+  * Sync config file after saving
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 30 Oct 2009 11:05:03 -0700
+
 vyatta-cfg (0.15.34) unstable; urgency=low
 
   * Add copybreak option to all ether drivers

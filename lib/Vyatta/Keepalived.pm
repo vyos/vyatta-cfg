@@ -125,21 +125,56 @@ sub get_master_file {
     return $file;
 }
 
+sub alphanum_split {
+    my ($str) = @_;
+    my @list = split m/(?=(?<=\D)\d|(?<=\d)\D)/, $str;
+    return @list;
+}
+
+sub natural_order {
+    my ($a, $b) = @_;
+    my @a = alphanum_split($a);
+    my @b = alphanum_split($b);
+  
+    while (@a && @b) {
+	my $a_seg = shift @a;
+	my $b_seg = shift @b;
+	my $val;
+	if (($a_seg =~ /\d/) && ($b_seg =~ /\d/)) {
+	    $val = $a_seg <=> $b_seg;
+        } elsif (($a_seg eq '.') && ($b_seg eq '_')) {
+            return 1;
+	} else {
+	    $val = $a_seg cmp $b_seg;
+	}
+	if ($val != 0) {
+	    return $val;
+	}
+    }
+    return @a <=> @b;
+}
+
+sub intf_sort {
+    my @a = @_;
+    my @new_a = sort { natural_order($a,$b) } @a;
+    return @new_a;
+}
+
 sub get_state_files {
     my ($intf, $group) = @_;
 
-    # todo: fix sorting for ethX > 9
     my @state_files;
     my $LS;
     if ($group eq "all") {
-	open($LS,"ls $state_dir |grep '^vrrpd_$intf.*\.state\$' | sort |");
+	open($LS,"ls $state_dir |grep '^vrrpd_$intf.*\.state\$' |");
     } else {
 	my $intf_group = $intf . "_" . $group . ".state";
 	open($LS,
-	     "ls $state_dir |grep '^vrrpd_$intf_group\$' | sort |");
+	     "ls $state_dir |grep '^vrrpd_$intf_group\$' |");
     }
     @state_files = <$LS>;
     close($LS);
+    @state_files = intf_sort(@state_files);
     foreach my $i (0 .. $#state_files) {
 	$state_files[$i] = "$state_dir/$state_files[$i]";
     }
@@ -152,13 +187,11 @@ sub vrrp_get_config {
 
     my $path;
     my $config = new Vyatta::Config;
-    
-    if ($intf =~ m/(eth\d+)\.(\d+)/) {
-	$path = "interfaces ethernet $1 vif $2";
-    } else {
-	$path = "interfaces ethernet $intf";
-    }
 
+    my $interface = new Vyatta::Interface($intf);
+    die "Unknown interface type: $intf" unless $interface;
+ 
+    $path = $interface->path();
     $config->setLevel($path);
     my $primary_addr = $config->returnOrigValue("address"); 
     if (!defined $primary_addr) {

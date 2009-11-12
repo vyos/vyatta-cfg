@@ -222,6 +222,18 @@ sub flags {
     return hex($val);
 }
 
+sub carrier {
+    my $self = shift;
+    open my $carrier, '<', "/sys/class/net/$self->{name}/carrier"
+	or return;
+
+    my $val = <$carrier>;
+    $val = 0 if ! defined $val;  # proc entry not readable on down interface
+    chomp $val;
+    close $carrier;
+    return $val;
+}
+
 sub hw_address {
     my $self = shift;
 
