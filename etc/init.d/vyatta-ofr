@@ -67,7 +67,7 @@ have_rl_system () {
 # if necessary, provide initial config
 init_bootfile () {
 
-    if [ ! -d /media/floppy/config -a -b /dev/fd0 ]
+    if [ -b /dev/fd0 ] && [ ! -d /media/floppy/config ]
     then
         [ -d /media/floppy ] || mkdir -p /media/floppy
 
@@ -75,7 +75,7 @@ init_bootfile () {
 	# and it will fail if no floppy present
 	# Note: no good way to test for floppy present without causing I/O error
 	mount /dev/fd0 /media/floppy \
-	    -o sync,noexec,nodev,noatime,nosuid 2>/dev/null
+	    -o sync,dirsync,noexec,nodev,noatime,nodiratime,nosuid 2>/dev/null
     fi
 
     [ -d /media/floppy/config ] &&
