@@ -40,6 +40,7 @@ if (scalar(@all_nodes) == 0) {
 
 my $ret = 0;
 foreach (@all_nodes) {
+  my ($path_ref) = @$_;
   my $cmd = "set " . (join ' ', @$path_ref);
   print "$cmd\n";  
 }
