@@ -1,3 +1,13 @@
+vyatta-cfg (0.15.42) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Change options to floppy mount
+
+  [ Stig Thormodsrud ]
+  * Fix breakage from pervious commit.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Sat, 14 Nov 2009 14:27:27 -0800
+
 vyatta-cfg (0.15.41) unstable; urgency=low
 
   * preserve node.val order for term multinodes. fix for bug 5103
