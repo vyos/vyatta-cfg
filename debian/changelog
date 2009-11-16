@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner47) unstable; urgency=low
+
+  * fix for bug 5114. added shutdown node before policy nodes for bgp
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 16 Nov 2009 14:57:01 -0800
+
 vyatta-cfg (0.14.91+jenner46) unstable; urgency=low
 
   * fix for bug 4969. on leaf nodes scan for '/' and don't make these
