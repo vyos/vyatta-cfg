@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner48) unstable; urgency=low
+
+  * Workaround 5100: Disable TSO on NICs using the igb driver.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 17 Nov 2009 15:44:45 -0800
+
 vyatta-cfg (0.14.91+jenner47) unstable; urgency=low
 
   * fix for bug 5114. added shutdown node before policy nodes for bgp
