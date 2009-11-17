@@ -1,0 +1,36 @@
+#
+# Startup script to disable TSO on ethernet interfaces using
+# the "igb" driver.  This works-around a performance issue
+# with this driver in Jenner.  Details in:
+#
+#    https://bugzilla.vyatta.com/show_bug.cgi?id=5100
+# 
+
+ACTION=$1
+
+start()
+{
+    for i in /sys/class/net/eth* ; do
+	if [ -d $i ]; then
+	    ifname=${i#/sys/class/net/}
+	    driver=`/usr/sbin/ethtool -i $ifname | grep ^driver | awk '{print $2}'`
+	    if [ "$driver" = "igb" ]; then
+		logger -t "vyatta-no-tso" -p local0.warning "Disabling TSO on $ifname"
+		/usr/sbin/ethtool -K $ifname tso off
+	    fi
+	fi
+    done
+}
+
+case "$ACTION" in
+    start)
+	start
+	;;
+    *)
+	echo "usage: $0 start"
+	exit 1
+	;;
+esac
+
+exit 0
+
