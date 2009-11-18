@@ -1,3 +1,11 @@
+vyatta-cfg (0.14.91+jenner49) unstable; urgency=low
+
+  * Bugfix 2593: Introduce automatic static IRQ affinity balancing for
+    some NICs.
+  * Generalize handling of multi-queue NICs.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 17 Nov 2009 17:07:13 -0800
+
 vyatta-cfg (0.14.91+jenner48) unstable; urgency=low
 
   * Workaround 5100: Disable TSO on NICs using the igb driver.
