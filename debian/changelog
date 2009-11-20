@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner50) unstable; urgency=low
+
+  * Remove default value for "smp_affinity".
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Thu, 19 Nov 2009 17:22:57 -0800
+
 vyatta-cfg (0.14.91+jenner49) unstable; urgency=low
 
   * Bugfix 2593: Introduce automatic static IRQ affinity balancing for
