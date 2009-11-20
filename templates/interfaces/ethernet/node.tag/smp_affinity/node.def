@@ -17,8 +17,6 @@ comp_help: Possible completions:
   XX\tHexidecimal bitmask representing CPUs that this NIC will interrupt
   auto\tSet affinity automatically
 
-default: "auto"
-
 syntax:expression: exec " \
 	if [ $VAR(@) = auto ]; then \
 		exit 0;
