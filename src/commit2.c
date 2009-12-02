@@ -307,6 +307,10 @@ main(int argc, char** argv)
   if (fp_changes != NULL) {
     fclose(fp_changes);
   }
+
+  //clean up changes file now.
+  unlink("/tmp/.changes");
+
   exit (no_errors == FALSE);
 }
 
