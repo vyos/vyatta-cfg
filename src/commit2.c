@@ -338,6 +338,10 @@ main(int argc, char** argv)
   if (fp_changes != NULL) {
     fclose(fp_changes);
   }
+
+  //remove tmp changes file as all the work is now done
+  unlink("/tmp/.changes");
+
   exit (no_errors == FALSE);
 }
 
