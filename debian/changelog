@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.44) unstable; urgency=low
+
+  * remove .changes file after work was done by commit
+  * fix for bug 4999
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 01 Dec 2009 17:05:54 -0800
+
 vyatta-cfg (0.15.43) unstable; urgency=low
 
   * Fix 5133: vrrp transition scripts not working properly when going to
