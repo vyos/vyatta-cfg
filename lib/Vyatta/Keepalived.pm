@@ -29,6 +29,7 @@ our @EXPORT = qw(get_conf_file get_state_script get_state_file
 use base qw(Exporter);
 
 use Vyatta::Config;
+use Vyatta::Interface;
 use POSIX;
 
 use strict;

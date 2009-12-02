@@ -1,3 +1,10 @@
+vyatta-cfg (0.15.43) unstable; urgency=low
+
+  * Fix 5133: vrrp transition scripts not working properly when going to
+    backup
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 01 Dec 2009 14:58:45 -0800
+
 vyatta-cfg (0.15.42) unstable; urgency=low
 
   [ Stephen Hemminger ]
