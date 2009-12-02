@@ -409,7 +409,7 @@ sub returnValues {
 # node is relative
 sub returnOrigPlusComValues {
   my ( $self, $path ) = @_;
-  my @values = returnValues($self,$path);
+  my @values = returnOrigValues($self,$path);
 
   #now parse the commit accounting file.
   my $level = $self->{_level};
