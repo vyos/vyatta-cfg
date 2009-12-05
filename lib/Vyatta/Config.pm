@@ -153,8 +153,8 @@ sub listOrigPlusComNodes {
 #  my $com_file = "/tmp/.changes_$$";
   my $com_file = "/tmp/.changes";
   if (-e $com_file) {
-      open FILE, "<", $com_file;
-      foreach my $line (<FILE>) {
+      open my $file, "<", $com_file;
+      foreach my $line (<$file>) {
 	  my @node = split " ", $line; #split on space
 	  #$node[1] is of the form: system/login/blah
 	  #$coll is of the form: blah
@@ -201,6 +201,7 @@ sub listOrigPlusComNodes {
 	      }
 	  }
       }
+      close $file;
       close $com_file;
   }
 
@@ -350,8 +351,8 @@ sub returnOrigPlusComValue {
   #now need to compare this against what I've done
   my $com_file = "/tmp/.changes";
   if (-e $com_file) {
-      open FILE, "<", $com_file;
-      foreach my $line (<FILE>) {
+      open my $file, "<", $com_file;
+      foreach my $line (<$file>) {
 	  my @node = split " ", $line; #split on space
 	  if (index($node[1],$dir_path) != -1) {
 	      #found, now figure out if this a set or delete
@@ -365,6 +366,7 @@ sub returnOrigPlusComValue {
 	      last;
 	  }
       }
+      close $file;
       close $com_file;
   }
   return $tmp;
@@ -426,8 +428,8 @@ sub returnOrigPlusComValues {
   #now need to compare this against what I've done
   my $com_file = "/tmp/.changes";
   if (-e $com_file) {
-      open FILE, "<", $com_file;
-      foreach my $line (<FILE>) {
+      open $file, "<", $com_file;
+      foreach my $line (<$file>) {
 	  my @node = split " ", $line; #split on space
 	  if (index($node[1],$dir_path) != -1) {
 	      #found, now figure out if this a set or delete
@@ -456,6 +458,7 @@ sub returnOrigPlusComValues {
 	      }
 	  }
       }
+      close $file;
       close $com_file;
   }
   return @values;
