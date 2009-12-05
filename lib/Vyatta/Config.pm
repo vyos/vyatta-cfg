@@ -428,7 +428,7 @@ sub returnOrigPlusComValues {
   #now need to compare this against what I've done
   my $com_file = "/tmp/.changes";
   if (-e $com_file) {
-      open $file, "<", $com_file;
+      open my $file, "<", $com_file;
       foreach my $line (<$file>) {
 	  my @node = split " ", $line; #split on space
 	  if (index($node[1],$dir_path) != -1) {
