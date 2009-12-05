@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.46) unstable; urgency=low
+
+  * Fix problem from earlier FILE handle removal in Config.pm
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 04 Dec 2009 19:50:34 -0800
+
 vyatta-cfg (0.15.45) unstable; urgency=low
 
   * Fix perlcritic warnings in Keepalived
