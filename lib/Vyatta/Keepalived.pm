@@ -22,6 +22,9 @@
 # **** End License ****
 #
 package Vyatta::Keepalived;
+use strict;
+use warnings;
+
 our @EXPORT = qw(get_conf_file get_state_script get_state_file 
                  vrrp_log vrrp_get_init_state get_changes_file
                  start_daemon restart_daemon stop_daemon
@@ -31,9 +34,6 @@ use base qw(Exporter);
 use Vyatta::Config;
 use Vyatta::Interface;
 use POSIX;
-
-use strict;
-use warnings;
 
 my $daemon           = '/usr/sbin/keepalived';
 my $keepalived_conf  = '/etc/keepalived/keepalived.conf';
@@ -276,9 +276,8 @@ sub vrrp_state_parse {
 	chomp $line;
 	my ($start_time, $intf, $group, $state, $ltime) = split(' ', $line);
 	return ($start_time, $intf, $group, $state, $ltime);
-    } else {
-	return undef;
-    }
+    } 
+    # else return undefined
 }
 
 sub vrrp_get_init_state {
