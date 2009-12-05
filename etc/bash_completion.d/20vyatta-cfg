@@ -416,6 +416,37 @@ vyatta_loadsave_complete()
   eval $restore_shopts
 }
 
+loadkey()
+{
+  # don't load if there are uncommitted changes.
+  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+    echo "Cannot load: configuration modified."
+    echo "Commit or discard the changes before loading a config file."
+    return 1
+  fi
+  # return to top level.
+  export VYATTA_EDIT_LEVEL="/"
+  export VYATTA_TEMPLATE_LEVEL="/"
+  set_config_ps1 ''
+  eval "${vyatta_sbindir}/vyatta-load-user-key.pl $@"
+}
+
+vyatta_loadkey_complete()
+{
+  case "$COMP_CWORD" in
+      1) COMPREPLY=( $( compgen -u -- ${COMP_WORDS[1]} ) ) ;;
+      2) if [ -z "${COMP_WORDS[2]}" ]; then
+	  echo "Possible completions:"
+	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
+	  echo -e "  scp://<user>@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  ftp://<user>@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
+	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
+	 fi
+      COMPREPLY=() ;;
+  esac
+}
+
 declare v_cfg_completion_debug=0
 decho ()
 {
@@ -1254,6 +1285,7 @@ complete -F vyatta_run_complete run
 complete -F vyatta_loadsave_complete save
 complete -F vyatta_loadsave_complete load
 complete -F vyatta_loadsave_complete merge
+complete -F vyatta_loadkey_complete loadkey
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 
