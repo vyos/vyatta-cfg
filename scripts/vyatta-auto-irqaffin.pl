@@ -136,12 +136,12 @@ sub intel_func{
 	log_msg ("queue=$queue cpu=$cpu cpu_bit=$cpu_bit cpu_hex=$cpu_hex\n");
 	
 	# Get the IRQ number for RX queue
-	my $rx_irq=`grep "$ifname-rx-$queue" /proc/interrupts | awk -F: '{print \$1}'`;
+	my $rx_irq=`grep "$ifname-rx-$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
 	$rx_irq =~ s/\n//;
 	$rx_irq =~ s/ //g;
 
 	# Get the IRQ number for TX queue
-	my $tx_irq=`grep "$ifname-tx-$queue" /proc/interrupts | awk -F: '{print \$1}'`;
+	my $tx_irq=`grep "$ifname-tx-$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
 	$tx_irq =~ s/\n//;
 	$tx_irq =~ s/ //g;
 
@@ -209,7 +209,7 @@ sub broadcom_func{
 	log_msg ("queue=$queue cpu=$cpu cpu_bit=$cpu_bit cpu_hex=$cpu_hex\n");
 	
 	# Get the IRQ number for the queue
-	my $irq=`grep "$ifname-$queue" /proc/interrupts | awk -F: '{print \$1}'`;
+	my $irq=`grep "$ifname-$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
 	$irq =~ s/\n//;
 	$irq =~ s/ //g;
 
