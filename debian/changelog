@@ -1,3 +1,14 @@
+vyatta-cfg (0.14.91+jenner51) unstable; urgency=low
+
+  [ Michael Larson ]
+  * need to clean up /tmp/.changes file after work is done during commit
+
+  [ Mohit Mehta ]
+  * Jenner Fix for Bug 5026 - NAT rule not taking effect on specific
+    value
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Mon, 14 Dec 2009 15:40:25 -0800
+
 vyatta-cfg (0.14.91+jenner50) unstable; urgency=low
 
   * Remove default value for "smp_affinity".
