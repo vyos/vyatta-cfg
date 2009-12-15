@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner52) unstable; urgency=low
+
+  * fix for bug 4999
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 14 Dec 2009 16:50:56 -0800
+
 vyatta-cfg (0.14.91+jenner51) unstable; urgency=low
 
   [ Michael Larson ]
