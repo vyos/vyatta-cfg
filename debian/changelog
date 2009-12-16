@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.48) unstable; urgency=low
+
+  * Fix DHCP command handling
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 16 Dec 2009 12:10:00 -0800
+
 vyatta-cfg (0.15.47) unstable; urgency=low
 
   * Bugfix 5143: Fix grep regex for NICs with >= 10 queues.
