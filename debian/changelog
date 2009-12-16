@@ -1,3 +1,9 @@
+vyatta-cfg (0.14.91+jenner53) unstable; urgency=low
+
+  * Check proper state on DHCP renew/release
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 16 Dec 2009 12:18:15 -0800
+
 vyatta-cfg (0.14.91+jenner52) unstable; urgency=low
 
   * fix for bug 4999
