@@ -444,6 +444,15 @@ sub is_valid_addr_commit {
     exit 0;
 }
 
+# Is interface currently in admin down state?
+sub is_intf_down {
+    my $name = shift;
+    my $intf = new Vyatta::Interface($name);
+
+    return 1 unless $intf;
+    return ! $intf->up();
+}
+
 sub op_dhcp_command {
     my ($op_command, $intf) = @_;
 
@@ -451,7 +460,7 @@ sub op_dhcp_command {
 	unless is_dhcp_enabled($intf);
     
     die "$intf is disabled. Unable to release/renew lease\n"
-	if is_intf_disabled($intf);
+	if is_intf_down($intf);
 
     my $tmp_dhclient_dir = '/var/run/vyatta/dhclient/';
     my $release_file = $tmp_dhclient_dir . 'dhclient_release_' . $intf;
