@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
+${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*"}
+set -e
+set -u
+
+# add groups for vyatta accounts
+if ! getent group vyattacfg >/dev/null; then
+	addgroup --system vyattacfg
+fi
+if ! getent group vyattaop >/dev/null; then
+	addgroup --system vyattaop
+fi

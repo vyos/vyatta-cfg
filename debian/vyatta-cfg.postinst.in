@@ -19,9 +19,3 @@ if [ "$sysconfdir" != "/etc" ]; then
 fi
 
 mv /opt/vyatta/share/vyatta-cfg/templates/priority /opt/vyatta/share/vyatta-cfg/.
-# add group for configuration, if not already present:
-grep '^vyattacfg:' /etc/group >&/dev/null ||
-	addgroup --system vyattacfg
-grep '^vyattaop:' /etc/group >&/dev/null ||
-	addgroup --system vyattaop
-
