@@ -17,5 +17,3 @@ if [ "$sysconfdir" != "/etc" ]; then
     touch /etc/$conf
   done
 fi
-
-mv /opt/vyatta/share/vyatta-cfg/templates/priority /opt/vyatta/share/vyatta-cfg/.
