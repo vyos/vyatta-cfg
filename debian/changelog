@@ -1,3 +1,9 @@
+vyatta-cfg (0.15.49) unstable; urgency=low
+
+  * Setup vyatta groups in early stage of install
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Sun, 20 Dec 2009 18:20:19 -0800
+
 vyatta-cfg (0.15.48) unstable; urgency=low
 
   * Fix DHCP command handling
