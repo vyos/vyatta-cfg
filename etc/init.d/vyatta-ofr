@@ -1,6 +1,6 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:          ofr
+# Provides:          vyatta-ofr
 # Required-Start:    $syslog $time $local_fs
 # Required-Stop:     $syslog $time $local_fs
 # Default-Start:     2 3 4 5
