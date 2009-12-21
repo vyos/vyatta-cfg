@@ -13,8 +13,8 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-ofr
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
-modprobe_SCRIPTS = etc/modprobe.d/no-copybreak.conf
-modprobe_SCRIPTS += etc/modprobe.d/floppy.conf
+modprobe_DATA = etc/modprobe.d/no-copybreak.conf
+modprobe_DATA += etc/modprobe.d/floppy.conf
 
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
