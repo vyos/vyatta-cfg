@@ -1,4 +1,3 @@
-cfgdir = $(datadir)/vyatta-cfg/templates
 share_perl5dir = /opt/vyatta/share/perl5/Vyatta
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
@@ -76,7 +75,6 @@ cpiop = find  . ! -regex '\(.*~\|.*\.bak\|.*\.swp\|.*\#.*\#\)' -print0 | \
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(cfgdir)
-	cd templates; $(cpiop) $(DESTDIR)$(cfgdir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
 	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit2 my_commit
