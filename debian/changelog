@@ -1,3 +1,18 @@
+vyatta-cfg (0.16) unstable; urgency=low
+
+  * add derived file
+  * Remove no longer used priority file
+  * Move tests to vyatta-cfg-system
+  * Move interfaces to vyatta-cfg-system package
+  * Don't copy templates from here
+  * Move no copy break modprobe file to handle Debian Lintian warning
+  * Fix lintian warning about vyatta-ofr not providing itself
+  * Workaround issues with floppy formatting on some VM and hardware
+  * Modprobe files are not executable scripts
+  * Remove install step refering to old priority file
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 21 Dec 2009 12:57:23 -0800
+
 vyatta-cfg (0.15.49) unstable; urgency=low
 
   * Setup vyatta groups in early stage of install
