@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.1) unstable; urgency=low
+
+  * UNRELEASED
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 21 Dec 2009 13:15:18 -0800
+
 vyatta-cfg (0.16) unstable; urgency=low
 
   * add derived file
