@@ -1,39 +1,50 @@
 #!/usr/bin/perl
 
+# Read all the configuration templates in the configuration
+# template directory and produce an ordered list of the priority
+# of configuration actions
+
+use strict;
+use warnings;
+use File::Find;
+
 my %pri;
 
-# Look at all node.def files in the configuration template tree
-my @files = `find /opt/vyatta/share/vyatta-cfg -name 'node.def'`;
-foreach my $f (@files) {
-    my $result = `grep 'priority:' $f`;
-    if (defined $result && length($result) != 0) {
-	my @r = split " ", $result;
-	if (defined $r[1]) {
-	    # Strip off trailing "/node.def\n" from file pathname
-	    my $line = substr($f, 0, -10);
+sub get_priority {
+    open( my $f, '<', $_ )
+      or return;
+    my $priority;
 
-	    # Strip off leading "/opt/vyatta/share/vyatta-cfg/templates/"
-	    $line = substr($line, 39);
-
-	    # See if there is a comment in entry
-	    my ($entry, $comment) = split /#/, $result;
-	    if (defined $comment) {
-		$comment =~ s/\n//;
-		$line = $line . " #" . $comment;
-	    }
-		
-	    # stuff resulting line into hash
-	    push @{$pri{$r[1]}}, $line;
-	}
+    while (<$f>) {
+        chomp;
+        next unless m/^priority:\s(\d+)/;
+        $priority = $1;
+        last;
     }
+    close $f;
+    return $priority;
 }
 
+sub wanted {
+    return unless ( $_ eq 'node.def' );
 
-#now sort
+    my $p = get_priority($File::Find::name);
+    return unless $p;
+
+    my $dir = $File::Find::dir;
+    $dir =~ s/^.*\/templates\///;
+
+    push @{ $pri{$p} }, $dir;
+    return 1;
+}
+
+my $cfgdir = '/opt/vyatta/share/vyatta-cfg/templates';
+die "$cfgdir does not exist!" unless -d $cfgdir;
+find( \&wanted, $cfgdir );
 
 foreach my $key ( sort { $a <=> $b } keys %pri ) {
-    my @a = @{$pri{$key}};
+    my @a = @{ $pri{$key} };
     foreach my $val (@a) {
-	print $key," ",$val,"\n";
+        print $key, " ", $val, "\n";
     }
-} 
+}
