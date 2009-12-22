@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.2) unstable; urgency=low
+
+  * Rewrite priority script to use File::find
+  * Revert "Workaround issues with floppy formatting on some VM and
+    hardware"
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 22 Dec 2009 09:52:30 -0800
+
 vyatta-cfg (0.16.1) unstable; urgency=low
 
   * UNRELEASED
