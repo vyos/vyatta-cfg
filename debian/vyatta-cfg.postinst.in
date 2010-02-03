@@ -6,8 +6,7 @@ sysconfdir=@sysconfdir@
 mkdir -m 0775 -p $sysconfdir/config $prefix/config
 chgrp vyattacfg $sysconfdir/config $prefix/config 2>/dev/null
 
-update-rc.d vyatta-ofr defaults 90 >/dev/null
-# do we want to start vyatta-ofr here in postinst?
+update-rc.d vyatta-router defaults 90 >/dev/null
 
 if [ "$sysconfdir" != "/etc" ]; then
   # remove the config files and replace with blank ones

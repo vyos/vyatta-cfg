@@ -11,7 +11,7 @@ AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
-initd_SCRIPTS	= etc/init.d/vyatta-ofr
+initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 modprobe_DATA = etc/modprobe.d/no-copybreak.conf
 

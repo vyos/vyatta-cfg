@@ -1,6 +1,6 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:          vyatta-ofr
+# Provides:          vyatta-router
 # Required-Start:    $syslog $time $local_fs
 # Required-Stop:     $syslog $time $local_fs
 # Default-Start:     2 3 4 5
@@ -82,7 +82,7 @@ init_bootfile () {
     fi
 
     [ -d /media/floppy/config ] &&
-    	mount -o bind /media/floppy/config /opt/vyatta/etc/config
+	mount -o bind /media/floppy/config /opt/vyatta/etc/config
 
     if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
 			    $BOOTFILE >&/dev/null; then
@@ -138,7 +138,7 @@ cleanup_raid()
 
 #
 # Load the acpi_cpufreq kernel module, but only for certain processors.
-# Some Intel CPUs need to have it loaded in order to initialize 
+# Some Intel CPUs need to have it loaded in order to initialize
 # properly.
 #
 load_acpi_cpufreq()
