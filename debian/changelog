@@ -1,3 +1,12 @@
+vyatta-cfg (0.16.4) unstable; urgency=low
+
+  * Turn on debian hardening
+  * Allow disabling vyatta config on kernel boot
+  * Rename vyatta-ofr to vyatta-router
+  * Move modprobe.d/no-copybreak to vyatta-cfg-system package
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 03 Feb 2010 14:04:35 -0800
+
 vyatta-cfg (0.16.3) unstable; urgency=low
 
   * Restore priority comments
