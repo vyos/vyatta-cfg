@@ -30,6 +30,9 @@
 
 . /lib/lsb/init-functions
 
+# Allow disabling vyatta configuration on boot
+grep -q novyatta /proc/cmdline && exit 0
+
 : ${vyatta_env:=/etc/default/vyatta}
 source $vyatta_env
 
