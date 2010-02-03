@@ -9,6 +9,8 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# Use hardening options
+export DEB_BUILD_HARDENING=1
 
 # These are used for cross-compiling and for saving the configure script
 # from having to guess our platform (since we know it already)
