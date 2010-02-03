@@ -2,7 +2,6 @@ share_perl5dir = /opt/vyatta/share/perl5/Vyatta
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
 defaultdir = /etc/default
-modprobedir = /etc/modprobe.d
 etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
 
@@ -13,7 +12,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
-modprobe_DATA = etc/modprobe.d/no-copybreak.conf
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LIBADD = /usr/lib/libglib-2.0.la
