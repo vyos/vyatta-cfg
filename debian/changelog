@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.5) unstable; urgency=low
+
+  * Remove dead function
+  * Allow fine grain disabling of vyatta during boot
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 03 Feb 2010 17:33:31 -0800
+
 vyatta-cfg (0.16.4) unstable; urgency=low
 
   * Turn on debian hardening
