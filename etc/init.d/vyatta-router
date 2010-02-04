@@ -62,11 +62,6 @@ else
     fi
 fi
 
-
-have_rl_system () {
-    test -x $vyatta_sbindir/rl-system.init
-}
-
 # if necessary, provide initial config
 init_bootfile () {
 
