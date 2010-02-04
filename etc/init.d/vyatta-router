@@ -30,9 +30,6 @@
 
 . /lib/lsb/init-functions
 
-# Allow disabling vyatta configuration on boot
-grep -q novyatta /proc/cmdline && exit 0
-
 : ${vyatta_env:=/etc/default/vyatta}
 source $vyatta_env
 
@@ -62,9 +59,13 @@ else
     fi
 fi
 
+# check if bootup of this portion is disabled
+disabled () {
+    grep -q -w novyatta-$1 /proc/cmdline
+}
+
 # if necessary, provide initial config
 init_bootfile () {
-
     if [ -b /dev/fd0 ] && [ ! -d /media/floppy/config ]
     then
         [ -d /media/floppy ] || mkdir -p /media/floppy
@@ -152,14 +153,20 @@ start ()
     mount -o nosuid,nodev,mode=775 -t tmpfs none ${vyatta_configdir} && \
 	chgrp ${GROUP} ${vyatta_configdir}
     log_action_end_msg $?
-    init_bootfile
+
+    disabled bootfile || init_bootfile
+
     log_daemon_msg "Starting Vyatta router"
-    migrate_bootfile
+    disabled migrate || migrate_bootfile
     for s in ${subinit[@]} ; do
-	log_progress_msg $s
-	${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
+	if ! disabled $s; then 
+	    log_progress_msg $s
+	    ${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
+	fi
     done
-    load_bootfile
+
+    disabled configure || load_bootfile
+
     load_acpi_cpufreq
     cleanup_raid
     chmod g-w,o-w /
