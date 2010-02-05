@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.6) unstable; urgency=low
+
+  * Be unsafe, don't harden
+  * Force vyatta-cfg/vyatta-cfg-system synchronization
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 05 Feb 2010 12:31:56 -0800
+
 vyatta-cfg (0.16.5) unstable; urgency=low
 
   * Remove dead function
