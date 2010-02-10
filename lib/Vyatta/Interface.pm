@@ -24,12 +24,12 @@ use warnings;
 use Vyatta::Config;
 use Vyatta::Misc;
 use base 'Exporter';
-our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK 
+our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK
 	          IFF_POINTOPOINT IFF_RUNNING IFF_NOARP
 		  IFF_PROMISC IFF_MULTICAST);
 
 
-use constant { 
+use constant {
     IFF_UP		=> 0x1,		# interface is up
     IFF_BROADCAST	=> 0x2,		# broadcast address valid
     IFF_DEBUG		=> 0x4,		# turn on debugging
@@ -58,7 +58,7 @@ use constant {
 my %net_prefix = (
     '^adsl[\d]+$'  => { path => 'adsl',
 		      vif => 'vif',    },
-    '^bond[\d]+$'  => { path => 'bonding', 
+    '^bond[\d]+$'  => { path => 'bonding',
 		      vif => 'vif', },
     '^br[\d]+$'    => { path => 'bridge',
 		      vif => 'vif' },
@@ -69,7 +69,7 @@ my %net_prefix = (
 		      vif => 'vif', },
     '^vtun[\d]+$'  => { path => 'openvpn' },
     '^wan[\d]+$'   => { path => 'serial',
-		      vif  => ( 'cisco-hdlc vif', 'ppp vif', 
+		      vif  => ( 'cisco-hdlc vif', 'ppp vif',
 				'frame-relay vif' ), },
     '^tun[\d]+$'   => { path => 'tunnel' },
     '^wlm[\d]+$'   => { path => 'wireless-modem' },
@@ -78,10 +78,31 @@ my %net_prefix = (
     '^wlan[\d]+$'  => { path => 'wireless', vif => 'vif' },
 );
 
-# get list of interface types
+# get list of interface types (missing PPP)
 sub interface_types {
     my @types = map { $net_prefix{$_}{path} } keys %net_prefix;
     return @types;
+}
+
+# Read pppoe config to fine associated ethernet for ppp device
+sub find_pppoe {
+    my $n = shift;
+    my $eth;
+
+    open (my $pppoe, '<', "/etc/ppp/peers/pppoe$n")
+	or return;	# no such device
+
+    while (<$pppoe>) {
+	chomp;
+	# looking for line like:
+	# pty "/usr/sbin/pppoe -m 1412 -I eth1"
+	next unless /^pty .*(eth\d+)"/;
+	$eth = $1;
+	last;
+    }
+    close($pppoe);
+
+    return $eth;
 }
 
 # new interface description object
@@ -116,7 +137,7 @@ sub new {
         my $path = "interfaces $type $dev";
         $path .= " $vifpath $vif" if $vif;
 
-	my $self = { 
+	my $self = {
 	    name => $name,
 	    type => $type,
 	    path => $path,
@@ -126,6 +147,22 @@ sub new {
 
         bless $self, $class;
         return $self;
+    }
+
+    # Special case for pppoe
+    if ($dev =~ /^ppp(\d+)/) {
+	my $n = $1;
+	my $eth = find_pppoe($n);
+	if ($eth) {
+	    my $self = {
+		name => $name,
+		type => 'pppoe',
+		path => "interfaces ethernet $eth pppoe $n",
+		dev  => $dev,
+		vif  => $vif,
+	};
+	bless $self, $class;
+	return $self;
     }
 
     return; # nothing
@@ -201,8 +238,6 @@ sub address {
 
     return Vyatta::Misc::getIP($self->{name}, $type);
 }
-
-# return 
 
 sub exists {
     my $self = shift;
