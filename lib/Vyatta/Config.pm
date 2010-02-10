@@ -729,6 +729,34 @@ sub parseTmpl {
   return ($is_multi, $is_text, $default);
 }
 
+# $cfg_path: config path of the node.
+# returns a hash ref containing attributes in the template
+#   or undef if specified node is not valid.
+sub parseTmplAll {
+  my ($self, $cfg_path) = @_;
+  my @pdirs = split(/ +/, $cfg_path);
+  my %ret = ();
+  my $tpath = $self->getTmplPath(\@pdirs);
+  return unless $tpath;
+  return undef if (! -r "$tpath/node.def");
+  open(my $tmpl, '<', "$tpath/node.def") or return undef;
+  foreach (<$tmpl>) {
+    if (/^multi:/) {
+      $ret{multi} = 1;
+    } elsif (/^tag:/) {
+      $ret{tag} = 1;
+    } elsif (/^type:\s+(\S+)\s*$/) {
+      $ret{type} = $1;
+    } elsif (/^default:\s+(\S+)\s*$/) {
+      $ret{default} = $1;
+    } elsif (/^help:\s+(\S.*)$/) {
+      $ret{help} = $1;
+    }
+  }
+  close($tmpl);
+  return \%ret;
+}
+
 ###### misc functions ######
 
 # compare two value lists and return "deleted" and "added" lists.
