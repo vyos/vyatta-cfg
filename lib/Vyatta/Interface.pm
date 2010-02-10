@@ -153,6 +153,7 @@ sub new {
     if ($dev =~ /^ppp(\d+)/) {
 	my $n = $1;
 	my $eth = find_pppoe($n);
+
 	if ($eth) {
 	    my $self = {
 		name => $name,
@@ -160,9 +161,10 @@ sub new {
 		path => "interfaces ethernet $eth pppoe $n",
 		dev  => $dev,
 		vif  => $vif,
-	};
-	bless $self, $class;
-	return $self;
+	    };
+	    bless $self, $class;
+	    return $self;
+	}
     }
 
     return; # nothing
