@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.7) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add util function
+
+  [ Stephen Hemminger ]
+  * Add preliminary support for pppoe devices
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 09 Feb 2010 21:01:08 -0800
+
 vyatta-cfg (0.16.6) unstable; urgency=low
 
   * Be unsafe, don't harden
