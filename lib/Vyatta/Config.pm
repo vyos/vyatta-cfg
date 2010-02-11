@@ -747,8 +747,11 @@ sub parseTmplAll {
       $ret{tag} = 1;
     } elsif (/^type:\s+(\S+)\s*$/) {
       $ret{type} = $1;
-    } elsif (/^default:\s+(\S+)\s*$/) {
+    } elsif (/^default:\s+(\S.*)\s*$/) {
       $ret{default} = $1;
+      if ($ret{default} =~ /^"(.*)"$/) {
+        $ret{default} = $1;
+      }
     } elsif (/^help:\s+(\S.*)$/) {
       $ret{help} = $1;
     }
