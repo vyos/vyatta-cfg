@@ -78,7 +78,7 @@ my %net_prefix = (
     '^wlan[\d]+$'  => { path => 'wireless', vif => 'vif' },
 );
 
-# get list of interface types (missing PPP)
+# get list of interface types (only used in usage function)
 sub interface_types {
     my @types = map { $net_prefix{$_}{path} } keys %net_prefix;
     return @types;
@@ -86,10 +86,10 @@ sub interface_types {
 
 # Read pppoe config to fine associated ethernet for ppp device
 sub find_pppoe {
-    my $n = shift;
+    my $dev = shift;
     my $eth;
 
-    open (my $pppoe, '<', "/etc/ppp/peers/pppoe$n")
+    open (my $pppoe, '<', "/etc/ppp/peers/$dev")
 	or return;	# no such device
 
     while (<$pppoe>) {
@@ -114,6 +114,23 @@ sub new {
 
     # need argument to constructor
     return unless $name;
+
+    # Special case for pppoe devices
+    if ($name =~ /^pppoe(\d+)/) {
+	my $n = $1;
+	my $eth = find_pppoe($name);
+
+	return unless $eth;
+
+	my $self = {
+	    name => $name,
+	    type => 'pppoe',
+	    path => "interfaces ethernet $eth pppoe $n",
+	    dev  => $name,
+	};
+	bless $self, $class;
+	return $self;
+    }
 
     # Strip off vif from name
     if ( $name =~ m/(\w+)\.(\d+)/ ) {
@@ -147,24 +164,6 @@ sub new {
 
         bless $self, $class;
         return $self;
-    }
-
-    # Special case for pppoe
-    if ($dev =~ /^ppp(\d+)/) {
-	my $n = $1;
-	my $eth = find_pppoe($n);
-
-	if ($eth) {
-	    my $self = {
-		name => $name,
-		type => 'pppoe',
-		path => "interfaces ethernet $eth pppoe $n",
-		dev  => $dev,
-		vif  => $vif,
-	    };
-	    bless $self, $class;
-	    return $self;
-	}
     }
 
     return; # nothing
