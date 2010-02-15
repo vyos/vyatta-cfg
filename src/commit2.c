@@ -447,14 +447,28 @@ process_func(GNode *node, gpointer data)
       //set location env
       setenv(ENV_DATA_PATH,d->_path,1);
 
-      //do last sibling check
-      GNode *n = g_node_last_sibling(node);
-      if (n == node) {
-	setenv(ENV_SIBLING_POSITION,"LAST",1);
+      //do first/last/only sibling check, restrict to nodes with operations defined
+      GNode *n_last_op = NULL;
+      GNode *n_first_op = NULL;
+
+      GNode *sib = g_node_first_sibling(node);
+      while (sib != NULL) {
+	if (!IS_NOOP(((struct VyattaNode*)(sib->data))->_data._operation)) {
+	  if (n_first_op == NULL) {
+	    n_first_op = sib;
+	  }
+	  n_last_op = sib;
+	}
+	sib = sib->next;
       }
-      n = g_node_first_sibling(node);
-      if (n == node) {
+      if (n_last_op != NULL && n_first_op != NULL && node == n_first_op && node == n_last_op) {
+	setenv(ENV_SIBLING_POSITION,"FIRSTLAST",1);
+      }
+      else if (n_first_op != NULL && node == n_first_op) {
 	setenv(ENV_SIBLING_POSITION,"FIRST",1);
+      }
+      else if (n_last_op != NULL && node == n_last_op) {
+	setenv(ENV_SIBLING_POSITION,"LAST",1);
       }
 
       //do not set for promoted actions
