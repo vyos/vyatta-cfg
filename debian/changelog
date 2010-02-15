@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.10) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * improve default value parsing
+
+  [ Michael Larson ]
+  * fixed problem with sibling environment variable flag. Also added
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 15 Feb 2010 09:42:14 -0800
+
 vyatta-cfg (0.16.9) unstable; urgency=low
 
   * Fix handling of pppoe devices
