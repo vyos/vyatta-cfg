@@ -434,7 +434,11 @@ loadkey()
 vyatta_loadkey_complete()
 {
   case "$COMP_CWORD" in
-      1) COMPREPLY=( $( compgen -u -- ${COMP_WORDS[1]} ) ) ;;
+      1) if [ -z "${COMP_WORDS[1]}" ]; then
+	  COMPREPLY=( $(getent passwd | awk -F: '$7 == "/bin/vbash" { print $1}') )
+	 else
+	  COMPREPLY=( $(compgen -u -- ${COMP_WORDS[1]} ) )
+         fi ;;
       2) if [ -z "${COMP_WORDS[2]}" ]; then
 	  echo "Possible completions:"
 	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
@@ -929,6 +933,7 @@ vyatta_config_complete ()
                         "edit" \
                         "exit" \
                         "load" \
+			"loadkey" \
                         "merge" \
                         "rename" \
                         "run" \
