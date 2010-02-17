@@ -446,8 +446,10 @@ vyatta_loadkey_complete()
 	  echo -e "  ftp://<user>@<host>/<file>\tLoad from file on remote machine"
 	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
 	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
-	 fi
-      COMPREPLY=() ;;
+	  COMPREPLY=()
+	 else
+	  COMPREPLY=( $(compgen -f -- ${COMP_WORDS[2]} ) )
+	 fi ;;
   esac
 }
 
