@@ -231,6 +231,14 @@ sub using_dhcp {
     return $addr[0];
 }
 
+sub bridge_grp {
+    my $self  = shift;
+    my $config = new Vyatta::Config;
+    
+    $config->setLevel( $self->{path} );
+    return $config->returnValue("bridge-group bridge");
+}
+
 ## System checks
 
 # return array of current addresses (on system)
