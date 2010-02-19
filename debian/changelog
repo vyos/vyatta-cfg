@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.14) unstable; urgency=low
+
+  * add fucntion to return bridge-group that an interface might be
+    assigned to
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Thu, 18 Feb 2010 17:28:20 -0800
+
 vyatta-cfg (0.16.13) unstable; urgency=low
 
   * UNRELEASED
