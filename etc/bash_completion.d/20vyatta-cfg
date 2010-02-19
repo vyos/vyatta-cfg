@@ -440,6 +440,7 @@ vyatta_loadkey_complete()
 	  COMPREPLY=( $(compgen -u -- ${COMP_WORDS[1]} ) )
          fi ;;
       2) if [ -z "${COMP_WORDS[2]}" ]; then
+	  echo
 	  echo "Possible completions:"
 	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
 	  echo -e "  scp://<user>@<host>/<file>\tLoad from file on remote machine"
