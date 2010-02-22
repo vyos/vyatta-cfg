@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood2) unstable; urgency=low
+
+  * Fix completion format for loadkey
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 22 Feb 2010 10:26:33 -0800
+
 vyatta-cfg (0.16.12+kenwood1) unstable; urgency=low
 
   * UNRELEASED
