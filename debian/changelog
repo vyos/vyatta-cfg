@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood3) unstable; urgency=low
+
+  * Hide wireless and tunnel key values
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 23 Feb 2010 17:14:14 -0800
+
 vyatta-cfg (0.16.12+kenwood2) unstable; urgency=low
 
   * Fix completion format for loadkey
