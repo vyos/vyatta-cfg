@@ -1,3 +1,14 @@
+vyatta-cfg (0.16.15) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix completion format for loadkey
+  * Hide wireless and tunnel key values
+
+  [ Michael Larson ]
+  * reapply term multinode sorting. fix for bug 5376
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 24 Feb 2010 18:11:47 -0800
+
 vyatta-cfg (0.16.14) unstable; urgency=low
 
   * add fucntion to return bridge-group that an interface might be
