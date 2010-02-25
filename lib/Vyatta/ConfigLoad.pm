@@ -206,7 +206,8 @@ sub getSortedMultiValues {
     my $key = "$path_str $_";
     push @list, [ $_, $node_order{$key} ];
   }
-  my @slist = map { ${$_}[0] } @list;
+  my @slist = sort { ${$a}[1] <=> ${$b}[1] } @list;
+  @slist = map { ${$_}[0] } @slist; 
   return @slist;
 }
 
