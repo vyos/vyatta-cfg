@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood4) unstable; urgency=low
+
+  * reapply term multinode sorting. fix for bug 5376
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 02 Mar 2010 16:42:45 -0800
+
 vyatta-cfg (0.16.12+kenwood3) unstable; urgency=low
 
   * Hide wireless and tunnel key values
