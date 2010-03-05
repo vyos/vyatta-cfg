@@ -107,6 +107,78 @@ mvcp ()
   return 0
 }
 
+do_move ()
+{
+  local -a args=("$@")
+  local pargc
+  (( pargc = ${#args[@]} - 4 ))
+  if (( pargc < 1 )); then
+    echo "Invalid move command \"move $@\""
+    return 1
+  fi
+
+  local -a pargs=("${args[@]:0:$pargc}")
+  args=("${args[@]:$pargc}")
+  local tag=${args[0]}
+  local oval=${args[1]}
+  local to=${args[2]}
+  local nval=${args[3]}
+
+  if [ -z "$tag" ] || [ -z "$oval" ] || [ "$to" != 'to' ] \
+      || [ -z "$nval" ]; then
+    echo "Invalid move command \"move $@\""
+    return 1
+  fi
+
+  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
+  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
+  local idx
+  for (( idx = 0; idx < pargc; idx++ )); do
+    local comp=${pargs[$idx]}
+    vyatta_escape comp comp
+    _mpath="$_mpath/$comp"
+    _tpath="$_tpath/$comp"
+    if [ ! -d $_mpath ]; then
+      # node doesn't exist
+      break
+    fi
+    if [ -d $_tpath ]; then
+      # found non-tag node
+      continue
+    fi
+
+    # check if it's tag node
+    _tpath=$(dirname $_tpath)/node.tag
+    if [ -d $_tpath ]; then
+      # found tag node
+      continue
+    fi
+
+    # invalid node
+    break
+  done
+  if (( idx != pargc )); then
+    # invalid node
+    echo "Invalid node path \"${pargs[@]}\""
+    return 1
+  fi
+  if [[ "$_tpath" != */node.tag ]]; then
+    # path doesn't end with a tag value. must not have "type".
+    if [ ! -f "$_tpath/node.def" ]; then
+      echo "Invalid node path \"${pargs[@]}\""
+      return 1
+    fi
+    if grep -q '^type: ' "$_tpath/node.def"; then
+      echo "Invalid move command \"move $@\""
+      return 1
+    fi
+  fi
+  # set edit level
+  VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
+  VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
+  mvcp rename Rename mv "$tag" "$oval" 'to' "$tag" "$nval"
+}
+
 RET_STATUS=0
 
 case "$1" in
@@ -179,6 +251,14 @@ case "$1" in
     elif [ $2 == "nat" ]; then
       mvcp rename Rename mv "${@:3}"
     fi
+    RET_STATUS=$?
+    ;;
+  move)
+    # this is similar to the CLI edit+rename command.
+    # e.g., "move interfaces ethernet eth2 vif 100 to 200"
+    # is similar to "edit interfaces ethernet eth2" plus
+    # "rename vif 100 to vif 200".
+    do_move "${@:2}"
     RET_STATUS=$?
     ;;
   *)
