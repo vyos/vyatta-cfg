@@ -760,6 +760,21 @@ sub parseTmplAll {
   return \%ret;
 }
 
+# $cfg_path: config path of the node.
+# returns the list of the node's children in the template hierarchy.
+sub getTmplChildren {
+  my ($self, $cfg_path) = @_;
+  my @pdirs = split(/ +/, $cfg_path);
+  my $tpath = $self->getTmplPath(\@pdirs);
+  return () unless $tpath;
+
+  opendir (my $tdir, $tpath) or return;
+  my @tchildren = grep !/^node\.def$/, (grep !/^\./, (readdir $tdir));
+  closedir $tdir;
+
+  return @tchildren;
+}
+
 ###### misc functions ######
 
 # compare two value lists and return "deleted" and "added" lists.
