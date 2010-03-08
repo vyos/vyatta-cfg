@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.12+kenwood5) unstable; urgency=low
+
+  * add fucntion to return bridge-group that an interface might be
+    assigned to
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Mon, 08 Mar 2010 14:51:59 -0800
+
 vyatta-cfg (0.16.12+kenwood4) unstable; urgency=low
 
   * reapply term multinode sorting. fix for bug 5376
