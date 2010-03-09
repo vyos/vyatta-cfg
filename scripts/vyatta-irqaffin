@@ -53,7 +53,7 @@ get_irqnums()
 {
     irqnums=`grep $1 /proc/interrupts | awk -F ': ' '{ print $1 }'`
     if [ -z "$irqnums" ]; then
-	echo "Invalid interface name: $1"
+	echo "Unable to determine IRQs for interface $1"
 	return 1
     fi
     return 0

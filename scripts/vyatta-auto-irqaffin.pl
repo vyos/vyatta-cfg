@@ -342,9 +342,13 @@ if (defined $setup_ifname) {
 	    # one used by Broadcom NICs.
 	    $driver_style="broadcom";
 	}
-    } else {
+    } elsif ($numints == 1) {
 	# It is a single queue NIC.
 	$driver_style="single";
+    } else {
+	# $numints must be 0
+	printf("Unable to determine IRQs for interface $ifname.\n");
+	exit 0;
     }
     $driver_func = $driver_hash{$driver_style};
 
