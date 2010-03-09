@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.18) unstable; urgency=low
+
+  * Bugfix 5021: Make smp_affinity configuration tolerant of failures.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 09 Mar 2010 15:53:39 -0800
+
 vyatta-cfg (0.16.17) unstable; urgency=low
 
   * add function for traversing template hierarchy
