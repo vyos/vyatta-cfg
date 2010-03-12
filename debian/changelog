@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.20) unstable; urgency=low
+
+  * Print node name before the warning message.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 12 Mar 2010 11:11:56 -0800
+
 vyatta-cfg (0.16.19) unstable; urgency=low
 
   * run migration as vyattacfg group
