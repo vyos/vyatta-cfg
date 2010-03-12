@@ -108,7 +108,7 @@ migrate_bootfile ()
 {
     if [ -x $vyatta_sbindir/vyatta_config_migrate.pl ]; then
         log_progress_msg migrate
-        $vyatta_sbindir/vyatta_config_migrate.pl $BOOTFILE
+        sg ${GROUP} -c "$vyatta_sbindir/vyatta_config_migrate.pl $BOOTFILE"
     fi
 }
 
