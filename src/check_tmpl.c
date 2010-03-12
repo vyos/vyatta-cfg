@@ -7,7 +7,7 @@
 #include "cli_val.h"
 
 int
-check_line_continuation(FILE *ftmpl)
+check_line_continuation(FILE *ftmpl, char *node_name)
 {
   char buf[256];
   int line = 0;
@@ -22,6 +22,7 @@ check_line_continuation(FILE *ftmpl)
       --len;
     }
     if (len >= 0 && buf[len] == '\\') {
+      printf("[%s]\n", node_name);
       printf("Warning: \"backslash + space\" detected at the end of line %d.\n"
              "         This will not work as line continuation.\n",
              line);
@@ -59,7 +60,7 @@ main(int argc, char **argv)
   }
  
   /* check for other errors */
-  if (check_line_continuation(ftmpl) != 0) {
+  if (check_line_continuation(ftmpl, argv[1]) != 0) {
     exit(-1);
   }
   fseek(ftmpl, 0, SEEK_SET);
