@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood6) unstable; urgency=low
+
+  * UNRELEASED
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 15 Mar 2010 10:53:40 -0700
+
 vyatta-cfg (0.16.12+kenwood5) unstable; urgency=low
 
   * add fucntion to return bridge-group that an interface might be
