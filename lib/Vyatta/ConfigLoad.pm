@@ -315,7 +315,8 @@ sub findSetNodes {
   $active_cfg->setLevel(join ' ', @active_path);
   my @active_nodes = $active_cfg->listOrigNodes();
   my %active_hash = map { $_ => 1 } @active_nodes;
-  if (defined($active_hash{'node.val'})) {
+  my $nref = $active_cfg->parseTmplAll(join ' ', @active_path);
+  if (defined($nref->{type}) and !defined($nref->{tag})) {
     # we are at a leaf node.
     findSetValues($new_ref, \@active_path);
     return;
