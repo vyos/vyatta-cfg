@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.23) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * use template to determine leaf nodes
+
+  [ Stephen Hemminger ]
+  * Fix typo in adsl interface discovery
+
+ -- Stephen Hemminger <shemminger@debian.localdomain>  Wed, 17 Mar 2010 14:11:57 -0700
+
 vyatta-cfg (0.16.22) unstable; urgency=low
 
   * add hook for boot-time config loading environment
