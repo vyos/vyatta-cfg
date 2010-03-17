@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood6) unstable; urgency=low
+
+  * Fix PPP serial QoS support
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 16 Mar 2010 22:24:26 -0700
+
 vyatta-cfg (0.16.12+kenwood5) unstable; urgency=low
 
   * add fucntion to return bridge-group that an interface might be
