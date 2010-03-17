@@ -115,9 +115,9 @@ sub _ppp_path {
 	return $path if $config->exists($path);
     }
 
-    my $adsl = "interface adsl $intf pvc";
+    my $adsl = "interfaces adsl $intf pvc";
     foreach my $pvc ($config->listNodes($adsl)) {
-	my $path = "$adsl pvc $pvc $type $id";
+	my $path = "$adsl $pvc $type $id";
 	return $path if $config->exists($path);
     }
 
