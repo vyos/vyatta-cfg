@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.12+kenwood7) unstable; urgency=low
+
+  * Fix PPP serial QoS support
+  * 0.16.12+kenwood6
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 16 Mar 2010 22:24:37 -0700
+
 vyatta-cfg (0.16.12+kenwood6) unstable; urgency=low
 
   * Fix PPP serial QoS support
