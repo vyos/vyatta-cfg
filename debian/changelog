@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.12+kenwood8) unstable; urgency=low
+
+  * Fix typo in adsl interface discovery
+
+ -- Stephen Hemminger <shemminger@debian.localdomain>  Wed, 17 Mar 2010 13:51:27 -0700
+
 vyatta-cfg (0.16.12+kenwood7) unstable; urgency=low
 
   * Fix PPP serial QoS support
