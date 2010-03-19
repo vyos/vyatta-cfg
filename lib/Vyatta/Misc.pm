@@ -62,7 +62,7 @@ sub is_dhcp_enabled {
         return 1 if ( $addr && $addr eq "dhcp" );
     }
 
-    # return undef
+    return;
 }
 
 # check if any non-dhcp addresses configured
@@ -77,7 +77,7 @@ sub is_address_enabled {
         return 1 if ( $addr && $addr ne 'dhcp' );
     }
 
-    # return undefined (ie false)
+    return;
 }
 
 # return dhclient related files for interface
@@ -186,7 +186,7 @@ sub getNetAddrIP {
         return $ip;
     }
 
-    # default return of undefined (ie false)
+    return;
 }
 
 sub is_ip_v4_or_v6 {
@@ -207,7 +207,7 @@ sub is_ip_v4_or_v6 {
         return 6;
     }
 
-    # default return of undefined (ie false)
+    return;
 }
 
 sub isIpAddress {
@@ -269,7 +269,7 @@ sub isIPinInterfaces {
         return 1 if ( is_ip_in_list( $ip_addr, getIP($name) ) );
     }
 
-    # false (undef)
+    return; # false (undef)
 }
 
 sub isClusteringEnabled {
