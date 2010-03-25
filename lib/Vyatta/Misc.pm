@@ -395,10 +395,10 @@ sub getPortRuleString {
               . "up to 15 ports (port range counts as 2)" );
     }
     if ( $num_ports > 1 ) {
-        $rule_str = " -m multiport --${prefix}ports ${negate}${port_str}";
+        $rule_str = " -m multiport $negate --${prefix}ports ${port_str}";
     }
     elsif ( $num_ports > 0 ) {
-        $rule_str = " --${prefix}port ${negate}${port_str}";
+        $rule_str = " $negate --${prefix}port ${port_str}";
     }
 
     return ( $rule_str, undef );
