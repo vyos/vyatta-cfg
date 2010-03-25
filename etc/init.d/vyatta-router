@@ -117,7 +117,13 @@ load_bootfile ()
 {
   if [ -x $vyatta_sbindir/vyatta-config-loader.pl ]; then
     log_progress_msg configure
-    sg ${GROUP} -c "$vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE"
+    (
+      if [ -f /etc/default/vyatta-load-boot ]; then
+        # build-specific environment for boot-time config loading
+        source /etc/default/vyatta-load-boot
+      fi
+      sg ${GROUP} -c "$vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE"
+    )
   fi
 }
 

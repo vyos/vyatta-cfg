@@ -84,25 +84,44 @@ sub interface_types {
     return @types;
 }
 
-# Read pppoe config to fine associated ethernet for ppp device
-sub find_pppoe {
+# Read ppp config to fine associated interface for ppp device
+sub _ppp_intf {
     my $dev = shift;
-    my $eth;
+    my $intf;
 
-    open (my $pppoe, '<', "/etc/ppp/peers/$dev")
+    open (my $ppp, '<', "/etc/ppp/peers/$dev")
 	or return;	# no such device
 
-    while (<$pppoe>) {
+    while (<$ppp>) {
 	chomp;
 	# looking for line like:
 	# pty "/usr/sbin/pppoe -m 1412 -I eth1"
-	next unless /^pty .*(eth\d+)"/;
-	$eth = $1;
+	next unless /^pty\s.*-I\s*(\w+)"/;
+	$intf = $1;
 	last;
     }
-    close($pppoe);
+    close $ppp;
 
-    return $eth;
+    return $intf;
+}
+
+# Go path hunting to find ppp device
+sub _ppp_path {
+    my ($intf, $type, $id) = @_;
+    my $config = new Vyatta::Config;
+
+    if ($type eq 'pppoe') {
+	my $path = "interfaces ethernet $intf pppoe $id";
+	return $path if $config->exists($path);
+    }
+
+    my $adsl = "interfaces adsl $intf pvc";
+    foreach my $pvc ($config->listNodes($adsl)) {
+	my $path = "$adsl $pvc $type $id";
+	return $path if $config->exists($path);
+    }
+
+    return;
 }
 
 # new interface description object
@@ -115,17 +134,20 @@ sub new {
     # need argument to constructor
     return unless $name;
 
-    # Special case for pppoe devices
-    if ($name =~ /^pppoe(\d+)/) {
-	my $n = $1;
-	my $eth = find_pppoe($name);
+    # Special case for ppp devices
+    if ($name =~ /^(pppo[ae])(\d+)/) {
+	my $type = $1;
+	my $id = $2;
+	my $intf = _ppp_intf($name);
+	return unless $intf;
 
-	return unless $eth;
+	my $path = _ppp_path($intf, $type, $id);
+	return unless $path;
 
 	my $self = {
 	    name => $name,
-	    type => 'pppoe',
-	    path => "interfaces ethernet $eth pppoe $n",
+	    type => $type,
+	    path => $path,
 	    dev  => $name,
 	};
 	bless $self, $class;
@@ -234,7 +256,7 @@ sub using_dhcp {
 sub bridge_grp {
     my $self  = shift;
     my $config = new Vyatta::Config;
-    
+
     $config->setLevel( $self->{path} );
     return $config->returnValue("bridge-group bridge");
 }
