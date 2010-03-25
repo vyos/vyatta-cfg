@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.24) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Need explicit return to guarantee returning false
+
+  [ Stig Thormodsrud ]
+  * Fix 5203: negation in firewall rule causes deprecation message
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 24 Mar 2010 17:13:24 -0700
+
 vyatta-cfg (0.16.23) unstable; urgency=low
 
   [ An-Cheng Huang ]
