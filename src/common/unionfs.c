@@ -633,10 +633,10 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   }
   char *command = malloc(MAX_LENGTH_DIR_PATH);
   static const char format0[]="mkdir -p %s ; /bin/true";
-  static const char formatpoint5[]="rm -fr %s"; /*tmpp*/
+  static const char formatpoint5[]="rm -fr \"%s\""; /*tmpp*/
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
   static const char format1point1[]="mv -f %s/* -t %s"; /*mdirp, tmpp*/
-  static const char format1point5[]="rm -fr %s/*"; /*tmpp*/
+  static const char format1point5[]="rm -fr \"%s\"/*"; /*tmpp*/
   
   static const char format2[]="sudo umount %s"; //mdirp
   static const char format8[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
@@ -773,7 +773,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   command = malloc(MAX_LENGTH_DIR_PATH);
   static const char format2[]="sudo umount %s"; //mdirp
   static const char format3[]="rm -f %s/" MOD_NAME " >&/dev/null ; /bin/true"; /*tmpp*/
-  static const char format5[]="rm -fr %s/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
+  static const char format5[]="rm -fr \"%s\"/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
   static const char format7[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
 
 
@@ -1204,8 +1204,8 @@ delete_func(GNode *node, gpointer data)
   char *command = malloc(MAX_LENGTH_DIR_PATH);
 
   //DONT HAVE THE COMMAND BELOW BLOW AWAY WHITEOUT FILES!!!!!
-  static const char format[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
-  static const char format_force_delete[]="rm -f %s%s{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
+  static const char format[]="rm -f \"%s%s\"{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //need to remove opaque file.
+  static const char format_force_delete[]="rm -f \"%s%s\"{*,.*} >&/dev/null;rmdir %s%s >&/dev/null ; /bin/true";  //force delete as this is a delete operation with dependency 
 
   static const char delete_format[]="rm %s%s../.wh.%s >&/dev/null"; 
   
@@ -1282,7 +1282,7 @@ delete_wh_func(GNode *node, gpointer data)
   }
 
   char abuf[MAX_LENGTH_DIR_PATH];
-  static const char format0[]="rm -fr %s >&/dev/null ; /bin/true";
+  static const char format0[]="rm -fr \"%s\" >&/dev/null ; /bin/true";
   struct SrcDst *sd = (struct SrcDst*)data;
 
   GNode *parent_node = node->parent;
