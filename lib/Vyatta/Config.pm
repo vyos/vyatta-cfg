@@ -738,8 +738,9 @@ sub parseTmplAll {
   my %ret = ();
   my $tpath = $self->getTmplPath(\@pdirs);
   return unless $tpath;
-  return undef if (! -r "$tpath/node.def");
-  open(my $tmpl, '<', "$tpath/node.def") or return undef;
+
+  open(my $tmpl, '<', "$tpath/node.def") 
+	or return;
   foreach (<$tmpl>) {
     if (/^multi:/) {
       $ret{multi} = 1;
