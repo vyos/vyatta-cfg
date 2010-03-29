@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.26) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix perlcritic warnings
+
+  [ Michael Larson ]
+  * changed double quotes to single quotes on in commit actions.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 29 Mar 2010 10:41:07 -0700
+
 vyatta-cfg (0.16.25) unstable; urgency=low
 
   * fix for bug 5300
