@@ -352,13 +352,7 @@ sub running {
 sub description {
     my $self = shift;
 
-    open my $ifalias, '<', "/sys/class/net/$self->{name}/ifalias"
-	or return;
-    my $description = <$ifalias>;
-    close $ifalias;
-    chomp $description if $description;
-
-    return $description;
+    return interface_description($self->{name});
 }
 
 1;

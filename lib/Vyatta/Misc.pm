@@ -26,7 +26,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled
-		 isIpAddress is_ip_v4_or_v6);
+		 isIpAddress is_ip_v4_or_v6 interface_description);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
@@ -402,6 +402,19 @@ sub getPortRuleString {
     }
 
     return ( $rule_str, undef );
+}
+
+sub interface_description {
+    my $name = shift;
+
+    open my $ifalias, '<', "/sys/class/net/$name/ifalias"
+	or return;
+
+    my $description = <$ifalias>;
+    close $ifalias;
+    chomp $description if $description;
+
+    return $description;
 }
 
 1;
