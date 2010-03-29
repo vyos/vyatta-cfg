@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.12+kenwood9) unstable; urgency=low
+
+  * fix for bug 5300
+  * changed double quotes to single quotes on in commit actions.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 29 Mar 2010 16:24:45 -0700
+
 vyatta-cfg (0.16.12+kenwood8) unstable; urgency=low
 
   * Fix typo in adsl interface discovery
