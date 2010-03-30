@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.28) unstable; urgency=low
+
+  * Ignore ifb devices
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 30 Mar 2010 10:47:52 -0700
+
 vyatta-cfg (0.16.27) unstable; urgency=low
 
   * Allow reading interface description outside config mode
