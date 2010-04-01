@@ -168,6 +168,9 @@ sub displayValues {
       }
       print "$diff$prefix$name $value\n";
     }
+    elsif ($cnodes{'def'} && ($diff eq '>' || $diff eq '-')) {
+        print "$diff$prefix$name $value\n";
+    }
   }
 }
 
