@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.29) unstable; urgency=low
+
+  * fix for bug 5450.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 01 Apr 2010 14:44:10 -0700
+
 vyatta-cfg (0.16.28) unstable; urgency=low
 
   * Ignore ifb devices
