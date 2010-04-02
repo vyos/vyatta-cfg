@@ -164,17 +164,18 @@ sub intf_sort {
 sub get_state_files {
     my ($intf, $group) = @_;
 
+    opendir my $sdir, $state_dir
+	or die "Can't open $state_dir: $!\n";
+
     my @state_files;
-    my $LS;
     if ($group eq "all") {
-	open($LS,"ls $state_dir |grep '^vrrpd_$intf.*\.state\$' |");
+	@state_files = grep { /^vrrpd_$intf.*\.state$/ } $sdir;
     } else {
 	my $intf_group = $intf . "_" . $group . ".state";
-	open($LS,
-	     "ls $state_dir |grep '^vrrpd_$intf_group\$' |");
+	@state_files = grep { /^vrrpd_$intf_group$/ } $sdir;
     }
-    @state_files = <$LS>;
-    close($LS);
+    close $sdir;
+
     @state_files = intf_sort(@state_files);
     foreach my $i (0 .. $#state_files) {
 	$state_files[$i] = "$state_dir/$state_files[$i]";
