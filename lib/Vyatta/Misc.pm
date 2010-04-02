@@ -103,8 +103,7 @@ sub getInterfaces {
     my @interfaces = grep { ( !/^\./ ) && 
 			    ( $_ ne 'bonding_masters' ) &&
 			    ! ( $_ =~ '^mon.wlan\d$') &&
-			    ! ( $_ =~ '^wmaster\d+$') &&
-			    ! ( $_ =~ '^ifb.')
+			    ! ( $_ =~ '^wmaster\d+$')
 			  } readdir $sys_class;
     closedir $sys_class;
     return @interfaces;
