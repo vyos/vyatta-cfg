@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.30) unstable; urgency=low
+
+  * Use opendir/grep to get rid of running ls/grep
+  * Add support for incoming interface type
+  * Remove ifb device skipping
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 05 Apr 2010 16:17:09 -0700
+
 vyatta-cfg (0.16.29) unstable; urgency=low
 
   * fix for bug 5450.
