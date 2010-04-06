@@ -107,19 +107,26 @@ sub _ppp_intf {
 }
 
 # Go path hunting to find ppp device
-sub _ppp_path {
-    my ($intf, $type, $id) = @_;
-    my $config = new Vyatta::Config;
+sub ppp_path {
+    my $self = shift;
 
+    return unless ($self->{name} =~ /^(pppo[ae])(\d+)/);
+    my $type = $1;
+    my $id = $2;
+
+    my $intf = _ppp_intf($self->{name});
+    return unless $intf;
+
+    my $config = new Vyatta::Config;
     if ($type eq 'pppoe') {
-	my $path = "interfaces ethernet $intf pppoe $id";
-	return $path if $config->exists($path);
+       my $path = "interfaces ethernet $intf pppoe $id";
+       return $path if $config->exists($path);
     }
 
     my $adsl = "interfaces adsl $intf pvc";
     foreach my $pvc ($config->listNodes($adsl)) {
-	my $path = "$adsl $pvc $type $id";
-	return $path if $config->exists($path);
+       my $path = "$adsl $pvc $type $id";
+       return $path if $config->exists($path);
     }
 
     return;
@@ -138,18 +145,11 @@ sub new {
     # Special case for ppp devices
     if ($name =~ /^(pppo[ae])(\d+)/) {
 	my $type = $1;
-	my $id = $2;
-	my $intf = _ppp_intf($name);
-	return unless $intf;
-
-	my $path = _ppp_path($intf, $type, $id);
-	return unless $path;
 
 	my $self = {
-	    name => $name,
-	    type => $type,
-	    path => $path,
-	    dev  => $name,
+	    name   => $name,
+	    type   => $type,
+	    dev    => $name,
 	};
 	bless $self, $class;
 	return $self;
@@ -200,7 +200,12 @@ sub name {
 
 sub path {
     my $self = shift;
-    return $self->{path};
+    my $path = $self->{path};
+
+    return $path if defined($path);
+
+    # Go path hunting to find ppp device
+    return ppp_path($self);
 }
 
 sub vif {
