@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.31) unstable; urgency=low
+
+  * Add support for input interface in Interface module
+  * Defer reading ppp config until necessary
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 06 Apr 2010 08:56:31 -0700
+
 vyatta-cfg (0.16.30) unstable; urgency=low
 
   * Use opendir/grep to get rid of running ls/grep
