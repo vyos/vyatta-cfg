@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.32) unstable; urgency=low
+
+  * fix for bug 2176.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 13 Apr 2010 13:15:47 -0700
+
 vyatta-cfg (0.16.31) unstable; urgency=low
 
   * Add support for input interface in Interface module
