@@ -816,7 +816,7 @@ dump_func(GNode *node, gpointer data)
 	fprintf(out," [VALUE]");
       }
       if (((struct VyattaNode*)gp)->_config._multi == TRUE) {
-	fprintf(out," [MULTI]");
+	fprintf(out," [MULTI(%d)]",((struct VyattaNode*)gp)->_config._limit);
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
 	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {

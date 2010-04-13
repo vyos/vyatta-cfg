@@ -225,6 +225,15 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	}
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
+	if (def.def_tag > 0) {
+	  vn->_config._limit = def.def_tag;
+	}
+	else if (def.def_multi > 0) {
+	  vn->_config._limit = def.def_multi;
+	}
+	else {
+	  vn->_config._limit = 0;
+	}
       }
     }
 

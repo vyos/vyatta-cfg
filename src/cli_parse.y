@@ -89,8 +89,45 @@ otherinput:     type EOL
 		;
 
 tag:            /* empty */
-		| TAG EOL {parse_defp->tag = TRUE;}
+                | TAG EOL {parse_defp->tag = TRUE;}
+                | TAG VALUE {
+		    parse_defp->tag = TRUE;
+		    char *tmp = $2.val;
+		    long long int cval = 0;
+		    char *endp = NULL;
+		    errno = 0;
+		    cval = strtoll(tmp, &endp, 10);
+		    if (($2.val_type != INT_TYPE)
+			|| (errno == ERANGE
+			    && (cval == LLONG_MAX || cval == LLONG_MIN))
+			|| (errno != 0 && cval == 0)
+			|| (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
+		      yy_cli_parse_error((const char *)
+					 "Tag must be <u32>\n");
+		    } else {
+		      parse_defp->def_tag = cval;
+		    }
+                  }
 		| MULTI EOL {parse_defp->multi = TRUE;}
+		| MULTI VALUE 
+		{
+  		    parse_defp->multi = TRUE;
+		    char *tmp = $2.val;
+		    long long int cval = 0;
+		    char *endp = NULL;
+		    errno = 0;
+		    cval = strtoll(tmp, &endp, 10);
+		    if (($2.val_type != INT_TYPE)
+			|| (errno == ERANGE
+			    && (cval == LLONG_MAX || cval == LLONG_MIN))
+			|| (errno != 0 && cval == 0)
+			|| (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
+		      yy_cli_parse_error((const char *)
+					 "Tag must be <u32>\n");
+		    } else {
+		      parse_defp->def_multi = cval;
+		    }
+                  }
 		;
 
 type:	      	TYPE TYPE_DEF SEMI STRING

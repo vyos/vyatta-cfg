@@ -55,6 +55,7 @@ struct Config
 {
   boolean      _multi;
   int          _priority;
+  int          _limit;
   vtw_def      _def; //keep this here
   char*        _help;
   char*        _default;
