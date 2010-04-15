@@ -129,6 +129,12 @@ tag:            /* empty */
 		    }
                   }
 		;
+type:           TYPE TYPE_DEF COMMA TYPE_DEF
+                {
+                  parse_defp->def_type = $2;
+                  parse_defp->def_type2 = $4;
+                }
+                ;
 
 type:	      	TYPE TYPE_DEF SEMI STRING
 		{ parse_defp->def_type = $2; 

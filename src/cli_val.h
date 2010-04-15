@@ -102,6 +102,7 @@ typedef enum {
 
 typedef struct {
   vtw_type_e def_type;
+  vtw_type_e def_type2;
   char      *def_type_help;
   char      *def_node_help;
   char      *def_default;

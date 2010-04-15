@@ -811,7 +811,12 @@ dump_func(GNode *node, gpointer data)
       for (i = 0; i < depth; ++i) {
 	fprintf(out,"  ");
       }
-      fprintf(out,"%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._priority);
+      if (((struct VyattaNode*)gp)->_config._def.def_type2 != NULL) {
+	fprintf(out,"%s (t: %d-%d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2,((struct VyattaNode*)gp)->_config._priority);
+      }
+      else {
+	fprintf(out,"%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._priority);
+      }
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
 	fprintf(out," [VALUE]");
       }

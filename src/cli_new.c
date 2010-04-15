@@ -697,6 +697,8 @@ valstruct str2val(char *cp)
 /****************************************************
        STATIC FUNCTIONS
 ****************************************************/
+int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valp, char *buf);
+int char2val_text(vtw_def *def, char *value, valstruct **valp);
 
 /**************************************************
   char2val:
@@ -705,85 +707,147 @@ valstruct str2val(char *cp)
 ****************************************************/
 int char2val(vtw_def *def, char *value, valstruct *valp)
 {
-  int token;
-  char *endp, *cp;
-  int linecnt, cnt;
   int my_type = def->def_type;
-  boolean first = TRUE;
+  int my_type2 = def->def_type2;
 
   memset(valp, 0, sizeof (*valp));
 
-  if (my_type == ERROR_TYPE) {
-    my_type = TEXT_TYPE;
-  }
+  /*
+    normal:
+    A) single text type
+    B) single non-text type
 
-  if (my_type != TEXT_TYPE && my_type != ERROR_TYPE) {
-    cli_val_len = strlen(value);
-    cli_val_ptr = value;
-    while(1) {
-      token = yy_cli_val_lex();
-      if (token != VALUE) {
-	if (first || token){
-	  if (def->def_type_help){
-	    set_at_string(value);
-	    (void)expand_string(def->def_type_help);
-            fprintf(out_stream, "%s\n", exe_string);
-	  } else {
-	    print_msg("Wrong type of value in %s, "
-		       "need %s\n", 
-		       m_path.path_buf + m_path.print_offset, 
-		       type_to_name(my_type)); 
-            fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
-                    value, type_to_name(my_type));
-	  }
+    new:
+    C) Text plus non-text (NOT SUPPORTED)!
+    D) 2 non-text (double up first loop)
+    //so perhaps split the below into two functions, text and non-text
+   */
+
+  if (my_type != TEXT_TYPE && 
+      my_type != ERROR_TYPE) {
+    //since this is the restricted type
+    //we'll either do two calls to this 
+    //or one call to this as text
+
+    //currently fails to handle mixed text + non-text case...
+    char buf1[2048];
+    if (char2val_notext(def,my_type,value,&valp,buf1) != 0) {
+      if (my_type2 != ERROR_TYPE) {
+	char buf2[2048];
+	if (char2val_notext(def,my_type2,value,&valp,buf2) != 0) {
+	  fprintf(out_stream,"%s%s",buf1,buf2);
 	  return -1;
 	}
-	return 0;
       }
-      if (my_type != get_cli_value_ptr()->val_type) {
-	if (def->def_type_help){
-	  set_at_string(value);
-	  (void)expand_string(def->def_type_help);
-          fprintf(out_stream, "%s\n", exe_string);
-	} else {
-	  print_msg("Wrong type of value in %s, "
-		     "need %s\n", 
-		     m_path.path_buf + m_path.print_offset,
-		     type_to_name(my_type));
-          fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
-                  value, type_to_name(my_type));
-	}
-	my_free(get_cli_value_ptr()->val);
-	if (first)
-	  return -1;
-	return 0;
-      }
-      if (first) {
-	*valp = *get_cli_value_ptr();
-	get_cli_value_ptr()->free_me = FALSE;
-	first = FALSE;
-      } else {
-	if (def->multi)
-	  add_val(valp, get_cli_value_ptr());
-	else {
-	  print_msg("Unexpected multivalue in %s\n", m_path.path);
-	  free_val(get_cli_value_ptr());
-	}
-      }
-      token = yy_cli_val_lex();
-      if (!token) 
-	return 0;
-      if (token != EOL) {
-	fprintf(out_stream, "\"%s\" is not a valid value\n", value);
-	print_msg("Badly formed value in %s\n", 
-		  m_path.path + m_path.print_offset);
-	if (token == VALUE)
-	  my_free(get_cli_value_ptr()->val);
-	return -1;
+      else {
+	fprintf(out_stream,"%s",buf1);
+	return -1; //only single definition
       }
     }
     return 0;
   }
+  else {
+    return char2val_text(def,value,&valp);
+  }
+}
+
+//non-text type processing block
+
+int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valpp, char *err_buf)
+{
+  valstruct *valp = *valpp;
+  int token;
+  boolean first = TRUE;
+  cli_val_len = strlen(value);
+  cli_val_ptr = value;
+  while(1) {
+    token = yy_cli_val_lex();
+
+    if (token != VALUE) {
+      if (first || token){
+	
+	if (def->def_type_help){
+	  set_at_string(value);
+	  (void)expand_string(def->def_type_help);
+	  sprintf(err_buf, "%s\n", exe_string);
+	} else {
+	  print_msg("Wrong type of value in %s, "
+		    "need %s\n", 
+		    m_path.path_buf + m_path.print_offset, 
+		    type_to_name(my_type)); 
+
+	  token = yy_cli_val_lex();
+
+	  sprintf(err_buf, "\"%s\" is not a valid value of type \"%s\"\n",
+		  value, type_to_name(my_type));
+	}
+	return -1;
+	
+      }
+      return 0;
+    }
+    if (my_type != get_cli_value_ptr()->val_type) {
+      if (def->def_type_help){
+	set_at_string(value);
+	(void)expand_string(def->def_type_help);
+	sprintf(err_buf, "%s\n", exe_string);
+      } else {
+	print_msg("Wrong type of value in %s, "
+		  "need %s\n", 
+		  m_path.path_buf + m_path.print_offset,
+		  type_to_name(my_type));
+
+	token = yy_cli_val_lex();
+
+	sprintf(err_buf, "\"%s\" is not a valid value of type \"%s\"\n",
+		value, type_to_name(my_type));
+      }
+      my_free(get_cli_value_ptr()->val);
+      if (first) {
+	return -1;
+      }
+      return 0;
+    }
+    if (first) {
+      *valp = *get_cli_value_ptr();
+      get_cli_value_ptr()->free_me = FALSE;
+      first = FALSE;
+    } else {
+      if (def->multi)
+	add_val(valp, get_cli_value_ptr());
+      else {
+	print_msg("Unexpected multivalue in %s\n", m_path.path);
+	free_val(get_cli_value_ptr());
+      }
+    }
+    token = yy_cli_val_lex();
+    if (!token) {
+      return 0;
+    }
+    if (token != EOL) {
+
+      token = yy_cli_val_lex();
+
+      sprintf(err_buf, "\"%s\" is not a valid value\n", value);
+      print_msg("Badly formed value in %s\n", 
+		m_path.path + m_path.print_offset);
+      if (token == VALUE) {
+	my_free(get_cli_value_ptr()->val);
+      }
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int char2val_text(vtw_def *def, char *value, valstruct **valpp)
+{
+  valstruct *valp = *valpp;
+  char *endp, *cp;
+  int linecnt, cnt;
+
+  //PROCESSING IF TYPE IS TEXT TYPE
+  
   valp->val_type = TEXT_TYPE;
   valp->free_me = TRUE;
   /* count lines */
@@ -1953,7 +2017,8 @@ boolean validate_value(vtw_def *def, char *cp)
   if (status != VTWERR_OK)
     return FALSE;
   if ((def->def_type!=ERROR_TYPE) && 
-      (validate_value_val.val_type != def->def_type)) {
+      ((validate_value_val.val_type != def->def_type) &&
+       (validate_value_val.val_type != def->def_type2))) {
     if (def->def_type_help){
       (void)expand_string(def->def_type_help);
       fprintf(out_stream, "%s\n", exe_string);
