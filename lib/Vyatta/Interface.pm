@@ -76,7 +76,7 @@ my %net_prefix = (
     '^peth[\d]+$'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
     '^wlan[\d]+$'  => { path => 'wireless', vif => 'vif' },
-    '^in[\d]+$'	   => { path => 'input' },
+    '^ifb[\d]+$'   => { path => 'input' },
 );
 
 # get list of interface types (only used in usage function)
