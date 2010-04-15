@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.34) unstable; urgency=low
+
+  * Multiple (i.e. one or two) datatypes can now be supported on a
+    node.def type definition.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 15 Apr 2010 13:48:41 -0700
+
 vyatta-cfg (0.16.33) unstable; urgency=low
 
   * Rename in0 to ifb0
