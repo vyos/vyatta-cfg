@@ -742,19 +742,24 @@ sub parseTmplAll {
   open(my $tmpl, '<', "$tpath/node.def") 
 	or return;
   foreach (<$tmpl>) {
-    if (/^multi:/) {
-      $ret{multi} = 1;
-    } elsif (/^tag:/) {
-      $ret{tag} = 1;
+    if (/^multi:\s*(\S+)?$/) {
+	$ret{multi} = 1;
+	$ret{limit} = $1;
+    } elsif (/^tag:\s*(\S+)?$/) {
+	$ret{tag} = 1;
+	$ret{limit} = $1;
+    } elsif (/^type:\s+(\S+),\s*(\S+)\s*$/) {
+	$ret{type} = $1;
+	$ret{type2} = $2;
     } elsif (/^type:\s+(\S+)\s*$/) {
-      $ret{type} = $1;
+	$ret{type} = $1;
     } elsif (/^default:\s+(\S.*)\s*$/) {
-      $ret{default} = $1;
-      if ($ret{default} =~ /^"(.*)"$/) {
-        $ret{default} = $1;
-      }
+	$ret{default} = $1;
+	if ($ret{default} =~ /^"(.*)"$/) {
+	    $ret{default} = $1;
+	}
     } elsif (/^help:\s+(\S.*)$/) {
-      $ret{help} = $1;
+	$ret{help} = $1;
     }
   }
   close($tmpl);
