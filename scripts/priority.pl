@@ -9,6 +9,7 @@ use warnings;
 use File::Find;
 
 my %priorities;
+my @parent_priorities;
 
 # Open node file and extract priority and comment if any
 sub get_priority {
@@ -19,7 +20,7 @@ sub get_priority {
 
     while (<$f>) {
         chomp;
-        next unless m/^priority:\s(\d+)/;
+        next unless m/^priority:\s((PARENT)|(\d+))/;
         $priority = $1;
 
         $comment = $1 if (/#(.*)$/);
@@ -47,7 +48,12 @@ sub wanted {
       if $comment;
 
     # append line to list of entries with same priority
-    push @{ $priorities{$priority} }, $dir;
+    if ($priority ne 'PARENT') {
+	push @{ $priorities{$priority} }, $dir;
+    }
+    else {
+	push(@parent_priorities, $dir);
+    }
     return 1;
 }
 
@@ -57,6 +63,28 @@ die "$cfgdir does not exist!" unless -d $cfgdir;
 
 # walk config file tree
 find( \&wanted, $cfgdir );
+
+#resolve parent dependencies
+foreach my $pp (@parent_priorities) {
+    my $tmp = $pp;
+    while (1) {
+	my $pos = rindex($tmp, "/");
+	if ($pos == -1) {
+	    last;
+	}
+	$tmp = substr($tmp,0,$pos);
+
+	#search through second value in collection for match
+	foreach (keys %priorities) {
+            foreach my $a (@{ $priorities{$_} }) {
+		if ($a eq $tmp) {
+		    push @{ $priorities{$_} }, $pp . " [PARENT]";
+		    last;
+		}
+	    }
+	}
+    }
+}
 
 # display resulting priorities
 foreach my $key ( sort { $a <=> $b } keys %priorities ) {

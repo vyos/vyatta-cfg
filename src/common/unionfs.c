@@ -154,7 +154,7 @@ void
 retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 {
   boolean final_node = FALSE;
-
+  
   if (node == NULL) {
     return;
   }
@@ -223,6 +223,7 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
 	  printf("[FOUND node.def]");
 	  syslog(LOG_DEBUG,"[FOUND node.def]");
 	}
+
 	//either multi or tag--shouldn't have made a difference, but arkady was confused.
 	vn->_config._multi = (def.tag | def.multi); 
 	if (def.def_tag > 0) {
@@ -278,11 +279,11 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     }
   }
 
-
   if (G_NODE_IS_ROOT(node) == FALSE) {
     struct VyattaNode* vn_parent = (struct VyattaNode*)node->parent->data;
     struct VyattaNode* vn = (struct VyattaNode*)node->data;
     //      vn->_config._priority = vn_parent->_config._def.def_priority;
+
     if (vn->_config._def.tag && vn->_config._multi) {
       vn->_config._priority = LOWEST_PRIORITY;
     }
@@ -291,6 +292,13 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     }
     else {
       vn->_config._priority = vn->_config._def.def_priority;
+    }
+
+    if (vn->_config._def.tag && vn->_config._multi) {
+      vn->_config._priority_extended = '\0';
+    }
+    else {
+      vn->_config._priority_extended = vn->_config._def.def_priority_ext;
     }
   }
 
@@ -896,6 +904,7 @@ copy_vyatta_node(struct VyattaNode* vn)
   new_vn->_data._operation = vn->_data._operation;
   new_vn->_config._multi = vn->_config._multi;
   new_vn->_config._priority = vn->_config._priority;
+  new_vn->_config._priority_extended = vn->_config._priority_extended;
   //  new_vn->_config._def = new_vn->_config._def; //cpy this?
   if (vn->_config._default != NULL) {
     new_vn->_config._default = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));

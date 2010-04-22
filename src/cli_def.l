@@ -257,6 +257,7 @@ RE_TYPE_NAME (txt|u32|ipv4|ipv4net|ipv6|ipv6net|bool|macaddr)
 /* values */
 RE_VAL_U32 [0-9]+
 RE_VAL_BOOL (true|false)
+RE_VAL_TEXT [a-zA-Z]+
 
 /* operators */
 RE_OP_COND (==|!=|<|>|<=|>=|in)
@@ -444,6 +445,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_he
     return VAR;
   }
 
+<INITIAL,expression>{RE_VAL_TEXT} { return return_value(TEXT_TYPE); }
 <INITIAL,expression>{RE_VAL_U32}  { return return_value(INT_TYPE); }
 <INITIAL,expression>{RE_IPV4}     { return return_value(IPV4_TYPE); }
 <INITIAL,expression>{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }

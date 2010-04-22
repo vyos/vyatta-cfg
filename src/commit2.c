@@ -52,6 +52,9 @@ gboolean
 sort_func_priority(GNode *node, gpointer data);
 
 gboolean
+sort_func_priority_extended(GNode *node, gpointer data);
+
+gboolean
 sort_func_simple(GNode *node, gpointer data);
 
 void
@@ -582,6 +585,92 @@ sort_func_simple(GNode *node, gpointer data)
  *
  **/
 gboolean
+sort_func_priority_extended(GNode *node, gpointer data)
+{
+  const GNode *orig_config; //needs to be passed in
+
+  gpointer gp = ((GNode*)node)->data;
+  GNode *root_node = (GNode*)data;
+
+  //WILL STOP AT DEPTH OF 10 REFERENCES
+  //GET PARENT WORKING FIRST....
+
+  //change action state of node according to enclosing behavior
+  if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) { //only if priority is specified.
+    GNode *new_node = g_node_copy(node);
+    int cur_pri = LOWEST_PRIORITY;
+
+    //NOW, we need to figure out where this node belongs in the priority chain
+    if (strncmp(((struct VyattaNode*)gp)->_config._priority_extended,"PARENT",6) == 0) {
+      //needs to walk up parents until priority is found and insert there....
+
+      //walk up chain until priority is found.
+      GNode *n = node;
+      while (TRUE) {
+	gpointer n_gpointer = ((GNode*)n)->data;
+	n = n->parent;
+	if (n == NULL) {
+	  break;
+	}
+	gpointer nd = ((GNode*)n)->data;
+	if (((struct VyattaNode*)nd)->_config._priority != LOWEST_PRIORITY) {
+	  //means we are done--found anchor in parent
+	  g_node_unlink(node);
+	  if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
+	    g_node_insert_before(root_node,n,new_node);
+	  }
+	  else {
+	    g_node_insert_after(root_node,n,new_node);
+	  }
+	  break;
+	}
+	/*
+	  else if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) {
+	  //need to find references in other node tree....
+
+	  //PARSE OUT EXTENDED REFERENCES...
+	  for (int i = 0; i < ct; ++i) {
+	    //get dependency...what to do with dependencies on dependencies... might get big. recursion buddy....
+	    if (find_reference_anchor(orig_config, ((struct VyattaNode*)gp)->_config._priority_extended, cur_pri) != 0) {
+	      cur_pri = LOWEST_PRIORITY;
+	    }
+	  }
+	  break;
+	}
+	  */
+      }
+    }
+    else {
+      /*
+      //multiple dependencies should be placed outside the earliest (delete) or latest (create) reference
+      if (find_reference_anchor(orig_config, ((struct VyattaNode*)gp)->_config._priority_extended, cur_pri) != 0) {
+	cur_pri = LOWEST_PRIORITY;
+      }
+      */
+    }
+    /*
+    //finds location for insertion
+    while (sibling != NULL && cur_pri > ((struct VyattaNode*)(sibling->data))->_config._priority * 10) {
+      sibling = sibling->next;
+      if (sibling == NULL || ((struct VyattaNode*)gp)->_config._priority < ((struct VyattaNode*)(sibling->data))->_config._priority) {
+	break;
+      }
+    }
+    
+    //I think that's it then...
+    g_node_insert_before(root_node,sibling,new_node);
+  }
+    */
+  }
+  return FALSE;
+}
+
+
+/**
+ *
+ *
+ **/
+gboolean
 sort_func(GNode *node, gpointer data, boolean priority_mode)
 {
   gpointer gp = ((GNode*)node)->data;
@@ -708,6 +797,14 @@ get_transactions(GNode *config, boolean priority_mode)
     if (g_node_n_children(config) != 0) {
       g_node_insert(trans_root,-1,config); //add what's left
     }
+
+    //now need pass to handle extended priority system
+    g_node_traverse(trans_root,
+		    G_POST_ORDER,
+		    G_TRAVERSE_ALL,
+		    -1,
+		    (GNodeTraverseFunc)sort_func_priority_extended,
+		    (gpointer)trans_root);
   }
   else {
     g_node_traverse(config,
@@ -812,11 +909,18 @@ dump_func(GNode *node, gpointer data)
 	fprintf(out,"  ");
       }
       if (((struct VyattaNode*)gp)->_config._def.def_type2 != NULL) {
-	fprintf(out,"%s (t: %d-%d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2,((struct VyattaNode*)gp)->_config._priority);
+	fprintf(out,"%s (t: %d-%d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2);
       }
       else {
-	fprintf(out,"%s (t: %d, p: %d)", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._priority);
+	fprintf(out,"%s (t: %d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type);
       }
+      if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) {
+	fprintf(out, "p: %s)",((struct VyattaNode*)gp)->_config._priority_extended);
+      }
+      else {
+	fprintf(out, "p: %d)",((struct VyattaNode*)gp)->_config._priority);
+      }
+
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
 	fprintf(out," [VALUE]");
       }

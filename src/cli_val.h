@@ -107,6 +107,7 @@ typedef struct {
   char      *def_node_help;
   char      *def_default;
   unsigned int def_priority;
+  char      *def_priority_ext;
   unsigned int def_tag;
   unsigned int def_multi;
   boolean    tag;

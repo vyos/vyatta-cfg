@@ -174,21 +174,18 @@ default_cause:  DEFAULT STRING
 		     yy_cli_parse_error((const char *)"Bad default\n");
 		   parse_defp->def_default = $2;
 		}
-
 priority_stmt:  PRIORITY VALUE
                 {
                   char *tmp = $2.val;
-                  long long int cval = 0;
+		  long long int cval = 0;
                   char *endp = NULL;
                   errno = 0;
                   cval = strtoll(tmp, &endp, 10);
-                  if (($2.val_type != INT_TYPE)
-                      || (errno == ERANGE
+                  if ((errno == ERANGE
                           && (cval == LLONG_MAX || cval == LLONG_MIN))
                       || (errno != 0 && cval == 0)
                       || (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
-                    yy_cli_parse_error((const char *)
-                                       "Priority must be <u32>\n");
+		    parse_defp->def_priority_ext = tmp;
                   } else {
                     parse_defp->def_priority = cval;
                   }
