@@ -69,7 +69,9 @@ my %type_handler = (
 		    'hex32' => \&validate_hex_32_bits,
                     'ipv6_addr_param' => \&validate_ipv6_addr_param,
                     'restrictive_filename' => \&validate_restrictive_filename,
-                    'no_bash_special' => \&validate_no_bash_special
+                    'no_bash_special' => \&validate_no_bash_special,
+                    'u32' => \&validate_u32,
+                    'bool' => \&validate_bool
                    );
 
 sub validate_ipv4 {
@@ -77,6 +79,16 @@ sub validate_ipv4 {
   return 0 if (!/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   return 0 if ($1 > 255 || $2 > 255 || $3 > 255 || $4 > 255);
   return 1;
+}
+
+sub validate_u32 {
+  my $val = shift;
+  return ($val =~ /^\d+$/ and $val < 2**32);
+}
+
+sub validate_bool {
+  my $val = shift;
+  return ($val eq 'true' or $val eq 'false');
 }
 
 sub validate_ipv4net {
