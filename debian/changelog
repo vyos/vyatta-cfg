@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.36) unstable; urgency=low
+
+  * support all valid multi-type types
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 23 Apr 2010 16:04:04 -0700
+
 vyatta-cfg (0.16.35) unstable; urgency=low
 
   [ Michael Larson ]
