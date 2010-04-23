@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.35) unstable; urgency=low
+
+  [ Michael Larson ]
+  * multinode limit and multiple types now supported through config.pm
+  * support for PARENT reference in priority statements. Example:
+
+  [ An-Cheng Huang ]
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 22 Apr 2010 18:48:13 -0700
+
 vyatta-cfg (0.16.34) unstable; urgency=low
 
   * Multiple (i.e. one or two) datatypes can now be supported on a
