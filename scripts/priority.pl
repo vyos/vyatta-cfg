@@ -59,6 +59,7 @@ sub wanted {
 
 # main program
 my $cfgdir = '/opt/vyatta/share/vyatta-cfg/templates';
+$cfgdir = $ARGV[0] if $#ARGV == 0;
 die "$cfgdir does not exist!" unless -d $cfgdir;
 
 # walk config file tree
