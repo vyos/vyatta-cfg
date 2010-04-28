@@ -39,7 +39,7 @@ open my $pf, '<', $priority_file or die "$priority_file can't be opened";
 while (<$pf>) {    
     chomp;
     next if /^#.*/;
-    die "Syntax Error \"$_\"" unless /^(\d+)\s+(\S+)\s+(|#.*)$/;
+    die "Syntax Error \"$_\"" unless /^(\d+)\s+(\S+)(|\s+|\s+#.*)$/;
     $priority = $1;
     $path = $2;
     $comment = $3;
