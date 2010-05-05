@@ -87,13 +87,16 @@ sub enumerate_branch {
       push @cur_path, $val;
     }
     if (defined $cur_node->{'disable'}) {
-	push @all_naked_nodes, [ '!', @cur_path ];
+	push @all_naked_nodes, [ '!', @cur_path ]; 
+	my @qpath = applySingleQuote(@cur_path);
+	unshift(@qpath,'!');
+	push @all_nodes, [\@qpath, 0];
     }
     else {
 	push @all_naked_nodes, [ @cur_path ];
+	my @qpath = applySingleQuote(@cur_path);
+	push @all_nodes, [\@qpath, 0];
     }
-    my @qpath = applySingleQuote(@cur_path);
-    push @all_nodes, [\@qpath, 0];
   }
 }
 

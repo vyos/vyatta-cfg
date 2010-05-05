@@ -212,6 +212,14 @@ case "$1" in
     /opt/vyatta/sbin/my_delete "${@:2}"
     RET_STATUS=$?
     ;;
+  deactivate)
+   /opt/vyatta/sbin/vyatta-activate-config.pl deactivate "${@:2}"
+   RET_STATUS=$?
+   ;;
+  activate)
+   /opt/vyatta/sbin/vyatta-activate-config.pl activate "${@:2}"
+   RET_STATUS=$?
+   ;;
   commit)
     # debug file /tmp/bar should be deleted before release
     /opt/vyatta/sbin/my_commit -a >> /tmp/bar

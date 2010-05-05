@@ -138,7 +138,7 @@ sub displayValues {
       }
     }
 
-    my %cnodes = $config->listNodeStatus();
+    my %cnodes = $config->listNodeStatus(undef,'true');
     my @cnames = sort keys %cnodes;
 
     if (defined($simple_show)) {
@@ -298,7 +298,7 @@ sub displayChildren {
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
-    my %cnodes = $config->listNodeStatus();
+    my %cnodes = $config->listNodeStatus(undef,'true');
     my @cnames = sort keys %cnodes;
     
     #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
@@ -345,7 +345,7 @@ sub displayChildren {
                                        $dis, "$prefix    ");
           } else {
             $config->setLevel(join ' ', (@cur_path, $child, $cname));
-            my %ccnodes = $config->listNodeStatus();
+            my %ccnodes = $config->listNodeStatus(undef,'true');
             displayChildren(\%ccnodes, [ @cur_path, $child, $cname ],
                             $dis, "$prefix    ");
           }
@@ -387,7 +387,7 @@ sub displayChildren {
 sub outputNewConfig {
   $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
-  my %rnodes = $config->listNodeStatus();
+  my %rnodes = $config->listNodeStatus(undef,'true');
   if (scalar(keys %rnodes) > 0) {
     my @rn = keys %rnodes;
 

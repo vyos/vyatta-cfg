@@ -704,11 +704,27 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
     }
   }
 
+  //FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE                                                                                                                           
+  struct Data *d = &((struct VyattaNode*)gp)->_data;
+  NODE_OPERATION op = d->_operation;
+  if (d->_disable_op != K_NO_DISABLE_OP) {
+    if (!(d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+      //node will be activated on commit                                                                                                                                            
+      //LET'S SPOOF the operation... convert it to CREATE                                                                                                                           
+      op = K_CREATE_OP;
+    }
+    else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+      //node will be deactivated on commit                                                                                                                                          
+      //LET'S SPOOF the operation... convert it to DELETE                                                                                                                           
+      op = K_DEL_OP;
+    }
+  }
+
   //change action state of node according to enclosing behavior
   if ((G_NODE_IS_ROOT(node) == FALSE) &&
       (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP)  || //added to support enclosing behavior of activated/deactivated nodes
-      ((IS_SET_OR_CREATE(((struct VyattaNode*)gp)->_data._operation))  || 
-       (IS_DELETE(((struct VyattaNode*)gp)->_data._operation))) && 
+      ((IS_SET_OR_CREATE(op))  || 
+       (IS_DELETE(op))) && 
       (IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))) {
 
     //first check if there is enclosing behavior
@@ -734,7 +750,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
 	vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
 	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
 	//DON'T set active when only in disable state...
-	if (((struct VyattaNode*)gp)->_data._disable_op == K_NO_DISABLE_OP) {
+	if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
 	  ((struct VyattaNode*)(n->data))->_data._operation |= K_ACTIVE_OP;
 	}
 	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {

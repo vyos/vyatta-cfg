@@ -70,7 +70,16 @@ my $ret = 0;
 my $rank; #not used
 foreach (@all_nodes) {
   my ($path_ref, $rank) = @$_;
-  my $cmd = "$CWRAPPER set " . (join ' ', @$path_ref);
+
+  my @pr = @$path_ref;
+  if (@pr[0] eq '!') {
+      @pr = @pr[1..$#pr];
+      my $deactivate_cmd = "$CWRAPPER deactivate " . (join ' ', @pr) . " 1>/dev/null";
+      system("$deactivate_cmd");
+      #ignore these errors due to nesting warnings.
+  }
+
+  my $cmd = "$CWRAPPER set " . (join ' ', @pr);
   # this debug file should be deleted before release
   system("echo [$cmd] >> /tmp/foo");
   $ret = system("$cmd");

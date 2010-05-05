@@ -532,6 +532,7 @@ sub getDeactivated {
   my ($self, $node) = @_;
 
   if (!defined $node) {
+      $node = $self->{_level};
   }
 
   # let's setup the filepath for the change_dir
@@ -634,7 +635,7 @@ sub isAdded {
 # node name is the hash key. node status is the hash value.
 # node status can be one of deleted, added, changed, or static
 sub listNodeStatus {
-  my ($self, $path) = @_;
+  my ($self, $path, $disable) = @_;
   my @nodes = ();
   my %nodehash = ();
 
@@ -647,15 +648,20 @@ sub listNodeStatus {
   @nodes = ();
   @nodes = $self->listNodes($path);
   foreach my $node (@nodes) {
-    if ($node =~ /.+/) {
-	my $nodepath = $node;
-	$nodepath = "$path $node" if ($path);
-	#print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
-	# No deleted nodes -- added, changed, ot static only.
-	if    ($self->isAdded($nodepath))   { $nodehash{$node} = "added"; }
-	elsif ($self->isChanged($nodepath)) { $nodehash{$node} = "changed"; }
-	else { $nodehash{$node} = "static"; }
-    }
+      if ($node =~ /.+/) {
+	  my $status = undef;
+	  if (!defined $disable) {
+	      ($status,undef) = $self->getDeactivated($self->{_level}." ".$node);
+	  }
+	  my $nodepath = $node;
+	  $nodepath = "$path $node" if ($path);
+	  #print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
+	  # No deleted nodes -- added, changed, ot static only.
+	  if (defined $status && $status eq 'local') { $nodehash{$node} = "deleted"; }
+	  elsif    ($self->isAdded($nodepath))   { $nodehash{$node} = "added"; }
+	  elsif ($self->isChanged($nodepath)) { $nodehash{$node} = "changed"; }
+	  else { $nodehash{$node} = "static"; }
+      }
   }
 
   return %nodehash;
