@@ -363,6 +363,7 @@ process_func(GNode *node, gpointer data)
   gpointer gp = ((GNode*)node)->data;
   struct Config *c = &((struct VyattaNode*)gp)->_config;
   struct Data *d = &((struct VyattaNode*)gp)->_data;
+  NODE_OPERATION op = d->_operation;
 
   int status = 0;
   if (c->_def.actions  && 
@@ -370,15 +371,32 @@ process_func(GNode *node, gpointer data)
     
     if (g_debug) {
       if (d->_name != NULL) {
-	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s\n",d->_name,result->_action,c->_def.def_type, d->_operation, d->_path);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s",d->_name,result->_action,c->_def.def_type, d->_operation, d->_path);
+	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s\n",d->_name,result->_action,c->_def.def_type, op, d->_path);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s",d->_name,result->_action,c->_def.def_type, op, d->_path);
       }
       else {
-	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s\n",result->_action, d->_operation, d->_path);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s",result->_action, d->_operation, d->_path);
+	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s\n",result->_action, op, d->_path);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s",result->_action, op, d->_path);
       }
     }
 
+    //FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE
+    if (d->_disable_op != K_NO_DISABLE_OP) {
+      if ((d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+	//no state change: deactivated
+	return FALSE; //skip operation on node
+      }
+      else if (!(d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+	//node will be activated on commit
+	//LET'S SPOOF the operation... convert it to CREATE
+	op = K_CREATE_OP;
+      }
+      else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+	//node will be deactivated on commit	
+	//LET'S SPOOF the operation... convert it to DELETE
+	op = K_DEL_OP;
+      }
+    }
     /*
       Needs to be cleaned up a bit such that this convoluted if clause is easier to read. Basically
       is says:
@@ -388,15 +406,15 @@ process_func(GNode *node, gpointer data)
       or
       if a node is DELETE, is a DELETE ACTION or a END ACTION, or a BEGIN ACTION
      */
-    if ((IS_SET(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action != delete_act && result->_action != create_act)) ||
-	(IS_CREATE(d->_operation) && !IS_ACTIVE(d->_operation) && (result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
-	(IS_ACTIVE(d->_operation) && ((result->_action == begin_act) || (result->_action == end_act))) ||
-	(IS_DELETE(d->_operation) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
+    if ((IS_SET(op) && !IS_ACTIVE(op) && (result->_action != delete_act && result->_action != create_act)) ||
+	(IS_CREATE(op) && !IS_ACTIVE(op) && (result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
+	(IS_ACTIVE(op) && ((result->_action == begin_act) || (result->_action == end_act))) ||
+	(IS_DELETE(op) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
       //NEED TO ADD IF CREATE, THEN CREATE OR UPDATE
       //IF SET THEN UPDATE
 
       //let's skip the case where this is active and it's a delete--shouldn't be done, but needs to be include in the rule set above
-      if (IS_DELETE(d->_operation) && IS_ACTIVE(d->_operation) && result->_action == delete_act) {
+      if (IS_DELETE(op) && IS_ACTIVE(op) && result->_action == delete_act && d->_disable_op == K_NO_DISABLE_OP) { //only apply this when no disable operation is set
 	return FALSE;
       }
 
@@ -475,8 +493,8 @@ process_func(GNode *node, gpointer data)
       }
 
       //do not set for promoted actions
-      if (!IS_ACTIVE(d->_operation)) {
-	if (IS_DELETE(d->_operation)) {
+      if (!IS_ACTIVE(op)) {
+	if (IS_DELETE(op)) {
 	    setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
 	}
 	else {
@@ -688,6 +706,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
 
   //change action state of node according to enclosing behavior
   if ((G_NODE_IS_ROOT(node) == FALSE) &&
+      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP)  || //added to support enclosing behavior of activated/deactivated nodes
       ((IS_SET_OR_CREATE(((struct VyattaNode*)gp)->_data._operation))  || 
        (IS_DELETE(((struct VyattaNode*)gp)->_data._operation))) && 
       (IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))) {
@@ -713,7 +732,11 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       while (TRUE) {
 	n = n->parent;
 	vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
-	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation | K_ACTIVE_OP;
+	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
+	//DON'T set active when only in disable state...
+	if (((struct VyattaNode*)gp)->_data._disable_op == K_NO_DISABLE_OP) {
+	  ((struct VyattaNode*)(n->data))->_data._operation |= K_ACTIVE_OP;
+	}
 	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
 	  break;
 	}
@@ -890,21 +913,37 @@ dump_func(GNode *node, gpointer data)
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
       int i;
 
-      if (IS_ACTIVE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"*");
+      char disable_op[2];
+      if (((struct VyattaNode*)gp)->_data._disable_op == (K_ACTIVE_DISABLE_OP | K_LOCAL_DISABLE_OP)) {
+	disable_op[0] = 'c';
       }
-      else if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"-");
+      else if (((struct VyattaNode*)gp)->_data._disable_op == K_ACTIVE_DISABLE_OP) {
+	disable_op[0] = 'u';
       }
-      else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"+");
-      }
-      else if (IS_SET(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,">");
+      else if (((struct VyattaNode*)gp)->_data._disable_op == K_LOCAL_DISABLE_OP) {
+	disable_op[0] = 's';
       }
       else {
-	fprintf(out," ");
+	disable_op[0] = ' ';
       }
+      disable_op[1] = '\0';
+
+      if (IS_ACTIVE(((struct VyattaNode*)gp)->_data._operation)) {
+	fprintf(out,"%s*",disable_op);
+      }
+      else if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
+	fprintf(out,"%s-",disable_op);
+      }
+      else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
+	fprintf(out,"%s+",disable_op);
+      }
+      else if (IS_SET(((struct VyattaNode*)gp)->_data._operation)) {
+	fprintf(out,"%s>",disable_op);
+      }
+      else {
+	fprintf(out,"%s ",disable_op);
+      }
+
       for (i = 0; i < depth; ++i) {
 	fprintf(out,"  ");
       }
@@ -1171,6 +1210,11 @@ validate_func(GNode *node, gpointer data)
     }
   }
   
+  //don't perform validation checks on disabled nodes
+  if (d->_disable_op == K_LOCAL_DISABLE_OP) { 
+      return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
+  }
+
   if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
     return FALSE; //will not perform validation checks on deleted nodes
   }

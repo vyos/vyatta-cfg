@@ -525,6 +525,48 @@ sub listDeleted {
   return @deleted;
 }
 
+## isDeactivated("node")
+# returns back whether this node is in an active (false) or
+# deactivated (true) state.
+sub getDeactivated {
+  my ($self, $node) = @_;
+
+  if (!defined $node) {
+  }
+
+  # let's setup the filepath for the change_dir
+  $node =~ s/\//%2F/g;
+  $node =~ s/\s+/\//g;
+  #now walk up parent in local and in active looking for '.disable' file
+
+  my @a = split(" ",$node);
+  $node = join("/",@a);
+
+  while (1) {
+      my $filepath = "$self->{_changes_only_dir_base}/$node";
+      my $filepathActive = "$self->{_active_dir_base}/$node";
+
+      my $local = $filepath . "/.disable";
+      my $active = $filepathActive . "/.disable";
+      
+      if (-e $local && -e $active) {
+	  return ("both",$node);
+      }
+      elsif (-e $local && !(-e $active)) {
+	  return ("local",$node);
+      }
+      elsif (!(-e $local) && -e $active) {
+	  return ("active",$node);
+      }
+      my $pos = rindex($node, "/");
+      if ($pos == -1) {
+	  last;
+      }
+      $node = substr($node,0,$pos);
+  }
+  return (undef,undef);
+}
+
 ## isChanged("node")
 # will check the change_dir to see if the "node" has been changed from a previous
 # value.  returns true or false.

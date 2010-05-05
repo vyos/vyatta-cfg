@@ -190,6 +190,7 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
 
 my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier );
 my @set_list    = @{ $cfg_diff{'set'} };
+my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
 
 if ($merge_mode eq 'false') {
     my @delete_list = @{ $cfg_diff{'delete'} };
@@ -215,6 +216,14 @@ foreach (@set_list) {
         $cmd_str =~ s/^$sbindir\/my_//;
         print "\"$cmd_str\" failed\n";
     }
+}
+
+foreach (@deactivate_list) {
+    my ( $cmd_ref, $rank ) = @{$_};
+    my @cmd = ( "$sbindir/vyatta-activate-config.pl deactivate", @{$cmd_ref} );
+    my $cmd_str = join ' ', @cmd;
+    system("$cmd_str 1>/dev/null");
+    #ignore error on complaint re: nested nodes
 }
 
 system("$sbindir/my_commit");

@@ -66,9 +66,10 @@ my $config = undef;
 #     deleted" from displayDeletedOrigChildren.)
 sub displayValues {
   my @cur_path = @{$_[0]};
-  my $prefix = $_[1];
-  my $name = $_[2];
-  my $simple_show = $_[3];
+  my $dis = $_[1];
+  my $prefix = $_[2];
+  my $name = $_[3];
+  my $simple_show = $_[4];
   my ($is_multi, $is_text, $default) = $config->parseTmpl(\@cur_path);
   if ($is_text) {
     $default =~ /^"(.*)"$/;
@@ -99,7 +100,7 @@ sub displayValues {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
-        print "$prefix$name $oval\n";
+        print "$dis$prefix$name $oval\n";
       }
       return;
     }
@@ -108,7 +109,7 @@ sub displayValues {
         if ($is_password && $hide_password) {
           $del = $HIDE_PASSWORD;
         }
-        print "-$prefix$name $del\n";
+        print "$dis-$prefix$name $del\n";
       }
     }
     foreach my $nval (@nvals) {
@@ -123,7 +124,7 @@ sub displayValues {
       if ($is_password && $hide_password) {
         $nval = $HIDE_PASSWORD;
       }
-      print "$diff$prefix$name $nval\n";
+      print "$dis$diff$prefix$name $nval\n";
     }
   } else {
     my $oval = $config->returnOrigValue('');
@@ -145,7 +146,7 @@ sub displayValues {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
-        print "$prefix$name $oval\n";
+        print "$dis$prefix$name $oval\n";
       }
       return;
     }
@@ -166,10 +167,10 @@ sub displayValues {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
-      print "$diff$prefix$name $value\n";
+      print "$dis$diff$prefix$name $value\n";
     }
     elsif ($cnodes{'def'} && ($diff eq '>' || $diff eq '-')) {
-        print "$diff$prefix$name $value\n";
+        print "$dis$diff$prefix$name $value\n";
     }
   }
 }
@@ -180,25 +181,40 @@ sub displayValues {
 #     deleted.)
 sub displayDeletedOrigChildren {
   my @cur_path = @{$_[0]};
-  my $prefix = $_[1];
-  my $dont_show_as_deleted = $_[2];
+  my $dis = $_[1];
+  my $prefix = $_[2];
+  my $dont_show_as_deleted = $_[3];
   my $dprefix = '-';
   if (defined($dont_show_as_deleted)) {
     $dprefix = '';
   }
   $config->setLevel('');
+
   my @children = $config->listOrigNodes(join ' ', @cur_path);
   for my $child (sort @children) {
     if ($child eq 'node.val') {
       # should not happen!
       next;
     }
+
     my $is_tag = $config->isTagNode([ @cur_path, $child ]);
+
+    if (!defined $is_tag) {
+	my $path = join(' ',( @cur_path, $child ));
+	my ($state, $n) = $config->getDeactivated($path);
+	if (defined $state) {
+	    $dis = '! ';
+	}	
+	else {
+	    $dis = '';
+	}
+    }
+
     $config->setLevel(join ' ', (@cur_path, $child));
     my @cnames = sort $config->listOrigNodesNoDef();
 
     if ($cnames[0] eq 'node.val') {
-      displayValues([ @cur_path, $child ], $prefix, $child,
+      displayValues([ @cur_path, $child ], $dis, $prefix, $child,
                     $dont_show_as_deleted);
     } elsif ($cnames[0] eq 'def') {
 	#ignore
@@ -210,21 +226,32 @@ sub displayDeletedOrigChildren {
             # should not happen
             next;
           }
-          print "$dprefix$prefix$child $cname {\n";
+	  
+	  #need separate check here
+	  my $path = join(' ',( @cur_path, $child, $cname ));
+	  my ($state, $n) = $config->getDeactivated($path);
+	  if (defined $state) {
+	      $dis = '! ';
+	  }
+	  else {
+	      $dis = '';
+	  }
+
+          print "$dis$dprefix$prefix$child $cname {\n";
           displayDeletedOrigChildren([ @cur_path, $child, $cname ],
-                                     "$prefix    ", $dont_show_as_deleted);
-          print "$dprefix$prefix}\n";
+                                     $dis,"$prefix    ", $dont_show_as_deleted);
+          print "$dis$dprefix$prefix}\n";
         }
       } else {
-        print "$dprefix$prefix$child {\n";
-        displayDeletedOrigChildren([ @cur_path, $child ], "$prefix    ",
+        print "$dis$dprefix$prefix$child {\n";
+        displayDeletedOrigChildren([ @cur_path, $child ],$dis, "$prefix    ",
                                    $dont_show_as_deleted);
-        print "$dprefix$prefix}\n";
+        print "$dis$dprefix$prefix}\n";
       }
     } else {
       my $has_tmpl_children = $config->hasTmplChildren([ @cur_path, $child ]);
-      print "$dprefix$prefix$child"
-            . ($has_tmpl_children ? " {\n$dprefix$prefix}\n" : "\n");
+      print "$dis$dprefix$prefix$child"
+            . ($has_tmpl_children ? " {\n$dis$dprefix$prefix}\n" : "\n");
     }
   }
 }
@@ -235,12 +262,18 @@ sub displayDeletedOrigChildren {
 sub displayChildren {
   my %child_hash = %{$_[0]};
   my @cur_path = @{$_[1]};
-  my $prefix = $_[2];
+  my $dis = $_[2];
+  my $prefix = $_[3];
   for my $child (sort (keys %child_hash)) {
+    my $dis = "";
+    my @tmp = @cur_path;
+    push (@tmp,$child);
+
     if ($child eq 'node.val') {
       # should not happen!
       next;
     }
+
     my ($diff, $vdiff) = (' ', ' ');
     if ($child_hash{$child} eq 'added') {
       $diff = '+';
@@ -252,6 +285,18 @@ sub displayChildren {
       $vdiff = '>';
     }
     my $is_tag = $config->isTagNode([ @cur_path, $child ]);
+
+    if (!defined($is_tag)) {
+	my $path = join(' ',( @cur_path, $child ));
+	my ($state, $n) = $config->getDeactivated($path);
+	if (defined $state) {
+	    $dis = '! ';
+	}	
+	else {
+	    $dis = '';
+	}
+    }
+
     $config->setLevel(join ' ', (@cur_path, $child));
     my %cnodes = $config->listNodeStatus();
     my @cnames = sort keys %cnodes;
@@ -269,7 +314,7 @@ sub displayChildren {
     }
     
     if ($leaf == 1) {
-      displayValues([ @cur_path, $child ], $prefix, $child);
+      displayValues([ @cur_path, $child ], $dis, $prefix, $child);
     } elsif (scalar($#cnames) >= 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
@@ -278,50 +323,60 @@ sub displayChildren {
             # should not happen
             next;
           }
+
+	  my $path = join(' ',( @cur_path, $child, $cname ));
+	  my ($state, $n) = $config->getDeactivated($path);
+	  if (defined $state) {
+	      $dis = '! ';
+	  }
+	  else {
+	      $dis = '';
+	  }
+
           my $tdiff = ' ';
           if ($cnodes{$cname} eq 'deleted') {
             $tdiff = '-';
           } elsif ($cnodes{$cname} eq 'added') {
             $tdiff = '+';
           }
-          print "$tdiff$prefix$child $cname {\n";
+          print "$dis$tdiff$prefix$child $cname {\n";
           if ($cnodes{$cname} eq 'deleted') {
             displayDeletedOrigChildren([ @cur_path, $child, $cname ],
-                                       "$prefix    ");
+                                       $dis, "$prefix    ");
           } else {
             $config->setLevel(join ' ', (@cur_path, $child, $cname));
             my %ccnodes = $config->listNodeStatus();
             displayChildren(\%ccnodes, [ @cur_path, $child, $cname ],
-                            "$prefix    ");
+                            $dis, "$prefix    ");
           }
-          print "$tdiff$prefix}\n";
+          print "$dis$tdiff$prefix}\n";
         }
       } else {
-        print "$diff$prefix$child {\n";
+        print "$dis$diff$prefix$child {\n";
         if ($child_hash{$child} eq 'deleted') {
           # this should not happen
-          displayDeletedOrigChildren([ @cur_path, $child ], "$prefix    ");
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
         } else {
-          displayChildren(\%cnodes, [ @cur_path, $child ], "$prefix    ");
+          displayChildren(\%cnodes, [ @cur_path, $child ], $dis, "$prefix    ");
         }
-        print "$diff$prefix}\n";
+        print "$dis$diff$prefix}\n";
       }
     } else {
       if ($child_hash{$child} eq 'deleted') {
         $config->setLevel('');
         my @onodes = $config->listOrigNodes(join ' ', (@cur_path, $child));
         if ($#onodes == 0 && $onodes[0] eq 'node.val') {
-          displayValues([ @cur_path, $child ], $prefix, $child);
+          displayValues([ @cur_path, $child ], $dis, $prefix, $child);
         } else {
-          print "$diff$prefix$child {\n";
-          displayDeletedOrigChildren([ @cur_path, $child ], "$prefix    ");
-          print "$diff$prefix}\n";
+          print "$dis$diff$prefix$child {\n";
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
+          print "$dis$diff$prefix}\n";
         }
       } else {
         my $has_tmpl_children
           = $config->hasTmplChildren([ @cur_path, $child ]);
-        print "$diff$prefix$child"
-              . ($has_tmpl_children ? " {\n$diff$prefix}\n" : "\n");
+        print "$dis$diff$prefix$child"
+              . ($has_tmpl_children ? " {\n$dis$diff$prefix}\n" : "\n");
       }
     }
   }
@@ -350,9 +405,9 @@ sub outputNewConfig {
     
     if ($leaf == 1) {
       # this is a leaf value-node
-      displayValues([ @_ ], '', $_[$#_]);
+      displayValues([ @_ ], '', '', $_[$#_]);
     } else {
-      displayChildren(\%rnodes, [ @_ ], '');
+      displayChildren(\%rnodes, [ @_ ], '', '');
     }
   } else {
     if ($config->existsOrig() && ! $config->exists()) {
@@ -371,7 +426,7 @@ sub outputNewConfig {
 sub outputActiveConfig {
   $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
-  displayDeletedOrigChildren([ @_ ], '', 1);
+  displayDeletedOrigChildren([ @_ ], '','', 1);
 }
 
 1;

@@ -50,6 +50,7 @@ sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl
 sbin_SCRIPTS  += scripts/vyatta-output-config.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
 sbin_SCRIPTS  += scripts/vyatta-load-config.pl
+sbin_SCRIPTS  += scripts/vyatta-activate-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-irqaffin
 sbin_SCRIPTS  += scripts/vyatta-auto-irqaffin.pl

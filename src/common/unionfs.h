@@ -23,6 +23,7 @@
 #define NODE_TAG_FILE "node.tag"
 #define VALUE_FILE "node.val"
 #define MODIFIED_FILE ".modified"
+#define DISABLE_FILE ".disable"
 #define DEF_FILE "def"
 #define WHITEOUT_FILE ".wh.__dir_opaque"
 #define DELETED_NODE ".wh."
