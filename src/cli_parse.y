@@ -43,6 +43,7 @@ static  void cli_deferror(const char *);
 %token DUMMY
 %left SEMI
 %token <val>VALUE
+%token <val>PRIORITY_VALUE
 %token <type>TYPE_DEF
 %token <strp>VAR
 %token <strp> STRING
@@ -174,7 +175,7 @@ default_cause:  DEFAULT STRING
 		     yy_cli_parse_error((const char *)"Bad default\n");
 		   parse_defp->def_default = $2;
 		}
-priority_stmt:  PRIORITY VALUE
+priority_stmt:  PRIORITY PRIORITY_VALUE
                 {
                   char *tmp = $2.val;
 		  long long int cval = 0;
