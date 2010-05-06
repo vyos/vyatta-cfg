@@ -1,3 +1,22 @@
+vyatta-cfg (0.16.37) unstable; urgency=low
+
+  [ Arthur ]
+  * A script to automatically update/add priority tag with some value
+    for
+
+  [ Arthur Xiong ]
+  * Update regex to handle priority line without space(s) and comment in
+    the
+  * Update to handle none default path to the templates if provided
+
+  [ Michael Larson ]
+  * initial working version of activate and deactivate:
+    load,save,show,commit supported.
+  * boot loader support now added. various bug fixes and some small
+    rework.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 05 May 2010 21:34:38 -0700
+
 vyatta-cfg (0.16.36) unstable; urgency=low
 
   * support all valid multi-type types
