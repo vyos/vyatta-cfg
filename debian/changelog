@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.39) unstable; urgency=low
+
+  * additional fix
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 06 May 2010 17:32:40 -0700
+
 vyatta-cfg (0.16.38) unstable; urgency=low
 
   * fix parsing error in node.def--seen with boolean default values.
