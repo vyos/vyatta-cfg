@@ -30,7 +30,8 @@ typedef enum {
   MACADDR_TYPE,
   DOMAIN_TYPE,  /*end of addr types */
   TEXT_TYPE,
-  BOOL_TYPE
+  BOOL_TYPE,
+  PRIORITY_TYPE
 }vtw_type_e;
 
 typedef enum {
