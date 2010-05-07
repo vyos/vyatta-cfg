@@ -38,7 +38,7 @@ my $prefix  = $ARGV[1];
 open my $pf, '<', $priority_file or die "$priority_file can't be opened";
 while (<$pf>) {    
     chomp;
-    next if /^#.*/;
+    next if /^#.*/ or /^$/;
     die "Syntax Error \"$_\"" unless /^(\d+)\s+(\S+)(|\s+|\s+#.*)$/;
     $priority = $1;
     $path = $2;
@@ -55,11 +55,12 @@ while (<$pf>) {
     open my $nf, '<', $node_def  or die "$node_def can't be opened";
     open my $nfn, '>', "$node_def.new" or die "$node_def.new can't be opened";
     while (<$nf>) {
-        print $nfn $_ if /^(tag|multi):/;
-        print $nfn $priority_line;
-        print $nfn $_ unless /^priority:\s(\d+)/ or /^(tag|multi):/;
-        last if $. == 1;
+        last unless /^#.*/ or /^$/;
+        print $nfn $_;
     }
+    print $nfn $_ if /^(tag|multi):/;
+    print $nfn $priority_line if $priority != 0;
+    print $nfn $_ unless /^priority:\s(\d+)/ or /^(tag|multi):/;
     while (<$nf>) {
         print $nfn $_ unless /^priority:\s(\d+)/;
     }
