@@ -70,7 +70,7 @@ if ($ARGV[0] eq 'activate') {
 	`rm -f $full_path`;
     }
     else {
-	printf("This element is not deactivated.\n");
+	printf("This element is not deactivated\n");
 	exit 1;
     }
 }
@@ -79,7 +79,11 @@ elsif ($ARGV[0] eq 'deactivate') {
     #also needs to be enforced when committing
     my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
     my $local_dir = $full_path;
-    if (-e $active_dir) {
+    if (-e "$active_dir/.disable") {
+        printf("This node is already deactivated\n");
+        exit 1;
+    }
+    elsif (-e $active_dir) {
 	find( \&wanted, $active_dir );
     }
     if (-e $local_dir) {
