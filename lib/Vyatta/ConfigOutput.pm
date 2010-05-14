@@ -82,6 +82,7 @@ sub displayValues {
 
   my $HIDE_PASSWORD = '****************';
   $config->setLevel(join ' ', @cur_path);
+
   if ($is_multi) {
     my @ovals = $config->returnOrigValues('');
     my @nvals = $config->returnValues('');
@@ -201,6 +202,11 @@ sub displayDeletedOrigChildren {
 
     if (!defined $is_tag) {
 	my $path = join(' ',( @cur_path, $child ));
+	my $comment = $config->returnComment($path);
+	if (defined $comment) {
+	    print "$prefix /* $comment */\n";
+	}
+
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
 	    $dis = '! ';
@@ -211,6 +217,7 @@ sub displayDeletedOrigChildren {
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
+
     my @cnames = sort $config->listOrigNodesNoDef();
 
     if ($cnames[0] eq 'node.val') {
@@ -227,8 +234,14 @@ sub displayDeletedOrigChildren {
             next;
           }
 	  
-	  #need separate check here
 	  my $path = join(' ',( @cur_path, $child, $cname ));
+
+	  my $comment = $config->returnComment($path);
+	  if (defined $comment) {
+	      print "$prefix /* $comment */\n";
+	  }
+
+	  #need separate check here
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
 	      $dis = '! ';
@@ -288,6 +301,11 @@ sub displayChildren {
 
     if (!defined($is_tag)) {
 	my $path = join(' ',( @cur_path, $child ));
+	my $comment = $config->returnComment($path);
+	if (defined $comment) {
+	    print "$prefix /* $comment */\n";
+	}
+
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
 	    $dis = '! ';
@@ -325,6 +343,11 @@ sub displayChildren {
           }
 
 	  my $path = join(' ',( @cur_path, $child, $cname ));
+	  my $comment = $config->returnComment($path);
+	  if (defined $comment) {
+	      print "$prefix /* $comment */\n";
+	  }
+
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
 	      $dis = '! ';
@@ -388,6 +411,7 @@ sub outputNewConfig {
   $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
   my %rnodes = $config->listNodeStatus(undef,'true');
+
   if (scalar(keys %rnodes) > 0) {
     my @rn = keys %rnodes;
 

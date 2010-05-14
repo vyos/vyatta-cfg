@@ -58,6 +58,8 @@ sub applySingleQuote {
   return @return;
 }
 
+my @comment_list = ();
+
 sub enumerate_branch {
   my $cur_node = shift;
   my @cur_path = @_;
@@ -72,14 +74,28 @@ sub enumerate_branch {
   }
   my $terminal = 0;
   if (!defined($cur_node->{'children'})) {
-    $terminal = 1;
+      $terminal = 1;
   } else {
-    foreach (@{$cur_node->{'children'}}) {
-      if (defined($_->{'name'})) {
-        enumerate_branch($_, @cur_path);
-        $terminal = 0;
+      my $comment;
+      foreach (@{$cur_node->{'children'}}) {
+	  if (defined($_->{'comment'})) {
+	      $comment = $_->{'comment'};
+	  }
+
+	  if (defined($_->{'name'})) {
+	      if (defined $comment) {
+		  push @comment_list, join(" ", (@cur_path, $_->{'name'}, "\"" . $comment . "\""));
+		  $comment = undef;
+	      }
+	      else {
+		  #need to check for existance of .comment file here.
+		  push @comment_list, join(" ", (@cur_path, $_->{'name'}, "\"\""));
+	      }
+	      enumerate_branch($_, @cur_path);
+	      $terminal = 0;
+	  }
+
       }
-    }
   }
   if ($terminal) {
     my $val = $cur_node->{'value'};
@@ -111,6 +127,8 @@ sub getStartupConfigStatements {
   if (!defined($load_cfg)) {
     return ();
   }
+
+  my $comments = shift;
   
   my $xcp = new XorpConfigParser();
   $xcp->parse($load_cfg);
@@ -120,6 +138,15 @@ sub getStartupConfigStatements {
   }
   enumerate_branch($root, ( ));
 
+  if (defined $comments && $comments eq 'true') {
+      #add comment commands to all nodes
+      foreach my $c (@comment_list) {
+	  if ($c !~ /\"\"$/) {
+	      my @pth = split(" ",'comment ' . $c);
+	      push @all_nodes, [\@pth, 1];
+	  }
+      }
+  }
   return @all_nodes;
 }
 
@@ -354,6 +381,7 @@ sub findSetNodes {
 	  my @tmp = @plist[1..$#plist];
 	  push @disable_list, [\@tmp, 0];
       }
+
       findSetNodes($new_ref->{$_}, [ @active_path, $_ ]);
   }
   # we recur regardless of whether it's in active. all changes will be
@@ -392,6 +420,7 @@ sub getConfigDiff {
               'delete' => \@new_delete_list,
               'set' => \@set_list,
               'deactivate' => \@disable_list,
+              'comment' => \@comment_list,
              );
   return %diff;
 }

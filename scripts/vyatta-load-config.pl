@@ -191,6 +191,7 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
 my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier );
 my @set_list    = @{ $cfg_diff{'set'} };
 my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
+my @comment_list    = @{ $cfg_diff{'comment'} };
 
 if ($merge_mode eq 'false') {
     my @delete_list = @{ $cfg_diff{'delete'} };
@@ -223,6 +224,42 @@ foreach (@deactivate_list) {
     my @cmd = ( "$sbindir/vyatta-activate-config.pl deactivate", @{$cmd_ref} );
     my $cmd_str = join ' ', @cmd;
     system("$cmd_str 1>/dev/null");
+    #ignore error on complaint re: nested nodes
+}
+
+foreach (@comment_list) {
+    my ( $cmd_ref ) = $_;
+    #apply comment if it doesn't have an empty element at the array and a .comment file exists and this is not a merge
+    if ($merge_mode eq 'false' && $cmd_ref =~ /\"\"$/) {
+	my @cmd_array = split(" ",$cmd_ref);
+	pop(@cmd_array);
+	my $rel_path = join '/', @cmd_array;
+	my $path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
+	if (-e $path) {
+	    my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+	    my $cmd_str = join ' ', @cmd;
+	    system("$cmd_str 1>/dev/null");
+	}
+	else {
+	    #not found, maybe a leaf?
+	    pop(@cmd_array);
+	    $rel_path = join '/', @cmd_array;
+	    my $leaf = "/opt/vyatta/config/active/" . $rel_path . "/node.val";
+	    if (-e $leaf) {
+		$path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
+		if (-e $path) {
+		    my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+		    my $cmd_str = join ' ', @cmd;
+		    system("$cmd_str 1>/dev/null");
+		}
+	    }
+	}
+    }
+    else {
+	my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+	my $cmd_str = join ' ', @cmd;
+	system("$cmd_str 1>/dev/null");
+    }
     #ignore error on complaint re: nested nodes
 }
 

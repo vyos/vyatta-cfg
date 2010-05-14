@@ -431,6 +431,17 @@ loadkey()
   eval "${vyatta_sbindir}/vyatta-load-user-key.pl $@"
 }
 
+comment()
+{
+    if [ "$#" -eq "0" ]; then
+        return 0
+    fi
+    args=("$@")
+    #now need to replace last element
+    args[${#args[*]}-1]="\"${args[${#args[*]}-1]i}\"";
+    eval "${vyatta_sbindir}/vyatta-comment-config.pl ${args[*]}"
+}
+
 activate()
 {
     #create or remove activate file
@@ -942,6 +953,7 @@ vyatta_config_complete ()
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
     declare -a hitems=( "activate" \
+	                "comment" \
 	                "commit" \
                         "copy" \
 	                "deactivate" \
@@ -959,6 +971,7 @@ vyatta_config_complete ()
                         "show" )
     declare -a hstrs=( \
       "Enable this portion of the configuration" \
+      "Add comment to this configuration element" \
       "Commit the current set of changes" \
       "Copy a configuration element" \
       "Inactivate this portion of the configuration" \
@@ -1310,6 +1323,7 @@ complete -F vyatta_loadsave_complete save
 complete -F vyatta_loadsave_complete load
 complete -F vyatta_loadsave_complete merge
 complete -F vyatta_loadkey_complete loadkey
+complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete activate
 complete -F vyatta_config_complete deactivate
 complete -F vyatta_config_complete copy

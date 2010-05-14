@@ -329,6 +329,27 @@ sub returnValue {
   return $tmp;
 }
 
+## returnComment("node")
+# returns the value of "node" or undef if the node doesn't exist .
+# node is relative
+sub returnComment {
+  my ( $self, $node ) = @_;
+  my $tmp = undef;
+
+  $node =~ s/\//%2F/g;
+  $node =~ s/\s+/\//g;
+
+  return unless 
+      open my $file, '<', 
+      "$self->{_new_config_dir_base}/$node/.comment";
+
+  read $file, $tmp, 16384;
+  close $file;
+
+  $tmp =~ s/\n$//;
+  return $tmp;
+}
+
 ## returnOrigPlusComValue("node")
 # returns the value of "node" or undef if the node doesn't exist .
 # node is relative

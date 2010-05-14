@@ -46,7 +46,7 @@ sub restore_fds {
 }
 
 # get a list of all config statement in the startup config file
-my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0]);
+my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
 if (scalar(@all_nodes) == 0) {
   # no config statements
   restore_fds();
@@ -72,6 +72,32 @@ foreach (@all_nodes) {
   my ($path_ref, $rank) = @$_;
 
   my @pr = @$path_ref;
+  if (@pr[0] =~ /^comment$/) {
+      my $ct = 0;
+      my $rel_path;
+      foreach my $rp (@pr[1..$#pr]) {
+          $ct++;
+          my $tmp_path = $rel_path . "/" . $rp;
+	  my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/" . $tmp_path . "/node.def";
+	  if ($rp eq '"') {
+	      last;
+	  }
+	  elsif ($rp eq '""') {
+	      last;
+          }
+	  elsif (!-e $node_path) {
+	      #pop this element
+	      delete @pr[$ct];
+	      last;
+	  }
+	  $rel_path = $tmp_path;
+      }
+
+      my $comment_cmd = "$CWRAPPER " . join(" ",@pr) ;
+      `$comment_cmd`;
+      next;
+  }
+
   if (@pr[0] eq '!') {
       @pr = @pr[1..$#pr];
       my $deactivate_cmd = "$CWRAPPER deactivate " . (join ' ', @pr) . " 1>/dev/null";
