@@ -1,3 +1,18 @@
+vyatta-cfg (0.16.40) unstable; urgency=low
+
+  [ Arthur Xiong ]
+  * 1) skip comment and empty lines in priority file;
+
+  [ Michael Larson ]
+  * added additional warning message if the user tries to deactivate a
+    node that has already been deactivated.
+  * initial checkin of comment feature for cli.
+
+  [ An-Cheng Huang ]
+  * POC implementation of unified enumeration mechanism
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 14 May 2010 17:41:16 -0700
+
 vyatta-cfg (0.16.39) unstable; urgency=low
 
   * additional fix
