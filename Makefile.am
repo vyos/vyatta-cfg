@@ -4,6 +4,7 @@ initddir	 = /etc/init.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
+enumdir = $(datadir)/enumeration
 
 AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
@@ -67,6 +68,8 @@ share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
 share_perl5_DATA += lib/Vyatta/ConfigLoad.pm
 share_perl5_DATA += lib/Vyatta/Keepalived.pm
 share_perl5_DATA += lib/Vyatta/Zone.pm
+
+enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
 default_DATA = etc/default/vyatta-cfg
 

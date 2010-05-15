@@ -829,6 +829,8 @@ sub parseTmplAll {
 	}
     } elsif (/^help:\s+(\S.*)$/) {
 	$ret{help} = $1;
+    } elsif (/^enumeration:\s+(\S+)$/) {
+      $ret{enum} = $1;
     }
   }
   close($tmpl);
