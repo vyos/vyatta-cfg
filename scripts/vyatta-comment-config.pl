@@ -57,10 +57,13 @@ if (! -e $full_path) {
 	exit 0;
     }
 }
-#else {
-#    print "echo \"$ARGV[$#ARGV]\" > $full_path/node.comment\n";
-#    `echo \"$ARGV[$#ARGV]\" > $full_path/node.comment`;
-#}
+
+#scan for illegal characters here: '/*', '*/'
+if ($ARGV[$#ARGV] =~ /\/\*|\*\//) {
+    print "illegal characters found in comment\n";
+    exit 1;
+}
+
 
 if ($ARGV[$#ARGV] eq '') {
     `rm -f $full_path/.comment`;
@@ -68,25 +71,6 @@ if ($ARGV[$#ARGV] eq '') {
 else {
     `echo \"$ARGV[$#ARGV]\" > $full_path/.comment`;
 }
-
-#first let's check and ensure that there is not another child .disable node...
-#also needs to be enforced when committing
-#my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
-#my $local_dir = $full_path;
-#if (-e $active_dir) {
-#    find( \&wanted, $active_dir );
-#}
-#if (-e $local_dir) {
-#    find( \&wanted, $local_dir );
-#}
-#`touch $full_path/node.comment`;
-
-#if this is activate
-#  make sure no activate subnodes
-#  create .disable file in node
-#else
-#  ensure .disable file exists
-#  remove node
 
 print "Done\n";
 exit 0;
