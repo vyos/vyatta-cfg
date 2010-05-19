@@ -93,7 +93,10 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
   }
 
   //apply limit count here, needs to be defined as a tag,multi and have a value set
-  if ((defp->tag || defp->multi) && (defp->def_tag > 0 || defp->def_multi > 0)) {
+
+  //NOTE: changed behavior for def_tag==1. Needs signed 32 support in parser where -1
+  //represents embedded tag node... TODO
+  if ((defp->tag || defp->multi) && (defp->def_tag != 0 || defp->def_multi != 0)) {
     //get count of siblings
 
     char path[2048];
@@ -124,7 +127,7 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
 	}
 	closedir(dirp);
 	
-	if (defp->tag && file_count == 1 && defp->def_tag == 1) {
+	if (defp->tag && file_count == 1 && defp->def_tag < 0) {
 	  //this is the special case, where the previous value should be deleted here...
 	  char command[8192];
 	  //let unionfs handle the diff
@@ -133,7 +136,7 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
 	}
 	
 	if (defp->tag) {
-	  if (defp->def_tag > 1 && file_count >= defp->def_tag) {
+	  if (defp->def_tag > 0 && file_count >= defp->def_tag) {
 	    fprintf(out_stream,"Number of values exceeded for %s, allowed: %d, actual: %d\n",val,defp->def_tag,file_count);
 	    return FALSE;
 	  }
