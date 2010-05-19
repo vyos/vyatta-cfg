@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.41) unstable; urgency=low
+
+  * trap for illegal characters in comment field being set by user and
+    provide feedback.
+  * modified tag limit == 1. Now when set this node will only allow a
+    single instance. todo update the parsing structure to support a
+    signed value to support embedded tag node
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 19 May 2010 14:56:31 -0700
+
 vyatta-cfg (0.16.40) unstable; urgency=low
 
   [ Arthur Xiong ]
