@@ -1,3 +1,12 @@
+vyatta-cfg (0.16.43) unstable; urgency=low
+
+  * fixed error message on multinode limit exceeded--refer to parent
+    node name, not value.
+  * fixed seg violation on commit due to extended multiple types support
+    in valstruct.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 20 May 2010 15:41:25 -0700
+
 vyatta-cfg (0.16.42) unstable; urgency=low
 
   * fix for bug 5618. needed to extend valstruct to maintain multiple
