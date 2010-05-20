@@ -137,13 +137,33 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
 	
 	if (defp->tag) {
 	  if (defp->def_tag > 0 && file_count >= defp->def_tag) {
-	    fprintf(out_stream,"Number of values exceeded for %s, allowed: %d, actual: %d\n",val,defp->def_tag,file_count);
+	    char *p = rindex(path,'/');
+	    char tmp[2048];
+	    if (p != NULL) {
+	      int off = p - path;
+	      strncpy(tmp,path + off + 1, strlen(path) - off - 1);
+	      tmp[strlen(path) - off - 1] = '\0';
+	      fprintf(out_stream,"Number of values exceeded for '%s', allowed: %d, actual: %d\n",tmp,defp->def_tag,file_count);
+	    }
+	    else {
+	      fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_tag,file_count);
+	    }
 	    return FALSE;
 	  }
 	}
 	else {
 	  if (defp->def_multi > 1 && file_count >= defp->def_multi) {
-	    fprintf(out_stream,"Number of values exceeded for %s, allowed: %d, actual: %d\n",val,defp->def_multi,file_count);
+	    char *p = rindex(path,'/');
+	    char tmp[2048];
+	    if (p != NULL) {
+	      int off = p - path;
+	      strncpy(tmp,path + off + 1, strlen(path) - off - 1);
+	      tmp[strlen(path) - off - 1] = '\0';
+	      fprintf(out_stream,"Number of values exceeded for '%s', allowed: %d, actual: %d\n",tmp,defp->def_tag,file_count);
+	    }
+	    else {
+	      fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_tag,file_count);
+	    }
 	    return FALSE;
 	  }
 	}
