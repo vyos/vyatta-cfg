@@ -947,7 +947,11 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	(void) sscanf(lval, format, left_parts, left_parts+1, 
 		      left_parts+2, left_parts+3, left_parts+4,
 		      left_parts+5); 
-	format = cond_formats[right->val_types[rcur]];
+
+	if ((rcur || right->cnt) 
+	    && right->val_types[rcur] != NULL) {
+	  format = cond_formats[right->val_types[rcur]];
+	}
 	(void) sscanf(rval, format, right_parts, right_parts+1, 
 		      right_parts+2, right_parts+3, right_parts+4,
 		      right_parts+5); 
