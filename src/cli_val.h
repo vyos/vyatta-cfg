@@ -66,6 +66,7 @@ typedef struct {
   char      *val;
   int        cnt;  /* >0 means multivalue */
   char     **vals; /* We might union with val */
+  vtw_type_e *val_types; /* used with vals and multitypes */
   boolean    free_me;
 }valstruct;
 

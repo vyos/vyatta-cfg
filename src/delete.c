@@ -322,8 +322,8 @@ int main(int argc, char **argv)
       bye("Corrupted old value ---- \n%s\n-----\n", cp);
     res = val_cmp(&new_value, &old_value, IN_COND);
     if (!res) {
-      fprintf(out_stream, "%s is not a configured value\n", new_value.val);
-      bye("Not in multivalue");
+      fprintf(out_stream, "%s is not a configured value, %s\n", new_value.val,old_value.val);
+      bye("Not in multivalue"); 
     }
     touch();
     if (old_value.cnt) {

@@ -206,23 +206,23 @@ void add_val(valstruct *first, valstruct *second)
 {
   assert (first->free_me && second->free_me);
   assert(second->cnt == 0);
-  if (first->val_type != second->val_type) {
-    printf("Different types\n\n");
-  } else {
-    if (first->cnt%MULTI_ALLOC == 0) {
-      /* convert into multivalue */
-      first->vals = my_realloc(first->vals, (first->cnt + MULTI_ALLOC) *
-			    sizeof(char *), "add_value");
-      if (first->cnt == 0) { /* single value - convert */
-	first->vals[0] = first->val;
-	first->cnt = 1;
-	first->val = NULL;
-      }
+  if (first->cnt%MULTI_ALLOC == 0) {
+    /* convert into multivalue */
+    first->vals = my_realloc(first->vals, (first->cnt + MULTI_ALLOC) *
+			     sizeof(char *), "add_value 1");
+    first->val_types = my_realloc(first->val_types,(first->cnt + MULTI_ALLOC) * 
+				  sizeof(vtw_type_e), "add_value 2");
+    if (first->cnt == 0) { /* single value - convert */
+      first->vals[0] = first->val;
+      first->val_types[0] = first->val_type;
+      first->cnt = 1;
+      first->val = NULL;
     }
-    second->free_me = FALSE; /* we took its string */
-    first->vals[first->cnt] = second->val;
-    ++first->cnt;
   }
+  second->free_me = FALSE; /* we took its string */
+  first->vals[first->cnt] = second->val;
+  first->val_types[first->cnt] = second->val_type;
+  ++first->cnt;
 }
 /*****************************************************
   append - append node to the tail of list
@@ -697,7 +697,7 @@ valstruct str2val(char *cp)
 /****************************************************
        STATIC FUNCTIONS
 ****************************************************/
-int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valp, char *buf);
+int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstruct **valp, char *buf);
 int char2val_text(vtw_def *def, char *value, valstruct **valp);
 
 /**************************************************
@@ -731,18 +731,9 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
 
     //currently fails to handle mixed text + non-text case...
     char buf1[2048];
-    if (char2val_notext(def,my_type,value,&valp,buf1) != 0) {
-      if (my_type2 != ERROR_TYPE) {
-	char buf2[2048];
-	if (char2val_notext(def,my_type2,value,&valp,buf2) != 0) {
-	  fprintf(out_stream,"%s%s",buf1,buf2);
-	  return -1;
-	}
-      }
-      else {
-	fprintf(out_stream,"%s",buf1);
-	return -1; //only single definition
-      }
+    if (char2val_notext(def,my_type,my_type2,value,&valp,buf1) != 0) {
+      fprintf(out_stream,"%s",buf1);
+      return -1; //only single definition
     }
     return 0;
   }
@@ -753,13 +744,22 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
 
 //non-text type processing block
 
-int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valpp, char *err_buf)
+int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstruct **valpp, char *err_buf)
 {
   valstruct *valp = *valpp;
   int token;
   boolean first = TRUE;
   cli_val_len = strlen(value);
   cli_val_ptr = value;
+
+  char type_buf[256];
+  if (my_type2 != ERROR_TYPE) {
+    sprintf(type_buf,"%s or %s",type_to_name(my_type),type_to_name(my_type2));
+  }
+  else {
+    sprintf(type_buf,"%s",type_to_name(my_type));
+  }
+
   while(1) {
     token = yy_cli_val_lex();
 
@@ -774,19 +774,20 @@ int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valpp, c
 	  print_msg("Wrong type of value in %s, "
 		    "need %s\n", 
 		    m_path.path_buf + m_path.print_offset, 
-		    type_to_name(my_type)); 
+		    type_buf); 
 
 	  token = yy_cli_val_lex();
 
 	  sprintf(err_buf, "\"%s\" is not a valid value of type \"%s\"\n",
-		  value, type_to_name(my_type));
+		  value, type_buf);
 	}
 	return -1;
 	
       }
       return 0;
     }
-    if (my_type != get_cli_value_ptr()->val_type) {
+    if (my_type != get_cli_value_ptr()->val_type &&
+	(my_type2 != ERROR_TYPE && my_type2 != get_cli_value_ptr()->val_type)) {
       if (def->def_type_help){
 	set_at_string(value);
 	(void)expand_string(def->def_type_help);
@@ -795,12 +796,12 @@ int char2val_notext(vtw_def *def, int my_type, char *value, valstruct **valpp, c
 	print_msg("Wrong type of value in %s, "
 		  "need %s\n", 
 		  m_path.path_buf + m_path.print_offset,
-		  type_to_name(my_type));
+		  type_buf);
 
 	token = yy_cli_val_lex();
 
 	sprintf(err_buf, "\"%s\" is not a valid value of type \"%s\"\n",
-		value, type_to_name(my_type));
+		value, type_buf);
       }
       my_free(get_cli_value_ptr()->val);
       if (first) {
@@ -870,6 +871,7 @@ int char2val_text(vtw_def *def, char *value, valstruct **valpp)
     cnt = (linecnt + MULTI_ALLOC - 1) / MULTI_ALLOC;
     cnt *= MULTI_ALLOC;
     valp->vals = my_malloc(cnt * sizeof(char *), "char2val 2");
+    valp->val_types = my_malloc(cnt * sizeof(vtw_type_e), "char2val 3");
     for(cp = value, cnt = 0; cnt < linecnt; ++cnt) {
       endp = strchr(cp, '\n');
       if (endp) 
@@ -914,8 +916,6 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
   else
     rstop = 1;
   
-  DPRINT("val_cmp: type=%d count=(%d,%d) val=(%s,%s)\n",
-         val_type, lstop, rstop, left->val, right->val);
   for(lcur = 0; lcur < lstop; ++lcur) {
     if (!lcur && !left->cnt)
       lval = left->val;
@@ -947,6 +947,7 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	(void) sscanf(lval, format, left_parts, left_parts+1, 
 		      left_parts+2, left_parts+3, left_parts+4,
 		      left_parts+5); 
+	format = cond_formats[right->val_types[rcur]];
 	(void) sscanf(rval, format, right_parts, right_parts+1, 
 		      right_parts+2, right_parts+3, right_parts+4,
 		      right_parts+5); 
@@ -971,16 +972,21 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	res = 0;
       }
     done_comp:
-      if(res > 0) res = 1;
-      else if(res < 0) res = -1;
+      if (res > 0) 
+	res = 1;
+      else if (res < 0) 
+	res = -1;
+      
       ret = ((res == cond1[cond]) || 
 	     (res == cond2[cond]));
+
       if (ret && cond == IN_COND) {
 	set_in_cond_tik(rcur); /* for delete */
 	/* one success is enough for right cycle 
 	   in case of IN_COND, continue left cycle */
 	break;
       }
+
       if (!ret && cond != IN_COND) 
 	/* one failure is enough in cases 
 	   other than IN_COND - go out */
@@ -1675,6 +1681,8 @@ void free_val(valstruct *val)
     my_free(val->vals[cnt]);
   if(val->vals)
     my_free(val->vals);
+  if(val->val_types) 
+    my_free(val->val_types);
 }
 /*****************************************************
   free_string - dealloc string
