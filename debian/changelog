@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.42) unstable; urgency=low
+
+  * fix for bug 5618. needed to extend valstruct to maintain multiple
+    types rather than using first type found in node.val file. also
+    simplified type check.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 20 May 2010 13:36:53 -0700
+
 vyatta-cfg (0.16.41) unstable; urgency=low
 
   * trap for illegal characters in comment field being set by user and
