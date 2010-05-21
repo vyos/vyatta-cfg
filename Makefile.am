@@ -33,7 +33,7 @@ sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
 sbin_PROGRAMS += src/check_tmpl
-sbin_PROGRAMS += src/sysfs
+sbin_PROGRAMS += src/net_set
 
 src_priority_SOURCES = src/priority.c
 src_my_commit2_SOURCES = src/commit2.c
@@ -42,7 +42,7 @@ src_dump_SOURCES = src/dump_session.c
 src_my_delete_SOURCES = src/delete.c
 src_my_set_SOURCES = src/set.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
-src_sysfs = src/sysfs.c
+src_net_set = src/net_set.c
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
