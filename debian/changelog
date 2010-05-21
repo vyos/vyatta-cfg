@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.47) unstable; urgency=low
+
+  * don't count current node towards limit if it already matches a node
+    in the configuration.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 21 May 2010 15:18:54 -0700
+
 vyatta-cfg (0.16.46) unstable; urgency=low
 
   * Rename sysfs to net_set
