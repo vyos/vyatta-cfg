@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.45) unstable; urgency=low
+
+  * Add command to get/set sysfs files
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 21 May 2010 14:18:59 -0700
+
 vyatta-cfg (0.16.44) unstable; urgency=low
 
   * fix for disable nodes loading (bug 5610). Additional checks added on
