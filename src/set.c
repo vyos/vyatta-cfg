@@ -120,7 +120,8 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
       if (dirp != NULL) {
 	while ((entry = readdir(dirp)) != NULL) {
 	  if (strcmp(entry->d_name,".") != 0 && 
-	      strcmp(entry->d_name,"..") != 0) {
+	      strcmp(entry->d_name,"..") != 0 &&
+	      strcmp(val,entry->d_name) != 0) {
 	    strcpy(last_val,entry->d_name);
 	    file_count++;
 	  }
