@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.44) unstable; urgency=low
+
+  * fix for disable nodes loading (bug 5610). Additional checks added on
+    configuration of disable nodes. requires vyatta-config-migrate
+    package as well.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 21 May 2010 10:21:32 -0700
+
 vyatta-cfg (0.16.43) unstable; urgency=low
 
   * fixed error message on multinode limit exceeded--refer to parent
