@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.46) unstable; urgency=low
+
+  * Rename sysfs to net_set
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 21 May 2010 15:00:54 -0700
+
 vyatta-cfg (0.16.45) unstable; urgency=low
 
   * Add command to get/set sysfs files
