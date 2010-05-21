@@ -33,6 +33,8 @@ sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/my_delete
 sbin_PROGRAMS += src/my_set
 sbin_PROGRAMS += src/check_tmpl
+sbin_PROGRAMS += src/sysfs
+
 src_priority_SOURCES = src/priority.c
 src_my_commit2_SOURCES = src/commit2.c
 src_exe_action_SOURCES = src/exe_action.c
@@ -40,6 +42,7 @@ src_dump_SOURCES = src/dump_session.c
 src_my_delete_SOURCES = src/delete.c
 src_my_set_SOURCES = src/set.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
+src_sysfs = src/sysfs.c
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
@@ -81,4 +84,3 @@ install-exec-hook:
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
 	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit2 my_commit
-	
