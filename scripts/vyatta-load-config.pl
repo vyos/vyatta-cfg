@@ -220,10 +220,9 @@ foreach (@set_list) {
 }
 
 foreach (@deactivate_list) {
-    my ( $cmd_ref, $rank ) = @{$_};
-    my @cmd = ( "$sbindir/vyatta-activate-config.pl deactivate", @{$cmd_ref} );
-    my $cmd_str = join ' ', @cmd;
-    system("$cmd_str 1>/dev/null");
+    #need to remove .disable nodes recursively in tree through activate command
+    my $cmd = "$sbindir/vyatta-activate-config.pl deactivate $_";
+    system("$cmd 1>/dev/null");
     #ignore error on complaint re: nested nodes
 }
 

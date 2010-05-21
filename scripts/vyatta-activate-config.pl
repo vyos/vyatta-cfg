@@ -27,13 +27,38 @@ use lib "/opt/vyatta/share/perl5";
 
 sub wanted {
     return unless ( $_ eq '.disable' );
-    print("Cannot set nested deactivated nodes\n");
+    print("Cannot deactivate nested elements\n");
     exit 1;
+}
+
+sub check_parents {
+    my @p = @_;
+    my $l_dir = "$ENV{VYATTA_TEMP_CONFIG_DIR}/";
+    my $a_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/";
+    foreach my $sw (@p) {
+	$l_dir .= "/$sw";
+	$a_dir .= "/$sw";
+
+	if (-e "$l_dir/.disable") {
+	    return 1;
+	}
+	if (-e "$a_dir/.disable") {
+	    return 1;
+	}
+    }
+    return 0;
 }
 
 sub usage() {
     print "Usage: $0 <path>\n";
     exit 0;
+}
+
+my $action = $ARGV[0];
+
+if (!defined $ARGV[1] || $ARGV[1] eq '') {
+    print("Cannot activate/deactivate configuration root\n");
+    exit 1;
 }
 
 #adjust for leaf node
@@ -53,7 +78,6 @@ if (! -e $full_path) {
     my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path/node.val";
     if (-e $leaf) {
         #prevent setting on leaf or multi, check for node.val
-#	$full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
 	printf("Cannot activate/deactivate end node\n");
 	exit 1;
     }
@@ -63,49 +87,53 @@ if (! -e $full_path) {
     }
 }
 
+#######################################################
+#now check for nesting of the activate/deactivate nodes
+#######################################################
+if ($action eq 'deactivate') {
+    my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
+    my $local_dir = $full_path;
+    if (-e $active_dir) { #checks active children
+	find( \&wanted, $active_dir );
+    }
+    if (-e $local_dir) { #checks locally commit children
+	find( \&wanted, $local_dir );
+    }
+    #final check that walks up tree and checks
+    if (check_parents(@path)) { #checks active and locally committed parents
+	print("Cannot deactivate nested elements\n");
+	exit 1;
+    }
+}
 
-if ($ARGV[0] eq 'activate') {
+#######################################################
+#now apply the magic
+#######################################################
+if ($action eq 'activate') {
     $full_path .= "/.disable";
     if (-e $full_path) {
 	`rm -f $full_path`;
     }
     else {
-	printf("This element is not deactivated\n");
+	printf("This element has not been deactivated\n");
 	exit 1;
     }
 }
-elsif ($ARGV[0] eq 'deactivate') {
+elsif ($action eq 'deactivate') {
     #first let's check and ensure that there is not another child .disable node...
     #also needs to be enforced when committing
     my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
     my $local_dir = $full_path;
-    if (-e "$active_dir/.disable") {
-        printf("This node is already deactivated\n");
+    if (-e "$active_dir/.disable" || -e "$local_dir/.disable") {
+        printf("This element has already been deactivated\n");
         exit 1;
-    }
-    elsif (-e $active_dir) {
-	find( \&wanted, $active_dir );
-    }
-    if (-e $local_dir) {
-	find( \&wanted, $local_dir );
     }
     `touch $full_path/.disable`;
 }
-elsif ($ARGV[0] eq 'complete') {
-    #provide match...
-    printf("complete\n");
-}
 else {
-    printf("incoming arg: " . $ARGV[0] . "\n");
+    printf("bad argument: " . $action . "\n");
     usage();
 }
-
-#if this is activate
-#  make sure no activate subnodes
-#  create .disable file in node
-#else
-#  ensure .disable file exists
-#  remove node
 
 print "Done\n";
 exit 0;

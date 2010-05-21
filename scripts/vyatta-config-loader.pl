@@ -46,7 +46,9 @@ sub restore_fds {
 }
 
 # get a list of all config statement in the startup config file
-my @all_nodes = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
+my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
+my @all_nodes    = @{ $cfg_hier{'set'} };
+my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
 if (scalar(@all_nodes) == 0) {
   # no config statements
   restore_fds();
@@ -98,13 +100,6 @@ foreach (@all_nodes) {
       next;
   }
 
-  if (@pr[0] eq '!') {
-      @pr = @pr[1..$#pr];
-      my $deactivate_cmd = "$CWRAPPER deactivate " . (join ' ', @pr) . " 1>/dev/null";
-      system("$deactivate_cmd");
-      #ignore these errors due to nesting warnings.
-  }
-
   my $cmd = "$CWRAPPER set " . (join ' ', @pr);
   # this debug file should be deleted before release
   system("echo [$cmd] >> /tmp/foo");
@@ -116,6 +111,13 @@ foreach (@all_nodes) {
     # continue after set failure (or should we abort?)
   }
 }
+
+# Now deactivate these nodes
+for (@deactivate_nodes) {
+    my $cmd = "$CWRAPPER deactivate " . $_ . " 1>/dev/null";
+    system("$cmd");
+}
+
 $ret = system("$commit_cmd");
 if ($ret >> 8) {
   print OLDOUT "Commit failed at boot\n";

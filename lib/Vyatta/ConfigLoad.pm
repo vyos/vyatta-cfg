@@ -30,6 +30,9 @@ use Vyatta::Config;
 my @all_nodes = ();
 my @all_naked_nodes = ();
 
+my @disable_list = ();
+
+
 sub match_regex {
   my ($pattern, $str) = @_;
   $pattern =~ s/^(.*)$/\^$1\$/;
@@ -97,22 +100,19 @@ sub enumerate_branch {
 
       }
   }
+
+  if (defined($cur_node->{'disable'})) {
+      push @disable_list, join(" ",@cur_path);
+  }
+
   if ($terminal) {
     my $val = $cur_node->{'value'};
     if (defined($val)) {
       push @cur_path, $val;
     }
-    if (defined $cur_node->{'disable'}) {
-	push @all_naked_nodes, [ '!', @cur_path ]; 
-	my @qpath = applySingleQuote(@cur_path);
-	unshift(@qpath,'!');
-	push @all_nodes, [\@qpath, 0];
-    }
-    else {
-	push @all_naked_nodes, [ @cur_path ];
-	my @qpath = applySingleQuote(@cur_path);
-	push @all_nodes, [\@qpath, 0];
-    }
+    push @all_naked_nodes, [ @cur_path ];
+    my @qpath = applySingleQuote(@cur_path);
+    push @all_nodes, [\@qpath, 0];
   }
 }
 
@@ -147,7 +147,11 @@ sub getStartupConfigStatements {
 	  }
       }
   }
-  return @all_nodes;
+  my %conf = (
+              'set' => \@all_nodes,
+              'deactivate' => \@disable_list,
+             );
+  return %conf;
 }
 
 my %node_order = ();
@@ -248,7 +252,6 @@ sub getSortedMultiValues {
 
 my $active_cfg = undef;
 my $new_cfg_ref = undef;
-
 my @delete_list = ();
 
 # find specified node's values in active config that have been deleted from
@@ -305,7 +308,6 @@ sub findDeletedNodes {
 }
 
 my @set_list = ();
-my @disable_list = ();
 
 # find specified node's values in active config that are set
 # (added or changed).
@@ -353,9 +355,9 @@ sub findSetNodes {
   my %active_hash = map { $_ => 1 } @active_nodes;
   my $nref = $active_cfg->parseTmplAll(join ' ', @active_path);
   if (defined($nref->{type}) and !defined($nref->{tag})) {
-    # we are at a leaf node.
-    findSetValues($new_ref, \@active_path);
-    return;
+      # we are at a leaf node.
+      findSetValues($new_ref, \@active_path);
+      return;
   }
   foreach (sort keys %{$new_ref}) {
       if (scalar(keys %{$new_ref->{$_}}) == 0) {
@@ -363,29 +365,16 @@ sub findSetNodes {
 	  # check if we need to add this node.
 	  if (!defined($active_hash{$_})) {
 	      my @plist = applySingleQuote(@active_path, $_);
-	      if ($active_path[0] eq '!') {
-		  my @tmp = @plist[1..$#plist];
-		  push @disable_list, [\@tmp, 0];
-		  push @set_list, [\@tmp, 0];
-	      }
-	      else {
-		  push @set_list, [\@plist, 0];
-	      }
+	      push @set_list, [\@plist, 0];
 	  } else {
 	      # node already present. do nothing.
 	  }
 	  next;
       }
-      if ($active_path[0] eq '!') {
-	  my @plist = applySingleQuote(@active_path, $_);
-	  my @tmp = @plist[1..$#plist];
-	  push @disable_list, [\@tmp, 0];
-      }
-
+      # we recur regardless of whether it's in active. all changes will be
+      # handled when we reach leaf nodes (above).
       findSetNodes($new_ref->{$_}, [ @active_path, $_ ]);
   }
-  # we recur regardless of whether it's in active. all changes will be
-  # handled when we reach leaf nodes (above).
 }
 
 # compare the current active config with the specified hierarchy and return
@@ -396,7 +385,7 @@ sub getConfigDiff {
   $active_cfg = new Vyatta::Config;
   $new_cfg_ref = shift;
   @set_list = ();
-  @disable_list = ();
+#  @disable_list = ();
   @delete_list = ();
   findDeletedNodes($new_cfg_ref, [ ]);
   findSetNodes($new_cfg_ref, [ ]);
