@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.48) unstable; urgency=low
+
+  * make validate_ipv6net consistent with others. validateType decides
+    whether
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Mon, 24 May 2010 15:43:48 -0700
+
 vyatta-cfg (0.16.47) unstable; urgency=low
 
   * don't count current node towards limit if it already matches a node
