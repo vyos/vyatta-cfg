@@ -223,13 +223,11 @@ sub validate_ipv6net {
     my $ipv6_addr = $1;
     my $prefix_length = $2;
     if ($prefix_length < 0 || $prefix_length > 128) {
-      print "Invalid prefix length: $prefix_length\n";
       return 0;
     }
     return validate_ipv6($ipv6_addr);
     
   } else {
-    print "\"$value\" is not a valid IPv6 prefix\n";
     return 0;
   }
 }
