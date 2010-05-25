@@ -22,6 +22,7 @@ package Vyatta::Config;
 use strict;
 
 use Vyatta::ConfigDOMTree;
+use File::Find;
 
 my %fields = (
   _changes_only_dir_base  => $ENV{VYATTA_CHANGES_ONLY_DIR},
@@ -545,6 +546,28 @@ sub listDeleted {
   my @deleted = grep { !defined($new_hash{$_}) } @orig_nodes;
   return @deleted;
 }
+
+## getAllDeactivated()
+# returns array of all deactivated nodes.
+# 
+my @all_deactivated_nodes;
+sub getAllDeactivated {
+    my ($self, $path) = @_;
+    my $start_dir = $self->{_active_dir_base};
+    find ( \&wanted, $start_dir );
+    return @all_deactivated_nodes;
+}
+sub wanted {
+    if ( $_ eq '.disable' ) {
+	my $f = $File::Find::name;
+	#now strip off leading path and trailing file
+	$f = substr($f, length($ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}));
+	$f = substr($f, 0, length($f)-length("/.disable"));
+	$f =~ s/\// /g;
+	push @all_deactivated_nodes, $f;
+    }
+}
+
 
 ## isDeactivated("node")
 # returns back whether this node is in an active (false) or

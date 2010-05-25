@@ -191,6 +191,7 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
 my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier );
 my @set_list    = @{ $cfg_diff{'set'} };
 my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
+my @activate_list = @{ $cfg_diff{'activate'} };
 my @comment_list    = @{ $cfg_diff{'comment'} };
 
 if ($merge_mode eq 'false') {
@@ -219,8 +220,16 @@ foreach (@set_list) {
     }
 }
 
+
+
+
+foreach (@activate_list) {
+    my $cmd = "$sbindir/vyatta-activate-config.pl activate $_";
+    system("$cmd 1>/dev/null");
+    #ignore error on complaint re: nested nodes
+}
+
 foreach (@deactivate_list) {
-    #need to remove .disable nodes recursively in tree through activate command
     my $cmd = "$sbindir/vyatta-activate-config.pl deactivate $_";
     system("$cmd 1>/dev/null");
     #ignore error on complaint re: nested nodes

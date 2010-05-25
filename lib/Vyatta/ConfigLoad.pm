@@ -405,10 +405,14 @@ sub getConfigDiff {
     }
   }
 
+  #let's get active disable nodes
+  my @enable_list = $active_cfg->getAllDeactivated("");;
+
   my %diff = (
               'delete' => \@new_delete_list,
               'set' => \@set_list,
               'deactivate' => \@disable_list,
+              'activate' => \@enable_list,
               'comment' => \@comment_list,
              );
   return %diff;
