@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.49) unstable; urgency=low
+
+  * final fix for 5610. fixes loading where node in active config is
+    deactivated and is active in loaded configuration.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 25 May 2010 09:53:47 -0700
+
 vyatta-cfg (0.16.48) unstable; urgency=low
 
   * make validate_ipv6net consistent with others. validateType decides
