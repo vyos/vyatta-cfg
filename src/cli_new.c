@@ -926,7 +926,15 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	rval = right->val;
       else
 	rval = right->vals[rcur];
-      
+
+      //don't bother comparing if these are different types.
+      if ((rcur || right->cnt) 
+	  && right->val_types[rcur] != NULL) {
+	if (right->val_types[rcur] != val_type) {
+	  continue;
+	}
+      }
+
       parts_num = 0;
       switch (val_type) {
       case IPV6_TYPE:
