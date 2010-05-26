@@ -61,6 +61,7 @@ sbin_SCRIPTS  += scripts/vyatta-irqaffin
 sbin_SCRIPTS  += scripts/vyatta-auto-irqaffin.pl
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-exists
+sbin_SCRIPTS  += scripts/vyatta-strip-migration-comments.pl
 
 share_perl5_DATA = lib/Vyatta/Config.pm
 share_perl5_DATA += lib/Vyatta/Misc.pm
