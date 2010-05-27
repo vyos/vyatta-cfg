@@ -31,6 +31,14 @@ sub wanted {
     exit 1;
 }
 
+sub wanted_local {
+    if ( $_ eq '.disable' ) {
+	#we'll supercede this .disable by the parent and remove this.
+	my $f = $File::Find::name;
+	`rm -f $f`;
+    }
+}
+
 sub check_parents {
     my @p = @_;
     my $l_dir = "$ENV{VYATTA_TEMP_CONFIG_DIR}/";
@@ -96,8 +104,8 @@ if ($action eq 'deactivate') {
     if (-e $active_dir) { #checks active children
 	find( \&wanted, $active_dir );
     }
-    if (-e $local_dir) { #checks locally commit children
-	find( \&wanted, $local_dir );
+    if (-e $local_dir) { #checks locally commit children, will remove disabled children
+	find( \&wanted_local, $local_dir );
     }
     #final check that walks up tree and checks
     if (check_parents(@path)) { #checks active and locally committed parents
