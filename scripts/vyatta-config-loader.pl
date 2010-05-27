@@ -114,7 +114,7 @@ foreach (@all_nodes) {
 
 # Now deactivate these nodes
 for (@deactivate_nodes) {
-    my $cmd = "$CWRAPPER deactivate " . $_ . " 1>/dev/null";
+    my $cmd = "$CWRAPPER deactivate " . $_;
     system("$cmd");
 }
 
