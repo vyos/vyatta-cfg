@@ -93,7 +93,12 @@ sub listNodes {
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
-    push @nodes_modified, $tmp;
+    my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
+    $ttmp =~ s/\// /g;
+    my ($status, undef) = $self->getDeactivated($ttmp);
+    if (!defined($status) || $status eq 'active') {
+	push @nodes_modified, $tmp;
+    }
   }
 
   return @nodes_modified;
@@ -583,9 +588,7 @@ sub getDeactivated {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
   #now walk up parent in local and in active looking for '.disable' file
-
-  my @a = split(" ",$node);
-  $node = join("/",@a);
+  $node =~ s/ /\//g;
 
   while (1) {
       my $filepath = "$self->{_changes_only_dir_base}/$node";
