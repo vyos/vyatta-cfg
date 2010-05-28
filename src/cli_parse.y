@@ -245,6 +245,8 @@ char *parse_path;
 int parse_def(vtw_def *defp, char *path, boolean type_only)
 {
    int status;
+   /* always zero vtw_def struct */
+   memset(defp, 0, sizeof(vtw_def));
    yy_cli_def_lineno = 1;
    parse_status = 0;
    parse_defp = defp;
