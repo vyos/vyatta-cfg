@@ -1,5 +1,6 @@
 #ifndef CLI_DEF_H
 #define CLI_DEF_H
+#include <stdio.h>
 
 #define BITWISE 0 /* no partial commit */
 
