@@ -67,7 +67,6 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
         m_path.path,t_path.path);
   }
   /* defniition present */
-  memset(defp, 0, sizeof(vtw_def));
   if ((status = parse_def(defp, t_path.path, FALSE))) {
     bye("parse error: %d\n", status);
   }
@@ -256,7 +255,6 @@ int main(int argc, char **argv)
     /* prevent value node without actual value */
     push_path(&t_path, DEF_NAME);
     if (lstat(t_path.path, &statbuf) >= 0) {
-      memset(&def, 0, sizeof(vtw_def));
       if ((status = parse_def(&def, t_path.path, FALSE))) {
 	bye("parse error: %d\n", status);
       }
@@ -424,7 +422,6 @@ handle_default(vtw_path *mpath, vtw_path *tpath, char *exclude)
       pop_path(tpath); /* child */
       continue;
     }
-    memset(&def, 0, sizeof(def));
     if ((status = parse_def(&def, tpath->path, FALSE))) {
       /* template parse error. abort. */
       bye("Parse error in [%s]\n", tpath->path);

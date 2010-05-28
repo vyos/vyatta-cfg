@@ -127,7 +127,6 @@ boolean set_validate(vtw_def *defp, char *valp)
     bye("Can not set value (2), no definition for %s", m_path.path);
   }
   /* defniition present */
-  memset(defp, 0, sizeof(vtw_def));
   if ((status = parse_def(defp, t_path.path, FALSE))) {
     bye("parse error: %d\n", status);
   }
@@ -242,7 +241,6 @@ int main(int argc, char **argv)
     if (lstat(t_path.path, &statbuf) >= 0 && 
 	(statbuf.st_mode & S_IFMT) == S_IFREG) {
       /* defniition present */
-      memset(&def, 0, sizeof(vtw_def));
       if ((status = parse_def(&def, t_path.path, FALSE))) {
 	bye("parse error: %d\n", status);
       }
@@ -302,7 +300,6 @@ int main(int argc, char **argv)
     bye("Can not delete value, no definition for %s", m_path.path);
   }
   /* defniition present */
-  memset(&def, 0, sizeof(vtw_def));
   if ((status = parse_def(&def, t_path.path, FALSE))) {
     bye("parse error: %d\n", status);
   }

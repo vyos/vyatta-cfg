@@ -87,7 +87,6 @@ main(int argc, char** argv)
   printf("[path: %s][act: %lu]\n",buf,act);
 
   if ((lstat(buf,&s) == 0) && S_ISREG(s.st_mode)) {
-    memset(&def, 0, sizeof(def));
     if (parse_def(&def,buf,FALSE) == 0) {
       //execute
       int status;

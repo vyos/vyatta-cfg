@@ -259,8 +259,6 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	int fn_node_def_size=strlen(tmpl_path_string)+1+strlen(NODE_DEF)+1;
 	char* fn_node_def=(char*)malloc(fn_node_def_size);
 
-	memset(&def, 0, sizeof(def));
-
 	fn_node_def[0]=0;
 
 	if(*tmpl_path_string!='/' && root_tmpl_path) {

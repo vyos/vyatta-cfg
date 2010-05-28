@@ -44,7 +44,6 @@ main(int argc, char **argv)
     exit(-1);
   }
 
-  memset(&def, 0, sizeof(def));
   status = parse_def(&def, argv[1], 0);
   if (status == -5) {
     printf("Cannot open [%s]\n", argv[1]);
