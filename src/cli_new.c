@@ -929,7 +929,7 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 
       //don't bother comparing if these are different types.
       if ((rcur || right->cnt) 
-	  && right->val_types[rcur] != NULL) {
+	  && right->val_types[rcur] != ERROR_TYPE) {
 	if (right->val_types[rcur] != val_type) {
 	  continue;
 	}
@@ -957,7 +957,7 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 		      left_parts+5); 
 
 	if ((rcur || right->cnt) 
-	    && right->val_types[rcur] != NULL) {
+	    && right->val_types[rcur] != ERROR_TYPE) {
 	  format = cond_formats[right->val_types[rcur]];
 	}
 	(void) sscanf(rval, format, right_parts, right_parts+1, 

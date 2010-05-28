@@ -53,9 +53,6 @@ sys_cp(const char *src_file, const char *dst_file)
 }
 
 void
-retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op);
-
-void
 set_path(char *path, boolean config);
 
 struct VyattaNode*
@@ -151,7 +148,8 @@ get_config_path(GNode *node)
  *
  **/
 void
-retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
+retrieve_data(char* rel_data_path, GNode *node, const char* root, 
+	      NODE_OPERATION op)
 {
   boolean final_node = FALSE;
   
@@ -159,8 +157,9 @@ retrieve_data(char* rel_data_path, GNode *node, char* root, NODE_OPERATION op)
     return;
   }
 
-  char *tmp = root;//get_cdirp();
+  const char *tmp = root;//get_cdirp();
   char full_data_path[sizeof(char)*MAX_LENGTH_DIR_PATH];
+
   strcpy(full_data_path,tmp);
   if (rel_data_path != NULL) {
     strcat(full_data_path,rel_data_path);
@@ -800,8 +799,8 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
 
 //needed for iteration below
 struct SrcDst {
-  char *_src;
-  char *_dst;
+  const char *_src;
+  const char *_dst;
   boolean _test_mode;
 };
 
