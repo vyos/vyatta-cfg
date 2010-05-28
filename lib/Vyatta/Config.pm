@@ -248,7 +248,12 @@ sub listOrigNodes {
     $tmp =~ s/\n//g;
     $tmp =~ s/%2F/\//g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
-    push @nodes_modified, $tmp;
+    my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
+    $ttmp =~ s/\// /g;
+    my ($status, undef) = $self->getDeactivated($ttmp);
+    if (!defined($status) || $status eq 'active') {
+	push @nodes_modified, $tmp;
+    }
   }
 
   return @nodes_modified;
@@ -284,7 +289,12 @@ sub listOrigNodesNoDef {
     $tmp =~ s/%2F/\//g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     if ($tmp ne 'def') {
-	push @nodes_modified, $tmp;
+	my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
+	$ttmp =~ s/\// /g;
+	my ($status, undef) = $self->getDeactivated($ttmp);
+	if (!defined($status) || $status eq 'active') {
+	    push @nodes_modified, $tmp;
+	}
     }
   }
 
@@ -324,14 +334,21 @@ sub returnValue {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
-  return unless 
-      open my $file, '<', 
-      "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val";
-
-  read $file, $tmp, 16384;
-  close $file;
-
-  $tmp =~ s/\n$//;
+  #getDeactivated
+  my $ttmp = $self->{_current_dir_level} . "/" . $node;
+  $ttmp =~ s/\// /g;
+  my ($status, undef) = $self->getDeactivated($ttmp);
+  #only return value if status is not disabled (i.e. local or both)
+  if (!defined($status) || $status eq 'active') {
+      return unless 
+	  open my $file, '<', 
+	  "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val";
+      
+      read $file, $tmp, 16384;
+      close $file;
+      
+      $tmp =~ s/\n$//;
+  }
   return $tmp;
 }
 
@@ -410,14 +427,23 @@ sub returnOrigValue {
 
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
-  my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
 
-  return unless open my $file, '<', "$filepath/node.val";
-  
-  read $file, $tmp, 16384;
-  close $file;
 
-  $tmp =~ s/\n$//;
+  #getDeactivated
+  my $ttmp = $self->{_current_dir_level} . "/" . $node;
+  $ttmp =~ s/\// /g;
+  my ($status, undef) = $self->getDeactivated($ttmp);
+  #only return value if status is not disabled (i.e. local or both)
+  if (!defined($status) || $status eq 'active') {
+      my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+
+      return unless open my $file, '<', "$filepath/node.val";
+      
+      read $file, $tmp, 16384;
+      close $file;
+      
+      $tmp =~ s/\n$//;
+  }
   return $tmp;
 }
 
@@ -522,6 +548,16 @@ sub existsOrig {
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
+  #getDeactivated()
+  my $ttmp = $self->{_current_dir_level} . "/" . $node;
+  $ttmp =~ s/\// /g;
+  my ($status, undef) = $self->getDeactivated($ttmp);
+  #only return value if status is not disabled (i.e. local or both)
+  if (defined($status)) { #if a .disable is in local or active or both then return false
+      return (1 != 1);
+  }
+
+
   return ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" );
 }
 
@@ -536,6 +572,15 @@ sub isDeleted {
     = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
   my $filepathNew
     = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
+
+  #getDeactivated()
+  my $ttmp = $self->{_current_dir_level} . "/" . $node;
+  $ttmp =~ s/\// /g;
+  my ($status, undef) = $self->getDeactivated($ttmp);
+  #only return value if status is not disabled (i.e. local or both)
+  if (defined($status) && $status eq 'local') {
+      return (-e $filepathAct);
+  }
 
   return ((-e $filepathAct) && !(-e $filepathNew));
 }
