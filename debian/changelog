@@ -1,3 +1,14 @@
+vyatta-cfg (0.16.53) unstable; urgency=low
+
+  [ Michael Larson ]
+  * added hook at completion of commit process.
+
+  [ Stig Thormodsrud ]
+  * Fix "show vrrp" regression caused by
+    b68ac2b1969060ea6fa2f011a3107c83ad26e96d.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Sat, 29 May 2010 15:19:36 -0700
+
 vyatta-cfg (0.16.52) unstable; urgency=low
 
   [ An-Cheng Huang ]
