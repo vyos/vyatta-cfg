@@ -42,8 +42,12 @@ if (scalar(@all_nodes) == 0) {
 my $ret = 0;
 foreach (@all_nodes) {
   my ($path_ref) = @$_;
-  my $cmd = "set " . (join ' ', @$path_ref);
-  print "$cmd\n";  
+  my $elements = scalar(@$path_ref);
+  my @non_leaf = @$path_ref[0 .. ($elements - 2)] ;
+  my $path = join(' ', @non_leaf);
+  $path =~ s/'//g;
+  my $cmd = "set $path " . @$path_ref[($elements - 1)];
+  print "$cmd\n";
 }
 print "commit\n";
 
