@@ -1,3 +1,31 @@
+vyatta-cfg (0.16.52) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * include needed header
+
+  [ Michael Larson ]
+  * addition support for deactivate mode in perl api. Nodes should now
+    be masked when deactivated--deactivated
+
+  [ An-Cheng Huang ]
+  * update .gitignore
+
+  [ Michael Larson ]
+  * fix bad comparison in multiple-type check
+
+  [ Stephen Hemminger ]
+  * Fix compiler warnings about overriding const
+
+  [ An-Cheng Huang ]
+  * make space after template fields optional
+  * always zero vtw_def struct before parsing template
+  * remove unnecessary memset calls
+
+  [ Stig Thormodsrud ]
+  * Remove single quotes except on leaf-node.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 28 May 2010 17:39:45 -0700
+
 vyatta-cfg (0.16.51) unstable; urgency=low
 
   * fix for loading config for deactivated nodes. allows nested
