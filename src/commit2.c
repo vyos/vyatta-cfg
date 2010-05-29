@@ -112,6 +112,7 @@ usage(void)
   printf("\t-o\t\tdisable partial commit\n");
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
   printf("\t-b\t\tbreak on each priority node (debug mode)\n");
+  printf("\t-r [FILE]\trun hook script on finishing commit\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -128,12 +129,13 @@ main(int argc, char** argv)
   boolean disable_partial_commit = FALSE;
   boolean full_commit_check = FALSE;
   boolean break_priority = FALSE;
+  char *hook = NULL;
 
   /* this is needed before calling certain glib functions */
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoafb")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoafbr:")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -168,6 +170,9 @@ main(int argc, char** argv)
       break;
     case 'b':
       break_priority = TRUE;
+      break;
+    case 'r':
+      hook = optarg;
       break;
     default:
       usage();
@@ -340,6 +345,10 @@ main(int argc, char** argv)
   
   if (fp_changes != NULL) {
     fclose(fp_changes);
+  }
+
+  if (hook != NULL) {
+    system(hook);
   }
 
   //remove tmp changes file as all the work is now done
