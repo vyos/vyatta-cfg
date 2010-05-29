@@ -169,10 +169,10 @@ sub get_state_files {
 
     my @state_files;
     if ($group eq "all") {
-	@state_files = grep { /^vrrpd_$intf.*\.state$/ } $sdir;
+	@state_files = grep { /^vrrpd_$intf.*\.state$/ } readdir($sdir);
     } else {
 	my $intf_group = $intf . "_" . $group . ".state";
-	@state_files = grep { /^vrrpd_$intf_group$/ } $sdir;
+	@state_files = grep { /^vrrpd_$intf_group$/ } readdir($sdir);
     }
     close $sdir;
 
