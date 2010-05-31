@@ -156,7 +156,7 @@ extern vtw_node *make_str_node(char *str);
 extern vtw_node *make_var_node(char *str);
 extern vtw_node *make_str_node0(char *str, vtw_oper_e op);
 extern void append(vtw_list *l, vtw_node *n, int aux);
-extern int parse_def(vtw_def *defp, char *path, boolean type_only);
+extern int parse_def(vtw_def *defp, const char *path, boolean type_only);
 
 extern int yy_cli_val_lex(void);
 extern void cli_val_start(char *s);

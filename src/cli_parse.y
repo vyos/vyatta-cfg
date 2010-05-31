@@ -241,8 +241,8 @@ syntax_error:	  SYNTAX_ERROR {
 
 
 %%
-char *parse_path;
-int parse_def(vtw_def *defp, char *path, boolean type_only)
+const char *parse_path;
+int parse_def(vtw_def *defp, const char *path, boolean type_only)
 {
    int status;
    /* always zero vtw_def struct */
