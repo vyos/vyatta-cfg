@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.55) unstable; urgency=low
+
+  * bug fix for 5646. Suppress variable replacement if deactivated for
+    disabled nodes (where variables reside).
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 01 Jun 2010 14:32:12 -0700
+
 vyatta-cfg (0.16.54) unstable; urgency=low
 
   [ An-Cheng Huang ]
