@@ -98,6 +98,8 @@ static int set_reference_environment(const char* var_reference,
 				     clind_path_ref *n_tmpl_path,
 				     clind_path_ref *n_cmd_path,
 				     int active);
+static boolean
+is_deactivated(const char *path,const char *symbol) ;
 
 /*************************************************
      GLOBAL FUNCTIONS
@@ -1235,6 +1237,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     /* for every value */
     if (in_validate_val) {
       char *save_at = get_at_string();
+
       for(ii = 0; ii < validate_value_val.cnt || ii == 0; ++ii) {
 	set_at_string(validate_value_val.cnt?
 	  validate_value_val.vals[ii]:validate_value_val.val);
@@ -1437,6 +1440,7 @@ static int eval_va(valstruct *res, vtw_node *node)
       if (status != VTWERR_OK) {
 	return FALSE;
       }
+
       f = popen(exe_string, "r");
       if (!f)
 	return -1;
@@ -1551,16 +1555,19 @@ static int expand_string(char *stringp)
 	  
 	  memset(&cv,0,sizeof(cv));
 
-	  if(clind_config_engine_apply_command_path(n_cfg_path,
-						    n_tmpl_path,
-						    n_cmd_path,
-						    TRUE,
-						    &cv,
-						    get_cdirp(),
-						    get_tdirp(),
-						    FALSE)==0) {
-	    cp=cv.value;
+	  if (is_deactivated(n_cfg_path,scanp) == FALSE) {
 
+	    if(clind_config_engine_apply_command_path(n_cfg_path,
+						      n_tmpl_path,
+						      n_cmd_path,
+						      TRUE,
+						      &cv,
+						      get_cdirp(),
+						      get_tdirp(),
+						      FALSE)==0) {
+	      cp=cv.value;
+	      
+	    }
 	  }
 
 	}
@@ -1590,7 +1597,9 @@ static int expand_string(char *stringp)
       }
 
       strcpy(resp, cp);
-      if(my_cp && cp) free(cp);
+      if(my_cp && cp) {
+	free(cp);
+      }
       resp += len;
       left -= len;
     }
@@ -2383,6 +2392,7 @@ system_out(const char *command)
   if (restore_output() == -1) {
     return -1;
   }
+
   ret = system(command);
   if (redirect_output() == -1) {
     return -1;
@@ -2391,3 +2401,64 @@ system_out(const char *command)
 }
 
 /**********************************************************/
+
+
+boolean
+is_deactivated(const char *path,const char *symbol) 
+{
+  if (path == NULL) {
+    return FALSE;
+  }
+  
+  const char* path_string = clind_path_get_path_string(path);
+  
+  char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
+  strcpy(buf,path_string);
+
+  //now append symbol
+  if (symbol != NULL && strlen(symbol) > 2) { 
+    strcat(buf,"/");
+    strncat(buf,symbol,strlen(symbol)-2);
+  }
+  
+
+  //first we'll check the current directory
+  char file[1024];
+  sprintf(file,"%s/.disable",buf);
+  struct stat s;
+  if (lstat(file,&s) == 0) {
+    return TRUE;
+  }
+
+  long min_len = strlen("/opt/vyatta/config/tmp/new_config_");
+
+  //now walk back up tree looking for disable flag.....
+  while (TRUE) {
+    int index = strlen(buf)-1;
+    if (index < min_len) {
+      return FALSE;
+    }
+    if (buf[index] == '/') {
+      while (TRUE) {
+	if (buf[--index] != '/') {
+	  buf[index] = '\0';
+	  break;
+	}
+      }
+    }
+
+    char *ptr = rindex(buf,'/');
+    if (ptr != NULL) {
+      *ptr = '\0';
+    }
+    
+    char file[1024];
+    sprintf(file,"%s/.disable",buf);
+    struct stat s;
+    if (lstat(file,&s) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
