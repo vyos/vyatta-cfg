@@ -1,3 +1,14 @@
+vyatta-cfg (0.16.54) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add constness to parse_def
+
+  [ Michael Larson ]
+  * fix for bug 5649. Need to initialize val_types for value comparison
+    to ERROR_TYPE
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 31 May 2010 18:16:17 -0700
+
 vyatta-cfg (0.16.53) unstable; urgency=low
 
   [ Michael Larson ]
