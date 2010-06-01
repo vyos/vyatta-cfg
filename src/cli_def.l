@@ -154,6 +154,7 @@ return_value(vtw_type_e type)
   yy_cli_parse_lval.val.free_me = TRUE;
   yy_cli_parse_lval.val.val = strdup(yy_cli_def_text);
   yy_cli_parse_lval.val.val_type = type;
+  yy_cli_parse_lval.val.val_types = NULL;
   return VALUE;
 }
 

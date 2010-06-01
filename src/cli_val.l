@@ -284,6 +284,7 @@ static void make_val_value(vtw_type_e type)
    get_cli_value_ptr()->free_me = TRUE;
    get_cli_value_ptr()->val = my_strdup(yytext, "cli_val.l");
    get_cli_value_ptr()->val_type = type;
+   get_cli_value_ptr()->val_types = NULL;
 }
 
 

@@ -850,6 +850,7 @@ int char2val_text(vtw_def *def, char *value, valstruct **valpp)
   //PROCESSING IF TYPE IS TEXT TYPE
   
   valp->val_type = TEXT_TYPE;
+  valp->val_types = NULL;
   valp->free_me = TRUE;
   /* count lines */
   linecnt = 0;
@@ -872,6 +873,10 @@ int char2val_text(vtw_def *def, char *value, valstruct **valpp)
     cnt *= MULTI_ALLOC;
     valp->vals = my_malloc(cnt * sizeof(char *), "char2val 2");
     valp->val_types = my_malloc(cnt * sizeof(vtw_type_e), "char2val 3");
+    int i;
+    for (i=0;i<cnt;++i) {
+      valp->val_types[i] = ERROR_TYPE;
+    }
     for(cp = value, cnt = 0; cnt < linecnt; ++cnt) {
       endp = strchr(cp, '\n');
       if (endp) 
@@ -929,6 +934,7 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 
       //don't bother comparing if these are different types.
       if ((rcur || right->cnt) 
+	  && right->val_types != NULL
 	  && right->val_types[rcur] != ERROR_TYPE) {
 	if (right->val_types[rcur] != val_type) {
 	  continue;
@@ -957,6 +963,7 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 		      left_parts+5); 
 
 	if ((rcur || right->cnt) 
+	    && right->val_types != NULL
 	    && right->val_types[rcur] != ERROR_TYPE) {
 	  format = cond_formats[right->val_types[rcur]];
 	}
@@ -1400,6 +1407,7 @@ static int eval_va(valstruct *res, vtw_node *node)
 	if(status==0) {
 	  if(cv.value) {
 	    res->val_type = cv.val_type;
+	    res->val_types = NULL;
 	    res->free_me = TRUE;
 	    res->val = cv.value;
 	  }
