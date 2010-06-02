@@ -486,7 +486,6 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
     }
   }
   
-  return;
 }
 
 
@@ -793,7 +792,6 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   fflush(NULL);
 
   free(command);
-  return;
 }  
 
 
@@ -912,7 +910,6 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   system("/opt/vyatta/sbin/vyatta-cfg-notify");
 
   free(command);
-  return;
 }
 
 /**
@@ -1051,7 +1048,6 @@ get_term_data_values(GNode *node)
 
   //  g_dataset_destroy(&datalist);
 
-  return;
 }
 
 /**
