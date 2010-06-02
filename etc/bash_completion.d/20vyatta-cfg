@@ -988,6 +988,7 @@ vyatta_config_complete ()
       "Edit a sub-element" \
       "Exit from this configuration level" \
       "Load configuration from a file and replace running configuration" \
+      "Load user SSH key from a file" \
       "Load configuration from a file and merge running configuration" \
       "Rename a configuration element" \
       "Run an operational-mode command" \
