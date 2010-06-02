@@ -2410,7 +2410,7 @@ is_deactivated(const clind_path_ref *path,const char *symbol)
     return FALSE;
   }
   
-  const char* path_string = clind_path_get_path_string(path);
+  const char* path_string = clind_path_get_path_string(*path);
   
   char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
   strcpy(buf,path_string);
