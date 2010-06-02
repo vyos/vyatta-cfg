@@ -99,7 +99,7 @@ static int set_reference_environment(const char* var_reference,
 				     clind_path_ref *n_cmd_path,
 				     int active);
 static boolean
-is_deactivated(const char *path,const char *symbol) ;
+is_deactivated(const clind_path_ref *path,const char *symbol) ;
 
 /*************************************************
      GLOBAL FUNCTIONS
@@ -1555,7 +1555,7 @@ static int expand_string(char *stringp)
 	  
 	  memset(&cv,0,sizeof(cv));
 
-	  if (is_deactivated(n_cfg_path,scanp) == FALSE) {
+	  if (is_deactivated(&n_cfg_path,scanp) == FALSE) {
 
 	    if(clind_config_engine_apply_command_path(n_cfg_path,
 						      n_tmpl_path,
@@ -2404,7 +2404,7 @@ system_out(const char *command)
 
 
 boolean
-is_deactivated(const char *path,const char *symbol) 
+is_deactivated(const clind_path_ref *path,const char *symbol) 
 {
   if (path == NULL) {
     return FALSE;
