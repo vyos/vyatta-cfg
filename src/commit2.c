@@ -16,6 +16,8 @@ boolean g_dump_actions = FALSE;
 
 #define g_num_actions 5
 
+extern void g_type_init();
+
 const int ActionOrder[g_num_actions] = {
   //  4, //syntax
   //  5, //commit
@@ -267,6 +269,7 @@ main(int argc, char** argv)
       
       // Wait for single character 
       char input = getchar(); 
+      input = input; //to fix stupid compilier warning
     }
 
     //complete() now requires a undisturbed copy of the trans_child_node tree
@@ -348,7 +351,9 @@ main(int argc, char** argv)
   }
 
   if (hook != NULL) {
-    system(hook);
+    if (system(hook) == -1) {
+      syslog(LOG_DEBUG,"commit::main(), error on call to hook");
+    }
   }
 
   //remove tmp changes file as all the work is now done
@@ -614,8 +619,6 @@ sort_func_simple(GNode *node, gpointer data)
 gboolean
 sort_func_priority_extended(GNode *node, gpointer data)
 {
-  const GNode *orig_config; //needs to be passed in
-
   gpointer gp = ((GNode*)node)->data;
   GNode *root_node = (GNode*)data;
 
@@ -625,7 +628,6 @@ sort_func_priority_extended(GNode *node, gpointer data)
   //change action state of node according to enclosing behavior
   if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) { //only if priority is specified.
     GNode *new_node = g_node_copy(node);
-    int cur_pri = LOWEST_PRIORITY;
 
     //NOW, we need to figure out where this node belongs in the priority chain
     if (strncmp(((struct VyattaNode*)gp)->_config._priority_extended,"PARENT",6) == 0) {
@@ -634,7 +636,6 @@ sort_func_priority_extended(GNode *node, gpointer data)
       //walk up chain until priority is found.
       GNode *n = node;
       while (TRUE) {
-	gpointer n_gpointer = ((GNode*)n)->data;
 	n = n->parent;
 	if (n == NULL) {
 	  break;
@@ -730,11 +731,11 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   }
 
   //change action state of node according to enclosing behavior
-  if ((G_NODE_IS_ROOT(node) == FALSE) &&
-      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP)  || //added to support enclosing behavior of activated/deactivated nodes
+  if (((G_NODE_IS_ROOT(node) == FALSE) &&
+      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP))  || //added to support enclosing behavior of activated/deactivated nodes
       ((IS_SET_OR_CREATE(op))  || 
-       (IS_DELETE(op))) && 
-      (IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))) {
+       (((IS_DELETE(op))) && 
+	(IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))))) {
 
     //first check if there is enclosing behavior
     boolean enclosing = FALSE;
@@ -972,7 +973,7 @@ dump_func(GNode *node, gpointer data)
       for (i = 0; i < depth; ++i) {
 	fprintf(out,"  ");
       }
-      if (((struct VyattaNode*)gp)->_config._def.def_type2 != NULL) {
+      if (((struct VyattaNode*)gp)->_config._def.def_type2 != ERROR_TYPE) {
 	fprintf(out,"%s (t: %d-%d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2);
       }
       else {
@@ -1212,7 +1213,7 @@ validate_func(GNode *node, gpointer data)
   struct Result *result = (struct Result*)data;
 
   //since this visits all working nodes, let's maintain a set of nodes to commit
-  GList *coll = (GList*)result->_data;
+  GSList *coll = (GSList*)result->_data;
   if (d->_path != NULL) {
     char *buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
     if (IS_DELETE(d->_operation)) {
