@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.59) unstable; urgency=low
+
+  * move list functions to vrrp perl module
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Thu, 03 Jun 2010 16:31:49 -0700
+
 vyatta-cfg (0.16.58) unstable; urgency=low
 
   * fix for 5565.
