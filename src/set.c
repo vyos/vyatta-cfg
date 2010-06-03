@@ -10,8 +10,6 @@
 #include "cli_objects.h"
 #include "cli_path_utils.h"
 
-extern char *cli_operation_name;
-
 static void handle_defaults(void);
 
 static void make_dir()
@@ -192,9 +190,7 @@ int main(int argc, char **argv)
   /* this is needed before calling certain glib functions */
   g_type_init();
 
-  cli_operation_name = "Set";
-
-  if (initialize_output() == -1) {
+  if (initialize_output("Set") == -1) {
     bye("can't initialize output\n");
   }
 

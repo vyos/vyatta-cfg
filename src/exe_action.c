@@ -81,7 +81,7 @@ main(int argc, char** argv)
   char buf[2048];
   sprintf(buf,"%s/%snode.def",root,path);
   printf("%s\n",buf);
-  initialize_output();
+  initialize_output(NULL);
   init_paths(TRUE);
 
   printf("[path: %s][act: %lu]\n",buf,act);

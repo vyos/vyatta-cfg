@@ -8,8 +8,6 @@
 #include "cli_val.h"
 #include "cli_objects.h"
 
-extern char *cli_operation_name;
-
 static void remove_rf(boolean do_umount)
 {
   char *command = NULL;
@@ -150,9 +148,7 @@ int main(int argc, char **argv)
   /* this is needed before calling certain glib functions */
   g_type_init();
 
-  cli_operation_name = "Delete";
-
-  if (initialize_output() == -1) {
+  if (initialize_output("Delete") == -1) {
     bye("can't initialize output\n");
   }
 

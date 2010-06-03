@@ -230,7 +230,7 @@ extern int out_fd;
 extern FILE *out_stream;
 extern FILE *err_stream;
 
-extern int initialize_output(void);
+extern int initialize_output(const char *op);
 
 /* debug hooks? */
 #define my_malloc(size, name)		malloc(size)

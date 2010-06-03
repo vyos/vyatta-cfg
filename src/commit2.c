@@ -182,7 +182,7 @@ main(int argc, char** argv)
     }
   }
 
-  initialize_output();
+  initialize_output("Commit");
   init_paths(TRUE);
   if (g_debug) {
     printf("commit2: starting up\n");

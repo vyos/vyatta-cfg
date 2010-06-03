@@ -105,7 +105,7 @@ is_deactivated(const clind_path_ref *path,const char *symbol) ;
      GLOBAL FUNCTIONS
 ***************************************************/
 
-char *cli_operation_name = NULL;
+const char *cli_operation_name = NULL;
 
 /* it is executed as "eval `my_set` in order to be able to 
    modify BASH env
@@ -2329,7 +2329,7 @@ int new_out_fd = -1;
 int new_err_fd = -1;
 
 int
-initialize_output()
+initialize_output(const char *op)
 {
   if ((out_fd = dup(STDOUT_FILENO)) == -1) {
     return -1;
@@ -2358,6 +2358,7 @@ initialize_output()
     return -1;
   }
 
+  cli_operation_name = op;
   return 0;
 }
 
