@@ -731,12 +731,11 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   }
 
   //change action state of node according to enclosing behavior
-  if (((G_NODE_IS_ROOT(node) == FALSE) &&
-      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP))  || //added to support enclosing behavior of activated/deactivated nodes
+  if ((G_NODE_IS_ROOT(node) == FALSE) &&
+      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP)  || //added to support enclosing behavior of activated/deactivated n
       ((IS_SET_OR_CREATE(op))  || 
-       (((IS_DELETE(op))) && 
-	(IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))))) {
-
+       (IS_DELETE(op))) && 
+      (IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))) {
     //first check if there is enclosing behavior
     boolean enclosing = FALSE;
     GNode *n = node;
