@@ -28,11 +28,12 @@ use warnings;
 our @EXPORT = qw(get_conf_file get_state_script get_state_file 
                  vrrp_log vrrp_get_init_state get_changes_file
                  start_daemon restart_daemon stop_daemon
-                 vrrp_get_config);
+                 vrrp_get_config list_vrrp_intf list_vrrp_group);
 use base qw(Exporter);
 
 use Vyatta::Config;
 use Vyatta::Interface;
+use Vyatta::Misc;
 use POSIX;
 
 my $daemon           = '/usr/sbin/keepalived';
@@ -308,6 +309,35 @@ sub vrrp_get_init_state {
     }
 
     return $init_state;
+}
+
+sub list_vrrp_intf {
+    my $config = new Vyatta::Config;
+    my @intfs = ();
+
+    foreach my $name ( getInterfaces() ) {
+        my $intf = new Vyatta::Interface($name);
+        next unless $intf;
+        my $path = $intf->path();
+        $config->setLevel($path);
+        push @intfs, $name if $config->existsOrig("vrrp");
+    }
+
+    return @intfs;
+}
+
+sub list_vrrp_group {
+    my ($name) = @_;
+    my $config = new Vyatta::Config;
+    my $path;
+
+    my $intf = new Vyatta::Interface($name);
+    next unless $intf;
+    $path = $intf->path();
+    $path .= " vrrp vrrp-group";
+    $config->setLevel($path);
+    my @groups = $config->listOrigNodes();
+    return @groups;
 }
 
 1;
