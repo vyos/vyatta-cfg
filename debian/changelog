@@ -1,3 +1,14 @@
+vyatta-cfg (0.16.57) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * simplify output init
+
+  [ Michael Larson ]
+  * fixed break in regression on action failures. will revisit compilier
+    warning for this conditional
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 03 Jun 2010 11:50:56 -0700
+
 vyatta-cfg (0.16.56) unstable; urgency=low
 
   [ Stephen Hemminger ]
