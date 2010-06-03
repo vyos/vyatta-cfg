@@ -251,7 +251,7 @@ sub listOrigNodes {
     my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
     $ttmp =~ s/\// /g;
     my ($status, undef) = $self->getDeactivated($ttmp);
-    if (!defined($status) || $status eq 'active') {
+    if (!defined($status) || $status eq 'local') {
 	push @nodes_modified, $tmp;
     }
   }
@@ -434,7 +434,7 @@ sub returnOrigValue {
   $ttmp =~ s/\// /g;
   my ($status, undef) = $self->getDeactivated($ttmp);
   #only return value if status is not disabled (i.e. local or both)
-  if (!defined($status) || $status eq 'active') {
+  if (!defined($status) || $status eq 'local') {
       my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
 
       return unless open my $file, '<', "$filepath/node.val";
@@ -553,10 +553,9 @@ sub existsOrig {
   $ttmp =~ s/\// /g;
   my ($status, undef) = $self->getDeactivated($ttmp);
   #only return value if status is not disabled (i.e. local or both)
-  if (defined($status)) { #if a .disable is in local or active or both then return false
-      return (1 != 1);
+  if (defined($status) && ($status eq 'both' || $status eq 'active')) { #if a .disable is in local or active or both then return false
+      return undef;
   }
-
 
   return ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" );
 }
@@ -750,6 +749,7 @@ sub listNodeStatus {
 	  #print "DEBUG Vyatta::Config->listNodeStatus(): node $node\n";
 	  # No deleted nodes -- added, changed, ot static only.
 	  if (defined $status && $status eq 'local') { $nodehash{$node} = "deleted"; }
+	  elsif (defined $status && $status eq 'active') { $nodehash{$node} = "added"; }
 	  elsif    ($self->isAdded($nodepath))   { $nodehash{$node} = "added"; }
 	  elsif ($self->isChanged($nodepath)) { $nodehash{$node} = "changed"; }
 	  else { $nodehash{$node} = "static"; }
