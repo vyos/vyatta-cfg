@@ -84,7 +84,7 @@ sub displayValues {
   $config->setLevel(join ' ', @cur_path);
 
   if ($is_multi) {
-    my @ovals = $config->returnOrigValues('');
+    my @ovals = $config->returnOrigValues('','true');
     my @nvals = $config->returnValues('');
     if ($is_text) {
       @ovals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @ovals;
@@ -128,8 +128,8 @@ sub displayValues {
       print "$dis$diff$prefix$name $nval\n";
     }
   } else {
-    my $oval = $config->returnOrigValue('');
-    my $nval = $config->returnValue('');
+    my $oval = $config->returnOrigValue('','true');
+    my $nval = $config->returnValue('','true');
     if ($is_text) {
       if (defined($oval) && txt_need_quotes($oval)) {
         $oval = "\"$oval\"";
@@ -191,7 +191,7 @@ sub displayDeletedOrigChildren {
   }
   $config->setLevel('');
 
-  my @children = $config->listOrigNodes(join ' ', @cur_path);
+  my @children = $config->listOrigNodes(join(' ', @cur_path),'true');
   for my $child (sort @children) {
     if ($child eq 'node.val') {
       # should not happen!
@@ -218,7 +218,7 @@ sub displayDeletedOrigChildren {
 
     $config->setLevel(join ' ', (@cur_path, $child));
 
-    my @cnames = sort $config->listOrigNodesNoDef();
+    my @cnames = sort $config->listOrigNodesNoDef(undef,'true');
 
     if ($cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $dis, $prefix, $child,
@@ -387,7 +387,7 @@ sub displayChildren {
     } else {
       if ($child_hash{$child} eq 'deleted') {
         $config->setLevel('');
-        my @onodes = $config->listOrigNodes(join ' ', (@cur_path, $child));
+        my @onodes = $config->listOrigNodes(join ' ', (@cur_path, $child), 'true');
         if ($#onodes == 0 && $onodes[0] eq 'node.val') {
           displayValues([ @cur_path, $child ], $dis, $prefix, $child);
         } else {

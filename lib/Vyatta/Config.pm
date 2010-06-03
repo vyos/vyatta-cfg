@@ -71,7 +71,7 @@ sub setLevel {
 # return array of all nodes at "level"
 # level is relative
 sub listNodes {
-  my ($self, $path) = @_;
+  my ($self, $path, $disable) = @_;
   my @nodes = ();
 
   if ($path) { 
@@ -95,8 +95,13 @@ sub listNodes {
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
     $ttmp =~ s/\// /g;
-    my ($status, undef) = $self->getDeactivated($ttmp);
-    if (!defined($status) || $status eq 'active') {
+    if (!defined $disable) {
+	my ($status, undef) = $self->getDeactivated($ttmp);
+	if (!defined($status) || $status eq 'active') {
+	    push @nodes_modified, $tmp;
+	}
+    }
+    else {
 	push @nodes_modified, $tmp;
     }
   }
@@ -108,7 +113,7 @@ sub listNodes {
 # return true|false based on whether node path has
 # been processed or is active
 sub isActive {
-  my ($self, $path) = @_;  
+  my ($self, $path, $disable) = @_;  
   my @nodes = ();
 
   my @comp_node = split " ", $path;
@@ -120,7 +125,7 @@ sub isActive {
   
   my $rel_path = join(" ",@comp_node);
 
-  my @nodes_modified = $self->listOrigPlusComNodes($rel_path);
+  my @nodes_modified = $self->listOrigPlusComNodes($rel_path,$disable);
   foreach my $node (@nodes_modified) {
       if ($node eq $comp_node) {
 	  return 0;
@@ -133,10 +138,10 @@ sub isActive {
 # return array of all nodes (active plus currently committed) at "level"
 # level is relative
 sub listOrigPlusComNodes {
-  my ($self, $path) = @_;
+  my ($self, $path, $disable) = @_;
   my @nodes = ();
 
-  my @nodes_modified = $self->listNodes($path);
+  my @nodes_modified = $self->listNodes($path,$disable);
 
   #convert array to hash
   my %coll;
@@ -224,7 +229,7 @@ sub listOrigPlusComNodes {
 # in "working") at "level"
 # level is relative
 sub listOrigNodes {
-  my ($self, $path) = @_;
+  my ($self, $path, $disable) = @_;
   my @nodes = ();
 
   if (defined $path) { 
@@ -250,8 +255,13 @@ sub listOrigNodes {
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
     $ttmp =~ s/\// /g;
-    my ($status, undef) = $self->getDeactivated($ttmp);
-    if (!defined($status) || $status eq 'local') {
+    if (!defined $disable) {
+	my ($status, undef) = $self->getDeactivated($ttmp);
+	if (!defined($status) || $status eq 'local') {
+	    push @nodes_modified, $tmp;
+	}
+    }
+    else {
 	push @nodes_modified, $tmp;
     }
   }
@@ -264,7 +274,7 @@ sub listOrigNodes {
 # in "working") at "level"
 # level is relative
 sub listOrigNodesNoDef {
-  my ($self, $path) = @_;
+  my ($self, $path, $disable) = @_;
   my @nodes = ();
 
   if (defined $path) { 
@@ -291,8 +301,13 @@ sub listOrigNodesNoDef {
     if ($tmp ne 'def') {
 	my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
 	$ttmp =~ s/\// /g;
-	my ($status, undef) = $self->getDeactivated($ttmp);
-	if (!defined($status) || $status eq 'active') {
+	if (!defined $disable) {
+	    my ($status, undef) = $self->getDeactivated($ttmp);
+	    if (!defined($status) || $status eq 'active') {
+		push @nodes_modified, $tmp;
+	    }
+	}
+	else {
 	    push @nodes_modified, $tmp;
 	}
     }
@@ -328,7 +343,7 @@ sub returnParent {
 # returns the value of "node" or undef if the node doesn't exist .
 # node is relative
 sub returnValue {
-  my ( $self, $node ) = @_;
+  my ( $self, $node, $disable ) = @_;
   my $tmp;
 
   $node =~ s/\//%2F/g;
@@ -337,9 +352,21 @@ sub returnValue {
   #getDeactivated
   my $ttmp = $self->{_current_dir_level} . "/" . $node;
   $ttmp =~ s/\// /g;
-  my ($status, undef) = $self->getDeactivated($ttmp);
   #only return value if status is not disabled (i.e. local or both)
-  if (!defined($status) || $status eq 'active') {
+  if (!defined $disable) {
+      my ($status, undef) = $self->getDeactivated($ttmp);
+      if (!defined($status) || $status eq 'active') {
+	  return unless 
+	      open my $file, '<', 
+	      "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val";
+	  
+	  read $file, $tmp, 16384;
+	  close $file;
+	  
+	  $tmp =~ s/\n$//;
+      }
+  }
+  else {
       return unless 
 	  open my $file, '<', 
 	  "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node/node.val";
@@ -377,9 +404,9 @@ sub returnComment {
 # returns the value of "node" or undef if the node doesn't exist .
 # node is relative
 sub returnOrigPlusComValue {
-  my ( $self, $path ) = @_;
+  my ( $self, $path, $disable ) = @_;
 
-  my $tmp = returnValue($self,$path);
+  my $tmp = returnValue($self,$path,$disable);
 
   my $level = $self->{_level};
   if (! defined $level) {
@@ -422,7 +449,7 @@ sub returnOrigPlusComValue {
 # in "working") or undef if the node doesn't exist.
 # node is relative
 sub returnOrigValue {
-  my ( $self, $node ) = @_;
+  my ( $self, $node, $disable ) = @_;
   my $tmp;
 
   $node =~ s/\//%2F/g;
@@ -432,11 +459,23 @@ sub returnOrigValue {
   #getDeactivated
   my $ttmp = $self->{_current_dir_level} . "/" . $node;
   $ttmp =~ s/\// /g;
-  my ($status, undef) = $self->getDeactivated($ttmp);
   #only return value if status is not disabled (i.e. local or both)
-  if (!defined($status) || $status eq 'local') {
+  if (!defined $disable) {
+      my ($status, undef) = $self->getDeactivated($ttmp);
+      if (!defined($status) || $status eq 'local') {
+	  my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+	  
+	  return unless open my $file, '<', "$filepath/node.val";
+	  
+	  read $file, $tmp, 16384;
+	  close $file;
+	  
+	  $tmp =~ s/\n$//;
+      }
+  }
+  else {
       my $filepath = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
-
+      
       return unless open my $file, '<', "$filepath/node.val";
       
       read $file, $tmp, 16384;
@@ -463,8 +502,8 @@ sub returnValues {
 # returns an array of all the values of "node", or an empty array if the values do not exist.
 # node is relative
 sub returnOrigPlusComValues {
-  my ( $self, $path ) = @_;
-  my @values = returnOrigValues($self,$path);
+  my ( $self, $path, $disable ) = @_;
+  my @values = returnOrigValues($self,$path,$disable);
 
   #now parse the commit accounting file.
   my $level = $self->{_level};
@@ -544,17 +583,19 @@ sub exists {
 ## existsOrig("node")
 # Returns true if the "original node" exists. 
 sub existsOrig {
-  my ( $self, $node ) = @_;
+  my ( $self, $node, $disable ) = @_;
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
   #getDeactivated()
   my $ttmp = $self->{_current_dir_level} . "/" . $node;
   $ttmp =~ s/\// /g;
-  my ($status, undef) = $self->getDeactivated($ttmp);
-  #only return value if status is not disabled (i.e. local or both)
-  if (defined($status) && ($status eq 'both' || $status eq 'active')) { #if a .disable is in local or active or both then return false
-      return undef;
+  if (!defined $disable) {
+      my ($status, undef) = $self->getDeactivated($ttmp);
+      #only return value if status is not disabled (i.e. local or both)
+      if (defined($status) && ($status eq 'both' || $status eq 'active')) { #if a .disable is in local or active or both then return false
+	  return undef;
+      }
   }
 
   return ( -d "$self->{_active_dir_base}$self->{_current_dir_level}/$node" );
@@ -563,7 +604,7 @@ sub existsOrig {
 ## isDeleted("node")
 # is the "node" deleted. node is relative.  returns true or false
 sub isDeleted {
-  my ($self, $node) = @_;
+  my ($self, $node, $disable) = @_;
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
 
@@ -575,10 +616,12 @@ sub isDeleted {
   #getDeactivated()
   my $ttmp = $self->{_current_dir_level} . "/" . $node;
   $ttmp =~ s/\// /g;
-  my ($status, undef) = $self->getDeactivated($ttmp);
-  #only return value if status is not disabled (i.e. local or both)
-  if (defined($status) && $status eq 'local') {
-      return (-e $filepathAct);
+  if (!defined $disable) {
+      my ($status, undef) = $self->getDeactivated($ttmp);
+      #only return value if status is not disabled (i.e. local or both)
+      if (defined($status) && $status eq 'local') {
+	  return (-e $filepathAct);
+      }
   }
 
   return ((-e $filepathAct) && !(-e $filepathNew));
@@ -588,9 +631,9 @@ sub isDeleted {
 # return array of deleted nodes in the "level"
 # "level" defaults to current
 sub listDeleted {
-  my ($self, $path) = @_;
-  my @new_nodes = $self->listNodes($path);
-  my @orig_nodes = $self->listOrigNodes($path);
+  my ($self, $path, $disable) = @_;
+  my @new_nodes = $self->listNodes($path,$disable);
+  my @orig_nodes = $self->listOrigNodes($path,$disable);
   my %new_hash = map { $_ => 1 } @new_nodes;
   my @deleted = grep { !defined($new_hash{$_}) } @orig_nodes;
   return @deleted;
@@ -731,13 +774,13 @@ sub listNodeStatus {
   my %nodehash = ();
 
   # find deleted nodes first
-  @nodes = $self->listDeleted($path);
+  @nodes = $self->listDeleted($path,$disable);
   foreach my $node (@nodes) {
     if ($node =~ /.+/) { $nodehash{$node} = "deleted" };
   }
 
   @nodes = ();
-  @nodes = $self->listNodes($path);
+  @nodes = $self->listNodes($path,$disable);
   foreach my $node (@nodes) {
       if ($node =~ /.+/) {
 	  my $status = undef;
