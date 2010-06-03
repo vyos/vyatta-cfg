@@ -1,3 +1,21 @@
+vyatta-cfg (0.16.56) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Remove unnecessary return statements
+
+  [ Michael Larson ]
+  * fix for compilier warnings in commit2.c
+
+  [ Stephen Hemminger ]
+  * Fix missing help text
+
+  [ Michael Larson ]
+  * more fixes for compilier warnings.
+  * Additional fix to cli_new.c on arg.
+  * fix for bug 5647.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 02 Jun 2010 17:31:53 -0700
+
 vyatta-cfg (0.16.55) unstable; urgency=low
 
   * bug fix for 5646. Suppress variable replacement if deactivated for
