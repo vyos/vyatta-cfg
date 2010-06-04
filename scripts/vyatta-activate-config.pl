@@ -161,5 +161,4 @@ else {
 
 `touch $ENV{VYATTA_TEMP_CONFIG_DIR}/.modified`;
 
-print "Done\n";
 exit 0;
