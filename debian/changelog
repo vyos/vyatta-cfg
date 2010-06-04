@@ -1,3 +1,12 @@
+vyatta-cfg (0.16.63) unstable; urgency=low
+
+  * remove 'done' from end of activate script.
+  * fix for deactivated root node that is deleted and then committed.
+  * modified show output when root deactivated node is deleted. in this
+    case suppress the active designation.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 04 Jun 2010 15:33:08 -0700
+
 vyatta-cfg (0.16.62) unstable; urgency=low
 
   * prevent deactivate from being applied to a created node within a
