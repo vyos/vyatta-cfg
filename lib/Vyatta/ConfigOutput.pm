@@ -85,7 +85,7 @@ sub displayValues {
 
   if ($is_multi) {
     my @ovals = $config->returnOrigValues('','true');
-    my @nvals = $config->returnValues('');
+    my @nvals = $config->returnValues('','true');
     if ($is_text) {
       @ovals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @ovals;
       @nvals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @nvals;
@@ -209,7 +209,25 @@ sub displayDeletedOrigChildren {
 
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
-	    $dis = '! ';
+	      if ($state eq 'active') {
+		  if (defined($dont_show_as_deleted)) {
+		      $dis = '! ';
+		  }
+		  else {
+		      $dis = 'A ';
+		  }
+	      }
+	      elsif ($state eq 'local') {
+		  if (defined($dont_show_as_deleted)) {
+		      $dis = '  ';
+		  }
+		  else {
+		      $dis = 'D ';
+		  }
+	      }
+	      else {
+		  $dis = '! ';
+	      }
 	}	
 	else {
 	    $dis = '';
@@ -244,7 +262,25 @@ sub displayDeletedOrigChildren {
 	  #need separate check here
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
-	      $dis = '! ';
+	      if ($state eq 'active') {
+		  if (defined($dont_show_as_deleted)) {
+		      $dis = '! ';
+		  }
+		  else {
+		      $dis = 'A ';
+		  }
+	      }
+	      elsif ($state eq 'local') {
+		  if (defined($dont_show_as_deleted)) {
+		      $dis = '  ';
+		  }
+		  else {
+		      $dis = 'D ';
+		  }
+	      }
+	      else {
+		  $dis = '! ';
+	      }
 	  }
 	  else {
 	      $dis = '';
@@ -308,7 +344,15 @@ sub displayChildren {
 
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
-	    $dis = '! ';
+	      if ($state eq 'active') {
+		  $dis = 'A ';
+	      }
+	      elsif ($state eq 'local') {
+		  $dis = 'D ';
+	      }
+	      else {
+		  $dis = '! ';
+	      }
 	}	
 	else {
 	    $dis = '';
@@ -350,7 +394,15 @@ sub displayChildren {
 
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
-	      $dis = '! ';
+	      if ($state eq 'active') {
+		  $dis = 'A ';
+	      }
+	      elsif ($state eq 'local') {
+		  $dis = 'D ';
+	      }
+	      else {
+		  $dis = '! ';
+	      }
 	  }
 	  else {
 	      $dis = '';

@@ -594,7 +594,7 @@ sub existsOrig {
       my ($status, undef) = $self->getDeactivated($ttmp);
       #only return value if status is not disabled (i.e. local or both)
       if (defined($status) && ($status eq 'both' || $status eq 'active')) { #if a .disable is in local or active or both then return false
-	  return undef;
+	  return;
       }
   }
 
@@ -678,7 +678,7 @@ sub getDeactivated {
   $node =~ s/ /\//g;
 
   while (1) {
-      my $filepath = "$self->{_changes_only_dir_base}/$node";
+      my $filepath = "$self->{_new_config_dir_base}/$node";
       my $filepathActive = "$self->{_active_dir_base}/$node";
 
       my $local = $filepath . "/.disable";
