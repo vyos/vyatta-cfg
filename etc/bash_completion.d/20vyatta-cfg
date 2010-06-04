@@ -68,9 +68,18 @@ show ()
   | eval "${VYATTA_PAGER:-cat}"
 }
 
+commit ()
+{
+    /opt/vyatta/sbin/my_commit $@
+    if [ $? == 0 ]; then
+       touch $VYATTA_CHANGES_ONLY_DIR/.unsaved
+    fi
+}
+
 save ()
 {
   eval "sudo sg vyattacfg \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
+  rm -f $VYATTA_CHANGES_ONLY_DIR/.unsaved
 }
 
 discard ()
@@ -312,6 +321,9 @@ up ()
 
 really_exit()
 {
+  if [ -f $VYATTA_CHANGES_ONLY_DIR/.unsaved ]; then
+     echo "Warning: configuration changes have not been saved."
+  fi
   sudo umount $VYATTA_TEMP_CONFIG_DIR
   sudo rm -rf $VYATTA_TEMP_CONFIG_DIR $VYATTA_CHANGES_ONLY_DIR \
               $VYATTA_CONFIG_TMP
@@ -1306,7 +1318,6 @@ fi
 set -o ignoreeof 1
 
 set_config_ps1 ''
-alias commit=/opt/vyatta/sbin/my_commit
 alias set=/opt/vyatta/sbin/my_set
 alias delete=/opt/vyatta/sbin/my_delete
 
