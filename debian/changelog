@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.62) unstable; urgency=low
+
+  * prevent deactivate from being applied to a created node within a
+    single commit.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 04 Jun 2010 11:44:00 -0700
+
 vyatta-cfg (0.16.61) unstable; urgency=low
 
   * adjusting spacing for new deactivate/activation notation in
