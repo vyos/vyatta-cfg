@@ -210,12 +210,7 @@ sub displayDeletedOrigChildren {
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
 	      if ($state eq 'active') {
-		  if (defined($dont_show_as_deleted)) {
-		      $dis = '! ';
-		  }
-		  else {
-		      $dis = 'A ';
-		  }
+		  $dis = '! ';
 	      }
 	      elsif ($state eq 'local') {
 		  if (defined($dont_show_as_deleted)) {
@@ -263,12 +258,7 @@ sub displayDeletedOrigChildren {
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
 	      if ($state eq 'active') {
-		  if (defined($dont_show_as_deleted)) {
-		      $dis = '! ';
-		  }
-		  else {
-		      $dis = 'A ';
-		  }
+		  $dis = '! ';
 	      }
 	      elsif ($state eq 'local') {
 		  if (defined($dont_show_as_deleted)) {
@@ -345,7 +335,12 @@ sub displayChildren {
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
 	      if ($state eq 'active') {
-		  $dis = 'A ';
+                 if ($child_hash{$child} eq 'deleted') {
+                     $dis = '! ';
+                 }
+                 else {
+                     $dis = 'A ';
+                 }
 	      }
 	      elsif ($state eq 'local') {
 		  $dis = 'D ';
