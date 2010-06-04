@@ -1,3 +1,15 @@
+vyatta-cfg (0.16.60) unstable; urgency=low
+
+  [ Michael Larson ]
+  *     implemented modified notation for pre-commit
+    activate/deactivate. added check on modified nodes prior to
+
+  [ Stig Thormodsrud ]
+  * Fix 1452: Add warning prompt to save configuration when exiting
+    configuration mode.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 03 Jun 2010 18:26:47 -0700
+
 vyatta-cfg (0.16.59) unstable; urgency=low
 
   * move list functions to vrrp perl module
