@@ -230,7 +230,7 @@ sub displayDeletedOrigChildren {
 	      }
 	}	
 	else {
-	    $dis = '';
+	    $dis = '  ';
 	}
     }
 
@@ -283,7 +283,7 @@ sub displayDeletedOrigChildren {
 	      }
 	  }
 	  else {
-	      $dis = '';
+	      $dis = '  ';
 	  }
 
           print "$dis$dprefix$prefix$child $cname {\n";
@@ -355,7 +355,7 @@ sub displayChildren {
 	      }
 	}	
 	else {
-	    $dis = '';
+	    $dis = '  ';
 	}
     }
 
@@ -405,7 +405,7 @@ sub displayChildren {
 	      }
 	  }
 	  else {
-	      $dis = '';
+	      $dis = '  ';
 	  }
 
           my $tdiff = ' ';
