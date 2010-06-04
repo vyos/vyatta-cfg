@@ -372,7 +372,17 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 
 	if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	  strcpy(data_buf,dirp->d_name+4); //SKIP THE .WH.
-	  vn->_data._operation = K_DEL_OP;
+	  
+	  //special test for deleted .disable file.
+	  char buf[MAX_LENGTH_HELP_STR];
+	  sprintf(buf,"%s/%s/%s/%s",get_adirp(),rel_data_path,data_buf,DISABLE_FILE);
+	  struct stat s;
+	  if (lstat(buf,&s) == 0) {
+	    vn->_data._operation = K_NO_OP;
+	  }
+	  else {
+	    vn->_data._operation = K_DEL_OP;
+	  }
 	}
 	else {
 	  strcpy(data_buf,dirp->d_name); 
