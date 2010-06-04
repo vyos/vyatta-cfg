@@ -115,6 +115,22 @@ if ($action eq 'deactivate') {
 }
 
 #######################################################
+#prevent deactivate or activate to be applied with 
+#uncommitted changes
+#######################################################
+if (-e "$ENV{VYATTA_CHANGES_ONLY_DIR}/$path") {
+    opendir DIR, "$ENV{VYATTA_CHANGES_ONLY_DIR}/$path";
+    my @files = readdir DIR;
+    foreach my $d (@files) {
+	if ($d ne '.' && $d ne '..') {
+	    print("Cannot $action modified elements, please commit your changes and then deactivate.\n");
+	    closedir DIR;
+	    exit 1;
+	}
+    }
+    closedir DIR;
+}
+#######################################################
 #now apply the magic
 #######################################################
 if ($action eq 'activate') {
