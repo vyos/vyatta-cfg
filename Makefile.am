@@ -1,6 +1,7 @@
 share_perl5dir = /opt/vyatta/share/perl5/Vyatta
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
+commit_run_dir = /etc/commit
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
@@ -82,6 +83,7 @@ cpiop = find  . ! -regex '\(.*~\|.*\.bak\|.*\.swp\|.*\#.*\#\)' -print0 | \
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(cfgdir)
+	mkdir -p $(DESTDIR)$(commit_run_dir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
 	cd $(DESTDIR)/opt/vyatta/sbin; ln -s my_commit2 my_commit

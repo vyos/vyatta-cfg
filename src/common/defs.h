@@ -17,6 +17,10 @@
 #define ENV_ACTION_ACTIVE "ACTIVE"
 #define ENV_SIBLING_POSITION "COMMIT_SIBLING_POSITION"
 #define ENV_DATA_PATH "NODE_DATA_PATH"
+#define ENV_COMMIT_STATUS "COMMIT_STATUS"
+
+#define COMMIT_CHANGES_FILE "/tmp/.changes"
+#define COMMIT_HOOK_DIR "/etc/commit"
 
 struct Result
 {

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <syslog.h>
 #include <string.h>
 #include <sys/time.h>
@@ -131,13 +132,13 @@ main(int argc, char** argv)
   boolean disable_partial_commit = FALSE;
   boolean full_commit_check = FALSE;
   boolean break_priority = FALSE;
-  char *hook = NULL;
+  boolean disable_hook = FALSE;
 
   /* this is needed before calling certain glib functions */
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoafbr:")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoafbr")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -174,7 +175,7 @@ main(int argc, char** argv)
       break_priority = TRUE;
       break;
     case 'r':
-      hook = optarg;
+      disable_hook = TRUE;
       break;
     default:
       usage();
@@ -232,7 +233,7 @@ main(int argc, char** argv)
   }
 
   //open the changes file and clear
-  FILE *fp_changes = fopen("/tmp/.changes","w");
+  FILE *fp_changes = fopen(COMMIT_CHANGES_FILE,"w");
   if (fp_changes == NULL) {
     printf("commit2: Cannot access changes file, exiting\n");
     syslog(LOG_ERR,"commit2: Cannot access changes file, exiting");
@@ -350,14 +351,40 @@ main(int argc, char** argv)
     fclose(fp_changes);
   }
 
-  if (hook != NULL) {
-    if (system(hook) == -1) {
-      syslog(LOG_DEBUG,"commit::main(), error on call to hook");
+  if (disable_hook == FALSE) {
+    DIR *dp;
+    if ((dp = opendir(COMMIT_HOOK_DIR)) == NULL){
+      if (g_debug) {
+	//could also be a terminating value now
+	printf("could not open hook directory\n");
+	syslog(LOG_DEBUG,"could not open hook directory");
+      }
+    }
+    else {
+      if (no_errors == TRUE) {
+	setenv(ENV_COMMIT_STATUS,"SUCCESS",1);
+      }
+      else {
+	setenv(ENV_COMMIT_STATUS,"FAILURE",1);
+      }
+      struct dirent *dirp = NULL;
+      while ((dirp = readdir(dp)) != NULL) {
+	if (strcmp(dirp->d_name, ".") != 0 && 
+	    strcmp(dirp->d_name, "..") != 0) {
+	  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+	  sprintf(buf,"%s/%s",COMMIT_HOOK_DIR,dirp->d_name);
+	  if (system(buf) == -1) {
+	    syslog(LOG_DEBUG,"commit::main(), error on call to hook: %s", buf);
+	  }
+	}
+      }
+      unsetenv(ENV_COMMIT_STATUS);
+      closedir(dp);
     }
   }
 
   //remove tmp changes file as all the work is now done
-  unlink("/tmp/.changes");
+  unlink(COMMIT_CHANGES_FILE);
 
   exit (no_errors == FALSE);
 }
