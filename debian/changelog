@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.64) unstable; urgency=low
+
+  * add commit hook directory.
+  * fix for bug 5643. API changes missed exists(). flag check added.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Sat, 05 Jun 2010 20:04:14 -0700
+
 vyatta-cfg (0.16.63) unstable; urgency=low
 
   * remove 'done' from end of activate script.
