@@ -571,13 +571,22 @@ sub returnOrigValues {
 }
 
 ## exists("node")
-# Returns true if the "node" exists. 
+# Returns true if the "node" exists.
 sub exists {
-  my ( $self, $node ) = @_;
-  $node =~ s/\//%2F/g;
-  $node =~ s/\s+/\//g;
-
-  return ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" );
+    my ( $self, $node, $disable ) = @_;
+    $node =~ s/\//%2F/g;
+    $node =~ s/\s+/\//g;
+    #getDeactivated()
+    my $ttmp = $self->{_current_dir_level} . "/" . $node;
+    $ttmp =~ s/\// /g;
+    if (!defined $disable) {
+	my ($status, undef) = $self->getDeactivated($ttmp);
+	#only return value if status is not disabled (i.e. local or both)
+	if (defined($status) && ($status eq 'both' || $status eq 'local')) { #if a .disable is in local or active or both then return false
+	    return;
+	}
+    }
+    return ( -d "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node" );
 }
 
 ## existsOrig("node")
