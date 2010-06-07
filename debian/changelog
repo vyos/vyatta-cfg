@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.65) unstable; urgency=low
+
+  * fix for bug 5610 and bug 5655.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 07 Jun 2010 16:10:44 -0700
+
 vyatta-cfg (0.16.64) unstable; urgency=low
 
   * add commit hook directory.
