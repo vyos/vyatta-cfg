@@ -58,7 +58,7 @@ sub check_parents {
 }
 
 sub usage() {
-    print "Usage: $0 <path>\n";
+    print "Usage: $0 <activate|deactivate> <path>\n";
     exit 0;
 }
 
@@ -101,35 +101,19 @@ if (! -e $full_path) {
 if ($action eq 'deactivate') {
     my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
     my $local_dir = $full_path;
-    if (-e $active_dir) { #checks active children
+    if (-e $active_dir && !(-e "$active_dir/.disable")) { #checks active children
 	find( \&wanted, $active_dir );
     }
     if (-e $local_dir) { #checks locally commit children, will remove disabled children
 	find( \&wanted_local, $local_dir );
     }
     #final check that walks up tree and checks
-    if (check_parents(@path)) { #checks active and locally committed parents
+    if (!(-e "$active_dir/.disable") && check_parents(@path)) { #checks active and locally committed parents
 	print("Cannot deactivate nested elements\n");
 	exit 1;
     }
 }
 
-#######################################################
-#prevent deactivate or activate to be applied with 
-#uncommitted changes
-#######################################################
-if (-e "$ENV{VYATTA_CHANGES_ONLY_DIR}/$path") {
-    opendir DIR, "$ENV{VYATTA_CHANGES_ONLY_DIR}/$path";
-    my @files = readdir DIR;
-    foreach my $d (@files) {
-	if ($d ne '.' && $d ne '..') {
-	    print("Cannot $action modified elements, please commit your changes and then deactivate.\n");
-	    closedir DIR;
-	    exit 1;
-	}
-    }
-    closedir DIR;
-}
 #######################################################
 #now apply the magic
 #######################################################
@@ -148,10 +132,6 @@ elsif ($action eq 'deactivate') {
     #also needs to be enforced when committing
     my $active_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$path";
     my $local_dir = $full_path;
-    if (-e "$active_dir/.disable" || -e "$local_dir/.disable") {
-        printf("This element has already been deactivated\n");
-        exit 1;
-    }
     `touch $full_path/.disable`;
 }
 else {
