@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.67) unstable; urgency=low
+
+  * fix for bug 5213
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 08 Jun 2010 16:19:07 -0700
+
 vyatta-cfg (0.16.66) unstable; urgency=low
 
   * Additional apis missing support for deactivate node. problem was
