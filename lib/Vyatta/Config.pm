@@ -715,12 +715,20 @@ sub getDeactivated {
 # will check the change_dir to see if the "node" has been changed from a previous
 # value.  returns true or false.
 sub isChanged {
-  my ($self, $node) = @_;
+  my ($self, $node, $disable) = @_;
 
   # let's setup the filepath for the change_dir
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
   my $filepath = "$self->{_changes_only_dir_base}$self->{_current_dir_level}/$node";
+
+  if (!defined $disable) {
+      my ($status,undef) = $self->getDeactivated($self->{_level}." ".$node);
+      if (defined $status && ($status eq 'active' || $status eq 'local')) {
+	  return (defined $status);
+      }
+  }
+
 
   # if the node exists in the change dir, it's modified.
   return (-e $filepath);
@@ -729,7 +737,7 @@ sub isChanged {
 ## isChangedOrDeleted("node")
 # is the "node" changed or deleted. node is relative.  returns true or false
 sub isChangedOrDeleted {
-  my ($self, $node) = @_;
+  my ($self, $node, $disable) = @_;
 
   $node =~ s/\//%2F/g;
   $node =~ s/\s+/\//g;
@@ -745,6 +753,13 @@ sub isChangedOrDeleted {
   my $filepathNew
     = "$self->{_new_config_dir_base}$self->{_current_dir_level}/$node";
 
+  if (!defined $disable) {
+      my ($status,undef) = $self->getDeactivated($self->{_level}." ".$node);
+      if (defined $status && ($status eq 'active' || $status eq 'local')) {
+	  return (defined $status);
+      }
+  }
+
   return ((-e $filepathAct) && !(-e $filepathNew));
 }
 
@@ -752,7 +767,7 @@ sub isChangedOrDeleted {
 # will compare the new_config_dir to the active_dir to see if the "node" has 
 # been added.  returns true or false.
 sub isAdded {
-  my ($self, $node) = @_;
+  my ($self, $node, $disable) = @_;
 
   #print "DEBUG Vyatta::Config->isAdded(): node $node\n";
   # let's setup the filepath for the modify dir
@@ -768,6 +783,13 @@ sub isAdded {
  
   # now let's setup the path for the working dir
   my $filepathActive = "$self->{_active_dir_base}$self->{_current_dir_level}/$node";
+
+  if (!defined $disable) {
+      my ($status,undef) = $self->getDeactivated($self->{_level}." ".$node);
+      if (defined $status && ($status eq 'active')) {
+	  return (defined $status);
+      }
+  }
 
   # if the node is in the active_dir it's not new
   return (! -e $filepathActive);
@@ -802,8 +824,8 @@ sub listNodeStatus {
 	  # No deleted nodes -- added, changed, ot static only.
 	  if (defined $status && $status eq 'local') { $nodehash{$node} = "deleted"; }
 	  elsif (defined $status && $status eq 'active') { $nodehash{$node} = "added"; }
-	  elsif    ($self->isAdded($nodepath))   { $nodehash{$node} = "added"; }
-	  elsif ($self->isChanged($nodepath)) { $nodehash{$node} = "changed"; }
+	  elsif    ($self->isAdded($nodepath,'true'))   { $nodehash{$node} = "added"; }
+	  elsif ($self->isChanged($nodepath,'true')) { $nodehash{$node} = "changed"; }
 	  else { $nodehash{$node} = "static"; }
       }
   }
