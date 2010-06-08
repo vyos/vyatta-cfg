@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.66) unstable; urgency=low
+
+  * Additional apis missing support for deactivate node. problem was
+    seen when reactivating bgp neighbor node.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 07 Jun 2010 17:48:25 -0700
+
 vyatta-cfg (0.16.65) unstable; urgency=low
 
   * fix for bug 5610 and bug 5655.
