@@ -80,7 +80,6 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path,
 					   clind_path_ref cmd_path,
 					   int check_existence,
 					   clind_val *res,
-					   const char* root_cfg_path,
 					   const char* root_tmpl_path,
 					   int return_value_file_name);
 

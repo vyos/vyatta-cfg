@@ -602,6 +602,14 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
  * cfg_path - absolute configuration path,
  * tmpl_path - logical template path,
  * cmd_path - variable command path.
+ *
+ * note: root_cfg_path should not be necessary as absolute paths are already
+ *       handled before this is called (see set_reference_environment() in
+ *       cli_new.c). cli_new.c was passing the wrong path (changes only)
+ *       anyway, causing problems with absolute paths (bug 5213).
+ *       root_tmpl_path should not be necessary either but it's
+ *       used in one place in clind_get_current_value() (it's not clear
+ *       if that case is ever reached), so keep it for now.
  */
 
 int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
@@ -609,7 +617,6 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 					   clind_path_ref cmd_path,
 					   int check_existence,
 					   clind_val* res,
-					   const char* root_cfg_path,
 					   const char* root_tmpl_path,
 					   int return_value_file_name) {
 
@@ -623,11 +630,11 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 	 root_tmpl_path);
   */
   DPRINT("eng_apply_cmd_path cfg=[%s] tmpl=[%s] cmd=[%s] "
-         "rcfg=[%s] rtmpl=[%s]\n",
+         "rtmpl=[%s]\n",
          clind_path_get_path_string(cfg_path_orig),
          clind_path_get_path_string(tmpl_path_orig),
          clind_path_get_path_string(cmd_path),
-         root_cfg_path, root_tmpl_path);
+         root_tmpl_path);
 
   if(cfg_path_orig && tmpl_path_orig && cmd_path && res) {
 
@@ -646,19 +653,11 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
     clind_path_ref tmpl_path=NULL;
     clind_path_ref cfg_path=NULL;
 
-    if(clind_path_is_absolute(cmd_path)) {
-      tmpl_path=clind_path_construct(root_tmpl_path);
-      if(!tmpl_path) {
-	return -1;
-      }
-      cfg_path=clind_path_construct(root_cfg_path);
-      if(!cfg_path) {
-	return -1;
-      }
-    } else {
-      cfg_path=clind_path_clone(cfg_path_orig);
-      tmpl_path=clind_path_clone(tmpl_path_orig);
-    }
+    /* absolute paths have already been handled, i.e., the _orig paths
+     * can be used directly.
+     */
+    cfg_path=clind_path_clone(cfg_path_orig);
+    tmpl_path=clind_path_clone(tmpl_path_orig);
 
     res->value=NULL;
     res->val_type=TEXT_TYPE;

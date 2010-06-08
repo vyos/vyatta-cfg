@@ -1133,7 +1133,6 @@ static int change_var_value(const char* var_reference,const char* value, int act
 						n_cmd_path,
 						FALSE,
 						&cv,
-						get_cdirp(),
 						get_tdirp(),
 						TRUE)==0) {
 	var_path=cv.value;
@@ -1403,7 +1402,6 @@ static int eval_va(valstruct *res, vtw_node *node)
 						      n_cmd_path,
 						      TRUE,
 						      &cv,
-						      get_cdirp(),
 						      get_tdirp(),
 						      FALSE);
 
@@ -1562,7 +1560,6 @@ static int expand_string(char *stringp)
 						      n_cmd_path,
 						      TRUE,
 						      &cv,
-						      get_cdirp(),
 						      get_tdirp(),
 						      FALSE)==0) {
 	      cp=cv.value;
