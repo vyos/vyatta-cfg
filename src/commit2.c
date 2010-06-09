@@ -752,7 +752,7 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
     }
     else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
       //node will be deactivated on commit                                                                                                                                          
-      //LET'S SPOOF the operation... convert it to DELETE                                                                                                                           
+     //LET'S SPOOF the operation... convert it to DELETE
       op = K_DEL_OP;
     }
   }
@@ -784,9 +784,10 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       while (TRUE) {
 	n = n->parent;
 	vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
-	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
+	//	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
 	//DON'T set active when only in disable state...
-	if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
+	//	if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
+	if (((struct VyattaNode*)(n->data))->_data._operation == K_NO_OP) {
 	  ((struct VyattaNode*)(n->data))->_data._operation |= K_ACTIVE_OP;
 	}
 	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
@@ -967,13 +968,13 @@ dump_func(GNode *node, gpointer data)
 
       char disable_op[2];
       if (((struct VyattaNode*)gp)->_data._disable_op == (K_ACTIVE_DISABLE_OP | K_LOCAL_DISABLE_OP)) {
-	disable_op[0] = 'c';
+	disable_op[0] = '!';
       }
       else if (((struct VyattaNode*)gp)->_data._disable_op == K_ACTIVE_DISABLE_OP) {
-	disable_op[0] = 'u';
+	disable_op[0] = 'A';
       }
       else if (((struct VyattaNode*)gp)->_data._disable_op == K_LOCAL_DISABLE_OP) {
-	disable_op[0] = 's';
+	disable_op[0] = 'D';
       }
       else {
 	disable_op[0] = ' ';
