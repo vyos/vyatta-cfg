@@ -28,7 +28,8 @@ use warnings;
 our @EXPORT = qw(get_conf_file get_state_script get_state_file 
                  vrrp_log vrrp_get_init_state get_changes_file
                  start_daemon restart_daemon stop_daemon
-                 vrrp_get_config list_vrrp_intf list_vrrp_group);
+                 vrrp_get_config list_vrrp_intf list_vrrp_group
+                 list_vrrp_sync_group);
 use base qw(Exporter);
 
 use Vyatta::Config;
@@ -302,16 +303,14 @@ sub vrrp_get_init_state {
 	# fall through to logic below
     } 
 
-    if ($preempt eq "false") {
-	$init_state = 'BACKUP';
-    } else {
-	$init_state = 'MASTER';
-    }
+    # start as backup by default
+    $init_state = 'BACKUP';
 
     return $init_state;
 }
 
 sub list_vrrp_intf {
+    my ($val_func) = @_;
     my $config = new Vyatta::Config;
     my @intfs = ();
 
@@ -320,14 +319,22 @@ sub list_vrrp_intf {
         next unless $intf;
         my $path = $intf->path();
         $config->setLevel($path);
-        push @intfs, $name if $config->existsOrig("vrrp");
+        if (defined $val_func) {
+          if ($val_func eq 'isActive') {
+            push @intfs, $name if $config->$val_func("vrrp") == 0;
+          } else {
+            push @intfs, $name if $config->$val_func("vrrp");
+          }
+        } else {
+          push @intfs, $name if $config->existsOrig("vrrp");
+        }
     }
 
     return @intfs;
 }
 
 sub list_vrrp_group {
-    my ($name) = @_;
+    my ($name, $val_func) = @_;
     my $config = new Vyatta::Config;
     my $path;
 
@@ -336,8 +343,32 @@ sub list_vrrp_group {
     $path = $intf->path();
     $path .= " vrrp vrrp-group";
     $config->setLevel($path);
-    my @groups = $config->listOrigNodes();
+    my @groups = ();
+    if (defined $val_func) {
+      @groups = $config->$val_func();
+    } else {
+      @groups = $config->listOrigNodes();
+    }
     return @groups;
+}
+
+sub list_vrrp_sync_group {
+    my ($name, $group, $val_func) = @_;
+    my $config = new Vyatta::Config;
+    my $path;
+
+    my $intf = new Vyatta::Interface($name);
+    next unless $intf;
+    $path = $intf->path();
+    $path .= " vrrp vrrp-group $group sync-group";
+    $config->setLevel($path);
+    my $sync_group = undef;
+    if (defined $val_func) {
+      $sync_group = $config->$val_func();
+    } else {
+      $sync_group = $config->returnOrigValue();
+    }
+    return $sync_group;
 }
 
 1;
