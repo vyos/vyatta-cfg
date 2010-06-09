@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.68) unstable; urgency=low
+
+  * fix for bug 5667. Moved the location of the deactivate check.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 08 Jun 2010 17:07:25 -0700
+
 vyatta-cfg (0.16.67) unstable; urgency=low
 
   * fix for bug 5213
