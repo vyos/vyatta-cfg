@@ -59,6 +59,9 @@
 
 static int is_multi_node(clind_path_ref tmpl_path);
 
+static boolean
+is_deactivated(const clind_path_ref *path);
+
 /*********************
  * Data definitions 
  *
@@ -595,6 +598,11 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
     }
   }
 
+
+  if (is_deactivated(&cfg_path) == TRUE) {
+    return NULL;
+  }
+
   return ret;
 }
 
@@ -916,3 +924,59 @@ static int clind_path_shift_cmd(clind_path_ref path,clind_cmd *cmd) {
   return ret;
 }
 
+
+boolean
+is_deactivated(const clind_path_ref *path)
+{
+  if (path == NULL) {
+    return FALSE;
+  }
+  
+  const char* path_string = clind_path_get_path_string(*path);
+  
+  char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
+  strcpy(buf,path_string);
+
+  //first we'll check the current directory
+  char file[1024];
+  sprintf(file,"%s/.disable",buf);
+  struct stat s;
+  if (lstat(file,&s) == 0) {
+    return TRUE;
+  }
+
+  long min_len = strlen("/opt/vyatta/config/tmp/new_config_");
+
+  //now walk back up tree looking for disable flag.....
+  while (TRUE) {
+    int index = strlen(buf)-1;
+    if (index < min_len) {
+      return FALSE;
+    }
+    if (buf[index] == '/') {
+      while (TRUE) {
+	if (buf[--index] != '/') {
+	  buf[index] = '\0';
+	  break;
+	}
+      }
+    }
+
+    char *ptr = rindex(buf,'/');
+    if (ptr != NULL) {
+      *ptr = '\0';
+    }
+    
+    char file[1024];
+    sprintf(file,"%s/.disable",buf);
+
+    //    fprintf(out_stream,"checking file for disable: %s\n",file);
+
+    struct stat s;
+    if (lstat(file,&s) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}

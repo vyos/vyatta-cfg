@@ -98,9 +98,6 @@ static int set_reference_environment(const char* var_reference,
 				     clind_path_ref *n_tmpl_path,
 				     clind_path_ref *n_cmd_path,
 				     int active);
-static boolean
-is_deactivated(const clind_path_ref *path,const char *symbol) ;
-
 /*************************************************
      GLOBAL FUNCTIONS
 ***************************************************/
@@ -1553,18 +1550,15 @@ static int expand_string(char *stringp)
 	  
 	  memset(&cv,0,sizeof(cv));
 
-	  if (is_deactivated(&n_cfg_path,scanp) == FALSE) {
-
-	    if(clind_config_engine_apply_command_path(n_cfg_path,
-						      n_tmpl_path,
-						      n_cmd_path,
-						      TRUE,
-						      &cv,
-						      get_tdirp(),
-						      FALSE)==0) {
-	      cp=cv.value;
-	      
-	    }
+	  if(clind_config_engine_apply_command_path(n_cfg_path,
+						    n_tmpl_path,
+						    n_cmd_path,
+						    TRUE,
+						    &cv,
+						    get_tdirp(),
+						    FALSE)==0) {
+	    cp=cv.value;
+	    
 	  }
 
 	}
@@ -2402,7 +2396,7 @@ system_out(const char *command)
 
 
 boolean
-is_deactivated(const clind_path_ref *path,const char *symbol) 
+is_deactivated(const clind_path_ref *path) 
 {
   if (path == NULL) {
     return FALSE;
@@ -2412,13 +2406,6 @@ is_deactivated(const clind_path_ref *path,const char *symbol)
   
   char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
   strcpy(buf,path_string);
-
-  //now append symbol
-  if (symbol != NULL && strlen(symbol) > 2) { 
-    strcat(buf,"/");
-    strncat(buf,symbol,strlen(symbol)-2);
-  }
-  
 
   //first we'll check the current directory
   char file[1024];
