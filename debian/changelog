@@ -1,3 +1,18 @@
+vyatta-cfg (0.16.69) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * fix another default value display problem
+
+  [ Michael Larson ]
+  * cleanup and fix cases to handle activated deleted multinodes
+    correctly. simplified deactivated nodes logic in commit.
+
+  [ Mohit Mehta ]
+  * * changes to be able to use list functions with different CLI fetch
+    functions
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Wed, 09 Jun 2010 15:01:28 -0700
+
 vyatta-cfg (0.16.68) unstable; urgency=low
 
   * fix for bug 5667. Moved the location of the deactivate check.
