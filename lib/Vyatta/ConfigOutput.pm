@@ -1,4 +1,4 @@
-# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: Perl module for generating output of the configuration.
 
@@ -143,7 +143,8 @@ sub displayValues {
     my @cnames = sort keys %cnodes;
 
     if (defined($simple_show)) {
-      if (!$cnodes{'def'} || $show_all) {
+      if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
+          or $show_all) {
         if ($is_password && $hide_password) {
           $oval = $HIDE_PASSWORD;
         }
@@ -164,14 +165,13 @@ sub displayValues {
         $diff = '>';
       }
     }
-    if (!$cnodes{'def'} || $show_all) {
+    # also need to handle the case where def marker is deleted.
+    if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
+        or $show_all) {
       if ($is_password && $hide_password) {
         $value = $HIDE_PASSWORD;
       }
       print "$dis$diff$prefix$name $value\n";
-    }
-    elsif ($cnodes{'def'} && ($diff eq '>' || $diff eq '-')) {
-        print "$dis$diff$prefix$name $value\n";
     }
   }
 }

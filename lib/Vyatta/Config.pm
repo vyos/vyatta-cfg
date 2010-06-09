@@ -1,4 +1,4 @@
-# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: vyatta configuration parser
 

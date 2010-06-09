@@ -340,9 +340,11 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
     if (strcmp(dirp->d_name, ".") != 0 && 
 	strcmp(dirp->d_name, "..") != 0 &&
 	strcmp(dirp->d_name, MODIFIED_FILE) != 0 &&
+	strcmp(dirp->d_name, UNSAVED_FILE) != 0 &&
 	strcmp(dirp->d_name, DEF_FILE) != 0 &&
 	strcmp(dirp->d_name, DISABLE_FILE) != 0 &&
 	strcmp(dirp->d_name, WHITEOUT_FILE) != 0 &&
+	strcmp(dirp->d_name, WHITEOUT_DISABLE_FILE) != 0 &&
 	strcmp(dirp->d_name, VALUE_FILE) != 0) {
       processed = TRUE;
 
@@ -365,24 +367,12 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
       }
 
       char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
-      if (strncmp(dirp->d_name,DELETED_NODE,4) == 0 || 
-	  deactivated != K_NO_DISABLE_OP) { 
-
+      if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
 
 	if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	  strcpy(data_buf,dirp->d_name+4); //SKIP THE .WH.
-	  
-	  //special test for deleted .disable file.
-	  char buf[MAX_LENGTH_HELP_STR];
-	  sprintf(buf,"%s/%s/%s/%s",get_adirp(),rel_data_path,data_buf,DISABLE_FILE);
-	  struct stat s;
-	  if (lstat(buf,&s) == 0) {
-	    vn->_data._operation = K_NO_OP;
-	  }
-	  else {
-	    vn->_data._operation = K_DEL_OP;
-	  }
+	  vn->_data._operation = K_DEL_OP;
 	}
 	else {
 	  strcpy(data_buf,dirp->d_name); 
@@ -404,6 +394,29 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 
 	//will need to enter a special recursion against the active configuration to mark nested delete nodes
 	retrieve_data(new_data_path,new_node,get_adirp(),K_DEL_OP);
+      }
+      else if (deactivated != K_NO_DISABLE_OP) {
+	//NEED TO RECURSE DOWN THE ACTIVE PATH THEN.
+	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
+
+	strcpy(data_buf,dirp->d_name); 
+	vn->_data._operation = K_NO_OP;
+	
+	//create new node and insert...
+	vn->_data._name = data_buf;
+	vn->_data._value = FALSE;
+	vn->_config._priority = LOWEST_PRIORITY;
+	vn->_data._disable_op = deactivated;
+	
+	char new_data_path[MAX_LENGTH_DIR_PATH];
+	sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
+	
+	GNode *new_node = g_node_new(vn);
+	//	new_node = g_node_insert(node, -1, new_node);
+	new_node = insert_sibling_in_order(node,new_node);
+
+	//will need to enter a special recursion against the active configuration to mark nested delete nodes
+	retrieve_data(new_data_path,new_node,get_adirp(),K_NO_OP);
       }
       else {
 	strcpy(data_buf,dirp->d_name);
@@ -435,7 +448,7 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 	GNode *new_node = g_node_new(vn);
 	//	new_node = g_node_insert(node, -1, new_node);
 	new_node = insert_sibling_in_order(node,new_node);
-	if (op == K_DEL_OP) {
+	if (op == K_DEL_OP || vn->_data._disable_op != K_NO_DISABLE_OP) {
 	  retrieve_data(new_data_path,new_node,get_adirp(),vn->_data._operation);
 	}
 	else {
