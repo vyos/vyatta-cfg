@@ -102,14 +102,7 @@ sub enumerate_branch {
   }
 
   if (defined($cur_node->{'disable'})) {
-      my $p = join("/",@cur_path[0..$#cur_path-1]);
-      my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$p/node.val";
-      if (-e $leaf) {
-	  push @disable_list, join(" ",@cur_path[0..$#cur_path-1]);
-      }
-      else {
-	  push @disable_list, join(" ",@cur_path);
-      }
+      push @disable_list, join(" ",@cur_path);
   }
 
   if ($terminal) {

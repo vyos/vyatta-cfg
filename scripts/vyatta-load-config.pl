@@ -230,7 +230,17 @@ foreach (@activate_list) {
 }
 
 foreach (@deactivate_list) {
-    my $cmd = "$sbindir/vyatta-activate-config.pl deactivate $_";
+    my @cp = split(" ",$_);
+    my $p = join("/",@cp[0..$#cp-1]);
+    my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$p/node.val";
+    my $c = "";
+    if (-e $leaf) {
+	$c = join(" ",@cp[0..$#cp-1]);
+    }
+    else {
+	$c = join(" ",@cp);
+    }
+    my $cmd = "$sbindir/vyatta-activate-config.pl deactivate $c";
     system("$cmd 1>/dev/null");
     #ignore error on complaint re: nested nodes
 }
