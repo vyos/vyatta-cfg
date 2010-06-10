@@ -1264,7 +1264,7 @@ validate_func(GNode *node, gpointer data)
   }
   
   //don't perform validation checks on disabled nodes
-  if (d->_disable_op == K_LOCAL_DISABLE_OP) { 
+  if ((d->_disable_op == K_LOCAL_DISABLE_OP) || (d->_disable_op == (K_LOCAL_DISABLE_OP | K_ACTIVE_DISABLE_OP))) { 
       return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
   }
 
