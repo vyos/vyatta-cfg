@@ -1,3 +1,15 @@
+vyatta-cfg (0.16.74) unstable; urgency=low
+
+  [ Michael Larson ]
+  * allow for reverse difference between configurations.
+
+  [ Mohit Mehta ]
+  * add function to get all configured sync-groups
+
+  [ Michael Larson ]
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 11 Jun 2010 15:19:08 -0700
+
 vyatta-cfg (0.16.73) unstable; urgency=low
 
   [ An-Cheng Huang ]
