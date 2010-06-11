@@ -220,6 +220,10 @@ case "$1" in
    /opt/vyatta/sbin/vyatta-activate-config.pl activate "${@:2}"
    RET_STATUS=$?
    ;;
+  show)
+   /opt/vyatta/sbin/vyatta-output-config.pl
+   RET_STATUS=$?
+   ;;
   comment)
    /opt/vyatta/sbin/vyatta-comment-config.pl "${@:2}"
    RET_STATUS=$?
