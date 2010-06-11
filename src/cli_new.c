@@ -2039,6 +2039,23 @@ boolean validate_value(vtw_def *def, char *cp)
   int        status;
   boolean    ret=TRUE;
 
+  /* certain characters are not allowed */
+  {
+    int i = 0;
+    for (i = 0; i < strlen(cp); i++) {
+      if (cp[i] == '\'') {
+        fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
+                            "in a value string\n");
+        bye("single quote in value string\n");
+      }
+      if (cp[i] == '\n') {
+        fprintf(out_stream, "Cannot use the newline character "
+                            "in a value string\n");
+        bye("newline in value string\n");
+      }
+    }
+  }
+
   /* prepare cur_value */
   set_at_string(cp);
   status = char2val(def, cp, &validate_value_val);

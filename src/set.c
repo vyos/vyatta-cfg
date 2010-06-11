@@ -29,17 +29,6 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
   char* path_end=NULL;
 
   if (!empty_val) {
-    int i = 0;
-    int val_len = strlen(valp);
-
-    for (i = 0; i < val_len; i++) {
-      if (valp[i] == '\'') {
-        fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
-                            "in a value string\n");
-        bye("single quote in value string\n");
-      }
-    }
-
     {
       clind_path_ref tp = clind_path_construct(t_path.path);
       if(tp) {
