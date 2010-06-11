@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.73) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add value character restriction
+
+  [ Michael Larson ]
+  * extension to cmd wrapper.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 11 Jun 2010 10:50:01 -0700
+
 vyatta-cfg (0.16.72) unstable; urgency=low
 
   * fix for bug 5679.
