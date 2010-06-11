@@ -29,7 +29,7 @@ our @EXPORT = qw(get_conf_file get_state_script get_state_file
                  vrrp_log vrrp_get_init_state get_changes_file
                  start_daemon restart_daemon stop_daemon
                  vrrp_get_config list_vrrp_intf list_vrrp_group
-                 list_vrrp_sync_group);
+                 list_vrrp_sync_group list_all_vrrp_sync_grps);
 use base qw(Exporter);
 
 use Vyatta::Config;
@@ -369,6 +369,24 @@ sub list_vrrp_sync_group {
       $sync_group = $config->returnOrigValue();
     }
     return $sync_group;
+}
+
+sub list_all_vrrp_sync_grps {
+  my @sync_grps = ();
+  my @vrrp_intfs = list_vrrp_intf();
+  foreach my $vrrp_intf (@vrrp_intfs) {
+    my @vrrp_groups = list_vrrp_group($vrrp_intf);
+    foreach my $vrrp_group (@vrrp_groups) {
+      my $sync_grp = list_vrrp_sync_group($vrrp_intf, $vrrp_group);
+      if (defined $sync_grp) {
+        # add to sync_grps if not already there
+	if (scalar( grep( /^$sync_grp$/, @sync_grps ) ) == 0) {
+	  push (@sync_grps, $sync_grp);
+	}
+      }
+    }
+  }
+  return @sync_grps;
 }
 
 1;
