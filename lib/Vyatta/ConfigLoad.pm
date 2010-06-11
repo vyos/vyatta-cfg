@@ -384,6 +384,7 @@ sub findSetNodes {
 sub getConfigDiff {
   $active_cfg = new Vyatta::Config;
   $new_cfg_ref = shift;
+  my $reverse = shift;
   @set_list = ();
 #  @disable_list = ();
   @delete_list = ();
@@ -392,6 +393,11 @@ sub getConfigDiff {
 
   # need to filter out deletions of nodes with default values
   my @new_delete_list = ();
+  if ($reverse == 'true') {
+      my @tmp = @delete_list;
+      @delete_list = @set_list;
+      @set_list = @tmp;
+  }
   foreach my $del (@delete_list) {
     my @comps = map { 
 	my $file = $_;
