@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.12+kenwood10) unstable; urgency=low
+
+  [ Bob Gilligan ]
+  * Bugfix 5021: Make smp_affinity configuration tolerant of failures.
+
+  [ Robert Bays ]
+  * add support for bnx2x cards to auto smp affinity scripts
+
+ -- Robert Bays <rbays@roatan>  Fri, 11 Jun 2010 15:57:17 -0700
+
 vyatta-cfg (0.16.12+kenwood9) unstable; urgency=low
 
   * fix for bug 5300
