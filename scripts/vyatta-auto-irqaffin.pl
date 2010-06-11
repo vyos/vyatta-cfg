@@ -184,7 +184,7 @@ sub broadcom_func{
     log_msg("broadcom_func was called.\n");
 
     # Figure out how many queues we have
-    $num_queues=`grep "$ifname-" /proc/interrupts | wc -l`;
+    $num_queues=`egrep "$ifname\[-.\]\{1\}" /proc/interrupts | wc -l`;
     $num_queues =~ s/\n//;
 
     log_msg("num_queues=$num_queues\n");
@@ -209,7 +209,7 @@ sub broadcom_func{
 	log_msg ("queue=$queue cpu=$cpu cpu_bit=$cpu_bit cpu_hex=$cpu_hex\n");
 	
 	# Get the IRQ number for the queue
-	my $irq=`grep "$ifname-$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
+	my $irq=`egrep "$ifname\[-.fp\]*$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
 	$irq =~ s/\n//;
 	$irq =~ s/ //g;
 
