@@ -74,13 +74,15 @@ sub listNodes {
   my ($self, $path, $disable) = @_;
   my @nodes = ();
 
+  my $rpath = "";
   if ($path) { 
-    $path =~ s/\//%2F/g;
-    $path =~ s/\s+/\//g;
-    $path = $self->{_new_config_dir_base} . $self->{_current_dir_level} . "/" . $path;
+      $path =~ s/\//%2F/g;
+      $path =~ s/\s+/\//g;
+      $rpath = $self->{_current_dir_level} . "/" . $path;
   }  else {
-    $path = $self->{_new_config_dir_base} . $self->{_current_dir_level};
+      $rpath = $self->{_current_dir_level};
   }
+  $path = $self->{_new_config_dir_base} . $rpath;
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir my $dir, $path or return ();
@@ -91,9 +93,9 @@ sub listNodes {
   while (@nodes) {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
-    $tmp =~ s/%2F/\//g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
-    my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
+    my $ttmp = $rpath . "/" . $tmp;
+    $tmp =~ s/%2F/\//g;
     $ttmp =~ s/\// /g;
     if (!defined $disable) {
 	my ($status, undef) = $self->getDeactivated($ttmp);
@@ -232,15 +234,16 @@ sub listOrigNodes {
   my ($self, $path, $disable) = @_;
   my @nodes = ();
 
+  my $rpath = "";
   if (defined $path) { 
     $path =~ s/\//%2F/g;
     $path =~ s/\s+/\//g;
-    $path = $self->{_active_dir_base} . $self->{_current_dir_level} . "/"
-            . $path;
+    $rpath = $self->{_current_dir_level} . "/" . $path;
   }
   else {
-    $path = $self->{_active_dir_base} . $self->{_current_dir_level};
+    $rpath = $self->{_current_dir_level};
   }
+  $path = $self->{_active_dir_base} . $rpath;
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir my $dir, "$path" or return ();
@@ -251,9 +254,9 @@ sub listOrigNodes {
   while (@nodes) {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
-    $tmp =~ s/%2F/\//g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
-    my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
+    my $ttmp = $rpath . "/" . $tmp;
+    $tmp =~ s/%2F/\//g;
     $ttmp =~ s/\// /g;
     if (!defined $disable) {
 	my ($status, undef) = $self->getDeactivated($ttmp);
@@ -277,15 +280,16 @@ sub listOrigNodesNoDef {
   my ($self, $path, $disable) = @_;
   my @nodes = ();
 
+  my $rpath = "";
   if (defined $path) { 
     $path =~ s/\//%2F/g;
     $path =~ s/\s+/\//g;
-    $path = $self->{_active_dir_base} . $self->{_current_dir_level} . "/"
-            . $path;
+    $rpath = $self->{_current_dir_level} . "/" . $path;
   }
   else {
-    $path = $self->{_active_dir_base} . $self->{_current_dir_level};
+    $rpath = $self->{_current_dir_level};
   }
+  $path = $self->{_active_dir_base} . $rpath;
 
   #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
   opendir my $dir, $path or return ();
@@ -296,11 +300,11 @@ sub listOrigNodesNoDef {
   while (@nodes) {
     my $tmp = pop (@nodes);
     $tmp =~ s/\n//g;
+    my $ttmp = $rpath . "/" . $tmp;
     $tmp =~ s/%2F/\//g;
+    $ttmp =~ s/\// /g;
     #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
     if ($tmp ne 'def') {
-	my $ttmp = $self->{_current_dir_level} . "/" . $tmp;
-	$ttmp =~ s/\// /g;
 	if (!defined $disable) {
 	    my ($status, undef) = $self->getDeactivated($ttmp);
 	    if (!defined($status) || $status eq 'active') {
