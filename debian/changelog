@@ -1,3 +1,14 @@
+vyatta-cfg (0.16.77) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * get rid of lintian error
+
+  [ Michael Larson ]
+  * fix for bug 5696. set up relative path correctly in all cases and
+    proper handling of slashes in embedded multis when checking
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 16 Jun 2010 14:44:11 -0700
+
 vyatta-cfg (0.16.76) unstable; urgency=low
 
   * add support for bnx2x cards to auto smp affinity scripts
