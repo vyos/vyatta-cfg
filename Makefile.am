@@ -77,6 +77,7 @@ share_perl5_DATA += lib/Vyatta/Zone.pm
 enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
 default_DATA = etc/default/vyatta-cfg
+default_DATA += etc/default/vyatta-load-boot
 
 cpiop = find  . ! -regex '\(.*~\|.*\.bak\|.*\.swp\|.*\#.*\#\)' -print0 | \
 	cpio -0pd
