@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.78) unstable; urgency=low
+
+  * add boot hook script.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 17 Jun 2010 10:28:55 -0700
+
 vyatta-cfg (0.16.77) unstable; urgency=low
 
   [ An-Cheng Huang ]
