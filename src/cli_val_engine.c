@@ -181,38 +181,40 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	} else {
 
-	  FILE* f = fopen(cfg_path_string,"r");
-	  if(f) {
-	    char buffer[8193];
-	    if(multi_value) {
-	      while(fgets(buffer, sizeof(buffer)-1,f)) {
-		int len=strlen(buffer);
-		while(len>0 && (buffer[len-1]==10 || buffer[len-1]==13)) {
-		  buffer[len-1]=0;
-		  len--;
+	  if (is_deactivated(&cfg_path) == FALSE) {
+	    FILE* f = fopen(cfg_path_string,"r");
+	    if(f) {
+	      char buffer[8193];
+	      if(multi_value) {
+		while(fgets(buffer, sizeof(buffer)-1,f)) {
+		  int len=strlen(buffer);
+		  while(len>0 && (buffer[len-1]==10 || buffer[len-1]==13)) {
+		    buffer[len-1]=0;
+		    len--;
+		  }
+		  if(len>0) {
+		    ret=(char**)realloc(ret,sizeof(char*)*(*ret_size+1));
+		    ret[*ret_size]=strdup(buffer);
+		    *ret_size+=1;
+		  }
 		}
-		if(len>0) {
-		  ret=(char**)realloc(ret,sizeof(char*)*(*ret_size+1));
-		  ret[*ret_size]=strdup(buffer);
-		  *ret_size+=1;
+	      } else {
+		int sz = fread(buffer, 1, sizeof(buffer)-1, f);
+		if(sz>0) {
+		  int len=0;
+		  buffer[sz]=0;
+		  len=strlen(buffer);
+		  while(len>0 && (buffer[len-1]==10 || buffer[len-1]==13)) {
+		    buffer[len-1]=0;
+		    len--;
+		  }
+		  ret=(char**)malloc(sizeof(char*)*1);
+		  ret[0]=strdup(buffer);
+		  *ret_size=1;
 		}
 	      }
-	    } else {
-	      int sz = fread(buffer, 1, sizeof(buffer)-1, f);
-	      if(sz>0) {
-		int len=0;
-		buffer[sz]=0;
-		len=strlen(buffer);
-		while(len>0 && (buffer[len-1]==10 || buffer[len-1]==13)) {
-		  buffer[len-1]=0;
-		  len--;
-		}
-		ret=(char**)malloc(sizeof(char*)*1);
-		ret[0]=strdup(buffer);
-		*ret_size=1;
-	      }
+	      fclose(f);
 	    }
-	    fclose(f);
 	  }
 	}
 
@@ -598,10 +600,6 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
     }
   }
 
-
-  if (is_deactivated(&cfg_path) == TRUE) {
-    return NULL;
-  }
 
   return ret;
 }
