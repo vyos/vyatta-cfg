@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.80) unstable; urgency=low
+
+  * fix for bug 5705
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Sat, 19 Jun 2010 21:11:13 -0700
+
 vyatta-cfg (0.16.79) unstable; urgency=low
 
   * fix for bug 5701.
