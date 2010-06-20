@@ -335,12 +335,12 @@ sub displayChildren {
 	my ($state, $n) = $config->getDeactivated($path);
 	if (defined $state) {
 	      if ($state eq 'active') {
-                 if ($child_hash{$child} eq 'deleted') {
-                     $dis = '! ';
-                 }
-                 else {
-                     $dis = 'A ';
-                 }
+		  if ($child_hash{$child} eq 'deleted') {
+		      $dis = '! ';
+		  }
+		  else {
+		      $dis = 'A ';
+		  }
 	      }
 	      elsif ($state eq 'local') {
 		  $dis = 'D ';
@@ -390,7 +390,12 @@ sub displayChildren {
 	  my ($state, $n) = $config->getDeactivated($path);
 	  if (defined $state) {
 	      if ($state eq 'active') {
-		  $dis = 'A ';
+		  if ($cnodes{$cname} eq 'deleted') {
+		      $dis = '! ';
+		  }
+		  else {
+		      $dis = 'A ';
+		  }
 	      }
 	      elsif ($state eq 'local') {
 		  $dis = 'D ';
