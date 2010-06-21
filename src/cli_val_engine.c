@@ -60,7 +60,7 @@
 static int is_multi_node(clind_path_ref tmpl_path);
 
 static boolean
-is_deactivated(const clind_path_ref *path);
+is_deactivated(const char *path);
 
 /*********************
  * Data definitions 
@@ -181,7 +181,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	} else {
 
-	  if (is_deactivated(&cfg_path) == FALSE) {
+	  if (is_deactivated(clind_path_get_path_string(cfg_path)) == FALSE) {
 	    FILE* f = fopen(cfg_path_string,"r");
 	    if(f) {
 	      char buffer[8193];
@@ -233,7 +233,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	/* Directory reference: */
 
-	if(!check_existence || (lstat(cfg_path_string, &statbuf) == 0)) {
+	if(!check_existence || ((lstat(cfg_path_string, &statbuf) == 0) && is_deactivated(cfg_path_string) == FALSE)) {
 	  ret=(char**)realloc(ret,sizeof(char*)*1);
 	  ret[0]=clind_unescape(cfg_end);
 	  *ret_size=1;
@@ -278,6 +278,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	strcpy(fn_node_def+strlen(fn_node_def),NODE_DEF);
 
 	if ((lstat(fn_node_def, &statbuf) == 0)&&
+	    (is_deactivated(fn_node_def) == FALSE)&&
 	    (parse_def(&def, fn_node_def, TRUE)==0)) {
 
 	  if(def.def_type != ERROR_TYPE) {
@@ -924,13 +925,13 @@ static int clind_path_shift_cmd(clind_path_ref path,clind_cmd *cmd) {
 
 
 boolean
-is_deactivated(const clind_path_ref *path)
+is_deactivated(const char *path_string)
 {
-  if (path == NULL) {
+  if (path_string == NULL) {
     return FALSE;
   }
   
-  const char* path_string = clind_path_get_path_string(*path);
+  //  const char* path_string = clind_path_get_path_string(*path);
   
   char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
   strcpy(buf,path_string);
