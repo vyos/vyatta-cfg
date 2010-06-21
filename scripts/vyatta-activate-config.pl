@@ -81,18 +81,17 @@ my $path = join '/', @path;
 
 my $full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
 
-if (! -e $full_path) {
-    $path = join '/', @path[0..$#path-1];
-    my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path/node.val";
+if (-e $full_path) {
+    my $leaf = "$full_path/node.val";
     if (-e $leaf) {
         #prevent setting on leaf or multi, check for node.val
-	printf("Cannot activate/deactivate end node\n");
+	printf("Cannot deactivate end node\n");
 	exit 1;
     }
-    else {
-	printf("This command is not valid: $path\n");
-	exit 1;
-    }
+}
+else {
+    printf("This configuration element does not exist: " . join(' ', @path) . "\n");
+    exit 1;
 }
 
 #######################################################
