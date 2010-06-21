@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.82) unstable; urgency=low
+
+  * fix for bug 5708.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 21 Jun 2010 13:22:43 -0700
+
 vyatta-cfg (0.16.81) unstable; urgency=low
 
   * lstat checks should have been covered on last checkin.
