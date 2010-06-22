@@ -112,6 +112,14 @@ foreach (@all_nodes) {
   }
 }
 
+$ret = system("$commit_cmd");
+if ($ret >> 8) {
+  print OLDOUT "Commit failed at boot\n";
+  print WARN "Commit failed at boot\n";
+  system("$cleanup_cmd");
+  # exit normally after cleanup (or should we exit with error?)
+}
+
 # Now deactivate these nodes
 for (@deactivate_nodes) {
     my $cmd = "$CWRAPPER deactivate " . $_;
@@ -125,6 +133,7 @@ if ($ret >> 8) {
   system("$cleanup_cmd");
   # exit normally after cleanup (or should we exit with error?)
 }
+
 
 # really clean up
 system("$CWRAPPER end");
