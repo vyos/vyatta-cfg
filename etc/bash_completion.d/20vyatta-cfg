@@ -650,6 +650,8 @@ declare vyatta_cfg_tag=0
 declare vyatta_cfg_multi=0
 declare -a vyatta_cfg_allowed=()
 declare vyatta_cfg_comp_help=""
+declare -a vyatta_cfg_val_type=()
+declare -a vyatta_cfg_val_help=()
 vyatta_parse_tmpl ()
 {
   # $1: tmpl
@@ -660,6 +662,8 @@ vyatta_parse_tmpl ()
   vyatta_cfg_multi=0
   vyatta_cfg_allowed=()
   vyatta_cfg_comp_help=''
+  vyatta_cfg_val_type=()
+  vyatta_cfg_val_help=()
   if [ ! -r $1 ]; then
     return
   fi
@@ -685,6 +689,16 @@ vyatta_parse_tmpl ()
     fi
   fi
   vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
+  eval `grep '^val_help:' $1 | sed 's/^val_help:[ 	]*//;
+                                     s/[ 	]*;[ 	]*/;/' \
+        | while read line; do
+            if [[ "$line" == *";"* ]]; then
+              echo "vyatta_cfg_val_type+=( \"${line%%;*}\" )"
+              echo "vyatta_cfg_val_help+=( \"${line##*;}\" )"
+            else
+              echo "vyatta_cfg_val_help+=( \"$line\" )"
+            fi
+          done`
  
   if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
     astr=$(eval "$acmd")
@@ -805,6 +819,43 @@ is_setting_new_leaf ()
   return 0
 }
 
+get_value_format_string ()
+{
+  local vtype=$1
+  case "$vtype" in
+    txt)
+      echo -n '<text>'
+      ;;
+    u32)
+      echo -n '<0-4294967295>'
+      ;;
+    u32:*)
+      echo -n "<${vtype##u32:}>"
+      ;;
+    ipv4)
+      echo -n '<x.x.x.x>'
+      ;;
+    ipv6)
+      echo -n '<h:h:h:h:h:h:h:h>'
+      ;;
+    ipv4net)
+      echo -n '<x.x.x.x/x>'
+      ;;
+    ipv6net)
+      echo -n '<h:h:h:h:h:h:h:h/x>'
+      ;;
+    bool)
+      echo -n '<boolean>'
+      ;;
+    macaddr)
+      echo -n '<h:h:h:h:h:h>'
+      ;;
+    *)
+      echo -n "$vtype"
+      ;;
+  esac
+}
+
 # this fills in $vyatta_help_text
 get_node_value_help ()
 {
@@ -822,20 +873,21 @@ get_node_value_help ()
   else
     vyatta_parse_tmpl "$1/node.def"
   fi
-  if [ $is_set == 1 -a ! -z "$vyatta_cfg_type" ]; then
-    # add a <type> value
-    local val="<$vyatta_cfg_type>"
-    vals=( $val "${vals[@]}" )
+  if (( ${#vyatta_cfg_val_type[@]} == 0 )); then
+    # didn't get val_type, use type (with support for multi-typed nodes)
+    vyatta_cfg_val_type=( ${vyatta_cfg_type//,/ } )
   fi
-  if [ ${#vals[@]} == 0 ]; then
-    vyatta_help_text=""
-    return
+  if (( ${#vyatta_cfg_val_help[@]} == 0 )); then
+    # didn't get val_help, use help
+    vyatta_cfg_val_help=( "$vyatta_cfg_help" )
   fi
+
   declare -a hitems=()
   declare -a hstrs=()
-  for val in "${vals[@]}"; do
-    hitems[${#hitems[@]}]=$val
-    hstrs[${#hstrs[@]}]=$vyatta_cfg_help
+  for ((i = 0; i < ${#vyatta_cfg_val_type[@]}; i++)); do
+    local t=$(get_value_format_string "${vyatta_cfg_val_type[i]}")
+    hitems+=( "$t" )
+    hstrs+=( "${vyatta_cfg_val_help[i]}" )
   done
   generate_help_text hitems hstrs
 }
