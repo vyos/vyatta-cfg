@@ -272,54 +272,6 @@ sub listOrigNodes {
   return @nodes_modified;
 }
 
-## listOrigNodes("level")
-# return array of all original nodes (i.e., before any current change; i.e.,
-# in "working") at "level"
-# level is relative
-sub listOrigNodesNoDef {
-  my ($self, $path, $disable) = @_;
-  my @nodes = ();
-
-  my $rpath = "";
-  if (defined $path) { 
-    $path =~ s/\//%2F/g;
-    $path =~ s/\s+/\//g;
-    $rpath = $self->{_current_dir_level} . "/" . $path;
-  }
-  else {
-    $rpath = $self->{_current_dir_level};
-  }
-  $path = $self->{_active_dir_base} . $rpath;
-
-  #print "DEBUG Vyatta::Config->listNodes(): path = $path\n";
-  opendir my $dir, $path or return ();
-  @nodes = grep !/^\./, readdir $dir;
-  closedir $dir;
-
-  my @nodes_modified = ();
-  while (@nodes) {
-    my $tmp = pop (@nodes);
-    $tmp =~ s/\n//g;
-    my $ttmp = $rpath . "/" . $tmp;
-    $tmp =~ s/%2F/\//g;
-    $ttmp =~ s/\// /g;
-    #print "DEBUG Vyatta::Config->listNodes(): node = $tmp\n";
-    if ($tmp ne 'def') {
-	if (!defined $disable) {
-	    my ($status, undef) = $self->getDeactivated($ttmp);
-	    if (!defined($status) || $status eq 'active') {
-		push @nodes_modified, $tmp;
-	    }
-	}
-	else {
-	    push @nodes_modified, $tmp;
-	}
-    }
-  }
-
-  return @nodes_modified;
-}
-
 ## returnParent("level")
 # return the name of parent node relative to the current hierarchy
 # in this case "level" is set to the parent dir ".. .."

@@ -231,7 +231,7 @@ sub displayDeletedOrigChildren {
 
     $config->setLevel(join ' ', (@cur_path, $child));
 
-    my @cnames = sort $config->listOrigNodesNoDef(undef,'true');
+    my @cnames = grep(!/^def$/, sort($config->listOrigNodes(undef,'true')));
 
     if ($cnames[0] eq 'node.val') {
       displayValues([ @cur_path, $child ], $dis, $prefix, $child,
