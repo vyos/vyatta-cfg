@@ -188,7 +188,7 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
     }
 }
 
-my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier );
+my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier, 'true' );
 my @set_list    = @{ $cfg_diff{'set'} };
 my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
 my @activate_list = @{ $cfg_diff{'activate'} };

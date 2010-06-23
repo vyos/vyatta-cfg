@@ -287,9 +287,10 @@ sub findDeletedValues {
 # $1: array ref representing current config path (active config)
 sub findDeletedNodes {
   my $new_ref = $_[0];
-  my @active_path = @{$_[1]};
+  my $ret_dis_flag = $_[1];
+  my @active_path = @{$_[2]};
   $active_cfg->setLevel(join ' ', @active_path);
-  my @active_nodes = $active_cfg->listOrigNodes();
+  my @active_nodes = $active_cfg->listOrigNodes(undef,$ret_dis_flag);
   foreach (@active_nodes) {
     if ($_ eq 'def') {
       next;
@@ -302,7 +303,7 @@ sub findDeletedNodes {
       my @plist = applySingleQuote(@active_path, $_);
       push @delete_list, [\@plist, 0];
     } else {
-      findDeletedNodes($new_ref->{$_}, [ @active_path, $_ ]);
+      findDeletedNodes($new_ref->{$_}, $ret_dis_flag, [ @active_path, $_ ]);
     }
   }
 }
@@ -384,10 +385,11 @@ sub findSetNodes {
 sub getConfigDiff {
   $active_cfg = new Vyatta::Config;
   $new_cfg_ref = shift;
+  my $ret_del_dis_nodes = shift;
   @set_list = ();
 #  @disable_list = ();
   @delete_list = ();
-  findDeletedNodes($new_cfg_ref, [ ]);
+  findDeletedNodes($new_cfg_ref, $ret_del_dis_nodes, [ ]);
   findSetNodes($new_cfg_ref, [ ]);
 
   # need to filter out deletions of nodes with default values
