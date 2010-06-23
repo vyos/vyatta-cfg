@@ -354,13 +354,23 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
       }
       else { 	//do a lstat check in the local dir
 	struct stat s;
+
+	char namebuf[MAX_LENGTH_HELP_STR];
+	if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
+	  strcpy(namebuf,dirp->d_name+4); //SKIP THE .WH.
+	}
+	else {
+	  strcpy(namebuf,dirp->d_name);
+	}
+
+
 	char buf[MAX_LENGTH_HELP_STR];
-	sprintf(buf,"%s/%s/%s/%s",get_mdirp(),rel_data_path,dirp->d_name,DISABLE_FILE);
+	sprintf(buf,"%s/%s/%s/%s",get_mdirp(),rel_data_path,namebuf,DISABLE_FILE);
 	if (lstat(buf,&s) == 0) {
 	  //need to check existence of file in active configuration here as well!
 	  deactivated |= K_LOCAL_DISABLE_OP;
 	}
-	sprintf(buf,"%s/%s/%s/%s",get_adirp(),rel_data_path,dirp->d_name,DISABLE_FILE);
+	sprintf(buf,"%s/%s/%s/%s",get_adirp(),rel_data_path,namebuf,DISABLE_FILE);
 	if (lstat(buf,&s) == 0) {
 	  deactivated |= K_ACTIVE_DISABLE_OP;
 	}
@@ -369,7 +379,6 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
       char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
       if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
-
 	if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	  strcpy(data_buf,dirp->d_name+4); //SKIP THE .WH.
 	  vn->_data._operation = K_DEL_OP;

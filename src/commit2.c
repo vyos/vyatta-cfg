@@ -412,18 +412,21 @@ process_func(GNode *node, gpointer data)
     
     if (g_debug) {
       if (d->_name != NULL) {
-	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s\n",d->_name,result->_action,c->_def.def_type, op, d->_path);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s",d->_name,result->_action,c->_def.def_type, op, d->_path);
+	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d\n",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
       }
       else {
-	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s\n",result->_action, op, d->_path);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s",result->_action, op, d->_path);
+	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d\n",result->_action, op, d->_path,d->_disable_op);
+	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d",result->_action, op, d->_path, d->_disable_op);
       }
     }
 
     //FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE
     if (d->_disable_op != K_NO_DISABLE_OP) {
-      if ((d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+      if (IS_DELETE(op) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
+	return FALSE; //if this was actively disabled and is being deleted do nothing.
+      }
+      else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
 	//no state change: deactivated
 	return FALSE; //skip operation on node
       }
