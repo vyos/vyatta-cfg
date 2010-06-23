@@ -1,3 +1,25 @@
+vyatta-cfg (0.16.84) unstable; urgency=low
+
+  [ = ]
+  * Script to generate Vyatta command help strings from template files
+  * Script to automatically update help string for each node.def
+    according
+
+  [ An-Cheng Huang ]
+  * add val_help mechanism
+  * remove unused API function
+
+  [ Michael Larson ]
+  * partial fix for bug 5729 (comment #1).
+
+  [ An-Cheng Huang ]
+  * remove unneeded API function
+
+  [ Michael Larson ]
+  * 2nd part fix for bug 5729.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 23 Jun 2010 15:34:18 -0700
+
 vyatta-cfg (0.16.83) unstable; urgency=low
 
   * fix for bug 5716
