@@ -409,7 +409,12 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
 
 	strcpy(data_buf,dirp->d_name); 
-	vn->_data._operation = K_NO_OP;
+	if (op == K_DEL_OP) {
+	  vn->_data._operation = K_DEL_OP;
+	}
+	else {
+	  vn->_data._operation = K_NO_OP;
+	}
 	
 	//create new node and insert...
 	vn->_data._name = data_buf;
@@ -425,7 +430,7 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 	new_node = insert_sibling_in_order(node,new_node);
 
 	//will need to enter a special recursion against the active configuration to mark nested delete nodes
-	retrieve_data(new_data_path,new_node,get_adirp(),K_NO_OP);
+	retrieve_data(new_data_path,new_node,get_adirp(),vn->_data._operation);
       }
       else {
 	strcpy(data_buf,dirp->d_name);
