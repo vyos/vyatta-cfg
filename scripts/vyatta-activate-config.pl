@@ -71,7 +71,10 @@ if (!defined $ARGV[1] || $ARGV[1] eq '') {
 
 #adjust for leaf node
 my $i = 0;
-my @path = @ARGV[1..$#ARGV];
+my $arg_ct = $#ARGV;
+my @path = @ARGV[1..$arg_ct];
+my @parent_path = @ARGV[1..($arg_ct-1)];
+
 foreach my $elem (@path) {
     $elem =~ s/\//%2F/g;
     $elem =~ s/\s+/\//g;
@@ -90,6 +93,13 @@ if (-e $full_path) {
     }
 }
 else {
+    #check if this is a leaf node with value
+    my $parent_path_leaf = $ENV{VYATTA_TEMP_CONFIG_DIR} . "/" . join('/', @parent_path) . "/node.val";
+    if (-e $parent_path_leaf) {
+        #prevent setting on leaf or multi, check for node.val
+	printf("Cannot deactivate end node\n");
+	exit 1;
+    }
     printf("This configuration element does not exist: " . join(' ', @path) . "\n");
     exit 1;
 }
