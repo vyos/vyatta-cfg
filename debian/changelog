@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.86) unstable; urgency=low
+
+  * correct error message when attempting to deactivate a leaf or multi
+    node.
+  * fix for bug 5717.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 25 Jun 2010 17:09:47 -0700
+
 vyatta-cfg (0.16.85) unstable; urgency=low
 
   * fix additional case for vyatta guard restarting under deletion of
