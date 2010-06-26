@@ -153,6 +153,33 @@ load_acpi_cpufreq()
     fi
 }
 
+# 
+# On image booted machines, we need to mount /boot from the image-specific
+# boot directory so that kernel package installation will put the
+# files in the right place.  We also have to mount /boot/grub from the
+# system-wide grub directory so that tools that edit the grub.cfg
+# file will find it in the expected location.
+#
+bind_mount_boot()
+{
+    if [ -e /live/image ]; then
+	image_name=`cat /proc/cmdline | sed -e s+^.*vyatta-union=/boot/++ | sed -e 's/ .*$//'`
+	if [ -n "$image_name" ]; then
+	    mount --bind /live/image/boot/$image_name /boot
+	    if [ $? -ne 0 ]; then
+		echo "Couldn't bind mount /boot"
+	    fi
+	    if [ ! -d /boot/grub ]; then
+		mkdir /boot/grub
+	    fi
+	    mount --bind /live/image/boot/grub /boot/grub
+	    if [ $? -ne 0 ]; then
+		echo "Couldn't bind mount /boot/grub"
+	    fi
+	fi
+    fi
+}
+
 start ()
 {
     log_action_begin_msg "Mounting Vyatta Config"
@@ -175,6 +202,7 @@ start ()
 
     load_acpi_cpufreq
     cleanup_raid
+    bind_mount_boot
     chmod g-w,o-w /
 
     log_end_msg $?
