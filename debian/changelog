@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.87) unstable; urgency=low
+
+  * fix for bug 5721 and 5722--actually these were duplicates.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 25 Jun 2010 20:15:03 -0700
+
 vyatta-cfg (0.16.86) unstable; urgency=low
 
   * correct error message when attempting to deactivate a leaf or multi
