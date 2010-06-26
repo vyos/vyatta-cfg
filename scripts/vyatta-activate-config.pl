@@ -88,7 +88,9 @@ if (-e $full_path) {
     my $leaf = "$full_path/node.val";
     if (-e $leaf) {
         #prevent setting on leaf or multi, check for node.val
-	printf("Cannot deactivate end node\n");
+	if (!defined $ENV{BOOT}) {
+	    printf("Cannot deactivate end node\n");
+	}
 	exit 1;
     }
 }
@@ -97,10 +99,14 @@ else {
     my $parent_path_leaf = $ENV{VYATTA_TEMP_CONFIG_DIR} . "/" . join('/', @parent_path) . "/node.val";
     if (-e $parent_path_leaf) {
         #prevent setting on leaf or multi, check for node.val
-	printf("Cannot deactivate end node\n");
+	if (!defined $ENV{BOOT}) {
+	    printf("Cannot deactivate end node\n");
+	}
 	exit 1;
     }
-    printf("This configuration element does not exist: " . join(' ', @path) . "\n");
+    if (!defined $ENV{BOOT}) {
+	printf("This configuration element does not exist: " . join(' ', @path) . "\n");
+    }
     exit 1;
 }
 
@@ -118,7 +124,9 @@ if ($action eq 'deactivate') {
     }
     #final check that walks up tree and checks
     if (!(-e "$active_dir/.disable") && check_parents(@path)) { #checks active and locally committed parents
-	print("Cannot deactivate nested elements\n");
+	if (!defined $ENV{BOOT}) {
+	    print("Cannot deactivate nested elements\n");
+	}
 	exit 1;
     }
 }
