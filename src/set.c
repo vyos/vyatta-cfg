@@ -91,68 +91,76 @@ boolean set_validate(vtw_def *defp, char *valp, boolean empty_val)
     char *pos = rindex(m_path.path,'/');
     if (pos != NULL) {
       int offset = pos - m_path.path;
-      
       strncpy(path,m_path.path,offset);
       path[offset] = '\0';
       
       strncpy(val,m_path.path + offset + 1, strlen(m_path.path) - offset - 1);
       val[strlen(m_path.path) - offset - 1] = '\0';
       
-      //    fprintf(out_stream,"val: %s, offset: %d, path: %s\n",val,offset,m_path.path);
+      //      fprintf(out_stream,"val: %s, offset: %d, path: %s\n",val,offset,m_path.path);
       
-      int file_count = 0;
-      struct dirent* entry;
-      DIR* dirp = opendir(path); /* There should be error handling after this */
-      if (dirp != NULL) {
-	while ((entry = readdir(dirp)) != NULL) {
-	  if (strcmp(entry->d_name,".") != 0 && 
-	      strcmp(entry->d_name,"..") != 0 &&
-	      strcmp(val,entry->d_name) != 0) {
-	    strcpy(last_val,entry->d_name);
-	    file_count++;
+      int entity_count = 0;
+      if (defp->def_tag) {
+	struct dirent* entry;
+	DIR* dirp = opendir(path); /* There should be error handling after this */
+	if (dirp != NULL) {
+	  while ((entry = readdir(dirp)) != NULL) {
+	    if (strcmp(entry->d_name,".") != 0 && 
+		strcmp(entry->d_name,"..") != 0 &&
+		strcmp(val,entry->d_name) != 0) {
+	      strcpy(last_val,entry->d_name);
+	      entity_count++;
+	    }
 	  }
+	  closedir(dirp);
 	}
-	closedir(dirp);
+      }
+      else if (defp->def_multi) {
+	//fopen file and count number of lines
+	char buf[4096];
+	sprintf(buf,"%s/node.val",m_path.path);
+	FILE *fp = fopen(buf,"r");
+	if (fp) {
+	  char *line = NULL;
+	  size_t len = 0;
+	  while (getline(&line,&len,fp) != -1) {
+	    ++entity_count;
+	  }
+	  if (line) {
+	    free(line);
+	  }
+	  fclose(fp);
+	}
+      }
 	
-	if (defp->tag && file_count == 1 && defp->def_tag < 0) {
-	  //this is the special case, where the previous value should be deleted here...
-	  char command[8192];
-	  //let unionfs handle the diff
-	  sprintf(command, "mv %s/%s %s/%s", path,last_val,path,val);
-	  system(command);
-	}
-	
-	if (defp->tag) {
-	  if (defp->def_tag > 0 && file_count >= defp->def_tag) {
-	    char *p = rindex(path,'/');
-	    char tmp[2048];
-	    if (p != NULL) {
-	      int off = p - path;
-	      strncpy(tmp,path + off + 1, strlen(path) - off - 1);
-	      tmp[strlen(path) - off - 1] = '\0';
-	      fprintf(out_stream,"Number of values exceeded for '%s', allowed: %d, actual: %d\n",tmp,defp->def_tag,file_count);
-	    }
-	    else {
-	      fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_tag,file_count);
-	    }
-	    return FALSE;
+      if (defp->tag && entity_count == 1 && defp->def_tag < 0) {
+	//this is the special case, where the previous value should be deleted here...
+	char command[8192];
+	//let unionfs handle the diff
+	sprintf(command, "mv %s/%s %s/%s", path,last_val,path,val);
+	system(command);
+      }
+      
+      if (defp->tag) {
+	if (defp->def_tag > 0 && entity_count >= defp->def_tag) {
+	  char *p = rindex(path,'/');
+	  char tmp[2048];
+	  if (p != NULL) {
+	    int off = p - path;
+	    strncpy(tmp,path + off + 1, strlen(path) - off - 1);
+	    tmp[strlen(path) - off - 1] = '\0';
+	    fprintf(out_stream,"Number of values exceeded for '%s', allowed: %d, actual: %d\n",tmp,defp->def_tag,entity_count);
 	  }
-	}
-	else {
-	  if (defp->def_multi > 1 && file_count >= defp->def_multi) {
-	    char *p = rindex(path,'/');
-	    char tmp[2048];
-	    if (p != NULL) {
-	      int off = p - path;
-	      strncpy(tmp,path + off + 1, strlen(path) - off - 1);
-	      tmp[strlen(path) - off - 1] = '\0';
-	      fprintf(out_stream,"Number of values exceeded for '%s', allowed: %d, actual: %d\n",tmp,defp->def_tag,file_count);
-	    }
-	    else {
-	      fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_tag,file_count);
-	    }
-	    return FALSE;
+	  else {
+	    fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_tag,entity_count);
 	  }
+	  return FALSE;
+	}
+      }
+      else {
+	if (defp->def_multi > 0 && entity_count >= defp->def_multi) {
+	  fprintf(out_stream,"Number of values exceeded, allowed: %d, actual: %d\n",defp->def_multi,entity_count);
+	  return FALSE;
 	}
       }
     }
