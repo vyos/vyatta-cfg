@@ -2046,12 +2046,12 @@ boolean validate_value(vtw_def *def, char *cp)
       if (cp[i] == '\'') {
         fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
                             "in a value string\n");
-        bye("single quote in value string\n");
+        return FALSE;
       }
       if (cp[i] == '\n') {
         fprintf(out_stream, "Cannot use the newline character "
                             "in a value string\n");
-        bye("newline in value string\n");
+        return FALSE;
       }
     }
   }
