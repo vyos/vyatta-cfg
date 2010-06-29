@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.88) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * return false for invalid value instead of exiting
+
+  [ Michael Larson ]
+  * add option to save w/o default values.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 29 Jun 2010 10:47:37 -0700
+
 vyatta-cfg (0.16.87) unstable; urgency=low
 
   * fix for bug 5721 and 5722--actually these were duplicates.
