@@ -29,15 +29,26 @@ my $bootpath = $etcdir . "/config";
 my $save_file = $bootpath . "/config.boot";
 my $url_tmp_file = $bootpath . "/config.boot.$$";
 
-
-if ($#ARGV > 0) {
-  print "Usage: save [config_file_name]\n";
+my $set_show_opt = 1;
+if ($#ARGV > 1) {
+  print "Usage: save [config_file_name] --no-defaults\n";
   exit 1;
 }
 
+
 if (defined($ARGV[0])) {
-  $save_file = $ARGV[0];
+    if ($ARGV[0] ne '--no-defaults') {
+	$save_file = $ARGV[0];
+    }
+    else {
+	$set_show_opt = 0;
+    }
+
+    if (defined($ARGV[1]) && $ARGV[1] eq '--no-defaults') {
+	$set_show_opt = 0;
+    }
 }
+
 
 my $mode = 'local';
 my $proto;
@@ -89,7 +100,7 @@ if ($mode eq 'local') {
 }
 
 select $save;
-set_show_all(1);
+set_show_all($set_show_opt);
 outputActiveConfig();
 print $version_str;
 select STDOUT;
