@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.90) unstable; urgency=low
+
+  * fix for bug 5762.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 30 Jun 2010 11:19:05 -0700
+
 vyatta-cfg (0.16.89) unstable; urgency=low
 
   * Bugfix 5512: Bind mount /boot and /boot/grub on image-installed
