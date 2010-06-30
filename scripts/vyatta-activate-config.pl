@@ -41,8 +41,8 @@ sub wanted_local {
 
 sub check_parents {
     my @p = @_;
-    my $l_dir = "$ENV{VYATTA_TEMP_CONFIG_DIR}/";
-    my $a_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/";
+    my $l_dir = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$ENV{VYATTA_EDIT_LEVEL}";
+    my $a_dir = "$ENV{VYATTA_ACTIVE_CONFIGURATION_DIR}/$ENV{VYATTA_EDIT_LEVEL}";
     foreach my $sw (@p) {
 	$l_dir .= "/$sw";
 	$a_dir .= "/$sw";
@@ -80,7 +80,9 @@ foreach my $elem (@path) {
     $elem =~ s/\s+/\//g;
     $path[$i++] = $elem;
 }
-my $path = join '/', @path;
+my $edit_level = "$ENV{VYATTA_EDIT_LEVEL}";
+
+my $path = $edit_level . join '/', @path;
 
 my $full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
 
@@ -96,7 +98,7 @@ if (-e $full_path) {
 }
 else {
     #check if this is a leaf node with value
-    my $parent_path_leaf = $ENV{VYATTA_TEMP_CONFIG_DIR} . "/" . join('/', @parent_path) . "/node.val";
+    my $parent_path_leaf = $ENV{VYATTA_TEMP_CONFIG_DIR} . "/" . $edit_level . join('/', @parent_path) . "/node.val";
     if (-e $parent_path_leaf) {
         #prevent setting on leaf or multi, check for node.val
 	if (!defined $ENV{BOOT}) {

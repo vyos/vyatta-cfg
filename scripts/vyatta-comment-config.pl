@@ -42,12 +42,14 @@ foreach my $elem (@path) {
     $elem =~ s/\s+/\//g;
     $path[$i++] = $elem;
 }
-my $path = join '/', @path;
+my $edit_level = "$ENV{VYATTA_EDIT_LEVEL}";
+
+my $path = $edit_level . join '/', @path;
 
 my $full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
 
 if (! -e $full_path) {
-    $path = join '/', @path[0..$#path-1];
+    $path = $edit_level . join '/', @path[0..$#path-1];
     my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path/node.val";
     if (-e $leaf) {
 	$full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
