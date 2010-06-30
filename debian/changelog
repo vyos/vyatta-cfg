@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.89) unstable; urgency=low
+
+  * Bugfix 5512: Bind mount /boot and /boot/grub on image-installed
+    systems.
+  * Don't let bind mount of /boot happen on livecd.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 29 Jun 2010 17:45:57 -0700
+
 vyatta-cfg (0.16.88) unstable; urgency=low
 
   [ An-Cheng Huang ]
