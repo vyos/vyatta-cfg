@@ -162,7 +162,7 @@ load_acpi_cpufreq()
 #
 bind_mount_boot()
 {
-    if [ -e /live/image ]; then
+    if [ -e /live/image/boot ]; then
 	image_name=`cat /proc/cmdline | sed -e s+^.*vyatta-union=/boot/++ | sed -e 's/ .*$//'`
 	if [ -n "$image_name" ]; then
 	    mount --bind /live/image/boot/$image_name /boot
