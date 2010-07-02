@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.91) unstable; urgency=low
+
+  * remove activate/deactivate from cli command completion and help.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 02 Jul 2010 09:49:53 -0700
+
 vyatta-cfg (0.16.90) unstable; urgency=low
 
   * fix for bug 5762.
