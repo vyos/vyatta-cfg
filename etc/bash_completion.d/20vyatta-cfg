@@ -448,10 +448,7 @@ comment()
     if [ "$#" -eq "0" ]; then
         return 0
     fi
-    args=("$@")
-    #now need to replace last element
-    args[${#args[*]}-1]="\"${args[${#args[*]}-1]i}\"";
-    eval "${vyatta_sbindir}/vyatta-comment-config.pl ${args[*]}"
+    ${vyatta_sbindir}/vyatta-comment-config.pl "$@"
 }
 
 activate()

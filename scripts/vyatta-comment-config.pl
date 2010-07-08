@@ -71,7 +71,13 @@ if ($ARGV[$#ARGV] eq '') {
     `rm -f $full_path/.comment`;
 }
 else {
-    `echo \"$ARGV[$#ARGV]\" > $full_path/.comment`;
+    my $cfile;
+    if (!open($cfile, '>', "$full_path/.comment")) {
+        print "Failed to set comment\n";
+        exit 1;
+    }
+    print $cfile $ARGV[$#ARGV];
+    close($cfile);
 }
 
 print "Done\n";
