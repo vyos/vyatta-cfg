@@ -686,16 +686,17 @@ vyatta_parse_tmpl ()
     fi
   fi
   vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
-  eval `grep '^val_help:' $1 | sed 's/^val_help:[ 	]*//;
+  local vhstr=$(grep '^val_help:' $1 | sed 's/^val_help:[ 	]*//;
                                      s/[ 	]*;[ 	]*/;/' \
-        | while read line; do
-            if [[ "$line" == *";"* ]]; then
-              echo "vyatta_cfg_val_type+=( \"${line%%;*}\" )"
-              echo "vyatta_cfg_val_help+=( \"${line##*;}\" )"
-            else
-              echo "vyatta_cfg_val_help+=( \"$line\" )"
-            fi
-          done`
+                | while read line; do
+                    if [[ "$line" == *";"* ]]; then
+                      echo "vyatta_cfg_val_type+=( \"${line%%;*}\" )"
+                      echo "vyatta_cfg_val_help+=( \"${line##*;}\" )"
+                    else
+                      echo "vyatta_cfg_val_help+=( \"$line\" )"
+                    fi
+                  done)
+  eval "$vhstr"
  
   if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
     astr=$(eval "$acmd")
