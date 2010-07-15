@@ -821,6 +821,9 @@ get_value_format_string ()
 {
   local vtype=$1
   case "$vtype" in
+    _*)
+      echo -n "${vtype#_}"
+      ;;
     txt)
       echo -n '<text>'
       ;;
