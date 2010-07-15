@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.94) unstable; urgency=low
+
+  * allow escaping literal strings
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 15 Jul 2010 13:18:31 -0700
+
 vyatta-cfg (0.16.93) unstable; urgency=low
 
   * separate val_help parsing from eval
