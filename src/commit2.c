@@ -1265,10 +1265,15 @@ validate_func(GNode *node, gpointer data)
       result->_data = (void*)coll;
     }
   }
+
+  //don't run syntax check on this node if it is unchanged.
+  if (IS_NOOP(d->_operation) && (c->_def.actions[syntax_act].vtw_list_head != NULL && c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0)) {
+    return FALSE;
+  }
   
   //don't perform validation checks on disabled nodes
   if ((d->_disable_op == K_LOCAL_DISABLE_OP) || (d->_disable_op == (K_LOCAL_DISABLE_OP | K_ACTIVE_DISABLE_OP))) { 
-      return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
+    return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
   }
 
   if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
@@ -1332,7 +1337,14 @@ validate_func(GNode *node, gpointer data)
   }
   else {
     char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
-    sprintf(buf,"%s\t:\t%s",ActionNames[result->_action],d->_path);
+    if (c->_def.actions[syntax_act].vtw_list_head) {
+      if (c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
+	sprintf(buf,"syntax\t:\t%s",d->_path);
+      }
+      else {
+	sprintf(buf,"commit\t:\t%s",d->_path);
+      }
+    }
     if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
       char *val = (char*)clind_unescape(d->_name);
       strcat(buf,val);
