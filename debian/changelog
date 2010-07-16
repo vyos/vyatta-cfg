@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.95) unstable; urgency=low
+
+  * fix for bug 5789 and bug 5860
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 16 Jul 2010 10:54:24 -0700
+
 vyatta-cfg (0.16.94) unstable; urgency=low
 
   * allow escaping literal strings
