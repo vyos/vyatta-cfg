@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.96) unstable; urgency=low
+
+  * fix for bug 5794. Comments are not allowed on multinode parent.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 16 Jul 2010 13:49:35 -0700
+
 vyatta-cfg (0.16.95) unstable; urgency=low
 
   * fix for bug 5789 and bug 5860
