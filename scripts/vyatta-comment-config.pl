@@ -23,6 +23,7 @@ use strict;
 use warnings;
 use File::Find;
 use lib "/opt/vyatta/share/perl5";
+use Vyatta::Config;
 
 
 sub usage() {
@@ -55,11 +56,17 @@ if (! -e $full_path) {
 	$full_path = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$path";
     }
     else {
-	`echo \"Path is not valid\n\"`;
+	print "Configuation path is not valid\n";
 	exit 0;
     }
 }
 
+my $config = new Vyatta::Config;
+my @el = split('/',$edit_level);
+if ($config->isTagNode([ @el, @path ])) {
+    print "Cannot set comment without value for this path\n";
+    exit 0;
+}
 #scan for illegal characters here: '/*', '*/'
 if ($ARGV[$#ARGV] =~ /\/\*|\*\//) {
     print "illegal characters found in comment\n";
@@ -80,5 +87,6 @@ else {
     close($cfile);
 }
 
-print "Done\n";
+`touch $ENV{VYATTA_TEMP_CONFIG_DIR}/.modified`;
+
 exit 0;
