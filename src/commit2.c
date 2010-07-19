@@ -550,7 +550,7 @@ process_func(GNode *node, gpointer data)
       }
 
       if (g_dump_actions == FALSE) {
-	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL);
       }
       else {
 	char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
@@ -1265,7 +1265,7 @@ validate_func(GNode *node, gpointer data)
       result->_data = (void*)coll;
     }
   }
-
+  
   //don't run syntax check on this node if it is unchanged.
   if (IS_NOOP(d->_operation) && (c->_def.actions[syntax_act].vtw_list_head != NULL && c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0)) {
     return FALSE;
@@ -1273,7 +1273,7 @@ validate_func(GNode *node, gpointer data)
   
   //don't perform validation checks on disabled nodes
   if ((d->_disable_op == K_LOCAL_DISABLE_OP) || (d->_disable_op == (K_LOCAL_DISABLE_OP | K_ACTIVE_DISABLE_OP))) { 
-    return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
+      return FALSE; //SHOULD only hit the case where the node is locally disabled or globally disabled and not in a transition to active state
   }
 
   if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
@@ -1328,11 +1328,13 @@ validate_func(GNode *node, gpointer data)
     fprintf(out_stream,"[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
   }
 
+  char *outbuf = malloc(8192);
+  outbuf[0] = '\0';
   boolean status = 1;
   if (g_dump_actions == FALSE) {
     //set location env
     setenv(ENV_DATA_PATH,d->_path,1);
-    status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def);
+    status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
     unsetenv(ENV_DATA_PATH);
   }
   else {
@@ -1360,6 +1362,35 @@ validate_func(GNode *node, gpointer data)
   }
 
   if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+    //just need to convert slashes into spaces here
+    char path_buf[1024];
+    char tmp[1024];
+    char *ptr;
+    path_buf[0] = '\0';
+
+    strcpy(tmp,d->_path);
+    ptr = (char*)tmp;
+    char *slash = strchr(tmp,'/');
+    if (slash == NULL) {
+      strcat(path_buf,d->_path);
+    }
+    else {
+      do { 	//convert '/' to ' '
+	strncat(path_buf,ptr,slash - ptr);
+	strcat(path_buf," ");
+	++slash;
+	ptr = slash;
+      } while ((slash = strchr(slash,'/')) != NULL);
+    }
+    if (strncmp(ptr,"value:",6) == 0) {
+      if (strlen(ptr)-6 > 0) {
+	strncat(path_buf,ptr+6,strlen(ptr)-6);
+      }
+    }
+    char *p = clind_unescape(path_buf);
+    if (strlen(outbuf) > 0) {
+      fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+    }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
       fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
@@ -1369,8 +1400,10 @@ validate_func(GNode *node, gpointer data)
       printf("commit2::validate_func(): FAILURE: status: %d\n",status);
       syslog(LOG_DEBUG,"commit2::validate_func(): FAILURE: status: %d",status);
     }
+    free(outbuf);
     return result->_mode ? FALSE: TRUE; //WILL STOP AT THIS POINT if mode is not set for full syntax check
   }
+  free(outbuf);
   return FALSE;
 }
 

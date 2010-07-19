@@ -77,8 +77,8 @@ static valstruct validate_value_val;  /* value being validated
 /* Local function declarations: */
 
 static int check_comp(vtw_node *cur);
-static boolean check_syn_func(vtw_node *cur,const char* func,int line);
-#define check_syn(cur) check_syn_func((cur),__FUNCTION__,__LINE__)
+static boolean check_syn_func(vtw_node *cur,const char **outbuf, const char* func,int line);
+#define check_syn(cur,out_buf) check_syn_func((cur),(out_buf),__FUNCTION__,__LINE__)
 void copy_path(vtw_path *to, vtw_path *from);
 static int eval_va(valstruct *res, vtw_node *node);
 static int expand_string(char *p);
@@ -621,14 +621,14 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
 /* returns FALSE if execution returns non-null,
    returns TRUE if every excution returns NULL
 */
-boolean execute_list(vtw_node *cur, vtw_def *def) 
+boolean execute_list(vtw_node *cur, vtw_def *def, const char **outbuf) 
 {
   boolean ret;
   int status;
   set_in_exec(TRUE);
   status = char2val(def, get_at_string(), &validate_value_val);  
   if (status) return FALSE;
-  ret = check_syn(cur);
+  ret = check_syn(cur,outbuf);
   free_val(&validate_value_val);
   set_in_exec(FALSE);
   return ret;
@@ -1151,7 +1151,7 @@ static int change_var_value(const char* var_reference,const char* value, int act
   return ret;
 }
 
-int system_out(const char *command);
+int system_out(const char *command, const char **outbuf);
 
 /****************************************************
  check_syn:
@@ -1159,7 +1159,7 @@ int system_out(const char *command);
    returns TRUE if all checks are OK,
    returns FALSE if check fails.
 ****************************************************/
-static boolean check_syn_func(vtw_node *cur,const char* func,int line)
+static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func,int line)
 {
   int status;
   int ret;
@@ -1169,16 +1169,21 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
   case LIST_OP:
     ret = TRUE;
     if (is_in_commit() || !cur->vtw_node_aux) {
-      ret = check_syn(cur->vtw_node_left);
+      ret = check_syn(cur->vtw_node_left,outbuf);
     }
     if (!ret || !cur->vtw_node_right) /* or no right operand */
       return ret;
-    return check_syn(cur->vtw_node_right);
+    return check_syn(cur->vtw_node_right,outbuf);
   case HELP_OP:
-    ret = check_syn(cur->vtw_node_left);
+    ret = check_syn(cur->vtw_node_left,outbuf);
     if (ret <= 0){
       if (expand_string(cur->vtw_node_right->vtw_node_string) == VTWERR_OK) {
-	fprintf(out_stream, "%s\n", exe_string);
+	if (outbuf == NULL) {
+	  fprintf(out_stream, "%s\n", exe_string);
+	}
+	else {
+	  strcat((char*)*outbuf, exe_string);
+	}
       }
     }
     return ret;
@@ -1242,7 +1247,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
 	  set_at_string(save_at);
 	  return FALSE;
 	}
-	ret = system_out(exe_string);
+	ret = system_out(exe_string,outbuf);
 	if (ret) {
 	  set_at_string(save_at);
 	  return FALSE;
@@ -1256,7 +1261,7 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     if (status != VTWERR_OK) {
       return FALSE;
     }
-    ret = system_out(exe_string);
+    ret = system_out(exe_string,outbuf);
     return !ret;
     
   case PATTERN_OP:  /* left to var, right to pattern */
@@ -1294,15 +1299,15 @@ static boolean check_syn_func(vtw_node *cur,const char* func,int line)
     }
     
   case OR_OP:
-    ret = check_syn(cur->vtw_node_left) || 
-      check_syn(cur->vtw_node_right);
+    ret = check_syn(cur->vtw_node_left,outbuf) || 
+      check_syn(cur->vtw_node_right,outbuf);
     return ret;
   case AND_OP:
-    ret = check_syn(cur->vtw_node_left) && 
-      check_syn(cur->vtw_node_right);
+    ret = check_syn(cur->vtw_node_left,outbuf) && 
+      check_syn(cur->vtw_node_right,outbuf);
     return ret;
   case NOT_OP:
-    ret = check_syn(cur->vtw_node_left);
+    ret = check_syn(cur->vtw_node_left,outbuf);
     return !ret;
     
   case COND_OP:   /* aux field specifies cond type (GT, GE, etc.)*/
@@ -2077,7 +2082,7 @@ boolean validate_value(vtw_def *def, char *cp)
   ret = TRUE;
   if (def->actions  && def->actions[syntax_act].vtw_list_head){
     in_validate_val = TRUE;
-    ret = check_syn(def->actions[syntax_act].vtw_list_head);
+    ret = check_syn(def->actions[syntax_act].vtw_list_head,(const char **)NULL);
     in_validate_val = FALSE;
   }
  validate_value_free_and_return:
@@ -2394,8 +2399,9 @@ restore_output()
  * call system() with output re-enabled.
  * output is again redirected before returning from here.
  */
+
 int
-system_out(const char *command)
+old_system_out(const char *command)
 {
   int ret = -1;
   if (restore_output() == -1) {
@@ -2406,8 +2412,81 @@ system_out(const char *command)
   if (redirect_output() == -1) {
     return -1;
   }
+  
+  //  fprintf(out_stream,"old system out: %d, for cmd: %s\n",ret,command);
   return ret;
 }
+
+
+
+int
+system_out(const char *cmd, const char **outbuf)
+{
+  //  fprintf(out_stream,"system out\n");
+  if (outbuf == NULL) {
+    return old_system_out(cmd);
+  }
+
+  /*
+  struct sigaction sa;
+  sigaction(SIGCHLD, NULL, &sa);
+  sa.sa_flags |= SA_NOCLDWAIT;//(since POSIX.1-2001 and Linux 2.6 and later)
+  sigaction(SIGCHLD, &sa, NULL);
+  */
+  if (cmd == NULL) {
+    return -1;
+  }
+  //should detach child process at this point
+  umask(0);
+  setsid();
+
+  int cp[2]; // Child to parent pipe 
+
+  if( pipe(cp) < 0) {
+    return -1;
+  }
+
+  pid_t pid = fork();
+  if (pid == 0) {
+    //child
+    close(1); // Close current stdout./
+    dup2( cp[1],1); // Make stdout go to write end of pipe. 
+    dup2( cp[1],2); // Make stderr go to write end of pipe. 
+    close(0); // Close current stdin. 
+    close( cp[0]);
+
+    int ret = system(cmd);
+    close( cp[1]);
+
+    //doing this to match old system out command, although this doesn't
+    //appear to be entirely correct in the interpretation of the error codes from system
+    if (ret > 255) {
+      ret = -1;
+    }
+
+    exit(ret);
+  }
+  else {
+    //parent
+    char buf[1025];
+    int size = 0;
+    memset(buf,'\0',1025);
+    close(cp[1]);
+    if (read(cp[0], &buf, 1024) > 0) {
+      strcat((char*)*outbuf,buf);
+    }
+
+    //now wait on child to kick the bucket
+    int status;
+    wait(&status);
+    close(cp[0]);
+    if (WIFEXITED(status) == TRUE) {
+      return WEXITSTATUS(status);
+    }
+  }
+  return 0;
+}
+
 
 /**********************************************************/
 

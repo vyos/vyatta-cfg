@@ -200,7 +200,7 @@ extern void touch(void);
 extern int mkdir_p(const char *path);
 
 extern const char *type_to_name(vtw_type_e type);
-extern boolean execute_list(vtw_node *cur, vtw_def *def);
+extern boolean execute_list(vtw_node *cur, vtw_def *def, const char **outbuf);
 extern void touch_dir(const char *dp);
 extern void touch_file(const char *name);
 
