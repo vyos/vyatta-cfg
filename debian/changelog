@@ -1,3 +1,13 @@
+vyatta-cfg (0.16.97) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Set executable bit on perl scripts
+
+  [ Michael Larson ]
+  * modified syntax and commit checks now applied during commit.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 19 Jul 2010 15:06:03 -0700
+
 vyatta-cfg (0.16.96) unstable; urgency=low
 
   * fix for bug 5794. Comments are not allowed on multinode parent.
