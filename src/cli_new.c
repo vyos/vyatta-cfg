@@ -2457,19 +2457,11 @@ system_out(const char *cmd, const char **outbuf)
 
     int ret = system(cmd);
     close( cp[1]);
-
-    //doing this to match old system out command, although this doesn't
-    //appear to be entirely correct in the interpretation of the error codes from system
-    if (ret > 255) {
-      ret = -1;
-    }
-
     exit(ret);
   }
   else {
     //parent
     char buf[1025];
-    int size = 0;
     memset(buf,'\0',1025);
     close(cp[1]);
     if (read(cp[0], &buf, 1024) > 0) {
@@ -2480,11 +2472,8 @@ system_out(const char *cmd, const char **outbuf)
     int status;
     wait(&status);
     close(cp[0]);
-    if (WIFEXITED(status) == TRUE) {
-      return WEXITSTATUS(status);
-    }
+    return WEXITSTATUS(status); 
   }
-  return 0;
 }
 
 
