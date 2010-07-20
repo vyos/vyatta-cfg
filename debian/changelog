@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.98) unstable; urgency=low
+
+  * modified handling of status return codes for child process.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 19 Jul 2010 17:04:13 -0700
+
 vyatta-cfg (0.16.97) unstable; urgency=low
 
   [ Stephen Hemminger ]
