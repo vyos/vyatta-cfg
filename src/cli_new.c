@@ -2427,18 +2427,9 @@ system_out(const char *cmd, const char **outbuf)
     return old_system_out(cmd);
   }
 
-  /*
-  struct sigaction sa;
-  sigaction(SIGCHLD, NULL, &sa);
-  sa.sa_flags |= SA_NOCLDWAIT;//(since POSIX.1-2001 and Linux 2.6 and later)
-  sigaction(SIGCHLD, &sa, NULL);
-  */
   if (cmd == NULL) {
     return -1;
   }
-  //should detach child process at this point
-  umask(0);
-  setsid();
 
   int cp[2]; // Child to parent pipe 
 
