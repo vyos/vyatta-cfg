@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.100) unstable; urgency=low
+
+  * support ipv4range and ! in val_help
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 21 Jul 2010 11:32:59 -0700
+
 vyatta-cfg (0.16.99) unstable; urgency=low
 
   * more cleanup to new help impl.
