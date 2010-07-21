@@ -743,7 +743,7 @@ generate_help_text ()
     IFS=''
     local chstr=$(echo -en "$vyatta_cfg_comp_help\n" \
                   | while read comp_help_line; do
-                      echo "vyatta_help_text+=\"  $comp_help_line\\n\";"
+                      echo "vyatta_help_text+='  $comp_help_line\\n';"
                     done)
     eval "$chstr"
     IFS=$sIFS
