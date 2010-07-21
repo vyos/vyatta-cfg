@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.101) unstable; urgency=low
+
+  * fix for bug 5887
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 21 Jul 2010 15:18:43 -0700
+
 vyatta-cfg (0.16.100) unstable; urgency=low
 
   * support ipv4range and ! in val_help
