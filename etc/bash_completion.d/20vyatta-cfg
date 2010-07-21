@@ -725,10 +725,6 @@ generate_help_text ()
   declare -a helps
   eval "items=( \"\${$1[@]}\" )"
   eval "helps=( \"\${$2[@]}\" )"
-  if [ -n "$vyatta_cfg_comp_help" ]; then
-    vyatta_help_text="\\n${vyatta_cfg_comp_help}"
-    return 0
-  fi
   vyatta_help_text="\\nPossible completions:"
   for (( idx = 0; idx < ${#items[@]}; idx++ )); do
     vyatta_help_text="${vyatta_help_text}\\n\\x20\\x20"
@@ -741,6 +737,17 @@ generate_help_text ()
     fi
     vyatta_help_text="${vyatta_help_text}${helps[$idx]}"
   done
+  if [ -n "$vyatta_cfg_comp_help" ]; then
+    vyatta_help_text+="\\n\\nDetailed information:\\n"
+    local sIFS=$IFS
+    IFS=''
+    local chstr=$(echo -en "$vyatta_cfg_comp_help\n" \
+                  | while read comp_help_line; do
+                      echo "vyatta_help_text+=\"  $comp_help_line\\n\";"
+                    done)
+    eval "$chstr"
+    IFS=$sIFS
+  fi
 }
 
 # this fills in $vyatta_help_text
