@@ -820,6 +820,10 @@ is_setting_new_leaf ()
 get_value_format_string ()
 {
   local vtype=$1
+  if [[ $vtype = !* ]]; then
+    echo -n '!'
+    vtype="${vtype#!}"
+  fi
   case "$vtype" in
     _*)
       echo -n "${vtype#_}"
@@ -844,6 +848,9 @@ get_value_format_string ()
       ;;
     ipv6net)
       echo -n '<h:h:h:h:h:h:h:h/x>'
+      ;;
+    ipv4range)
+      echo -n '<x.x.x.x>-<x.x.x.x>'
       ;;
     bool)
       echo -n '<boolean>'
