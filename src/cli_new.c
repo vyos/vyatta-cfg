@@ -117,8 +117,6 @@ void bye(const char *msg, ...)
   fprintf(out_stream, "%s failed\n",
           (cli_operation_name) ? cli_operation_name : "Operation");
 
-  if (is_silent_msg())
-    exit(-1);
   va_start(ap, msg);
   if (is_echo())
     printf("echo \"");
@@ -2447,8 +2445,9 @@ system_out(const char *cmd, const char **outbuf)
     close( cp[0]);
 
     int ret = system(cmd);
+
     close( cp[1]);
-    exit(ret);
+    exit(WEXITSTATUS(ret));
   }
   else {
     //parent
@@ -2463,6 +2462,7 @@ system_out(const char *cmd, const char **outbuf)
     int status;
     wait(&status);
     close(cp[0]);
+
     return WEXITSTATUS(status); 
   }
 }
