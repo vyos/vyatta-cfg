@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.103) unstable; urgency=low
+
+  * output comp_help in addition to normal help
+  * change quoting
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 21 Jul 2010 18:35:40 -0700
+
 vyatta-cfg (0.16.102) unstable; urgency=low
 
   * fix for bug 5882.
