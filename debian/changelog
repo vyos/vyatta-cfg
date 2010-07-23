@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur2) unstable; urgency=low
+
+  * remove comment feature.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 22 Jul 2010 18:09:23 -0700
+
 vyatta-cfg (0.16.103+larkspur1) unstable; urgency=low
 
   * UNRELEASED
