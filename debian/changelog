@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur3) unstable; urgency=low
+
+  * allow commit hook commands to write to stdout.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 23 Jul 2010 13:18:10 -0700
+
 vyatta-cfg (0.16.103+larkspur2) unstable; urgency=low
 
   * remove comment feature.
