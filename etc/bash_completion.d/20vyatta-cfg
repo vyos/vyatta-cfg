@@ -1039,8 +1039,7 @@ vyatta_config_complete ()
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
-    declare -a hitems=( "comment" \
-	                "commit" \
+    declare -a hitems=( "commit" \
                         "copy" \
                         "delete" \
                         "discard" \
@@ -1055,7 +1054,6 @@ vyatta_config_complete ()
                         "set" \
                         "show" )
     declare -a hstrs=( \
-      "Add comment to this configuration element" \
       "Commit the current set of changes" \
       "Copy a configuration element" \
       "Delete a configuration element" \
@@ -1406,7 +1404,6 @@ complete -F vyatta_loadsave_complete save
 complete -F vyatta_loadsave_complete load
 complete -F vyatta_loadsave_complete merge
 complete -F vyatta_loadkey_complete loadkey
-complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 
