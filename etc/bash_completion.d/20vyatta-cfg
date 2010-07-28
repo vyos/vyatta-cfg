@@ -837,6 +837,9 @@ get_value_format_string ()
     u32:*)
       echo -n "<${vtype##u32:}>"
       ;;
+    range)
+      echo -n "<start>-<end>"
+      ;;
     ipv4)
       echo -n '<x.x.x.x>'
       ;;
@@ -851,6 +854,9 @@ get_value_format_string ()
       ;;
     ipv4range)
       echo -n '<x.x.x.x>-<x.x.x.x>'
+      ;;
+    ipv6range)
+      echo -n '<h:h:h:h:h:h:h:h>-<h:h:h:h:h:h:h:h>'
       ;;
     bool)
       echo -n '<boolean>'
