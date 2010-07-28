@@ -1,3 +1,19 @@
+vyatta-cfg (0.16.105) unstable; urgency=low
+
+  [ Michael Larson ]
+  * first commit to mendocino!
+
+  [ An-Cheng Huang ]
+  * handle single quotes in comp_help
+
+  [ Stephen Hemminger ]
+  * Add range and ipv6range as val_help types
+
+  [ An-Cheng Huang ]
+  * add new cstore library
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 28 Jul 2010 14:31:31 -0700
+
 vyatta-cfg (0.16.104) unstable; urgency=low
 
   * UNRELEASED
