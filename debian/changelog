@@ -1,3 +1,40 @@
+vyatta-cfg (0.16.103+larkspur4) unstable; urgency=low
+
+  * handle single quotes in comp_help
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 27 Jul 2010 17:39:11 -0700
+
+vyatta-cfg (0.16.103+larkspur3) unstable; urgency=low
+
+  * allow commit hook commands to write to stdout.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Fri, 23 Jul 2010 13:18:10 -0700
+
+vyatta-cfg (0.16.103+larkspur2) unstable; urgency=low
+
+  * remove comment feature.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Thu, 22 Jul 2010 18:09:23 -0700
+
+vyatta-cfg (0.16.103+larkspur1) unstable; urgency=low
+
+  * UNRELEASED
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 22 Jul 2010 17:17:39 -0700
+
+vyatta-cfg (0.16.103) unstable; urgency=low
+
+  * output comp_help in addition to normal help
+  * change quoting
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 21 Jul 2010 18:35:40 -0700
+
+vyatta-cfg (0.16.102) unstable; urgency=low
+
+  * fix for bug 5882.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Wed, 21 Jul 2010 16:34:56 -0700
+
 vyatta-cfg (0.16.101) unstable; urgency=low
 
   * fix for bug 5887

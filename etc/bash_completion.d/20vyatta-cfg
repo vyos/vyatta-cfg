@@ -725,10 +725,6 @@ generate_help_text ()
   declare -a helps
   eval "items=( \"\${$1[@]}\" )"
   eval "helps=( \"\${$2[@]}\" )"
-  if [ -n "$vyatta_cfg_comp_help" ]; then
-    vyatta_help_text="\\n${vyatta_cfg_comp_help}"
-    return 0
-  fi
   vyatta_help_text="\\nPossible completions:"
   for (( idx = 0; idx < ${#items[@]}; idx++ )); do
     vyatta_help_text="${vyatta_help_text}\\n\\x20\\x20"
@@ -741,6 +737,18 @@ generate_help_text ()
     fi
     vyatta_help_text="${vyatta_help_text}${helps[$idx]}"
   done
+  if [ -n "$vyatta_cfg_comp_help" ]; then
+    local hstr=${vyatta_cfg_comp_help//\'/\'\\\\\\\'\'}
+    vyatta_help_text+="\\n\\nDetailed information:\\n"
+    local sIFS=$IFS
+    IFS=''
+    local chstr=$(echo -en "$hstr\n" \
+                  | while read comp_help_line; do
+                      echo "vyatta_help_text+='  $comp_help_line\\n';"
+                    done)
+    eval "$chstr"
+    IFS=$sIFS
+  fi
 }
 
 # this fills in $vyatta_help_text
@@ -1038,8 +1046,7 @@ vyatta_config_complete ()
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
-    declare -a hitems=( "comment" \
-	                "commit" \
+    declare -a hitems=( "commit" \
                         "copy" \
                         "delete" \
                         "discard" \
@@ -1054,7 +1061,6 @@ vyatta_config_complete ()
                         "set" \
                         "show" )
     declare -a hstrs=( \
-      "Add comment to this configuration element" \
       "Commit the current set of changes" \
       "Copy a configuration element" \
       "Delete a configuration element" \
@@ -1405,7 +1411,6 @@ complete -F vyatta_loadsave_complete save
 complete -F vyatta_loadsave_complete load
 complete -F vyatta_loadsave_complete merge
 complete -F vyatta_loadkey_complete loadkey
-complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 
