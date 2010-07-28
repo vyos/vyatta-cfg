@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur5) unstable; urgency=low
+
+  * Add range and ipv6range as val_help types
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 28 Jul 2010 10:14:41 -0700
+
 vyatta-cfg (0.16.103+larkspur4) unstable; urgency=low
 
   * handle single quotes in comp_help
