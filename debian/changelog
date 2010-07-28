@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur4) unstable; urgency=low
+
+  * handle single quotes in comp_help
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 27 Jul 2010 17:39:11 -0700
+
 vyatta-cfg (0.16.103+larkspur3) unstable; urgency=low
 
   * allow commit hook commands to write to stdout.
