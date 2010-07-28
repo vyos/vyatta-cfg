@@ -1395,6 +1395,11 @@ set_config_ps1 ''
 alias set=/opt/vyatta/sbin/my_set
 alias delete=/opt/vyatta/sbin/my_delete
 
+# ignore run_init unless selinux is enabled
+if ! -d /selinux; then
+  alias run_init=
+fi
+
 export VYATTA_COMP_LINE=""
 
 # readline bindings
