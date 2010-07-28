@@ -1,4 +1,4 @@
-# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: Perl module for loading configuration.
 
@@ -261,8 +261,9 @@ my @delete_list = ();
 sub findDeletedValues {
   my $new_ref = $_[0];
   my @active_path = @{$_[1]};
-  my ($is_multi, $is_text) = $active_cfg->parseTmpl(\@active_path);
+
   $active_cfg->setLevel(join ' ', @active_path);
+  my ($is_multi, $is_text) = $active_cfg->parseTmpl();
   if ($is_multi) {
     # for "multi:" nodes, need to sort the values by the original order.
     my @nvals = getSortedMultiValues($new_ref, \@active_path);
@@ -287,10 +288,9 @@ sub findDeletedValues {
 # $1: array ref representing current config path (active config)
 sub findDeletedNodes {
   my $new_ref = $_[0];
-  my $ret_dis_flag = $_[1];
-  my @active_path = @{$_[2]};
+  my @active_path = @{$_[1]};
   $active_cfg->setLevel(join ' ', @active_path);
-  my @active_nodes = $active_cfg->listOrigNodes(undef,$ret_dis_flag);
+  my @active_nodes = $active_cfg->listOrigNodesDA();
   foreach (@active_nodes) {
     if ($_ eq 'def') {
       next;
@@ -303,7 +303,7 @@ sub findDeletedNodes {
       my @plist = applySingleQuote(@active_path, $_);
       push @delete_list, [\@plist, 0];
     } else {
-      findDeletedNodes($new_ref->{$_}, $ret_dis_flag, [ @active_path, $_ ]);
+      findDeletedNodes($new_ref->{$_}, [ @active_path, $_ ]);
     }
   }
 }
@@ -317,8 +317,9 @@ my @set_list = ();
 sub findSetValues {
   my $new_ref = $_[0];
   my @active_path = @{$_[1]};
-  my ($is_multi, $is_text) = $active_cfg->parseTmpl(\@active_path);
+
   $active_cfg->setLevel(join ' ', @active_path);
+  my ($is_multi, $is_text) = $active_cfg->parseTmpl();
   if ($is_multi) {
     # for "multi:" nodes, need to sort the values by the original order.
     my @nvals = getSortedMultiValues($new_ref, \@active_path);
@@ -354,7 +355,7 @@ sub findSetNodes {
   $active_cfg->setLevel(join ' ', @active_path);
   my @active_nodes = $active_cfg->listOrigNodes();
   my %active_hash = map { $_ => 1 } @active_nodes;
-  my $nref = $active_cfg->parseTmplAll(join ' ', @active_path);
+  my $nref = $active_cfg->parseTmplAll();
   if (defined($nref->{type}) and !defined($nref->{tag})) {
       # we are at a leaf node.
       findSetValues($new_ref, \@active_path);
@@ -385,11 +386,10 @@ sub findSetNodes {
 sub getConfigDiff {
   $active_cfg = new Vyatta::Config;
   $new_cfg_ref = shift;
-  my $ret_del_dis_nodes = shift;
   @set_list = ();
 #  @disable_list = ();
   @delete_list = ();
-  findDeletedNodes($new_cfg_ref, $ret_del_dis_nodes, [ ]);
+  findDeletedNodes($new_cfg_ref, [ ]);
   findSetNodes($new_cfg_ref, [ ]);
 
   # need to filter out deletions of nodes with default values
@@ -401,7 +401,8 @@ sub getConfigDiff {
 	$file; 
     } @{${$del}[0]};
 
-    my ($is_multi, $is_text, $default) = $active_cfg->parseTmpl(\@comps);
+    my ($is_multi, $is_text, $default)
+      = $active_cfg->parseTmpl(join ' ', @comps);
     if (!defined($default)) {
       push @new_delete_list, $del;
     }

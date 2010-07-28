@@ -1,0 +1,6 @@
+Revision history for Perl extension Cstore.
+
+0.01  Tue Jun 15 12:03:35 2010
+	- original version; created by h2xs 1.23 with options
+		-c --skip-ppport -n Cstore
+

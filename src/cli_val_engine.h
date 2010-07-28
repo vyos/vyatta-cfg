@@ -35,8 +35,8 @@
 #if !defined(__CLI_VAL_ENGINE__)
 #define __CLI_VAL_ENGINE__
 
-#include "cli_path_utils.h"
-#include "cli_val.h"
+#include <cli_path_utils.h>
+#include <cli_val.h>
 
 /*******************
  * Type definitions
@@ -81,7 +81,8 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path,
 					   int check_existence,
 					   clind_val *res,
 					   const char* root_tmpl_path,
-					   int return_value_file_name);
+					   int return_value_file_name,
+             int in_active);
 
 
 

@@ -17,7 +17,7 @@
 # Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 # 
-# Author: An-Cheng Huang
+# Author: Vyatta
 # Description: bash completion for Vyatta configuration commands
 # 
 # **** End License ****
@@ -35,11 +35,41 @@ if [ "$_OFR_CONFIGURE" != "ok" ]; then
   return 0
 fi
 
-umask 0002
-
 if [ -r /etc/default/vyatta ]; then
   source /etc/default/vyatta
 fi
+
+# function for shell api
+vyatta_cli_shell_api ()
+{
+  local noeval=''
+  if [ "$1" == NOEVAL ]; then
+    noeval=true
+    shift
+  fi
+  local outstr
+  if ! outstr=$(${vyatta_sbindir}/my_cli_shell_api "$@"); then
+    # display the error output (if any) and then fail
+    if [ -n "$outstr" ]; then
+      echo "$outstr"
+    fi
+    return 1
+  fi
+  # eval the output (if any)
+  if [ -n "$outstr" ]; then
+    if [ -n "$noeval" ]; then
+      echo "$outstr"
+    else
+      eval "$outstr"
+    fi
+  fi
+  return 0
+}
+
+# set up the session environment
+## note: this can not use vyatta_cli_shell_api() above since it "declares"
+##       env vars.
+eval "$(${vyatta_sbindir}/my_cli_shell_api getSessionEnv $$)"
 
 declare is_set=0
 declare last_idx=0
@@ -63,48 +93,29 @@ show ()
       args[${#args[@]}]="$arg"
     fi
   done
+  local level=$(vyatta_cli_shell_api NOEVAL getEditLevelStr)
   ${vyatta_sbindir}/vyatta-output-config.pl ${show_all} \
-    ${VYATTA_EDIT_LEVEL//\// } ${args[@]} \
+    $level ${args[@]} \
   | eval "${VYATTA_PAGER:-cat}"
 }
 
 commit ()
 {
-    /opt/vyatta/sbin/my_commit $@
-    if [ $? == 0 ]; then
-       touch $VYATTA_CHANGES_ONLY_DIR/.unsaved
-    fi
+  if /opt/vyatta/sbin/my_commit "$@"; then
+    vyatta_cli_shell_api markSessionUnsaved
+  fi
 }
 
 save ()
 {
-  eval "sudo sg vyattacfg \"umask 0002 ; ${vyatta_sbindir}/vyatta-save-config.pl $@\""
-  rm -f $VYATTA_CHANGES_ONLY_DIR/.unsaved
-}
-
-discard ()
-{
-    local changes
-    if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
-	changes=1
-    else
-	changes=0
-    fi
-
-    sudo umount $VYATTA_TEMP_CONFIG_DIR
-    sudo rm -fr $VYATTA_CHANGES_ONLY_DIR $VYATTA_TEMP_CONFIG_DIR
-    make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
-    make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
-    sudo mount -t $UNIONFS \
-	-o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro \
-	$UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
-    
-    if (( changes )); then
-	echo "Changes have been discarded"
-    else
-	echo "No changes have been discarded"
-    fi
-
+  # transform individual args into quoted strings
+  local arg=''
+  local save_cmd="${vyatta_sbindir}/vyatta-save-config.pl"
+  for arg in "$@"; do
+    save_cmd+=" '$arg'"
+  done
+  eval "sudo sg vyattacfg \"umask 0002 ; $save_cmd\""
+  vyatta_cli_shell_api unmarkSessionUnsaved
 }
 
 reboot ()
@@ -117,216 +128,68 @@ shutdown ()
   echo "Exit from configure mode before shutting down system."
 }
 
-declare vyatta_cfg_prompt_level=''
-set_config_ps1 ()
+reset_edit_level ()
 {
-  local level=$1
-  vyatta_unescape level level
-  if [ -z "$level" ]; then
-    export PS1="[edit]\n\u@\h# "
-    vyatta_cfg_prompt_level=''
-  else
-    export PS1="[edit $level]\n\u@\h# "
-    vyatta_cfg_prompt_level="$level"
-  fi
+  vyatta_cli_shell_api getEditResetEnv
+  return $?
 }
 
 load ()
 {
   # don't load if there are uncommitted changes.
-  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+  if vyatta_cli_shell_api sessionChanged; then
     echo "Cannot load: configuration modified."
     echo "Commit or discard the changes before loading a config file."
     return 1
   fi
   # return to top level.
-  export VYATTA_EDIT_LEVEL="/"
-  export VYATTA_TEMPLATE_LEVEL="/"
-  set_config_ps1 ''
-  eval "${vyatta_sbindir}/vyatta-load-config.pl $@"
+  reset_edit_level
+  ${vyatta_sbindir}/vyatta-load-config.pl "$@"
 }
 
 merge ()
 {
   # don't load if there are uncommitted changes.
-  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+  if vyatta_cli_shell_api sessionChanged; then
     echo "Cannot load: configuration modified."
     echo "Commit or discard the changes before loading a config file."
     return 1
   fi
   # return to top level.
-  export VYATTA_EDIT_LEVEL="/"
-  export VYATTA_TEMPLATE_LEVEL="/"
-  set_config_ps1 ''
-  eval "${vyatta_sbindir}/vyatta-load-config.pl $@ --merge"
+  reset_edit_level
+  ${vyatta_sbindir}/vyatta-load-config.pl "$@" --merge
 }
 
 top ()
 {
-  if [ "$VYATTA_EDIT_LEVEL" == "/" ]; then
+  if vyatta_cli_shell_api editLevelAtRoot; then
     echo "Already at the top level"
     return 0
   fi
 
   # go to the top level.
-  export VYATTA_EDIT_LEVEL="/"
-  export VYATTA_TEMPLATE_LEVEL="/"
-  set_config_ps1 ''
-}
-
-rename()
-{
-  mvcp rename Rename mv "$@"
-}
-
-copy()
-{
-  mvcp copy Copy "cp -a" "$@"
-}
-
-mvcp ()
-{
-  local str=$1
-  shift
-  local Str=$1
-  shift
-  local cmd=$1
-  shift
-  local _otag=$1
-  local _ovalu=$2
-  local _to=$3
-  local _ntag=$4
-  local _nvalu=$5
-  local _oval=''
-  local _nval=''
-  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-  vyatta_escape _ovalu _oval
-  vyatta_escape _nvalu _nval
-  if [ "$_to" != 'to' ] || [ -z "$_ntag" ] || [ -z "$_nval" ]; then
-    echo "Invalid $str command"
-    return 1
-  fi
-  if [ "$_otag" != "$_ntag" ]; then
-    echo "Cannot $str from \"$_otag\" to \"$_ntag\""
-    return 1
-  fi
-  if [ ! -d "$_tpath/$_otag/$VYATTA_TAG_NAME" ]; then
-    echo "Cannot $str under \"$_otag\""
-    return 1
-  fi
-  if [ ! -d "$_mpath/$_otag/$_oval" ]; then
-    echo "Configuration \"$_otag $_ovalu\" does not exist"
-    return 1
-  fi
-  if [ -d "$_mpath/$_ntag/$_nval" ]; then
-    echo "Configuration \"$_ntag $_nvalu\" already exists"
-    return 1
-  fi
-  if ! /opt/vyatta/sbin/my_set $_ntag "$_nvalu"; then
-    echo "$Str failed"
-    return 1
-  fi
-  /opt/vyatta/sbin/my_delete $_ntag "$_nvalu" >&/dev/null 3>&1
-
-  $cmd "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
-
-  return 0
+  reset_edit_level
 }
 
 edit ()
 {
-  local num_comp=${#@}
-  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-  local idx
-  if ! /opt/vyatta/sbin/my_set $* >&/dev/null 3>&1; then
-    echo "Invalid node \"$*\" for the 'edit' command"
-    return 1
-  fi
-  for (( idx=1; idx <= num_comp; idx++ )); do
-    local comp
-    eval "comp=\$$idx"
-    vyatta_escape comp comp
-    push_path _mpath $comp
-    push_path _tpath $comp
-    if [ ! -d $_mpath ]; then
-      # "edit" only allows existing node
-      break
-    fi
-
-    # check if it's not tag value
-    if [ -d $_tpath ]; then
-      continue
-    fi
-
-    # check if it's tag value 
-    pop_path _tpath
-    push_path _tpath $VYATTA_TAG_NAME
-    if [ -d $_tpath ]; then
-      continue
-    fi
-    pop_path _tpath
-    pop_path _mpath
-    break
-  done
-  # "edit" only valid for
-  # * "node.tag" level
-  # * "node.def" level without "type:"
-  if (( idx != ( num_comp + 1) )); then
-    echo "Invalid node \"$*\" for the 'edit' command"
-    return 1
-  fi
-  if [ "${_tpath:((-9))}" != "/node.tag" ]; then
-    # we are not at "node.tag" level. look for "type:".
-    if [ ! -r "$_tpath/node.def" ]; then
-      vyatta_cfg_type=""
-    else
-      vyatta_parse_tmpl "$_tpath/node.def"
-    fi
-    if [ -n "$vyatta_cfg_type" ]; then
-      # "type:" present
-      echo "The 'edit' command cannot be issued at the \"$*\" level"
-      return 1
-    fi
-  fi
-  export VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
-  export VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
-
-  declare -a path_arr
-  path_str2arr VYATTA_EDIT_LEVEL path_arr
-  local path_str="${path_arr[*]}"
-  set_config_ps1 "$path_str"
+  vyatta_cli_shell_api getEditEnv "$@"
+  return $?
 }
 
 up ()
 {
-  if [ "$VYATTA_EDIT_LEVEL" == "/" ]; then
-    echo "Already at the top level"
-    return 0
-  fi
-  if [[ $VYATTA_TEMPLATE_LEVEL == */node.tag/ ]]; then
-    export VYATTA_EDIT_LEVEL="${VYATTA_EDIT_LEVEL%/*/*/}/"
-    export VYATTA_TEMPLATE_LEVEL="${VYATTA_TEMPLATE_LEVEL%/*/*/}/"
-  else
-    export VYATTA_EDIT_LEVEL="${VYATTA_EDIT_LEVEL%/*/}/"
-    export VYATTA_TEMPLATE_LEVEL="${VYATTA_TEMPLATE_LEVEL%/*/}/"
-  fi
-  
-  declare -a path_arr
-  path_str2arr VYATTA_EDIT_LEVEL path_arr
-  local path_str="${path_arr[*]}"
-  set_config_ps1 "$path_str"
+  vyatta_cli_shell_api getEditUpEnv "$@"
+  return $?
 }
 
 really_exit()
 {
-  if [ -f $VYATTA_CHANGES_ONLY_DIR/.unsaved ]; then
-     echo "Warning: configuration changes have not been saved."
+
+  if vyatta_cli_shell_api sessionUnsaved; then
+    echo "Warning: configuration changes have not been saved."
   fi
-  sudo umount $VYATTA_TEMP_CONFIG_DIR
-  sudo rm -rf $VYATTA_TEMP_CONFIG_DIR $VYATTA_CHANGES_ONLY_DIR \
-              $VYATTA_CONFIG_TMP
+  vyatta_cli_shell_api teardownSession
   unset _OFR_CONFIGURE
   builtin exit 0
 }
@@ -343,9 +206,9 @@ exit ()
     return 1
   fi
 
-  if [ "$VYATTA_EDIT_LEVEL" == "/" ]; then
+  if vyatta_cli_shell_api editLevelAtRoot; then
     # we are at the root level. check if we can really exit.
-    if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+    if vyatta_cli_shell_api sessionChanged; then
       if (( ! discard )); then
         echo "Cannot exit: configuration modified."
         echo "Use 'exit discard' to discard the changes and exit."
@@ -356,9 +219,7 @@ exit ()
   fi
 
   # "exit" to the root level.
-  export VYATTA_EDIT_LEVEL="/"
-  export VYATTA_TEMPLATE_LEVEL="/"
-  set_config_ps1 ''
+  reset_edit_level
 }
 
 # run op mode commands
@@ -431,36 +292,14 @@ vyatta_loadsave_complete()
 loadkey()
 {
   # don't load if there are uncommitted changes.
-  if [ -f "$VYATTA_TEMP_CONFIG_DIR/$VYATTA_MOD_NAME" ]; then
+  if vyatta_cli_shell_api sessionChanged; then
     echo "Cannot load: configuration modified."
     echo "Commit or discard the changes before loading a config file."
     return 1
   fi
   # return to top level.
-  export VYATTA_EDIT_LEVEL="/"
-  export VYATTA_TEMPLATE_LEVEL="/"
-  set_config_ps1 ''
-  eval "${vyatta_sbindir}/vyatta-load-user-key.pl $@"
-}
-
-comment()
-{
-    if [ "$#" -eq "0" ]; then
-        return 0
-    fi
-    ${vyatta_sbindir}/vyatta-comment-config.pl "$@"
-}
-
-activate()
-{
-    #create or remove activate file
-    eval "${vyatta_sbindir}/vyatta-activate-config.pl activate $@" 
-}
-
-deactivate()
-{
-    #create or remove activate file
-    eval "${vyatta_sbindir}/vyatta-activate-config.pl deactivate $@" 
+  reset_edit_level
+  ${vyatta_sbindir}/vyatta-load-user-key.pl "$@"
 }
 
 vyatta_loadkey_complete()
@@ -484,96 +323,6 @@ vyatta_loadkey_complete()
 	  COMPREPLY=( $(compgen -f -- ${COMP_WORDS[2]} ) )
 	 fi ;;
   esac
-}
-
-declare v_cfg_completion_debug=0
-decho ()
-{
-  if (( v_cfg_completion_debug )); then
-    echo -n "$*"
-  fi
-}
-
-push_path_arr ()
-{
-  # $1: \@path_arr
-  # $2: component
-  eval "$1=( \"\${$1[@]}\" '$2' )"
-}
-
-pop_path_arr ()
-{
-  # $1: \@path_arr
-  eval "$1=( \"\${$1[@]:0:((\${#$1[@]}-1))}\" )"
-}
-
-path_arr2str ()
-{
-  # $1: \@path_arr
-  # $2: \$path_str
-  eval "$2=\"\${$1[*]}\""
-  eval "$2=/\${$2// //}"
-}
-
-path_str2arr ()
-{
-  # $1: \$path_str
-  # $2: \@path_arr
-  local tmp
-  eval "tmp=\${$1:1}"
-  eval "$2=( \${tmp//\// } )"
-}
-
-push_path ()
-{
-  # $1: \$path_str
-  # $2: component
-  declare -a path_arr
-  eval "path_str2arr $1 path_arr"
-  eval "push_path_arr path_arr '$2'"
-  eval "path_arr2str path_arr $1"
-}
-
-pop_path ()
-{
-  # $1: \$path_str
-  declare -a path_arr
-  eval "path_str2arr $1 path_arr"
-  pop_path_arr path_arr
-  eval "path_arr2str path_arr $1"
-}
-
-get_filtered_dir_listing ()
-{
-  # $1: path
-  # $2: \@listing
-  if [ ! -d $1 ]; then
-    eval "$2=()"
-    return
-  fi
-  local pattern='^node\.def$|^node\.tag$|^node\.val$|^\.modified$'
-  patterh=$pattern'|^\.commit\.lck$|^\.wh\.'
-  local cmd="ls $1 |egrep -v '$pattern'"
-  declare -a listing=( $(eval $cmd) )
-  for enode in "${listing[@]}"; do
-    local unode
-    vyatta_unescape enode unode
-    eval "$2[\${#$2[@]}]=$unode"
-  done
-}
-
-filter_existing_nodes ()
-{
-  # $1: mpath
-  # $2: \@orig
-  # $3: \@filtered
-  declare -a orig
-  eval "orig=( \"\${$2[@]}\" )"
-  for node in "${orig[@]}"; do
-    if [ -d "$1/$node" ]; then
-      eval "$3[\${#$3[@]}]=$node"
-    fi
-  done
 }
 
 get_prefix_filtered_list ()
@@ -623,24 +372,6 @@ get_prefix_filtered_list2 ()
   done
 }
 
-vyatta_parse_tmpl_comp_fields ()
-{
-  # $1: tmpl
-  # $2: field name
-  sed -n '
-  /^'"$2"':/,$ {
-    s/^'"$2"':[ 	]*//
-    h
-    :b
-    $ { x; p; q }
-    n
-    /^\([-_a-z]\+:\|#\)/ { x; p; q }
-    H
-    bb
-  }
-  ' $1
-}
-
 declare vyatta_cfg_help=""
 declare vyatta_cfg_type=""
 declare vyatta_cfg_tag=0
@@ -649,93 +380,22 @@ declare -a vyatta_cfg_allowed=()
 declare vyatta_cfg_comp_help=""
 declare -a vyatta_cfg_val_type=()
 declare -a vyatta_cfg_val_help=()
-vyatta_parse_tmpl ()
-{
-  # $1: tmpl
-  vyatta_cfg_help=""
-  vyatta_cfg_type=""
-  vyatta_cfg_enum=''
-  vyatta_cfg_tag=0
-  vyatta_cfg_multi=0
-  vyatta_cfg_allowed=()
-  vyatta_cfg_comp_help=''
-  vyatta_cfg_val_type=()
-  vyatta_cfg_val_help=()
-  if [ ! -r $1 ]; then
-    return
-  fi
-  eval `sed -n '
-  /^syntax:expression:[ 	]\+\$VAR(@)[ 	]\+in[ 	]\+/ {
-    s/^syntax:expression:[ 	]\+\$VAR(@)[ 	]\+in[ 	]\+/vyatta_cfg_allowed=( /
-    s/^\([^;]\+\);.*$/\1 )/
-    s/[ 	]*,[ 	]*/ /gp
-  }
-  s/^tag:.*/vyatta_cfg_tag=1/p
-  s/^multi:.*/vyatta_cfg_multi=1/p
-  s/^type:[     ]*\([^;]\+[^;   ]\)[    ]*\(;.*\)\?$/vyatta_cfg_type="\1"/p
-  s/^enumeration:[ 	]\+\([^ 	]\+\)/vyatta_cfg_enum=\1/p
-  ' $1`
-  
-  vyatta_cfg_help=$(vyatta_parse_tmpl_comp_fields $1 "help")
-  
-  local acmd=$(vyatta_parse_tmpl_comp_fields $1 "allowed")
-  if [ -n "$vyatta_cfg_enum" ]; then
-    local enum_script="/opt/vyatta/share/enumeration/$vyatta_cfg_enum"
-    if [ -f "$enum_script" ] && [ -e "$enum_script" ]; then
-      acmd="$enum_script"
-    fi
-  fi
-  vyatta_cfg_comp_help=$(vyatta_parse_tmpl_comp_fields $1 "comp_help")
-  local vhstr=$(grep '^val_help:' $1 | sed 's/^val_help:[ 	]*//;
-                                     s/[ 	]*;[ 	]*/;/' \
-                | while read line; do
-                    if [[ "$line" == *";"* ]]; then
-                      echo "vyatta_cfg_val_type+=( \"${line%%;*}\" )"
-                      echo "vyatta_cfg_val_help+=( \"${line##*;}\" )"
-                    else
-                      echo "vyatta_cfg_val_help+=( \"$line\" )"
-                    fi
-                  done)
-  eval "$vhstr"
- 
-  if (( ${#vyatta_cfg_allowed[@]} == 0 )); then
-    astr=$(eval "$acmd")
-    astr=${astr//</\\<}
-    astr=${astr//>/\\>}
-    eval "ares=( $astr )"
-    for (( i=0 ; i<${#ares[@]} ; i++ )); do
-      if [[ "${ares[i]}" != \<*\> ]]; then
-        vyatta_cfg_allowed+=( "${ares[i]}" )
-      else
-        vyatta_cfg_allowed+=( "" )
-      fi
-    done
-  fi
-  if [ -z "$vyatta_cfg_help" ]; then
-    vyatta_cfg_help='<No help text available>'
-  fi
-}
 
-# this fills in $vyatta_help_text
-generate_help_text ()
+declare -a _get_help_text_items=()
+declare -a _get_help_text_helps=()
+get_help_text ()
 {
-  # $1: \@items
-  # $2: \@help_strs
-  declare -a items
-  declare -a helps
-  eval "items=( \"\${$1[@]}\" )"
-  eval "helps=( \"\${$2[@]}\" )"
   vyatta_help_text="\\nPossible completions:"
-  for (( idx = 0; idx < ${#items[@]}; idx++ )); do
-    vyatta_help_text="${vyatta_help_text}\\n\\x20\\x20"
-    if [ ${#items[$idx]} -lt 6 ]; then
-      vyatta_help_text="${vyatta_help_text}${items[$idx]}\\t\\t"
-    elif [ ${#items[$idx]} -lt 14 ]; then
-      vyatta_help_text="${vyatta_help_text}${items[$idx]}\\t"
+  for (( idx = 0; idx < ${#_get_help_text_items[@]}; idx++ )); do
+    vyatta_help_text+="\\n\\x20\\x20"
+    if [ ${#_get_help_text_items[idx]} -lt 6 ]; then
+      vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t"
+    elif [ ${#_get_help_text_items[idx]} -lt 14 ]; then
+      vyatta_help_text+="${_get_help_text_items[idx]}\\t"
     else
-      vyatta_help_text="${vyatta_help_text}${items[$idx]}\\n\\x20\\x20\\t\\t"
+      vyatta_help_text+="${_get_help_text_items[idx]}\\n\\x20\\x20\\t\\t"
     fi
-    vyatta_help_text="${vyatta_help_text}${helps[$idx]}"
+    vyatta_help_text+="${_get_help_text_helps[idx]}"
   done
   if [ -n "$vyatta_cfg_comp_help" ]; then
     local hstr=${vyatta_cfg_comp_help//\'/\'\\\\\\\'\'}
@@ -749,80 +409,6 @@ generate_help_text ()
     eval "$chstr"
     IFS=$sIFS
   fi
-}
-
-# this fills in $vyatta_help_text
-get_tmpl_subdir_help ()
-{
-  # $1: path
-  # $2: \@subdirs
-  declare -a subdirs
-  eval "subdirs=( \"\${$2[@]}\" )"
-  if [ ${#subdirs[@]} == 0 ]; then
-    vyatta_help_text=""
-    return
-  fi
-  declare -a hitems=()
-  declare -a hstrs=()
-  for subdir in "${subdirs[@]}"; do
-    if [ ! -r $1/$subdir/node.def ]; then
-      vyatta_cfg_help="<No help text available>"
-    else
-      vyatta_parse_tmpl "$1/$subdir/node.def"
-      # comp_help overrides the current help, so we reset it here since
-      # it is from the subdir.
-      vyatta_cfg_comp_help=''
-    fi
-    hitems[${#hitems[@]}]=$subdir
-    hstrs[${#hstrs[@]}]=$vyatta_cfg_help
-  done
-  generate_help_text hitems hstrs
-}
-
-# return 0 if yes. 1 if no.
-item_in_list ()
-{
-  # $1: item
-  # $2: \@list
-  declare -a olist
-  local item
-  eval "olist=( \"\${$2[@]}\" )"
-  for item in "${olist[@]}"; do
-    if [ "$1" == "$item" ]; then
-      return 0
-    fi
-  done
-  return 1
-}
-
-append_allowed_values ()
-{
-  # $1: tmpl_path
-  # $2: \@values
-  if [ ! -r "$1/node.def" ]; then
-    return
-  fi
-  vyatta_parse_tmpl "$1/node.def"
-  local item
-  for item in "${vyatta_cfg_allowed[@]}"; do
-    if ! item_in_list "$item" $2; then
-      eval "$2[\${#$2[@]}]=\"$item\""
-    fi
-  done
-}
-
-# return 0 if yes. 1 if no.
-is_setting_new_leaf ()
-{
-  # $1: tmpl_path
-  if [ $is_set == 0 ]; then
-    return 1
-  fi
-  vyatta_parse_tmpl "$1/node.def"
-  if [ -z "$vyatta_cfg_type" ]; then
-    return 1
-  fi
-  return 0
 }
 
 get_value_format_string ()
@@ -878,121 +464,12 @@ get_value_format_string ()
   esac
 }
 
-# this fills in $vyatta_help_text
-get_node_value_help ()
-{
-  # $1: path
-  # $2: \@values
-  declare -a vals
-  eval "vals=( \"\${$2[@]}\" )"
-  if [ $is_set == 0 -a ${#vals[@]} == 0 ]; then
-    vyatta_help_text=""
-    return
-  fi
-  if [ ! -r "$1/node.def" ]; then
-    vyatta_cfg_help="<No help text available>"
-    vyatta_cfg_type=""
-  else
-    vyatta_parse_tmpl "$1/node.def"
-  fi
-  if (( ${#vyatta_cfg_val_type[@]} == 0 )); then
-    # didn't get val_type, use type (with support for multi-typed nodes)
-    vyatta_cfg_val_type=( ${vyatta_cfg_type//,/ } )
-  fi
-  if (( ${#vyatta_cfg_val_help[@]} == 0 )); then
-    # didn't get val_help, use help
-    vyatta_cfg_val_help=( "$vyatta_cfg_help" )
-  fi
-
-  declare -a hitems=()
-  declare -a hstrs=()
-  for ((i = 0; i < ${#vyatta_cfg_val_type[@]}; i++)); do
-    local t=$(get_value_format_string "${vyatta_cfg_val_type[i]}")
-    hitems+=( "$t" )
-    hstrs+=( "${vyatta_cfg_val_help[i]}" )
-  done
-  generate_help_text hitems hstrs
-}
-
-get_value_list ()
-{
-  # $1: path
-  # $2: \@listing
-  local vfile=$1/node.val
-  if [ ! -r $vfile ]; then
-    eval "$2=()"
-    return
-  fi
-  declare -a listing=()
-  local cmd=$(sed 's/^\(.*\)$/listing[\${#listing[@]}]='\''\1'\''/' $vfile)
-  eval "$cmd"
-  eval "$2=( \"\${listing[@]}\" )"
-}
-
-vyatta_escape ()
-{
-  # $1: \$original
-  # $2: \$escaped
-  eval "$2=\${$1//\%/%25}"
-  eval "$2=\${$2//\*/%2A}"
-  eval "$2=\${$2//\//%2F}"
-}
-
-vyatta_unescape ()
-{
-  # $1: \$escaped
-  # $2: \$original
-  eval "$2=\${$1//\%2F/\/}"
-  eval "$2=\${$2//\%2A/*}"
-  eval "$2=\${$2//\%25/%}"
-}
-
 declare -a vyatta_completions
 declare vyatta_help_text="\\nNo help text available"
-declare vyatta_do_help=0
+declare vyatta_do_help=false
 vyatta_do_complete ()
 {
-  # when this function is called, it is expected that:
-  # * "vyatta_help_text" is filled with the help text.
-  # * "vyatta_completions" is an array of "filtered" possible completions
-  #   (i.e., only those starting with the current last component).
-  local do_help=$vyatta_do_help
- 
-  # we may not want to do the following
-<<'ENDCOMMENT'
-  if [ ${#vyatta_completions[@]} == 1 ]; then
-    # no ambiguous completions. do completion instead of help.
-    do_help=0
-  fi
-
-  # now check if we can auto-complete at least 1 more character.
-  if (( do_help )); then
-    local schar=""
-    for comp in "${vyatta_completions[@]}"; do
-      local sub=$comp
-      if [ ! -z "${COMP_WORDS[COMP_CWORD]}" ]; then
-        sub=${comp#${comp_words[$last_idx]}}
-        if [ "$comp" == "$sub" ]; then
-          # should not happen since vyatta_completions should be filtered.
-          continue
-        fi
-      fi
-      if [ -z "$schar" ]; then
-        schar=${sub:0:1}
-      else
-        if [ "$schar" != "${sub:0:1}" ]; then
-          schar=""
-          break
-        fi
-      fi
-    done
-    if [ ! -z "$schar" ]; then
-      do_help=0
-    fi
-  fi
-ENDCOMMENT
-
-  if (( do_help )); then
+  if $vyatta_do_help; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
@@ -1012,16 +489,38 @@ ENDCOMMENT
   vyatta_help_text="\\nNo help text available"
 }
 
+vyatta_simple_complete ()
+{
+  # when this function is called, it is expected that:
+  # * "vyatta_help_text" is filled with the help text.
+  # * "vyatta_completions" is an array of "filtered" possible completions
+  #   (i.e., only those starting with the current last component).
+  if $vyatta_do_help; then
+    printf "$vyatta_help_text"
+    COMPREPLY=( "" " " )
+  else
+    COMPREPLY=( "${vyatta_completions[@]}" )
+  fi
+  vyatta_help_text="\\nNo help text available"
+}
+
 generate_pipe_help ()
 {
-  local -a hcomps=( "${_vyatta_pipe_completions[@]}" \
-                    "${_vyatta_pipe_noncompletions[@]}" )
-  local -a hstrs=()
-  for comp in "${hcomps[@]}"; do
-    hstrs+=("$(_vyatta_pipe_help "$comp")")
+  _get_help_text_items=( "${_vyatta_pipe_completions[@]}" \
+                         "${_vyatta_pipe_noncompletions[@]}" )
+  _get_help_text_helps=()
+  for comp in "${_get_help_text_items[@]}"; do
+    _get_help_text_helps+=("$(_vyatta_pipe_help "$comp")")
   done
-  generate_help_text hcomps hstrs
+  get_help_text
 }
+
+# env variables for shell api completion
+declare _cli_shell_api_last_comp_val=''
+declare _cli_shell_api_comp_help=''
+declare -a _cli_shell_api_comp_values=()
+declare -a _cli_shell_api_hitems=()
+declare -a _cli_shell_api_hstrs=()
 
 vyatta_config_complete ()
 {
@@ -1030,10 +529,10 @@ vyatta_config_complete ()
 
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=''
-    vyatta_do_help=1
+    vyatta_do_help=true
   else
     VYATTA_COMP_LINE=$COMP_LINE
-    vyatta_do_help=0
+    vyatta_do_help=false
   fi
 
   # handle pipe
@@ -1046,24 +545,24 @@ vyatta_config_complete ()
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
-    declare -a hitems=( "activate" \
-	                "comment" \
-	                "commit" \
-                        "copy" \
-	                "deactivate" \
-                        "delete" \
-                        "discard" \
-                        "edit" \
-                        "exit" \
-                        "load" \
-			"loadkey" \
-                        "merge" \
-                        "rename" \
-                        "run" \
-                        "save" \
-                        "set" \
-                        "show" )
-    declare -a hstrs=( \
+    _get_help_text_items=( "activate" \
+                           "comment" \
+                           "commit" \
+                           "copy" \
+                           "deactivate" \
+                           "delete" \
+                           "discard" \
+                           "edit" \
+                           "exit" \
+                           "load" \
+                           "loadkey" \
+                           "merge" \
+                           "rename" \
+                           "run" \
+                           "save" \
+                           "set" \
+                           "show" )
+    _get_help_text_helps=( \
       "Activate this element" \
       "Add comment to this configuration element" \
       "Commit the current set of changes" \
@@ -1085,315 +584,124 @@ vyatta_config_complete ()
     if (( ${#COMP_WORDS[@]} == 1 )); then
       declare -a fitems=()
       declare -a fstrs=()
-      get_prefix_filtered_list2 "${COMP_WORDS[0]}" hitems fitems hstrs fstrs
-      hitems=( "${fitems[@]}" )
-      hstrs=( "${fstrs[@]}" )
+      get_prefix_filtered_list2 "${COMP_WORDS[0]}" \
+        _get_help_text_items fitems _get_help_text_helps fstrs
+      _get_help_text_items=( "${fitems[@]}" )
+      _get_help_text_helps=( "${fstrs[@]}" )
     fi
-    generate_help_text hitems hstrs
-    vyatta_completions=( "${hitems[@]}" )
+    get_help_text
+    vyatta_completions=( "${_get_help_text_items[@]}" )
     vyatta_do_complete
     eval $restore_shopts
     return
   fi
 
   local command=${COMP_WORDS[0]}
-  # completion for "set"/"edit" is different from other commands
-  is_set=0
-  if [ "$command" == "set" -o "$command" == "edit" ]; then
-    is_set=1
-  fi
-  local end_space=0
-  local num_comp=$COMP_CWORD
-  if [ -z "${COMP_WORDS[$COMP_CWORD]}" ]; then
-    end_space=1
-    (( num_comp -= 1 ))
-  fi
-
-  (( last_idx = num_comp - 1 ))
-  comp_words=( ${COMP_WORDS[@]:1:$num_comp} )
+  local last_comp="${COMP_WORDS[COMP_CWORD]}"
 
   # handle "exit"
   if [ "$command" == "exit" ]; then
-    if (( num_comp > 1 || ( end_space && num_comp > 0 ) )); then
+    if (( COMP_CWORD > 1 )); then
       COMPREPLY=()
       eval $restore_shopts
       return
     fi
-    declare -a hitems=( "discard" )
-    declare -a hstrs=( "Discard any changes" )
-    generate_help_text hitems hstrs
-    vyatta_completions=( "discard" )
+    _get_help_text_items=("discard")
+    _get_help_text_helps=("Discard any changes")
+    get_help_text
+    vyatta_completions=("discard")
     vyatta_do_complete
     eval $restore_shopts
     return
   fi
 
-  local start_idx=0
+  local -a api_args=("${COMP_WORDS[@]}")
 
   # handle "copy" and "rename"
   if [ "$command" == "copy" -o "$command" == "rename" ]; then
-      # Syntax of copy and rename commands are:
-      #
-      #     copy/rename <param1> <sub-param1> to <param2> <sub-param2>
-      #
-      # where <param1> and <param2> are configuration parameters 
-      # in the tree at the current edit level.
-      #
-      # If parsing index 1 or 2 (i.e. <param1> or <sub-param1>),
-      # fall through this test to the parameter parsing code below.
-      #
-      if (( ( end_space && num_comp == 2 ) || 
-	    ( !end_space && num_comp == 3 ) )); then
-	  # If parsing index 3, there's only one option.
-	  declare -a hitems=( "to" )
-	  declare -a hstrs=( "Set destination" )
-	  generate_help_text hitems hstrs
-	  vyatta_completions=( "to" )
-	  vyatta_do_complete
-	  eval $restore_shopts
-	  return
-      elif (( ( num_comp > 2 ) &&
-	      ( ( num_comp < 5 ) || ( !end_space && num_comp == 5 ) ) )); then
-	  # If parsing index 4 or 5, we set start_idx so that
-	  # the parameter parsing code will start parsing at
-	  # <param2>.  Parsing these parameters should follow
-	  # the same rules as the "set" command.
-	  start_idx=3
-	  is_set=1
-      elif (( ( end_space && num_comp == 5 ) ||
-	      ( num_comp > 5 ) )); then
-	  # If parsing after index 5, there are no more valid parameters
-	  COMPREPLY=()
-	  eval $restore_shopts
-	  return
-      fi
-  fi
-
-  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-  local last_tag=0
-  local idx=$start_idx
-  for (( idx=$start_idx; idx < num_comp; idx++ )); do
-    last_tag=0
-    local comp=${comp_words[$idx]}
-    vyatta_escape comp comp
-    push_path _mpath $comp
-    push_path _tpath $comp
-    if [ -d $_tpath ]; then
-      if (( ! is_set )); then
-        # we are not in "set" => only allow existing node
-        if [ ! -d $_mpath ]; then
-          break
-        fi
-      fi
-      continue
-    fi
-    pop_path _tpath
-    push_path _tpath $VYATTA_TAG_NAME
-    if [ -d $_tpath ]; then
-      if (( ! is_set && end_space )); then
-        # we are not in "set" && last component is complete.
-        # => only allow existing tag value.
-        if [ ! -d $_mpath ]; then
-          break
-        fi
-      fi
-      if (( idx != last_idx )); then
-        # TODO validate value
-        # break if not valid 
-        # XXX is this validation necessary? (set will validate anyway)
-        true
-      fi
-      last_tag=1
-      continue
-    fi
-    pop_path _tpath
-    pop_path _mpath
-    break
-  done
-  # at the end of the loop, 3 possibilities:
-  # 1. (idx < last_idx): some component before the last is invalid
-  #    => invalid command
-  # 2. (idx == last_idx): last component matches neither template nor node.tag
-  #    => if end_space, then invalid command
-  #       otherwise, may be an incomplete (non-tag) component, or incomplete
-  #       "leaf value"
-  #       => try matching dirs in _tpath or value(s) in _mpath/node.val
-  # 3. (idx == num_comp): the whole command matches templates/tags
-  if (( idx < last_idx || ( idx == last_idx && end_space ) )); then
-    # TODO error message?
-    COMPREPLY=()
-    eval $restore_shopts
-    return
-  fi
-
-  declare -a matches
-  if (( idx == last_idx )); then
-    # generate possibile matches (dirs in _tpath, and "help" from
-    # node.def in each dir, or values in _mpath/node.val)
-    declare -a fmatches
-    if [ -f $_mpath/node.val ]; then
-      decho {1a}
-      get_value_list $_mpath matches
-      get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
-      append_allowed_values $_tpath fmatches
-      get_node_value_help $_tpath fmatches
-    else
-      decho {1b}
-      # see if the last component is a new leaf node
-      fmatches=()
-      if is_setting_new_leaf $_tpath; then
-        append_allowed_values $_tpath fmatches
-        get_node_value_help $_tpath fmatches
-      else
-        # last component is a non-value node. look for child nodes.
-        if (( ! is_set )); then
-          # not "set". only complete existing nodes.
-          declare -a amatches=()
-          get_filtered_dir_listing $_tpath amatches
-          filter_existing_nodes $_mpath amatches matches
-        else
-          get_filtered_dir_listing $_tpath matches
-        fi
-        get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
-        get_tmpl_subdir_help $_tpath fmatches
-      fi
-    fi
-    vyatta_completions=( "${fmatches[@]}" )
-    vyatta_do_complete
-    eval $restore_shopts
-    return
-  fi
-
-  if (( last_tag && end_space )); then
-    # if not "set", check _mpath (last component is the tag) is valid
-    # generate possible matches (dirs in _tpath, and "help" from node.def
-    # in each dir)
-    decho {2}
-    if [ $is_set == 1 -o -d $_mpath ]; then
-      if (( ! is_set )); then
-        # not "set". only complete existing nodes.
-        declare -a fmatches=()
-        get_filtered_dir_listing $_tpath fmatches
-        filter_existing_nodes $_mpath fmatches matches
-      else
-        get_filtered_dir_listing $_tpath matches
-      fi
-      get_tmpl_subdir_help $_tpath matches
-      vyatta_completions=( "${matches[@]}" )
+    # Syntax of copy and rename commands are:
+    #
+    #     copy/rename <param1> <sub-param1> to <param2> <sub-param2>
+    #
+    # where <param1> and <param2> are configuration parameters
+    # in the tree at the current edit level.
+    #
+    # If parsing index 1 or 2 (i.e. <param1> or <sub-param1>),
+    # fall through this test to the parameter parsing code below.
+    if (( COMP_CWORD == 3 )); then
+      # If parsing index 3, there's only one option.
+      _get_help_text_items=("to")
+      _get_help_text_helps=("Set destination")
+      get_help_text
+      vyatta_completions=("to")
       vyatta_do_complete
       eval $restore_shopts
       return
+    elif (( COMP_CWORD > 3 && COMP_CWORD < 6 )); then
+      # If parsing index 4 or 5, start completion at <param2>.
+      api_args=("$command" "${COMP_WORDS[@]:4}")
+    elif (( COMP_CWORD > 5 )); then
+      # If parsing after index 5, there are no more valid parameters
+      COMPREPLY=()
+      eval $restore_shopts
+      return
     fi
-    eval $restore_shopts
-    return
-  fi
-  
-  if (( last_tag && !end_space )); then
-    # generate possible matches (dirs in _mpath, and "help" from node.def
-    # in dirs in _tpath)
-    decho {3}
-    pop_path _mpath
-    pop_path _tpath
-    get_filtered_dir_listing $_mpath matches
-    declare -a fmatches
-    get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
-    append_allowed_values $_tpath fmatches
-    get_node_value_help $_tpath fmatches
-    vyatta_completions=( "${fmatches[@]}" )
-    vyatta_do_complete
-    eval $restore_shopts
-    return
-  fi
-  
-  if (( !last_tag && end_space )); then
-    # generate possible matches
-    # 1. dirs in _tpath, and "help" from node.def in each dir
-    # 2. value(s) in _mpath/node.val (only if _tpath/node.def is "multi:")
-    # 3. dirs in _mpath (only if _tpath/node.def is "tag:")
-    if [ -d $_tpath/node.tag ]; then
-      # last component is a "tag name". look for tag values.
-      decho {4a}
-      get_filtered_dir_listing $_mpath matches
-      append_allowed_values $_tpath matches
-      get_node_value_help $_tpath matches
-    elif [ -f $_mpath/node.val ]; then
-      # last component is a leaf node. look for values.
-      decho {4b}
-      get_value_list $_mpath matches
-      append_allowed_values $_tpath matches
-      get_node_value_help $_tpath matches
-    else
-      decho {4c}
-      # see if the last component is a new leaf node
-      matches=()
-      if is_setting_new_leaf $_tpath; then
-        append_allowed_values $_tpath matches
-        get_node_value_help $_tpath matches
-      else
-        # last component is a non-value node. look for child nodes.
-        if (( ! is_set )); then
-          # not "set". only complete existing nodes.
-          declare -a fmatches=()
-          get_filtered_dir_listing $_tpath fmatches
-          filter_existing_nodes $_mpath fmatches matches
-        else
-          get_filtered_dir_listing $_tpath matches
-        fi
-        get_tmpl_subdir_help $_tpath matches
-      fi
-    fi
-    vyatta_completions=( "${matches[@]}" )
-    vyatta_do_complete
-    eval $restore_shopts
-    return
-  fi
-  
-  if (( !last_tag && !end_space )); then
-    # generate possible matches (dirs in _tpath, and "help" from node.def
-    # in each dir)
-    decho {5}
-    pop_path _tpath
-    get_filtered_dir_listing $_tpath matches
-    declare -a fmatches
-    get_prefix_filtered_list ${comp_words[$last_idx]} matches fmatches
-    get_tmpl_subdir_help $_tpath fmatches
-    vyatta_completions=( "${fmatches[@]}" )
-    vyatta_do_complete
-    eval $restore_shopts
-    return
   fi
 
+  if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
+    # invalid completion
+    eval $restore_shopts
+    return
+  fi
+  vyatta_cfg_comp_help=$_cli_shell_api_comp_help
+  _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+  if $_cli_shell_api_last_comp_val; then
+    # last component is a "value". need to do the following:
+    #   use comp_help if exists
+    #   prefix filter comp_values
+    #   replace any <*> in comp_values with ""
+    #   convert help items to <...> representation
+    _get_help_text_items=()
+    for ((i = 0; i < ${#_cli_shell_api_hitems[@]}; i++)); do
+      local t=$(get_value_format_string "${_cli_shell_api_hitems[i]}")
+      _get_help_text_items+=("$t")
+    done
+    vyatta_completions=()
+    for ((i = 0; i < ${#_cli_shell_api_comp_values[@]}; i++)); do
+      if [ -z "$last_comp" ] \
+         && [[ "${_cli_shell_api_comp_values[i]}" = \<*\> ]]; then
+        vyatta_completions+=("")
+      elif [ -z "$last_comp" ] \
+           || [[ "${_cli_shell_api_comp_values[i]}" = "$last_comp"* ]]; then
+        vyatta_completions+=("${_cli_shell_api_comp_values[i]}")
+      fi
+    done
+  else
+    _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+    vyatta_completions=( "${_cli_shell_api_comp_values[@]}" )
+  fi
+  get_help_text
+  vyatta_simple_complete
   eval $restore_shopts
 }
 
-DEF_GROUP=vyattacfg
-make_vyatta_config_dir ()
-{
-  sudo mkdir -m 0775 -p $1
-  sudo chgrp ${DEF_GROUP} $1
-}
-
-if grep -q union=aufs /proc/cmdline || grep -q aufs /proc/filesystems ; then
-    export UNIONFS=aufs
-else
-    export UNIONFS=unionfs
-fi
-
-make_vyatta_config_dir $VYATTA_ACTIVE_CONFIGURATION_DIR
-make_vyatta_config_dir $VYATTA_CHANGES_ONLY_DIR
-make_vyatta_config_dir $VYATTA_CONFIG_TMP
-if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]; then
-  make_vyatta_config_dir $VYATTA_TEMP_CONFIG_DIR
-  sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:/opt/vyatta/config/active=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
+if ! vyatta_cli_shell_api setupSession; then
+  echo 'Failed to set up config session'
+  exit 1
 fi
 
 # disallow 'Ctrl-D' exit, since we need special actions on 'exit'
 set -o ignoreeof 1
 
-set_config_ps1 ''
+reset_edit_level
 alias set=/opt/vyatta/sbin/my_set
 alias delete=/opt/vyatta/sbin/my_delete
+alias activate=/opt/vyatta/sbin/my_activate
+alias deactivate=/opt/vyatta/sbin/my_deactivate
+alias rename=/opt/vyatta/sbin/my_rename
+alias copy=/opt/vyatta/sbin/my_copy
+alias comment=/opt/vyatta/sbin/my_comment
+alias discard=/opt/vyatta/sbin/my_discard
 
 export VYATTA_COMP_LINE=""
 

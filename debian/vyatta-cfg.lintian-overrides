@@ -1,0 +1,5 @@
+vyatta-cfg: file-in-unusual-dir
+vyatta-cfg: dir-or-file-in-opt
+vyatta-cfg: package-name-doesnt-match-sonames
+vyatta-cfg: file-in-etc-not-marked-as-conffile
+vyatta-cfg: init.d-script-not-marked-as-conffile

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Author: An-Cheng Huang <ancheng@vyatta.com.
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: Perl script for loading config file at run time.
 
@@ -27,6 +27,7 @@ use POSIX;
 use IO::Prompt;
 use Getopt::Long;
 use Sys::Syslog qw(:standard :macros);
+use Vyatta::Config;
 use Vyatta::ConfigLoad;
 
 $SIG{'INT'} = 'IGNORE';
@@ -188,7 +189,7 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
     }
 }
 
-my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff( \%cfg_hier, 'true' );
+my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff(\%cfg_hier);
 my @set_list    = @{ $cfg_diff{'set'} };
 my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
 my @activate_list = @{ $cfg_diff{'activate'} };
@@ -224,25 +225,20 @@ foreach (@set_list) {
 
 
 foreach (@activate_list) {
-    my $cmd = "$sbindir/vyatta-activate-config.pl activate $_";
-    system("$cmd 1>/dev/null");
-    #ignore error on complaint re: nested nodes
+  my $cmd = "$sbindir/my_activate $_";
+  system("$cmd 1>/dev/null");
+  #ignore error on complaint re: nested nodes
 }
 
+my $cobj = new Vyatta::Config;
 foreach (@deactivate_list) {
-    my @cp = split(" ",$_);
-    my $p = join("/",@cp[0..$#cp-1]);
-    my $leaf = "$ENV{VYATTA_TEMP_CONFIG_DIR}/$p/node.val";
-    my $c = "";
-    if (-e $leaf) {
-	$c = join(" ",@cp[0..$#cp-1]);
-    }
-    else {
-	$c = join(" ",@cp);
-    }
-    my $cmd = "$sbindir/vyatta-activate-config.pl deactivate $c";
-    system("$cmd 1>/dev/null");
-    #ignore error on complaint re: nested nodes
+  if ($cobj->isLeafValue($_)) {
+    # a leaf value. go up 1 level by removing the last comp.
+    s/\s+\S+$//;
+  }
+  my $cmd = "$sbindir/my_deactivate $_";
+  system("$cmd 1>/dev/null");
+  #ignore error on complaint re: nested nodes
 }
 
 foreach (@comment_list) {
@@ -254,7 +250,7 @@ foreach (@comment_list) {
 	my $rel_path = join '/', @cmd_array;
 	my $path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
 	if (-e $path) {
-	    my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+	    my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
 	    my $cmd_str = join ' ', @cmd;
 	    system("$cmd_str 1>/dev/null");
 	}
@@ -266,7 +262,7 @@ foreach (@comment_list) {
 	    if (-e $leaf) {
 		$path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
 		if (-e $path) {
-		    my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+		    my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
 		    my $cmd_str = join ' ', @cmd;
 		    system("$cmd_str 1>/dev/null");
 		}
@@ -274,7 +270,7 @@ foreach (@comment_list) {
 	}
     }
     else {
-	my @cmd = ( "$sbindir/vyatta-comment-config.pl ", $cmd_ref );
+	my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
 	my $cmd_str = join ' ', @cmd;
 	system("$cmd_str 1>/dev/null");
     }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: command wrapper
 
@@ -19,21 +19,12 @@
 # All Rights Reserved.
 # **** End License ****
 
-if grep -q union=aufs /proc/cmdline || grep -q aufs /proc/filesystems ; then
-  export UNIONFS=aufs
-else
-  export UNIONFS=unionfs
-fi
+# note: this script MUST be running as the vyattacfg group, e.g., with "sg".
+# otherwise there WILL be permission problems with the files created.
 
-# permissions
-## note: this script should be running as the vyattacfg group, e.g., with "sg".
-## otherwise there may be permission problems with the files created.
-UMASK_SAVE=`umask`
-umask 0002
-
-export VYATTA_EDIT_LEVEL=/;
-export VYATTA_TEMPLATE_LEVEL=/;
-export VYATTA_ACTIVE_CONFIGURATION_DIR=/opt/vyatta/config/active;
+# some env variables are needed
+export vyatta_sysconfdir=/opt/vyatta/etc
+export vyatta_sbindir=/opt/vyatta/sbin
 
 # allow env variable to override default session id (ppid). this enables
 # the script to handle cases where the invocations can come from
@@ -42,167 +33,26 @@ SID=$PPID
 if [ -n "$CMD_WRAPPER_SESSION_ID" ]; then
   SID=$CMD_WRAPPER_SESSION_ID
 fi
-export VYATTA_CHANGES_ONLY_DIR=/tmp/changes_only_$SID;
-export VYATTA_TEMP_CONFIG_DIR=/opt/vyatta/config/tmp/new_config_$SID;
-export VYATTA_CONFIG_TMP=/opt/vyatta/config/tmp/tmp_$SID;
-
-vyatta_escape ()
-{
-  # copied over from /etc/bash_completion.d/20vyatta-cfg
-  # $1: \$original
-  # $2: \$escaped
-  eval "$2=\${$1//\%/%25}"
-  eval "$2=\${$2//\*/%2A}"
-  eval "$2=\${$2//\//%2F}"
-}
-
-mvcp ()
-{
-  # copied over from /etc/bash_completion.d/20vyatta-cfg
-  local str=$1
-  shift
-  local Str=$1
-  shift
-  local cmd=$1
-  shift
-  local _otag=$1
-  local _ovalu=$2
-  local _to=$3
-  local _ntag=$4
-  local _nvalu=$5
-  local _oval=''
-  local _nval=''
-  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-  vyatta_escape _ovalu _oval
-  vyatta_escape _nvalu _nval
-  if [ "$_to" != 'to' ] || [ -z "$_ntag" ] || [ -z "$_nval" ]; then
-    echo "Invalid $str command"
-    return 1
-  fi
-  if [ "$_otag" != "$_ntag" ]; then
-    echo "Cannot $str from \"$_otag\" to \"$_ntag\""
-    return 1
-  fi
-  if [ ! -d "$_tpath/$_otag/$VYATTA_TAG_NAME" ]; then
-    echo "Cannot $str under \"$_otag\""
-    return 1
-  fi
-  if [ ! -d "$_mpath/$_otag/$_oval" ]; then
-    echo "Configuration \"$_otag $_ovalu\" does not exist"
-    return 1
-  fi
-  if [ -d "$_mpath/$_ntag/$_nval" ]; then
-    echo "Configuration \"$_ntag $_nvalu\" already exists"
-    return 1
-  fi
-  if ! /opt/vyatta/sbin/my_set $_ntag "$_nvalu"; then
-    echo "$Str failed"
-    return 1
-  fi
-  /opt/vyatta/sbin/my_delete $_ntag "$_nvalu" >&/dev/null 3>&1
-
-  $cmd "$_mpath/$_otag/$_oval" "$_mpath/$_ntag/$_nval"
-
-  return 0
-}
-
-do_move ()
-{
-  local -a args=("$@")
-  local pargc
-  (( pargc = ${#args[@]} - 4 ))
-  if (( pargc < 1 )); then
-    echo "Invalid move command \"move $@\""
-    return 1
-  fi
-
-  local -a pargs=("${args[@]:0:$pargc}")
-  args=("${args[@]:$pargc}")
-  local tag=${args[0]}
-  local oval=${args[1]}
-  local to=${args[2]}
-  local nval=${args[3]}
-
-  if [ -z "$tag" ] || [ -z "$oval" ] || [ "$to" != 'to' ] \
-      || [ -z "$nval" ]; then
-    echo "Invalid move command \"move $@\""
-    return 1
-  fi
-
-  local _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-  local _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-  local idx
-  for (( idx = 0; idx < pargc; idx++ )); do
-    local comp=${pargs[$idx]}
-    vyatta_escape comp comp
-    _mpath="$_mpath/$comp"
-    _tpath="$_tpath/$comp"
-    if [ ! -d $_mpath ]; then
-      # node doesn't exist
-      break
-    fi
-    if [ -d $_tpath ]; then
-      # found non-tag node
-      continue
-    fi
-
-    # check if it's tag node
-    _tpath=$(dirname $_tpath)/node.tag
-    if [ -d $_tpath ]; then
-      # found tag node
-      continue
-    fi
-
-    # invalid node
-    break
-  done
-  if (( idx != pargc )); then
-    # invalid node
-    echo "Invalid node path \"${pargs[@]}\""
-    return 1
-  fi
-  if [[ "$_tpath" != */node.tag ]]; then
-    # path doesn't end with a tag value. must not have "type".
-    if [ ! -f "$_tpath/node.def" ]; then
-      echo "Invalid node path \"${pargs[@]}\""
-      return 1
-    fi
-    if grep -q '^type: ' "$_tpath/node.def"; then
-      echo "Invalid move command \"move $@\""
-      return 1
-    fi
-  fi
-  # set edit level
-  VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
-  VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
-  mvcp rename Rename mv "$tag" "$oval" 'to' "$tag" "$nval"
-}
+# set up the session environment (get it from the unified lib)
+session_env=$(${vyatta_sbindir}/my_cli_shell_api getSessionEnv $SID)
+eval "$session_env"
 
 RET_STATUS=0
 
 case "$1" in
   begin)
-    # set up the environment/directories
-    mkdir -p $VYATTA_ACTIVE_CONFIGURATION_DIR
-    mkdir -p $VYATTA_CHANGES_ONLY_DIR
-    if [ ! -d $VYATTA_TEMP_CONFIG_DIR ]; then
-      mkdir -p $VYATTA_TEMP_CONFIG_DIR
-      sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
-    fi
-    mkdir -p $VYATTA_CONFIG_TMP
+    # set up the session
+    ${vyatta_sbindir}/my_cli_shell_api setupSession
+    RET_STATUS=$?
     ;;
   end)
-    # tear down the environment/directories
-    sudo umount ${VYATTA_TEMP_CONFIG_DIR}
-    rm -rf ${VYATTA_CHANGES_ONLY_DIR}
-    rm -rf ${VYATTA_CONFIG_TMP}
-    rm -rf ${VYATTA_TEMP_CONFIG_DIR}
+    # tear down the session
+    ${vyatta_sbindir}/my_cli_shell_api teardownSession
+    RET_STATUS=$?
     ;;
   cleanup|discard)
-    sudo umount ${VYATTA_TEMP_CONFIG_DIR}
-    rm -rf $VYATTA_CHANGES_ONLY_DIR/* $VYATTA_CHANGES_ONLY_DIR/.modified
-    sudo mount -t $UNIONFS -o dirs=${VYATTA_CHANGES_ONLY_DIR}=rw:${VYATTA_ACTIVE_CONFIGURATION_DIR}=ro $UNIONFS ${VYATTA_TEMP_CONFIG_DIR}
+    /opt/vyatta/sbin/my_discard
+    RET_STATUS=$?
     ;;
   set)
     /opt/vyatta/sbin/my_set "${@:2}"
@@ -213,11 +63,11 @@ case "$1" in
     RET_STATUS=$?
     ;;
   deactivate)
-   /opt/vyatta/sbin/vyatta-activate-config.pl deactivate "${@:2}"
+   /opt/vyatta/sbin/my_deactivate "${@:2}"
    RET_STATUS=$?
    ;;
   activate)
-   /opt/vyatta/sbin/vyatta-activate-config.pl activate "${@:2}"
+   /opt/vyatta/sbin/my_activate "${@:2}"
    RET_STATUS=$?
    ;;
   show)
@@ -225,7 +75,7 @@ case "$1" in
    RET_STATUS=$?
    ;;
   comment)
-   /opt/vyatta/sbin/vyatta-comment-config.pl "${@:2}"
+   /opt/vyatta/sbin/my_comment "${@:2}"
    RET_STATUS=$?
    ;;
   commit)
@@ -240,41 +90,30 @@ case "$1" in
     RET_STATUS=$?
     ;;
   load)
-    export vyatta_sysconfdir=/opt/vyatta/etc
-    export vyatta_sbindir=/opt/vyatta/sbin
     /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
     RET_STATUS=$?
     ;;
   rule-rename)
     # this option is to be used for renaming firewall and nat rules only
     # usage for this option specified on the next two lines -
+    #             2        3                 4    5         6  7    8
     # rule-rename firewall $firewall_ruleset rule $rule_num to rule $rename_rulenum
+    #             2   3    4         5  6    7
     # rule-rename nat rule $rule_num to rule $rename_rulenum
-
     if [ "$2" == "firewall" ]; then
-      VYATTA_TEMPLATE_LEVEL=/firewall/name/node.tag;
-      VYATTA_EDIT_LEVEL="/firewall/name/$3";
+      /opt/vyatta/sbin/my_move firewall name "$3" rule "$5" to "$8"
+      RET_STATUS=$?
     elif [ "$2" == "nat" ]; then
-      VYATTA_TEMPLATE_LEVEL=/service/nat;
-      VYATTA_EDIT_LEVEL=/service/nat;
+      /opt/vyatta/sbin/my_move service nat rule "$4" to "$7"
+      RET_STATUS=$?
     fi
-    _mpath=${VYATTA_TEMP_CONFIG_DIR}/${VYATTA_EDIT_LEVEL}
-    _tpath=${VYATTA_CONFIG_TEMPLATE}/${VYATTA_TEMPLATE_LEVEL}
-    VYATTA_EDIT_LEVEL="${_mpath#$VYATTA_TEMP_CONFIG_DIR}/"
-    VYATTA_TEMPLATE_LEVEL="${_tpath#$VYATTA_CONFIG_TEMPLATE}/"
-    if [ $2 == "firewall" ]; then
-      mvcp rename Rename mv "${@:4}"
-    elif [ $2 == "nat" ]; then
-      mvcp rename Rename mv "${@:3}"
-    fi
-    RET_STATUS=$?
     ;;
   move)
     # this is similar to the CLI edit+rename command.
     # e.g., "move interfaces ethernet eth2 vif 100 to 200"
     # is similar to "edit interfaces ethernet eth2" plus
     # "rename vif 100 to vif 200".
-    do_move "${@:2}"
+    /opt/vyatta/sbin/my_move "${@:2}"
     RET_STATUS=$?
     ;;
   *)
@@ -283,6 +122,5 @@ case "$1" in
     ;;
 esac
 
-umask ${UMASK_SAVE}
 exit $RET_STATUS
 

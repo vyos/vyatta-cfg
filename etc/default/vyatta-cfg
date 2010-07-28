@@ -1,20 +1,15 @@
 # Vyatta shell environment variables for config mode
 # should be sourced from /etc/default/vyatta
 
+# note that session environment is now handled separately.
+# (see /etc/bash_completion.d/20vyatta-cfg)
+
 {
-declare -x -r VYATTA_ACTIVE_CONFIGURATION_DIR=${vyatta_configdir}/active
-declare -x -r VYATTA_CHANGES_ONLY_DIR=/tmp/changes_only_$$
-declare -x -r VYATTA_TEMP_CONFIG_DIR=${vyatta_configdir}/tmp/new_config_$$
-declare -x -r VYATTA_CONFIG_TMP=${vyatta_configdir}/tmp/tmp_$$
-declare -x -r VYATTA_CONFIG_TEMPLATE=$vyatta_cfg_templates
 declare -x -r VYATTA_TAG_NAME=node.tag
 declare -x -r VYATTA_MOD_NAME=.modified
 declare -x -r VYATTA_CFG_GROUP_NAME=vyattacfg
 declare -x -r HISTIGNORE="*password*:*-secret*"
 } 2>/dev/null || :
-
-declare -x VYATTA_EDIT_LEVEL=/
-declare -x VYATTA_TEMPLATE_LEVEL=/
 
 # don't set level if already set
 if [ -n "$VYATTA_USER_LEVEL_DIR" ]; then

@@ -111,11 +111,17 @@ typedef struct {
   char      *def_default;
   unsigned int def_priority;
   char      *def_priority_ext;
+  char      *def_enumeration;
+  char      *def_comp_help;
+  char      *def_allowed;
+  char      *def_val_help;
   unsigned int def_tag;
   unsigned int def_multi;
   boolean    tag;
   boolean    multi;
   vtw_list   actions[top_act];
+  int        is_value; /* this is used by the config store to indicate whether
+                        * the last path component is a "value". */
 }vtw_def;
 
 typedef struct {
@@ -156,6 +162,9 @@ extern vtw_node *make_str_node(char *str);
 extern vtw_node *make_var_node(char *str);
 extern vtw_node *make_str_node0(char *str, vtw_oper_e op);
 extern void append(vtw_list *l, vtw_node *n, int aux);
+const valstruct *get_syntax_self_in_valstruct(vtw_node *vnode);
+int get_shell_command_output(const char *cmd, char *buf,
+                             unsigned int buf_size);
 extern int parse_def(vtw_def *defp, const char *path, boolean type_only);
 
 extern int yy_cli_val_lex(void);
@@ -169,6 +178,7 @@ extern void free_def(vtw_def *defp);
 extern void free_sorted(vtw_sorted *sortp);
 
 extern vtw_path m_path, t_path;
+extern void *var_ref_handle;
 
 /*************************************************
      GLOBAL FUNCTIONS
@@ -231,6 +241,15 @@ extern FILE *out_stream;
 extern FILE *err_stream;
 
 extern int initialize_output(const char *op);
+/* note that some functions may be used outside the actual CLI operations,
+ * so output may not have been initialized. nop in such cases.
+ */
+#define OUTPUT_USER(fmt, args...) do \
+  { \
+    if (out_stream) { \
+      fprintf(out_stream, fmt , ##args); \
+    } \
+  } while (0);
 
 /* debug hooks? */
 #define my_malloc(size, name)		malloc(size)

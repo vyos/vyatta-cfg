@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$1" = "remove" ]; then
+	ldconfig
+fi
+
 if [ "$1" = "purge" ]; then
   update-rc.d vyatta-router remove >/dev/null || exit $?
 fi

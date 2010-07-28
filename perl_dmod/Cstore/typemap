@@ -1,0 +1,68 @@
+# Copyright (C) 2010 Vyatta, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Cstore *      O_CPPOBJ
+STRVEC *      T_STRVEC_REF
+STRSTRMAP *   T_STRSTRMAP_REF
+
+
+############################################################
+OUTPUT
+O_CPPOBJ
+  sv_setref_pv($arg, CLASS, (void *) $var);
+
+T_STRVEC_REF
+  AV *results;
+  results = (AV *) sv_2mortal((SV *) newAV());
+  for (unsigned int i = 0; i < ret_strvec.size(); i++) {
+    av_push(results, newSVpv(ret_strvec[i].c_str(), 0));
+  }
+  $arg = newRV((SV *) results);
+
+T_STRSTRMAP_REF
+  HV *href = (HV *) sv_2mortal((SV *) newHV());
+  map<string, string>::iterator it = ret_strstrmap.begin();
+  for (; it != ret_strstrmap.end(); ++it) {
+    const char *key = (*it).first.c_str();
+    const char *val = (*it).second.c_str();
+    hv_store(href, key, strlen(key), newSVpv(val, 0), 0);
+  }
+  $arg = newRV((SV *) href);
+
+
+############################################################
+INPUT
+O_CPPOBJ
+  if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG)) {
+    $var = ($type) SvIV((SV *) SvRV($arg));
+  } else {
+    warn(\"${Package}::$func_name(): $var is not a blessed SV reference\");
+    XSRETURN_UNDEF;
+  }
+
+T_STRVEC_REF
+  {
+    int i = 0;
+    I32 num = 0;
+    if (!SvROK($arg) || SvTYPE(SvRV($arg)) != SVt_PVAV) {
+      XSRETURN_UNDEF;
+    }
+    num = av_len((AV *) SvRV($arg));
+    /* if input array is empty, vector will be empty as well. */
+    for (i = 0; i <= num; i++) {
+      string str = SvPV_nolen(*av_fetch((AV *) SvRV($arg), i, 0));
+      arg_strvec.push_back(str);
+    }
+  }
+

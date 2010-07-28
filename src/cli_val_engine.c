@@ -54,13 +54,15 @@
 
 #include <string.h>
 
+#include <cstore/cstore-c.h>
+
+#include "cli_objects.h"
 #include "cli_val_engine.h"
 
 
 static int is_multi_node(clind_path_ref tmpl_path);
 
-static boolean
-is_deactivated(const char *path);
+static boolean is_deactivated(const char *path, int in_active);
 
 /*********************
  * Data definitions 
@@ -120,6 +122,8 @@ static int clind_path_shift_cmd(clind_path_ref path,clind_cmd *cmd);
  * If path is empty, or the file is empty, or the file does not exist,
  * then return NULL.
  * The user of this function is responsible for the memory deallocation.
+ *
+ * in_active is for the deactivated check.
  */
 
 static char** clind_get_current_value(clind_path_ref cfg_path, 
@@ -129,7 +133,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 				      const char* root_tmpl_path,
 				      int return_value_file_name,
 				      int multi_value,
-				      int *ret_size) {
+				      int *ret_size, int in_active) {
   
   char** ret=NULL;
   int value_ref = 0;
@@ -181,7 +185,8 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	} else {
 
-	  if (is_deactivated(clind_path_get_path_string(cfg_path)) == FALSE) {
+	  if (is_deactivated(clind_path_get_path_string(cfg_path), in_active)
+        == FALSE) {
 	    FILE* f = fopen(cfg_path_string,"r");
 	    if(f) {
 	      char buffer[8193];
@@ -233,7 +238,8 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	/* Directory reference: */
 
-	if(!check_existence || ((lstat(cfg_path_string, &statbuf) == 0) && is_deactivated(cfg_path_string) == FALSE)) {
+	if(!check_existence || ((lstat(cfg_path_string, &statbuf) == 0)
+     && is_deactivated(cfg_path_string, in_active) == FALSE)) {
 	  ret=(char**)realloc(ret,sizeof(char*)*1);
 	  ret[0]=clind_unescape(cfg_end);
 	  *ret_size=1;
@@ -278,7 +284,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	strcpy(fn_node_def+strlen(fn_node_def),NODE_DEF);
 
 	if ((lstat(fn_node_def, &statbuf) == 0)&&
-	    (is_deactivated(fn_node_def) == FALSE)&&
+	    (is_deactivated(fn_node_def, in_active) == FALSE)&&
 	    (parse_def(&def, fn_node_def, TRUE)==0)) {
 
 	  if(def.def_type != ERROR_TYPE) {
@@ -614,9 +620,15 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
  *       handled before this is called (see set_reference_environment() in
  *       cli_new.c). cli_new.c was passing the wrong path (changes only)
  *       anyway, causing problems with absolute paths (bug 5213).
+ *
  *       root_tmpl_path should not be necessary either but it's
  *       used in one place in clind_get_current_value() (it's not clear
  *       if that case is ever reached), so keep it for now.
+ *
+ *       in_active is needed for the deactivated check. if operating on
+ *       active, deactivated check should be in active as well. this
+ *       makes a difference for nodes that are being deactivated (i.e.,
+ *       deactivated in working but not in active).
  */
 
 int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
@@ -625,7 +637,8 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 					   int check_existence,
 					   clind_val* res,
 					   const char* root_tmpl_path,
-					   int return_value_file_name) {
+					   int return_value_file_name,
+					   int in_active) {
 
   int ret=-1;
   
@@ -758,7 +771,7 @@ int clind_config_engine_apply_command_path(clind_path_ref cfg_path_orig,
 						return_value_file_name,
 						/*Last command: */
 						(cmd.type==CLIND_CMD_MULTI_VALUE),
-						&vallen);
+						&vallen, in_active);
 
 	  clind_path_destruct(&config_paths[i]);
 
@@ -925,57 +938,38 @@ static int clind_path_shift_cmd(clind_path_ref path,clind_cmd *cmd) {
 
 
 boolean
-is_deactivated(const char *path_string)
+is_deactivated(const char *path_string, int in_active)
 {
-  if (path_string == NULL) {
-    return FALSE;
+  int num = 0;
+  boolean ret = FALSE;
+  char **path_comps = cstore_path_string_to_path_comps(path_string, &num);
+  void *csh = cstore_init();
+
+  /* XXX this lib should operate on "logical paths" only, but currently
+   * it is using physical paths. convert to logical paths (remove the
+   * prefix) to use the cstore library.
+   *
+   * XXX also, use is_in_delete_action() as in_active arg for the call.
+   * this follows the original behavior that when in delete action, var
+   * refs are obtained from the active config. the result of the original
+   * behavior is that if a node is being deleted (i.e., in active but not
+   * in working), a var ref for the node will still return the active value.
+   *
+   * by passing is_in_delete_action() here, the result is that if a node is
+   * being deactivated (i.e., deactivated in working but not in active),
+   * a var ref for the node will still return the active value.
+   *
+   * the original behavior may not be correct, but for compatibility
+   * it's emulated here. should revisit later.
+   */
+  if (num > 5
+      && cstore_cfg_path_deactivated(csh,
+                                     (const char **) &(path_comps[5]),
+                                     num - 5, in_active)) {
+    ret = TRUE;
   }
-  
-  //  const char* path_string = clind_path_get_path_string(*path);
-  
-  char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
-  strcpy(buf,path_string);
-
-  //first we'll check the current directory
-  char file[1024];
-  sprintf(file,"%s/.disable",buf);
-  struct stat s;
-  if (lstat(file,&s) == 0) {
-    return TRUE;
-  }
-
-  long min_len = strlen("/opt/vyatta/config/tmp/new_config_");
-
-  //now walk back up tree looking for disable flag.....
-  while (TRUE) {
-    int index = strlen(buf)-1;
-    if (index < min_len) {
-      return FALSE;
-    }
-    if (buf[index] == '/') {
-      while (TRUE) {
-	if (buf[--index] != '/') {
-	  buf[index] = '\0';
-	  break;
-	}
-      }
-    }
-
-    char *ptr = rindex(buf,'/');
-    if (ptr != NULL) {
-      *ptr = '\0';
-    }
-    
-    char file[1024];
-    sprintf(file,"%s/.disable",buf);
-
-    //    fprintf(out_stream,"checking file for disable: %s\n",file);
-
-    struct stat s;
-    if (lstat(file,&s) == 0) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
+  cstore_free_path_comps(path_comps, num);
+  cstore_free(csh);
+  return ret;
 }
+

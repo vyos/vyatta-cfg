@@ -21,6 +21,8 @@
 #include "cli_objects.h"
 #include "cli_val_engine.h"
 
+#include "cstore/cstore-c.h"
+
 /* Defines: */
 
 #define EXE_STRING_DELTA 512
@@ -32,9 +34,12 @@
 
 #define VAR_REF_MARKER "$VAR("
 #define VAR_REF_MARKER_LEN 5
+#define VAR_REF_SELF_MARKER "$VAR(@)"
+#define VAR_REF_SELF_MARKER_LEN 7
 
 /* Global vars: */
 vtw_path m_path, t_path;
+void *var_ref_handle = NULL;
 
 /* Local vars: */
 static vtw_node *vtw_free_nodes; /* linked via left */
@@ -114,8 +119,8 @@ void bye(const char *msg, ...)
 {
   va_list ap;
             
-  fprintf(out_stream, "%s failed\n",
-          (cli_operation_name) ? cli_operation_name : "Operation");
+  OUTPUT_USER("%s failed\n",
+              (cli_operation_name) ? cli_operation_name : "Operation");
 
   va_start(ap, msg);
   if (is_echo())
@@ -237,6 +242,74 @@ void append(vtw_list *l, vtw_node *n, int aux)
     l->vtw_list_head = lnode;
   }
   l->vtw_list_tail = lnode;
+}
+
+/* this recursive function walks the specified "vtw_node" tree representing
+ * "syntax" actions and looks for the first "in" action on a "self ref"
+ * specified as follows in template:
+ *   $VAR(@) in "val1", "val2", ...
+ *
+ * if found, the corresponding valstruct is returned. this is used by the
+ * completion mechanism to get such "allowed" values specified by "syntax".
+ */
+const valstruct *
+get_syntax_self_in_valstruct(vtw_node *vnode)
+{
+  const valstruct *ret = NULL;
+  if (!vnode) {
+    return NULL;
+  }
+  if (vnode->vtw_node_oper == COND_OP && vnode->vtw_node_aux == IN_COND
+      && vnode->vtw_node_left && vnode->vtw_node_right) {
+    vtw_node *ln = vnode->vtw_node_left;
+    vtw_node *rn = vnode->vtw_node_right;
+    if (ln->vtw_node_oper == VAR_OP && ln->vtw_node_string
+        && strncmp(VAR_REF_SELF_MARKER, ln->vtw_node_string,
+                   VAR_REF_SELF_MARKER_LEN) == 0
+        && rn->vtw_node_oper == VAL_OP) {
+      // found a matching syntax action. return valstruct.
+      return &(rn->vtw_node_val);
+    }
+  }
+  // this node does not match. walk down.
+  ret = get_syntax_self_in_valstruct(vnode->vtw_node_left);
+  if (!ret) {
+    ret = get_syntax_self_in_valstruct(vnode->vtw_node_right);
+  }
+  return ret;
+}
+
+/* execute specified command and return output in specified buffer as
+ * a null-terminated string. return number of characters in the output
+ * or -1 if failed.
+ *
+ * NOTE: NO attempt is made to ensure the security of the specified command.
+ *       in other words, *DO NOT* use a user-supplied string as the command
+ *       for this function.
+ */
+int
+get_shell_command_output(const char *cmd, char *buf, unsigned int buf_size)
+{
+  int ret = -1;
+  FILE *cmd_in = NULL;
+  size_t cnt = 0;
+
+  if (!buf || !buf_size) {
+    return -1;
+  }
+  if (!(cmd_in = popen(cmd, "r"))) {
+    return -1;
+  }
+  cnt = fread(buf, 1, buf_size - 1, cmd_in);
+  if (cnt == (buf_size - 1) || feof(cmd_in)) {
+    /* buffer full or got the whole output. null terminate */
+    buf[cnt] = 0;
+    ret = cnt;
+  }
+  if (pclose(cmd_in) == -1) {
+    ret = -1;
+  }
+  return ret;
 }
 
 void dt(vtw_sorted *srtp)
@@ -729,7 +802,7 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
     //currently fails to handle mixed text + non-text case...
     char buf1[2048];
     if (char2val_notext(def,my_type,my_type2,value,&valp,buf1) != 0) {
-      fprintf(out_stream,"%s",buf1);
+      OUTPUT_USER("%s", buf1);
       return -1; //only single definition
     }
     return 0;
@@ -1106,43 +1179,50 @@ static int change_var_value(const char* var_reference,const char* value, int act
   int ret=-1;
 
   if(var_reference && value) {
-	
-    char* var_path=NULL;
-
-    clind_path_ref n_cfg_path=NULL;
-    clind_path_ref n_tmpl_path=NULL;
-    clind_path_ref n_cmd_path=NULL;
-	
-    if(set_reference_environment(var_reference,
-				 &n_cfg_path,
-				 &n_tmpl_path,
-				 &n_cmd_path,
-				 active_dir)==0) {
-	  
-      clind_val cv;
-	  
-      memset(&cv,0,sizeof(cv));
-	  
-      if(clind_config_engine_apply_command_path(n_cfg_path,
-						n_tmpl_path,
-						n_cmd_path,
-						FALSE,
-						&cv,
-						get_tdirp(),
-						TRUE)==0) {
-	var_path=cv.value;
-	
+    if (var_ref_handle) {
+      /* XXX current var ref lib implementation is fs-specific.
+       *     for now treat it as a part of the unionfs-specific
+       *     cstore implementation.
+       * handle is set => we are in cstore operation.
+       */
+      if (cstore_set_var_ref(var_ref_handle, var_reference, value,
+                             active_dir)) {
+        ret = 0;
       }
-      
-    }
-	
-    if(n_cfg_path) clind_path_destruct(&n_cfg_path);
-    if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
-    if(n_cmd_path) clind_path_destruct(&n_cmd_path);
-	
-    if(var_path) {
-      ret=write_value_to_file(var_path,value);
-      free(var_path);
+    } else {
+      /* legacy usage */
+      char* var_path=NULL;
+      clind_path_ref n_cfg_path=NULL;
+      clind_path_ref n_tmpl_path=NULL;
+      clind_path_ref n_cmd_path=NULL;
+
+      if(set_reference_environment(var_reference,
+                                   &n_cfg_path,
+                                   &n_tmpl_path,
+                                   &n_cmd_path,
+                                   active_dir)==0) {
+        clind_val cv;
+        memset(&cv,0,sizeof(cv));
+        if(clind_config_engine_apply_command_path(n_cfg_path,
+                                                  n_tmpl_path,
+                                                  n_cmd_path,
+                                                  FALSE,
+                                                  &cv,
+                                                  get_tdirp(),
+                                                  TRUE,
+                                                  active_dir)==0) {
+          var_path=cv.value;
+        }
+      }
+
+      if(n_cfg_path) clind_path_destruct(&n_cfg_path);
+      if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
+      if(n_cmd_path) clind_path_destruct(&n_cmd_path);
+
+      if(var_path) {
+        ret=write_value_to_file(var_path,value);
+        free(var_path);
+      }
     }
   }
 
@@ -1177,7 +1257,7 @@ static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func
     if (ret <= 0){
       if (expand_string(cur->vtw_node_right->vtw_node_string) == VTWERR_OK) {
 	if (outbuf == NULL) {
-	  fprintf(out_stream, "%s\n", exe_string);
+          OUTPUT_USER("%s\n", exe_string);
 	}
 	else {
 	  strcat((char*)*outbuf, exe_string);
@@ -1362,9 +1442,6 @@ static int eval_va(valstruct *res, vtw_node *node)
 
     {
       char *endp = 0;
-      clind_path_ref n_cfg_path=NULL;
-      clind_path_ref n_tmpl_path=NULL;
-      clind_path_ref n_cmd_path=NULL;
       
       pathp = node->vtw_node_string;
       DPRINT("eval_va var[%s]\n", pathp);
@@ -1388,36 +1465,63 @@ static int eval_va(valstruct *res, vtw_node *node)
       
       *endp = 0;
       
-      if(set_reference_environment(pathp,
-				   &n_cfg_path,
-				   &n_tmpl_path,
-				   &n_cmd_path,
-				   is_in_delete_action())==0) {
-	clind_val cv;
-	
-	memset(&cv,0,sizeof(cv));
+      if (var_ref_handle) {
+        /* XXX current var ref lib implementation is fs-specific.
+         *     for now treat it as a part of the unionfs-specific
+         *     cstore implementation.
+         * handle is set => we are in cstore operation.
+         */
+        clind_val cv;
+        if (!cstore_get_var_ref(var_ref_handle, pathp, &cv,
+                                is_in_delete_action())) {
+          status = -1;
+        } else {
+          /* success */
+          status = 0;
+          if(cv.value) {
+            res->val_type = cv.val_type;
+            res->val_types = NULL;
+            res->free_me = TRUE;
+            res->val = cv.value;
+          }
+        }
+      } else {
+        /* legacy usage */
+        clind_path_ref n_cfg_path=NULL;
+        clind_path_ref n_tmpl_path=NULL;
+        clind_path_ref n_cmd_path=NULL;
+        if(set_reference_environment(pathp,
+                                     &n_cfg_path,
+                                     &n_tmpl_path,
+                                     &n_cmd_path,
+                                     is_in_delete_action())==0) {
+          clind_val cv;
 
-	status=clind_config_engine_apply_command_path(n_cfg_path,
-						      n_tmpl_path,
-						      n_cmd_path,
-						      TRUE,
-						      &cv,
-						      get_tdirp(),
-						      FALSE);
+          memset(&cv,0,sizeof(cv));
 
-	if(status==0) {
-	  if(cv.value) {
-	    res->val_type = cv.val_type;
-	    res->val_types = NULL;
-	    res->free_me = TRUE;
-	    res->val = cv.value;
-	  }
-	}
-      }
+          status=clind_config_engine_apply_command_path(n_cfg_path,
+                                                        n_tmpl_path,
+                                                        n_cmd_path,
+                                                        TRUE,
+                                                        &cv,
+                                                        get_tdirp(),
+                                                        FALSE,
+                                                        is_in_delete_action());
+
+          if(status==0) {
+            if(cv.value) {
+              res->val_type = cv.val_type;
+              res->val_types = NULL;
+              res->free_me = TRUE;
+              res->val = cv.value;
+            }
+          }
+        }
       
-      if(n_cfg_path) clind_path_destruct(&n_cfg_path);
-      if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
-      if(n_cmd_path) clind_path_destruct(&n_cmd_path);
+        if(n_cfg_path) clind_path_destruct(&n_cfg_path);
+        if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
+        if(n_cmd_path) clind_path_destruct(&n_cmd_path);
+      }
 
       *endp = ')';
 
@@ -1525,11 +1629,6 @@ static int expand_string(char *stringp)
 	scanp += 4;
 
       } else {
-      
-	clind_path_ref n_cfg_path=NULL;
-	clind_path_ref n_tmpl_path=NULL;
-	clind_path_ref n_cmd_path=NULL;
-
 	char *endp;
 
 	endp = strchr(scanp, ')');
@@ -1543,33 +1642,49 @@ static int expand_string(char *stringp)
 	if (endp == scanp)
 	  bye("Empty path");	  
 	
-	if(set_reference_environment(scanp,
-				     &n_cfg_path,
-				     &n_tmpl_path,
-				     &n_cmd_path,
-				     is_in_delete_action())==0) {
+        if (var_ref_handle) {
+          /* XXX current var ref lib implementation is fs-specific.
+           *     for now treat it as a part of the unionfs-specific
+           *     cstore implementation.
+           * handle is set => we are in cstore operation.
+           */
+          clind_val cv;
+          if (cstore_get_var_ref(var_ref_handle, scanp, &cv,
+                                 is_in_delete_action())) {
+            cp=cv.value;
+          }
+        } else {
+          /* legacy usage */
+          clind_path_ref n_cfg_path=NULL;
+          clind_path_ref n_tmpl_path=NULL;
+          clind_path_ref n_cmd_path=NULL;
 
-	  clind_val cv;
-	  
-	  memset(&cv,0,sizeof(cv));
+          if(set_reference_environment(scanp,
+                                       &n_cfg_path,
+                                       &n_tmpl_path,
+                                       &n_cmd_path,
+                                       is_in_delete_action())==0) {
 
-	  if(clind_config_engine_apply_command_path(n_cfg_path,
-						    n_tmpl_path,
-						    n_cmd_path,
-						    TRUE,
-						    &cv,
-						    get_tdirp(),
-						    FALSE)==0) {
-	    cp=cv.value;
-	    
-	  }
+            clind_val cv;
+            memset(&cv,0,sizeof(cv));
+            if(clind_config_engine_apply_command_path(n_cfg_path,
+                                                  n_tmpl_path,
+                                                  n_cmd_path,
+                                                  TRUE,
+                                                  &cv,
+                                                  get_tdirp(),
+                                                  FALSE,
+                                                  is_in_delete_action())==0) {
+              cp=cv.value;
+            }
 
-	}
+          }
 
-	if(n_cfg_path) clind_path_destruct(&n_cfg_path);
-	if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
-	if(n_cmd_path) clind_path_destruct(&n_cmd_path);
-	
+          if(n_cfg_path) clind_path_destruct(&n_cfg_path);
+          if(n_tmpl_path) clind_path_destruct(&n_tmpl_path);
+          if(n_cmd_path) clind_path_destruct(&n_cmd_path);
+        }
+
 	if(!cp) {
 	  cp="";
 	} else {
@@ -2047,13 +2162,12 @@ boolean validate_value(vtw_def *def, char *cp)
     int i = 0;
     for (i = 0; i < strlen(cp); i++) {
       if (cp[i] == '\'') {
-        fprintf(out_stream, "Cannot use the \"'\" (single quote) character "
-                            "in a value string\n");
+        OUTPUT_USER("Cannot use the \"'\" (single quote) character "
+                    "in a value string\n");
         return FALSE;
       }
       if (cp[i] == '\n') {
-        fprintf(out_stream, "Cannot use the newline character "
-                            "in a value string\n");
+        OUTPUT_USER("Cannot use the newline character in a value string\n");
         return FALSE;
       }
     }
@@ -2062,17 +2176,18 @@ boolean validate_value(vtw_def *def, char *cp)
   /* prepare cur_value */
   set_at_string(cp);
   status = char2val(def, cp, &validate_value_val);
-  if (status != VTWERR_OK)
+  if (status != VTWERR_OK) {
     return FALSE;
+  }
   if ((def->def_type!=ERROR_TYPE) && 
       ((validate_value_val.val_type != def->def_type) &&
        (validate_value_val.val_type != def->def_type2))) {
     if (def->def_type_help){
       (void)expand_string(def->def_type_help);
-      fprintf(out_stream, "%s\n", exe_string);
+      OUTPUT_USER("%s\n", exe_string);
     } else {
-      fprintf(out_stream, "\"%s\" is not a valid value of type \"%s\"\n",
-	      cp, type_to_name(def->def_type));
+      OUTPUT_USER("\"%s\" is not a valid value of type \"%s\"\n", cp,
+                  type_to_name(def->def_type));
     }
     ret = FALSE;
     goto  validate_value_free_and_return;
@@ -2241,7 +2356,7 @@ const char *type_to_name(vtw_type_e type) {
   case IPV6NET_TYPE: return("ipv6net");
   case MACADDR_TYPE: return("macaddr");
   case DOMAIN_TYPE: return("domain");
-  case TEXT_TYPE: return("text");
+  case TEXT_TYPE: return("txt");
   case BOOL_TYPE: return("bool");
   default: return("unknown");
   }
@@ -2396,18 +2511,20 @@ restore_output()
 /* system_out:
  * call system() with output re-enabled.
  * output is again redirected before returning from here.
+ * note: this function may be used outside of actual CLI operations, so output
+ *       may not have been redirected. check out_stream for such cases.
  */
 
 int
 old_system_out(const char *command)
 {
   int ret = -1;
-  if (restore_output() == -1) {
+  if (out_stream && restore_output() == -1) {
     return -1;
   }
 
   ret = system(command);
-  if (redirect_output() == -1) {
+  if (out_stream && redirect_output() == -1) {
     return -1;
   }
   

@@ -2,7 +2,8 @@ Source: vyatta-cfg
 Section: contrib/net
 Priority: extra
 Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
-Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev
+Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
+ libboost-filesystem1.40-dev
 Standards-Version: 3.7.2
 
 Package: vyatta-cfg
@@ -26,7 +27,8 @@ Depends: sed (>= 4.1.5),
  ethtool,
  iproute,
  libglib2.0-0,
- curl
+ curl,
+ libboost-filesystem1.40.0
 Replaces: vyatta-cfg-firewall, 
  vyatta-cfg-quagga
 Suggests: util-linux (>= 2.13-5),
@@ -35,5 +37,15 @@ Suggests: util-linux (>= 2.13-5),
  ntpdate
 Description: Vyatta configuration system
  This package has the Vyatta configuration system, including the configuration
- back-end, the base configuration templates, and the config-mode CLI completion
- mechanism.
+ back-end library, the base configuration templates, and the config-mode CLI
+ completion mechanism.
+
+Package: libvyatta-cfg-dev
+Architecture: any
+Priority: optional
+Section: libdevel
+Depends: vyatta-cfg (=${binary:Version})
+Description: vyatta-cfg development package
+ Development header and library files for the Vyatta configuration back-end
+ library.
+

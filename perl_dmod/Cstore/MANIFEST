@@ -1,0 +1,7 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+Cstore.xs
+t/Cstore.t
+lib/Cstore.pm
