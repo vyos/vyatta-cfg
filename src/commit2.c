@@ -373,9 +373,11 @@ main(int argc, char** argv)
 	    strcmp(dirp->d_name, "..") != 0) {
 	  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
 	  sprintf(buf,"%s/%s",COMMIT_HOOK_DIR,dirp->d_name);
+	  syslog(LOG_DEBUG,"Starting commit hook: %s",buf);
 	  if (system(buf) == -1) {
-	    syslog(LOG_DEBUG,"commit::main(), error on call to hook: %s", buf);
+	    syslog(LOG_WARNING,"Error on call to hook: %s", buf);
 	  }
+	  syslog(LOG_DEBUG,"Finished with commit hook: %s",buf);
 	}
       }
       unsetenv(ENV_COMMIT_STATUS);
