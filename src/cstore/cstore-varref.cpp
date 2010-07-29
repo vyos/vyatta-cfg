@@ -19,12 +19,8 @@
 #include <string>
 #include <algorithm>
 
-#include "cstore-varref.hpp"
-
-extern "C" {
-#include "cli_val.h"
-#include "cli_objects.h"
-}
+#include <cli_cstore.h>
+#include <cstore/cstore-varref.hpp>
 
 using namespace std;
 

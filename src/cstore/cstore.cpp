@@ -25,12 +25,9 @@
 #include <algorithm>
 #include <sstream>
 
-extern "C" {
-#include "cli_val.h"
-}
-
-#include "cstore.hpp"
-#include "cstore-varref.hpp"
+#include <cli_cstore.h>
+#include <cstore/cstore.hpp>
+#include <cstore/cstore-varref.hpp>
 
 
 ////// constants
@@ -57,8 +54,9 @@ const string Cstore::C_ENV_SHAPI_COMP_HELP = "_cli_shell_api_comp_help";
 const string Cstore::C_ENV_SHAPI_HELP_ITEMS = "_cli_shell_api_hitems";
 const string Cstore::C_ENV_SHAPI_HELP_STRS = "_cli_shell_api_hstrs";
 
-//// dirs
+//// dirs/files
 const string Cstore::C_ENUM_SCRIPT_DIR = "/opt/vyatta/share/enumeration";
+const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
 
 ////// constructors/destructors
 /* this constructor just returns the generic environment string,
@@ -1691,25 +1689,24 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
 
 /* get the value string that corresponds to specified variable ref string.
  *   ref_str: var ref string (e.g., "./cost/@").
- *   cval: (output) contains the resulting string.
+ *   type: (output) the node type.
  *   from_active: if true, value string should come from "active config".
  *                otherwise from "working config".
- * return true if successful. otherwise return false.
+ * return a pointer to the value string if successful (caller must free).
+ * otherwise return NULL.
  */
-bool
-Cstore::getVarRef(const string& ref_str, clind_val& cval, bool from_active)
+char *
+Cstore::getVarRef(const string& ref_str, vtw_type_e& type, bool from_active)
 {
-  bool ret = true;
+  char *ret = NULL;
   SAVE_PATHS;
   VarRef vref(this, ref_str, from_active);
   string val;
-  vtw_type_e type;
-  if (!vref.getValue(val, type)) {
-    ret = false;
-  } else {
-    cval.val_type = type;
+  vtw_type_e t;
+  if (vref.getValue(val, t)) {
+    type = t;
     // follow original implementation. caller is supposed to free this.
-    cval.value = strdup(val.c_str());
+    ret = strdup(val.c_str());
   }
   RESTORE_PATHS;
   return ret;
@@ -1855,8 +1852,8 @@ Cstore::output_internal(const char *fmt, ...)
   int fdout = -1;
   FILE *fout = NULL;
   do {
-    // XXX for now use the constant from cli_val.h
-    if ((fdout = open(LOGFILE_STDOUT, O_WRONLY | O_CREAT, 0660)) == -1) {
+    if ((fdout = open(C_LOGFILE_STDOUT.c_str(),
+                      O_WRONLY | O_CREAT, 0660)) == -1) {
       break;
     }
     if (lseek(fdout, 0, SEEK_END) == ((off_t) -1)) {

@@ -1471,18 +1471,19 @@ static int eval_va(valstruct *res, vtw_node *node)
          *     cstore implementation.
          * handle is set => we are in cstore operation.
          */
-        clind_val cv;
-        if (!cstore_get_var_ref(var_ref_handle, pathp, &cv,
+        vtw_type_e vtype;
+        char *vptr = NULL;
+        if (!cstore_get_var_ref(var_ref_handle, pathp, &vtype, &vptr,
                                 is_in_delete_action())) {
           status = -1;
         } else {
           /* success */
           status = 0;
-          if(cv.value) {
-            res->val_type = cv.val_type;
+          if(vptr) {
+            res->val_type = vtype;
             res->val_types = NULL;
             res->free_me = TRUE;
-            res->val = cv.value;
+            res->val = vptr;
           }
         }
       } else {
@@ -1648,10 +1649,11 @@ static int expand_string(char *stringp)
            *     cstore implementation.
            * handle is set => we are in cstore operation.
            */
-          clind_val cv;
-          if (cstore_get_var_ref(var_ref_handle, scanp, &cv,
-                                 is_in_delete_action())) {
-            cp=cv.value;
+          vtw_type_e vtype;
+          char *vptr = NULL;
+          if (cstore_get_var_ref(var_ref_handle, scanp, &vtype, &vptr,
+                                 is_in_delete_action()) && vptr) {
+            cp = vptr;
           }
         } else {
           /* legacy usage */

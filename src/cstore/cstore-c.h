@@ -20,8 +20,7 @@
 extern "C" {
 #endif
 
-#include <cli_val.h>
-#include <cli_val_engine.h>
+#include <cli_cstore.h>
 
 void *cstore_init(void);
 void cstore_free(void *handle);
@@ -39,8 +38,8 @@ int cstore_cfg_path_deactivated(void *handle, const char *path_comps[],
  * during cstore operations since they operate on "current" paths constructed
  * by the operations.
  */
-int cstore_get_var_ref(void *handle, const char *ref_str, clind_val *cval,
-                       int from_active);
+int cstore_get_var_ref(void *handle, const char *ref_str, vtw_type_e *type,
+                       char **val, int from_active);
 int cstore_set_var_ref(void *handle, const char *ref_str, const char *value,
                        int to_active);
 

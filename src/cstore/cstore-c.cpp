@@ -18,8 +18,8 @@
 #include <vector>
 #include <string>
 
-#include "cstore-c.h"
-#include "cstore/unionfs/cstore-unionfs.hpp"
+#include <cstore/cstore-c.h>
+#include <cstore/unionfs/cstore-unionfs.hpp>
 
 void *
 cstore_init(void)
@@ -80,12 +80,13 @@ cstore_cfg_path_exists(void *handle, const char *path_comps[], int num_comps)
 }
 
 int
-cstore_get_var_ref(void *handle, const char *ref_str, clind_val *cval,
-                   int from_active)
+cstore_get_var_ref(void *handle, const char *ref_str, vtw_type_e *type,
+                   char **val, int from_active)
 {
   if (handle) {
     Cstore *cs = (Cstore *) handle;
-    return (cs->getVarRef(ref_str, *cval, from_active) ? 1 : 0);
+    *val = cs->getVarRef(ref_str, *type, from_active);
+    return (*val ? 1 : 0);
   }
   return 0;
 }

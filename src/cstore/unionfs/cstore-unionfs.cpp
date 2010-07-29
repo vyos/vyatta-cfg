@@ -24,12 +24,8 @@
 #include <errno.h>
 #include <sys/mount.h>
 
-extern "C" {
-#include "cli_val.h"
-#include "cli_objects.h"
-}
-
-#include "cstore-unionfs.hpp"
+#include <cli_cstore.h>
+#include <cstore/unionfs/cstore-unionfs.hpp>
 
 
 ////// constants
@@ -61,6 +57,9 @@ const string UnionfsCstore::C_MARKER_CHANGED = ".modified";
 const string UnionfsCstore::C_MARKER_UNSAVED = ".unsaved";
 const string UnionfsCstore::C_COMMITTED_MARKER_FILE = "/tmp/.changes";
 const string UnionfsCstore::C_COMMENT_FILE = ".comment";
+const string UnionfsCstore::C_TAG_NAME = "node.tag";
+const string UnionfsCstore::C_VAL_NAME = "node.val";
+const string UnionfsCstore::C_DEF_NAME = "node.def";
 
 
 ////// static
@@ -414,9 +413,9 @@ UnionfsCstore::tmpl_node_exists()
 bool
 UnionfsCstore::tmpl_parse(vtw_def& def)
 {
-  push_tmpl_path(DEF_NAME);
+  push_tmpl_path(C_DEF_NAME);
   bool ret = (b_fs::exists(tmpl_path) && b_fs::is_regular(tmpl_path)
-              && parse_def(&def, tmpl_path.file_string().c_str(), FALSE) == 0);
+              && parse_def(&def, tmpl_path.file_string().c_str(), 0) == 0);
   pop_tmpl_path();
   return ret;
 }
@@ -490,8 +489,8 @@ UnionfsCstore::get_all_child_node_names_impl(vector<string>& cnodes,
    *       node.val
    *       def
    */
-  if (b_fs::exists(p / VAL_NAME) && b_fs::is_regular(p / VAL_NAME)) {
-    cnodes.push_back(VAL_NAME);
+  if (b_fs::exists(p / C_VAL_NAME) && b_fs::is_regular(p / C_VAL_NAME)) {
+    cnodes.push_back(C_VAL_NAME);
   }
   if (b_fs::exists(p / C_MARKER_DEF_VALUE)
       && b_fs::is_regular(p / C_MARKER_DEF_VALUE)) {

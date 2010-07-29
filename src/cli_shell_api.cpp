@@ -22,10 +22,7 @@
 #include <libgen.h>
 #include <sys/mount.h>
 
-extern "C" {
-#include <cli_val.h>
-}
-
+#include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
 static int op_idx = -1;

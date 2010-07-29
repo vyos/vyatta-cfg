@@ -37,9 +37,7 @@ LDADD = src/libvyatta-cfg.la
 LDADD += /usr/lib/libglib-2.0.la
 
 vincludedir = $(includedir)/vyatta-cfg
-vinclude_HEADERS = src/cli_val.h
-vinclude_HEADERS += src/cli_val_engine.h
-vinclude_HEADERS += src/cli_path_utils.h
+vinclude_HEADERS = src/cli_cstore.h
 
 vcincdir = $(vincludedir)/cstore
 vcinc_HEADERS = src/cstore/cstore-c.h

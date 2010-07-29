@@ -26,12 +26,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <cli_cstore.h>
 #include <cstore/cstore.hpp>
-
-extern "C" {
-#include <cli_val.h>
-#include <cli_val_engine.h>
-}
 
 namespace b_fs = boost::filesystem;
 
@@ -71,6 +67,9 @@ private:
   static const string C_MARKER_UNSAVED;
   static const string C_COMMITTED_MARKER_FILE;
   static const string C_COMMENT_FILE;
+  static const string C_TAG_NAME;
+  static const string C_VAL_NAME;
+  static const string C_DEF_NAME;
 
   static const size_t MAX_FILE_READ_SIZE = 8192;
 
@@ -93,7 +92,7 @@ private:
     push_path(tmpl_path, new_comp);
   };
   void push_tmpl_path_tag() {
-    push_tmpl_path(TAG_NAME);
+    push_tmpl_path(C_TAG_NAME);
   };
   string pop_tmpl_path() {
     return pop_path(tmpl_path);
@@ -102,7 +101,7 @@ private:
     push_path(mutable_cfg_path, new_comp);
   };
   void push_cfg_path_val() {
-    push_cfg_path(VAL_NAME);
+    push_cfg_path(C_VAL_NAME);
   };
   string pop_cfg_path() {
     return pop_path(mutable_cfg_path);

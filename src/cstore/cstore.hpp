@@ -20,10 +20,7 @@
 #include <string>
 #include <map>
 
-extern "C" {
-#include <cli_val.h>
-#include <cli_val_engine.h>
-}
+#include <cli_cstore.h>
 
 #define exit_internal(fmt, args...) do \
   { \
@@ -65,6 +62,7 @@ public:
   static const string C_ENV_SHAPI_HELP_STRS;
 
   static const string C_ENUM_SCRIPT_DIR;
+  static const string C_LOGFILE_STDOUT;
 
   static const size_t MAX_CMD_OUTPUT_SIZE = 4096;
 
@@ -245,7 +243,7 @@ public:
    * the limitations of the original CLI library implementation and MUST NOT
    * be used by anyone other than the original CLI library.
    */
-  bool getVarRef(const string& ref_str, clind_val& cval, bool from_active);
+  char *getVarRef(const string& ref_str, vtw_type_e& type, bool from_active);
   bool setVarRef(const string& ref_str, const string& value, bool to_active);
 
 protected:

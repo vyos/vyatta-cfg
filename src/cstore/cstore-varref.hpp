@@ -20,7 +20,7 @@
 #include <string>
 #include <map>
 
-#include "cstore.hpp"
+#include <cstore/cstore.hpp>
 
 using namespace std;
 
