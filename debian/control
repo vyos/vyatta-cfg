@@ -44,7 +44,8 @@ Package: libvyatta-cfg-dev
 Architecture: any
 Priority: optional
 Section: libdevel
-Depends: vyatta-cfg (=${binary:Version})
+Depends: libboost-filesystem1.40-dev, ${shlibs:Depends}
+Replaces: vyatta-cfg
 Description: vyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
  library.
