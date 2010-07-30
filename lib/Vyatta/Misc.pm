@@ -54,11 +54,11 @@ sub is_dhcp_enabled {
     return unless $intf;
 
     my $config = new Vyatta::Config;
-    $config->{_active_dir_base} = "/opt/vyatta/config/active/"
-      if ($outside_cli);
 
     $config->setLevel( $intf->path() );
-    foreach my $addr ( $config->returnOrigPlusComValues('address') ) {
+    # the "effective" observers can be used both inside and outside
+    # config sessions.
+    foreach my $addr ( $config->returnEffectiveValues('address') ) {
         return 1 if ( $addr && $addr eq "dhcp" );
     }
 
