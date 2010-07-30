@@ -35,7 +35,7 @@ class UnionfsCstore : public Cstore {
 public:
   UnionfsCstore(bool use_edit_level = false);
   UnionfsCstore(const string& session_id, string& env);
-  ~UnionfsCstore();
+  virtual ~UnionfsCstore();
 
   ////// public virtual functions declared in base class
   bool markSessionUnsaved();

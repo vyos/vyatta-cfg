@@ -40,7 +40,7 @@ class Cstore {
 public:
   Cstore() {};
   Cstore(string& env);
-  ~Cstore() {};
+  virtual ~Cstore() {};
 
   // constants
   static const string C_NODE_STATUS_DELETED;
