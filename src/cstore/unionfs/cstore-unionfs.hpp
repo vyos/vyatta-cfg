@@ -165,13 +165,13 @@ private:
 
   // observers for work path
   bool marked_changed();
-  bool marked_display_default();
 
   // observers for work path or active path
   bool cfg_node_exists(bool active_cfg);
   bool read_value_vec(vector<string>& vvec, bool active_cfg);
   bool marked_deactivated(bool active_cfg);
   bool get_comment(string& comment, bool active_cfg);
+  bool marked_display_default(bool active_cfg);
 
   // observers during commit operation
   bool marked_committed(const vtw_def& def, bool is_set);

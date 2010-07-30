@@ -53,8 +53,9 @@ sub get_path_comps {
 }
 
 ############################################################
-# low-level API functions that have been converted to use
-# the cstore library.
+# low-level API functions that use the cstore library directly.
+# they are either new functions or old ones that have been
+# converted to use cstore.
 ############################################################
 
 ######
@@ -91,6 +92,24 @@ sub existsOrig {
   die $DIE_DEACT_MSG if (defined($include_deactivated));
   return 1
     if ($self->{_cstore}->cfgPathExists($self->get_path_comps($path), 1));
+  return; # note: this return is needed.
+}
+
+## isDefault("path to node")
+# Returns true if specified node is "default" in working config.
+sub isDefault {
+  my ($self, $path) = @_;
+  return 1
+    if ($self->{_cstore}->cfgPathDefault($self->get_path_comps($path), undef));
+  return; # note: this return is needed.
+}
+
+## isDefaultOrig("path to node")
+# Returns true if specified node is "default" in active config.
+sub isDefaultOrig {
+  my ($self, $path) = @_;
+  return 1
+    if ($self->{_cstore}->cfgPathDefault($self->get_path_comps($path), 1));
   return; # note: this return is needed.
 }
 

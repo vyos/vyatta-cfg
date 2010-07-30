@@ -54,6 +54,16 @@ OUTPUT:
   RETVAL
 
 
+bool
+Cstore::cfgPathDefault(STRVEC *vref, bool active_cfg)
+PREINIT:
+  vector<string> arg_strvec;
+CODE:
+  RETVAL = THIS->cfgPathDefault(arg_strvec, active_cfg);
+OUTPUT:
+  RETVAL
+
+
 STRVEC *
 Cstore::cfgPathGetChildNodes(STRVEC *vref, bool active_cfg)
 PREINIT:

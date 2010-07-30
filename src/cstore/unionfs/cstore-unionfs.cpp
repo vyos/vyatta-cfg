@@ -662,9 +662,10 @@ UnionfsCstore::unmark_display_default()
 }
 
 bool
-UnionfsCstore::marked_display_default()
+UnionfsCstore::marked_display_default(bool active_cfg)
 {
-  b_fs::path marker = get_work_path() / C_MARKER_DEF_VALUE;
+  b_fs::path marker = (active_cfg ? get_active_path() : get_work_path())
+                      / C_MARKER_DEF_VALUE;
   return b_fs::exists(marker);
 }
 

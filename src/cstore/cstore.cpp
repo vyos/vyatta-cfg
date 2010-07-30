@@ -853,7 +853,7 @@ Cstore::setCfgPath(const vector<string>& path_comps)
     append_cfg_path(path_comps);
     pop_cfg_path();
     // only do it if it's previously marked default
-    if (marked_display_default()) {
+    if (marked_display_default(false)) {
       ret = unmark_display_default();
 
       /* XXX work around current commit's unionfs implementation problem.
@@ -1444,6 +1444,20 @@ Cstore::cfgPathGetComment(const vector<string>& path_comps, string& comment,
   SAVE_PATHS;
   append_cfg_path(path_comps);
   bool ret = get_comment(comment, active_cfg);
+  RESTORE_PATHS;
+  return ret;
+}
+
+/* return whether specified path is "default". if a node is "default", it
+ * is currently not shown by the "show" command unless "-all" is specified.
+ *   active_cfg: whether to observe active config.
+ */
+bool
+Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
+{
+  SAVE_PATHS;
+  append_cfg_path(path_comps);
+  bool ret = marked_display_default(active_cfg);
   RESTORE_PATHS;
   return ret;
 }

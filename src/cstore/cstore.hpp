@@ -172,6 +172,8 @@ public:
                         vector<string>& values, bool active_cfg = false);
   bool cfgPathGetComment(const vector<string>& path_comps, string& comment,
                          bool active_cfg = false);
+  bool cfgPathDefault(const vector<string>& path_comps,
+                      bool active_cfg = false);
   /* observers for working AND active configs (at the same time).
    * MUST ONLY be used during config session.
    */
@@ -304,13 +306,13 @@ private:
 
   // observers for current work path
   virtual bool marked_changed() = 0;
-  virtual bool marked_display_default() = 0;
 
   // observers for current work path or active path
   virtual bool read_value_vec(vector<string>& vvec, bool active_cfg) = 0;
   virtual bool cfg_node_exists(bool active_cfg) = 0;
   virtual bool marked_deactivated(bool active_cfg) = 0;
   virtual bool get_comment(string& comment, bool active_cfg) = 0;
+  virtual bool marked_display_default(bool active_cfg) = 0;
 
   // observers during commit operation
   virtual bool marked_committed(const vtw_def& def, bool is_set) = 0;

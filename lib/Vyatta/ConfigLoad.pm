@@ -401,8 +401,8 @@ sub getConfigDiff {
 	$file; 
     } @{${$del}[0]};
 
-    my ($is_multi, $is_text, $default)
-      = $active_cfg->parseTmpl(join ' ', @comps);
+    $active_cfg->setLevel(join ' ', @comps);
+    my ($is_multi, $is_text, $default) = $active_cfg->parseTmpl();
     if (!defined($default)) {
       push @new_delete_list, $del;
     }
