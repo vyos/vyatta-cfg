@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.107) unstable; urgency=low
+
+  * add default status observers
+  * new API changes
+  * make destructors virtual
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 30 Jul 2010 16:22:55 -0700
+
 vyatta-cfg (0.16.106) unstable; urgency=low
 
   [ An-Cheng Huang ]
