@@ -1,3 +1,16 @@
+vyatta-cfg (0.16.106) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add cstore-specific header file
+
+  [ Michael Larson ]
+  * timing syslog entries on commit hooks
+
+  [ An-Cheng Huang ]
+  * remove dev package dependency on vyatta-cfg
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 29 Jul 2010 18:56:20 -0700
+
 vyatta-cfg (0.16.105) unstable; urgency=low
 
   [ Michael Larson ]
