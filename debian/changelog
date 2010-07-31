@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.108) unstable; urgency=low
+
+  * handle potential exceptions from filesystem operations.
+  * make edit do implicit set
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Sat, 31 Jul 2010 15:06:24 -0700
+
 vyatta-cfg (0.16.107) unstable; urgency=low
 
   * add default status observers
