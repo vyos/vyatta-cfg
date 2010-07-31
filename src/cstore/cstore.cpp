@@ -390,10 +390,6 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
     output_user("%s\n", terr.c_str());
     return false;
   }
-  if (!cfg_path_exists(path_comps, false, true)) {
-    output_user("The specified config path does not exist\n");
-    return false;
-  }
   /* "edit" is only allowed when path ends at a
    *   (1) "tag value"
    *   OR
@@ -405,6 +401,19 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
     output_user("The \"edit\" command cannot be issued "
                 "at the specified level\n");
     return false;
+  }
+  if (!cfg_path_exists(path_comps, false, true)) {
+    /* specified path does not exist.
+     * follow the original implementation and do a "set".
+     */
+    if (!validateSetPath(path_comps)) {
+      output_user("The specified config path is not valid\n");
+      return false;
+    }
+    if (!set_cfg_path(path_comps, false)) {
+      output_user("Failed to create the specified config path\n");
+      return false;
+    }
   }
   SAVE_PATHS;
   append_cfg_path(path_comps);
@@ -775,117 +784,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
 bool
 Cstore::setCfgPath(const vector<string>& path_comps)
 {
-  vector<string> ppath;
-  vtw_def def;
-  bool ret = true;
-  bool path_exists = true;
-  // do the set from the top down
-  SAVE_PATHS;
-  for (unsigned int i = 0; i < path_comps.size(); i++) {
-    // partial path
-    ppath.push_back(path_comps[i]);
-
-    // get template at this level
-    if (!get_parsed_tmpl(ppath, false, def)) {
-      output_user("paths[%s,%s]\n", cfg_path_to_str().c_str(),
-                  tmpl_path_to_str().c_str());
-      for (unsigned int i = 0; i < ppath.size(); i++) {
-        output_user("  [%s]\n", ppath[i].c_str());
-      }
-      exit_internal("failed to get tmpl during set. not validate first?\n");
-    }
-
-    // nop if this level already in working (including deactivated)
-    if (cfg_path_exists(ppath, false, true)) {
-      continue;
-    }
-    path_exists = false;
-
-    // this level not in working. set it.
-    append_cfg_path(ppath);
-    append_tmpl_path(ppath);
-
-    if (!def.is_value) {
-      // this level is a "node"
-      if (!add_node() || !create_default_children()) {
-        ret = false;
-        break;
-      }
-    } else if (def.tag) {
-      // this level is a "tag value".
-      // add the tag, taking the max tag limit into consideration.
-      if (!add_tag(def) || !create_default_children()) {
-        ret = false;
-        break;
-      }
-    } else {
-      // this level is a "value" of a single-/multi-value node.
-      // go up 1 level to get the node.
-      pop_cfg_path();
-      if (def.multi) {
-        // value of multi-value node.
-        // add the value, taking the max multi limit into consideration.
-        if (!add_value_to_multi(def, ppath.back())) {
-          ret = false;
-          break;
-        }
-      } else {
-        // value of single-value node
-        if (!write_value(ppath.back())) {
-          ret = false;
-          break;
-        }
-      }
-    }
-    RESTORE_PATHS;
-  }
-  RESTORE_PATHS; // if "break" was hit
-
-  if (ret && def.is_value && def.def_default) {
-    /* a node with default has been explicitly set. needs to be marked
-     * as non-default for display purposes.
-     *
-     * note: when the new value is the same as the old value, the behavior
-     *       is different from before, which was a nop. the new behavior is
-     *       that the value will remain unchanged, but the "default status"
-     *       will be changed, i.e., it will be marked as non-default.
-     */
-    append_cfg_path(path_comps);
-    pop_cfg_path();
-    // only do it if it's previously marked default
-    if (marked_display_default(false)) {
-      ret = unmark_display_default();
-
-      /* XXX work around current commit's unionfs implementation problem.
-       * current commit's unionfs implementation looks at the "changes only"
-       * directory (i.e., the r/w portion of the union mount), which is wrong.
-       *
-       * all config information should be obtained from two directories:
-       * "active" and "working", e.g., instead of looking at whiteout files
-       * in "changes only" to find deleted nodes, nodes that are in "active"
-       * but not in "working" have been deleted.
-       *
-       * in this particular case, commit looks at "changes only" to read the
-       * node.val file. however, since the value didn't change (only the
-       * "default status" changed), node.val doesn't appear in "changes only".
-       * here we re-write the file to force it into "changes only" so that
-       * commit can work correctly.
-       */
-      vector<string> vvec;
-      read_value_vec(vvec, false);
-      write_value_vec(vvec);
-
-      // pretend it didn't exist since we changed the status
-      path_exists = false;
-    }
-    RESTORE_PATHS;
-  }
-  if (path_exists) {
-    // whole path already exists
-    output_user("The specified configuration node already exists\n");
-    // treat as success
-  }
-  return ret;
+  return set_cfg_path(path_comps, true);
 }
 
 /* check if specified "arguments" is valid for "rename" operation
@@ -2216,6 +2115,129 @@ Cstore::cfg_path_exists(const vector<string>& path_comps,
       && cfgPathDeactivated(path_comps, active_cfg)) {
     // don't include deactivated
     ret = false;
+  }
+  return ret;
+}
+
+/* set specified "logical path" in "working config".
+ *   output: whether to generate output
+ * return true if successful. otherwise return false.
+ * note: assume specified path is valid (i.e., validateSetPath()).
+ */
+bool
+Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
+{
+  vector<string> ppath;
+  vtw_def def;
+  bool ret = true;
+  bool path_exists = true;
+  // do the set from the top down
+  SAVE_PATHS;
+  for (unsigned int i = 0; i < path_comps.size(); i++) {
+    // partial path
+    ppath.push_back(path_comps[i]);
+
+    // get template at this level
+    if (!get_parsed_tmpl(ppath, false, def)) {
+      output_internal("paths[%s,%s]\n", cfg_path_to_str().c_str(),
+                      tmpl_path_to_str().c_str());
+      for (unsigned int i = 0; i < ppath.size(); i++) {
+        output_internal("  [%s]\n", ppath[i].c_str());
+      }
+      exit_internal("failed to get tmpl during set. not validate first?\n");
+    }
+
+    // nop if this level already in working (including deactivated)
+    if (cfg_path_exists(ppath, false, true)) {
+      continue;
+    }
+    path_exists = false;
+
+    // this level not in working. set it.
+    append_cfg_path(ppath);
+    append_tmpl_path(ppath);
+
+    if (!def.is_value) {
+      // this level is a "node"
+      if (!add_node() || !create_default_children()) {
+        ret = false;
+        break;
+      }
+    } else if (def.tag) {
+      // this level is a "tag value".
+      // add the tag, taking the max tag limit into consideration.
+      if (!add_tag(def) || !create_default_children()) {
+        ret = false;
+        break;
+      }
+    } else {
+      // this level is a "value" of a single-/multi-value node.
+      // go up 1 level to get the node.
+      pop_cfg_path();
+      if (def.multi) {
+        // value of multi-value node.
+        // add the value, taking the max multi limit into consideration.
+        if (!add_value_to_multi(def, ppath.back())) {
+          ret = false;
+          break;
+        }
+      } else {
+        // value of single-value node
+        if (!write_value(ppath.back())) {
+          ret = false;
+          break;
+        }
+      }
+    }
+    RESTORE_PATHS;
+  }
+  RESTORE_PATHS; // if "break" was hit
+
+  if (ret && def.is_value && def.def_default) {
+    /* a node with default has been explicitly set. needs to be marked
+     * as non-default for display purposes.
+     *
+     * note: when the new value is the same as the old value, the behavior
+     *       is different from before, which was a nop. the new behavior is
+     *       that the value will remain unchanged, but the "default status"
+     *       will be changed, i.e., it will be marked as non-default.
+     */
+    append_cfg_path(path_comps);
+    pop_cfg_path();
+    // only do it if it's previously marked default
+    if (marked_display_default(false)) {
+      ret = unmark_display_default();
+
+      /* XXX work around current commit's unionfs implementation problem.
+       * current commit's unionfs implementation looks at the "changes only"
+       * directory (i.e., the r/w portion of the union mount), which is wrong.
+       *
+       * all config information should be obtained from two directories:
+       * "active" and "working", e.g., instead of looking at whiteout files
+       * in "changes only" to find deleted nodes, nodes that are in "active"
+       * but not in "working" have been deleted.
+       *
+       * in this particular case, commit looks at "changes only" to read the
+       * node.val file. however, since the value didn't change (only the
+       * "default status" changed), node.val doesn't appear in "changes only".
+       * here we re-write the file to force it into "changes only" so that
+       * commit can work correctly.
+       */
+      vector<string> vvec;
+      read_value_vec(vvec, false);
+      write_value_vec(vvec);
+
+      // pretend it didn't exist since we changed the status
+      path_exists = false;
+    }
+    RESTORE_PATHS;
+  }
+  if (path_exists) {
+    // whole path already exists
+    if (output) {
+      output_user("The specified configuration node already exists\n");
+    }
+    // treat as success
   }
   return ret;
 }

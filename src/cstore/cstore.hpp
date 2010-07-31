@@ -373,6 +373,7 @@ private:
                                  vector<string>& rn_args);
   bool cfg_path_exists(const vector<string>& path_comps,
                        bool active_cfg, bool include_deactivated);
+  bool set_cfg_path(const vector<string>& path_comps, bool output);
 
   // these operate on current work path (or active with "active_cfg")
   bool remove_tag();
