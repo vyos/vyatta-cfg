@@ -210,6 +210,17 @@ private:
   bool read_whole_file(const b_fs::path& file, string& data);
   bool committed_marker_exists(const string& marker);
   void recursive_copy_dir(const b_fs::path& src, const b_fs::path& dst);
+
+  // boost fs operations wrappers
+  bool b_fs_exists(const b_fs::path& path) {
+    try { return b_fs::exists(path); } catch (...) { return false; }
+  };
+  bool b_fs_is_directory(const b_fs::path& path) {
+    try { return b_fs::is_directory(path); } catch (...) { return false; }
+  };
+  bool b_fs_is_regular(const b_fs::path& path) {
+    try { return b_fs::is_regular(path); } catch (...) { return false; }
+  };
 };
 
 #endif /* _CSTORE_UNIONFS_H_ */
