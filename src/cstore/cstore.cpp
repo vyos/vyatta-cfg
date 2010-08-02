@@ -626,7 +626,11 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
         if (def.def_enumeration) {
           cmd_str += (C_ENUM_SCRIPT_DIR + "/" + def.def_enumeration);
         } else {
-          cmd_str += def.def_allowed;
+          string astr = def.def_allowed;
+          shell_escape_squotes(astr);
+          cmd_str += "_cstore_internal_allowed () { eval '";
+          cmd_str += astr;
+          cmd_str += "'; }; _cstore_internal_allowed";
         }
 
         char *buf = (char *) malloc(MAX_CMD_OUTPUT_SIZE);
