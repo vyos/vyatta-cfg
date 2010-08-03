@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur6) unstable; urgency=low
+
+  * fix for bug 5982.
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Tue, 03 Aug 2010 13:50:42 -0700
+
 vyatta-cfg (0.16.103+larkspur5) unstable; urgency=low
 
   * Add range and ipv6range as val_help types
