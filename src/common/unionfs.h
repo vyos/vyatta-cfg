@@ -30,8 +30,8 @@
 #define WHITEOUT_DISABLE_FILE ".wh..disable"
 #define DELETED_NODE ".wh."
 
-#define MAX_LENGTH_DIR_PATH 1024
-#define MAX_LENGTH_HELP_STR 1024
+#define MAX_LENGTH_DIR_PATH 4096
+#define MAX_LENGTH_HELP_STR 4096
 
 boolean
 value_exists(char *path);
