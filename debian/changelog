@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.109) unstable; urgency=low
+
+  * eval "allowed:" script in template
+  * new API change
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 03 Aug 2010 17:50:17 -0700
+
 vyatta-cfg (0.16.108) unstable; urgency=low
 
   * handle potential exceptions from filesystem operations.
