@@ -488,14 +488,10 @@ UnionfsCstore::get_all_child_node_names_impl(vector<string>& cnodes,
    *     use a whilelist-approach, i.e., only add the following:
    *       node.val
    *       def
+   *
+   * FIXED: perl scripts have been changed to eliminate the use of "def"
+   * and "node.val", so they no longer need to be returned.
    */
-  if (b_fs_exists(p / C_VAL_NAME) && b_fs_is_regular(p / C_VAL_NAME)) {
-    cnodes.push_back(C_VAL_NAME);
-  }
-  if (b_fs_exists(p / C_MARKER_DEF_VALUE)
-      && b_fs_is_regular(p / C_MARKER_DEF_VALUE)) {
-    cnodes.push_back(C_MARKER_DEF_VALUE);
-  }
 }
 
 bool

@@ -129,6 +129,11 @@ sub displayValues {
       print "$dis$diff$prefix$name $nval\n";
     }
   } else {
+    if ($config->isDefault() and !$show_all) {
+      # not going to show anything so just return
+      return;
+    }
+
     my $oval = $config->returnOrigValueDA();
     my $nval = $config->returnValueDA();
     if ($is_text) {
@@ -140,17 +145,11 @@ sub displayValues {
       }
     }
 
-    my %cnodes = $config->listNodeStatusDA();
-    my @cnames = sort keys %cnodes;
-
     if (defined($simple_show)) {
-      if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
-          or $show_all) {
-        if ($is_password && $hide_password) {
-          $oval = $HIDE_PASSWORD;
-        }
-        print "$dis$prefix$name $oval\n";
+      if ($is_password && $hide_password) {
+        $oval = $HIDE_PASSWORD;
       }
+      print "$dis$prefix$name $oval\n";
       return;
     }
     my $value = $nval;
@@ -166,14 +165,10 @@ sub displayValues {
         $diff = '>';
       }
     }
-    # also need to handle the case where def marker is deleted.
-    if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
-        or $show_all) {
-      if ($is_password && $hide_password) {
-        $value = $HIDE_PASSWORD;
-      }
-      print "$dis$diff$prefix$name $value\n";
+    if ($is_password && $hide_password) {
+      $value = $HIDE_PASSWORD;
     }
+    print "$dis$diff$prefix$name $value\n";
   }
 }
 
@@ -196,15 +191,9 @@ sub displayDeletedOrigChildren {
   for my $child (sort @children) {
     # reset level
     $config->setLevel('');
-
-    if ($child eq 'node.val') {
-      # should not happen!
-      next;
-    }
-
     my $is_tag = $config->isTagNode(join(' ', @cur_path, $child));
 
-    if (!defined $is_tag) {
+    if (!$is_tag) {
 	my $path = join(' ',( @cur_path, $child ));
 	my $comment = $config->returnComment($path);
 	if (defined $comment) {
@@ -238,25 +227,17 @@ sub displayDeletedOrigChildren {
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
-
-    # remove listOrigNodesNoDef so it's one fewer function that uses
-    # the cstore implementation details at the perl API level.
-    my @cnames = grep(!/^def$/, sort($config->listOrigNodesDA()));
-
-    if ($cnames[0] eq 'node.val') {
+    if ($config->isLeafNode()) {
       displayValues([ @cur_path, $child ], $dis, $prefix, $child,
                     $dont_show_as_deleted);
-    } elsif ($cnames[0] eq 'def') {
-	#ignore
-    } elsif (scalar($#cnames) >= 0) {
+      next;
+    }
+
+    # not a leaf node
+    my @cnames = sort versioncmp ($config->listOrigNodesDA());
+    if (scalar(@cnames) > 0) {
       if ($is_tag) {
-        @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
-          if ($cname eq 'node.val') {
-            # should not happen
-            next;
-          }
-	  
 	  my $path = join(' ',( @cur_path, $child, $cname ));
           $config->setLevel($path);
 
@@ -319,14 +300,6 @@ sub displayChildren {
   my $prefix = $_[3];
   for my $child (sort (keys %child_hash)) {
     my $dis = "";
-    my @tmp = @cur_path;
-    push (@tmp,$child);
-
-    if ($child eq 'node.val') {
-      # should not happen!
-      next;
-    }
-
     my ($diff, $vdiff) = (' ', ' ');
     if ($child_hash{$child} eq 'added') {
       $diff = '+';
@@ -341,7 +314,7 @@ sub displayChildren {
     $config->setLevel('');
     my $is_tag = $config->isTagNode(join(' ', @cur_path, $child));
 
-    if (!defined($is_tag)) {
+    if (!$is_tag) {
 	my $path = join(' ',( @cur_path, $child ));
 	my $comment = $config->returnComment($path);
 	if (defined $comment) {
@@ -375,32 +348,18 @@ sub displayChildren {
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
+    if ($config->isLeafNode()) {
+      displayValues([ @cur_path, $child ], $dis, $prefix, $child);
+      next;
+    }
+
+    # not a leaf node
     my %cnodes = $config->listNodeStatusDA();
     my @cnames = sort keys %cnodes;
-    
-    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
-    my $leaf = 0;
-    if ($cnodes{'def'}) {
-	if ($#cnames == 1 && $cnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    } else {
-	if ($#cnames == 0 && $cnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    }
-    
-    if ($leaf == 1) {
-      displayValues([ @cur_path, $child ], $dis, $prefix, $child);
-    } elsif (scalar($#cnames) >= 0) {
+    if (scalar(@cnames) > 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
-          if ($cname eq 'node.val') {
-            # should not happen
-            next;
-          }
-
 	  my $path = join(' ',( @cur_path, $child, $cname ));
 	  $config->setLevel($path);
 	  my $comment = $config->returnComment();
@@ -455,21 +414,24 @@ sub displayChildren {
         print "$dis$diff$prefix$child {\n";
         if ($child_hash{$child} eq 'deleted') {
           # this should not happen
-          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis,
+                                     "$prefix    ");
         } else {
-          displayChildren(\%cnodes, [ @cur_path, $child ], $dis, "$prefix    ");
+          displayChildren(\%cnodes, [ @cur_path, $child ], $dis,
+                          "$prefix    ");
         }
         print "$dis$diff$prefix}\n";
       }
     } else {
       if ($child_hash{$child} eq 'deleted') {
+        # XXX weird. already checked for leaf node above.
         $config->setLevel('');
-        my @onodes = $config->listOrigNodesDA(join ' ', (@cur_path, $child));
-        if ($#onodes == 0 && $onodes[0] eq 'node.val') {
+        if ($config->isLeafNode(join ' ', (@cur_path, $child))) {
           displayValues([ @cur_path, $child ], $dis, $prefix, $child);
         } else {
           print "$dis$diff$prefix$child {\n";
-          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis,
+                                     "$prefix    ");
           print "$dis$diff$prefix}\n";
         }
       } else {
@@ -487,29 +449,15 @@ sub displayChildren {
 sub outputNewConfig {
   $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
+  if ($config->isLeafNode()) {
+    displayValues([ @_ ], '', '', $_[$#_]);
+    return;
+  }
+
+  # not a leaf node
   my %rnodes = $config->listNodeStatusDA();
-
   if (scalar(keys %rnodes) > 0) {
-    my @rn = keys %rnodes;
-
-    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
-    my $leaf = 0;
-    if ($rnodes{'def'}) {
-	if ($#rn == 1 && $rnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    } else {
-	if ($#rn == 0 && $rnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    }
-    
-    if ($leaf == 1) {
-      # this is a leaf value-node
-      displayValues([ @_ ], '', '', $_[$#_]);
-    } else {
-      displayChildren(\%rnodes, [ @_ ], '', '');
-    }
+    displayChildren(\%rnodes, [ @_ ], '', '');
   } else {
     if ($config->existsOrig() && ! $config->exists()) {
       # this is a deleted node

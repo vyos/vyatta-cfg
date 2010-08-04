@@ -290,15 +290,13 @@ sub findDeletedNodes {
   my $new_ref = $_[0];
   my @active_path = @{$_[1]};
   $active_cfg->setLevel(join ' ', @active_path);
+  if ($active_cfg->isLeafNode()) {
+    findDeletedValues($new_ref, \@active_path);
+    return;
+  }
+  # not a leaf node
   my @active_nodes = $active_cfg->listOrigNodesDA();
   foreach (@active_nodes) {
-    if ($_ eq 'def') {
-      next;
-    }
-    if ($_ eq 'node.val') {
-      findDeletedValues($new_ref, \@active_path);
-      next;
-    }
     if (!defined($new_ref->{$_})) {
       my @plist = applySingleQuote(@active_path, $_);
       push @delete_list, [\@plist, 0];
