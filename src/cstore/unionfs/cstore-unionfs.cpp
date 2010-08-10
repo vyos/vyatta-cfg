@@ -192,6 +192,7 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
    *       from environment. only the actual CLI operations use them.
    *       so here make it an option.
    */
+  mutable_cfg_path = "/";
   if (use_edit_level) {
     // set up path strings
     if ((val = getenv(C_ENV_EDIT_LEVEL.c_str()))) {
@@ -241,6 +242,7 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
 
   // set up path strings using level vars
   char *val;
+  mutable_cfg_path = "/";
   if ((val = getenv(C_ENV_EDIT_LEVEL.c_str()))) {
     mutable_cfg_path = val;
   }
