@@ -1,3 +1,4 @@
-usr/lib/*.so.*
-opt
 etc
+opt/vyatta/share/enumeration
+opt/vyatta/sbin
+opt/vyatta/etc

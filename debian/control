@@ -9,7 +9,6 @@ Standards-Version: 3.7.2
 Package: vyatta-cfg
 Architecture: any
 Depends: sed (>= 4.1.5),
- perl (>= 5.8.8),
  procps (>= 1:3.2.7-3),
  coreutils (>= 5.97-5.3),
  vyatta-bash | bash (>= 3.1),
@@ -20,15 +19,12 @@ Depends: sed (>= 4.1.5),
  parted,
  dhcp3-client | vyatta-dhcp3-client,
  bsdutils (>=1:2.13),
- libc6 (>= 2.7-6),
- libsort-versions-perl,
- libfile-sync-perl,
  vlan,
  ethtool,
  iproute,
- libglib2.0-0,
  curl,
- libboost-filesystem1.40.0
+ libvyatta-cfg1 (=${binary:Version}),
+ ${perl:Depends}, ${shlibs:Depends}
 Replaces: vyatta-cfg-firewall, 
  vyatta-cfg-quagga
 Suggests: util-linux (>= 2.13-5),
@@ -36,17 +32,25 @@ Suggests: util-linux (>= 2.13-5),
  ncurses-bin (>= 5.5-5),
  ntpdate
 Description: Vyatta configuration system
- This package has the Vyatta configuration system, including the configuration
- back-end library, the base configuration templates, and the config-mode CLI
- completion mechanism.
+ This package provides the Vyatta configuration system, including the base
+ configuration templates and the config-mode CLI completion mechanism.
+
+Package: libvyatta-cfg1
+Architecture: any
+Depends: libsort-versions-perl,
+ libfile-sync-perl,
+ ${perl:Depends}, ${shlibs:Depends}
+Replaces: vyatta-cfg
+Description: vyatta-cfg back-end library
+ Vyatta configuration back-end library (libvyatta-cfg).
 
 Package: libvyatta-cfg-dev
 Architecture: any
 Priority: optional
 Section: libdevel
-Depends: libboost-filesystem1.40-dev, ${shlibs:Depends}
-Replaces: vyatta-cfg
-Description: vyatta-cfg development package
+Depends: libvyatta-cfg1 (=${binary:Version}),
+ libboost-filesystem1.40-dev
+Description: libvyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
  library.
 

@@ -5,10 +5,6 @@ exec_prefix=@exec_prefix@
 sysconfdir=@sysconfdir@
 sbindir=@sbindir@
 
-if [ "$1" = "configure" ]; then
-	ldconfig
-fi
-
 for dir in $sysconfdir/config $prefix/config; do
   if [ -d "$dir" ]; then
     # already exists

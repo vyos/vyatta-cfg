@@ -21,6 +21,7 @@ libtool
 /debian/vyatta-cfg.postinst
 /debian/vyatta-cfg.postrm
 /debian/libvyatta-cfg-dev
+/debian/libvyatta-cfg1
 /debian/*.log
 /debian/*.substvars
 /debian/*.debhelper
