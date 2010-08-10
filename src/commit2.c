@@ -311,6 +311,7 @@ main(int argc, char** argv)
 
     //now update the changes file
     update_change_file(fp_changes,nodes_visited_coll);
+    fflush(fp_changes);
 
     ++i;
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
