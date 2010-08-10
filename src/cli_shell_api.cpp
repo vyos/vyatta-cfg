@@ -25,106 +25,16 @@
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
-static int op_idx = -1;
-static const char *op_name[] = {
-  "getSessionEnv",
-  "getEditEnv",
-  "getEditUpEnv",
-  "getEditResetEnv",
-  "editLevelAtRoot",
-  "getCompletionEnv",
-  "getEditLevelStr",
-  "markSessionUnsaved",
-  "unmarkSessionUnsaved",
-  "sessionUnsaved",
-  "sessionChanged",
-  "teardownSession",
-  "setupSession",
-  "inSession",
-  "exists",
-  "existsActive",
-  NULL
-};
-static const int op_exact_args[] = {
-  1,
-  -1,
-  0,
-  0,
-  0,
-  -1,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  -1,
-  -1,
-  -1
-};
-static const char *op_exact_error[] = {
-  "Must specify session ID",
-  NULL,
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  NULL,
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  "No argument expected",
-  NULL,
-  NULL,
-  NULL
-};
-static const int op_min_args[] = {
-  -1,
-  1,
-  -1,
-  -1,
-  -1,
-  2,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  1,
-  1,
-  -1
-};
-static const char *op_min_error[] = {
-  NULL,
-  "Must specify config path to edit",
-  NULL,
-  NULL,
-  NULL,
-  "Must specify command and at least one component",
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  "Must specify config path",
-  "Must specify config path",
-  NULL
-};
-#define OP_exact_args op_exact_args[op_idx]
-#define OP_min_args op_min_args[op_idx]
-#define OP_exact_error op_exact_error[op_idx]
-#define OP_min_error op_min_error[op_idx]
+typedef void (*OpFuncT)(const vector<string>& args);
+
+typedef struct {
+  const char *op_name;
+  const int op_exact_args;
+  const char *op_exact_error;
+  const int op_min_args;
+  const char *op_min_error;
+  OpFuncT op_func;
+} OpT;
 
 static void
 doGetSessionEnv(const vector<string>& args)
@@ -278,26 +188,79 @@ doExistsActive(const vector<string>& args)
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
-typedef void (*OpFuncT)(const vector<string>& args);
-OpFuncT OpFunc[] = {
-  &doGetSessionEnv,
-  &doGetEditEnv,
-  &doGetEditUpEnv,
-  &doGetEditResetEnv,
-  &doEditLevelAtRoot,
-  &doGetCompletionEnv,
-  &doGetEditLevelStr,
-  &doMarkSessionUnsaved,
-  &doUnmarkSessionUnsaved,
-  &doSessionUnsaved,
-  &doSessionChanged,
-  &doTeardownSession,
-  &doSetupSession,
-  &doInSession,
-  &doExists,
-  &doExistsActive,
-  NULL
+static int op_idx = -1;
+static OpT ops[] = {
+  {"getSessionEnv",
+   1, "Must specify session ID", -1, NULL,
+   &doGetSessionEnv},
+
+  {"getEditEnv",
+   -1, NULL, 1, "Must specify config path",
+   &doGetEditEnv},
+
+  {"getEditUpEnv",
+   0, "No argument expected", -1, NULL,
+   &doGetEditUpEnv},
+
+  {"getEditResetEnv",
+   0, "No argument expected", -1, NULL,
+   &doGetEditResetEnv},
+
+  {"editLevelAtRoot",
+   0, "No argument expected", -1, NULL,
+   &doEditLevelAtRoot},
+
+  {"getCompletionEnv",
+   -1, NULL, 2, "Must specify command and at least one component",
+   &doGetCompletionEnv},
+
+  {"getEditLevelStr",
+   0, "No argument expected", -1, NULL,
+   &doGetEditLevelStr},
+
+  {"markSessionUnsaved",
+   0, "No argument expected", -1, NULL,
+   &doMarkSessionUnsaved},
+
+  {"unmarkSessionUnsaved",
+   0, "No argument expected", -1, NULL,
+   &doUnmarkSessionUnsaved},
+
+  {"sessionUnsaved",
+   0, "No argument expected", -1, NULL,
+   &doSessionUnsaved},
+
+  {"sessionChanged",
+   0, "No argument expected", -1, NULL,
+   &doSessionChanged},
+
+  {"teardownSession",
+   0, "No argument expected", -1, NULL,
+   &doTeardownSession},
+
+  {"setupSession",
+   0, "No argument expected", -1, NULL,
+   &doSetupSession},
+
+  {"inSession",
+   0, "No argument expected", -1, NULL,
+   &doInSession},
+
+  {"exists",
+   -1, NULL, 1, "Must specify config path",
+   &doExists},
+
+  {"existsActive",
+   -1, NULL, 1, "Must specify config path",
+   &doExistsActive},
+
+  {NULL, -1, NULL, -1, NULL, NULL}
 };
+#define OP_exact_args  ops[op_idx].op_exact_args
+#define OP_min_args    ops[op_idx].op_min_args
+#define OP_exact_error ops[op_idx].op_exact_error
+#define OP_min_error   ops[op_idx].op_min_error
+#define OP_func        ops[op_idx].op_func
 
 int
 main(int argc, char **argv)
@@ -307,8 +270,8 @@ main(int argc, char **argv)
     printf("Must specify operation\n");
     exit(-1);
   }
-  while (op_name[i]) {
-    if (strcmp(argv[1], op_name[i]) == 0) {
+  while (ops[i].op_name) {
+    if (strcmp(argv[1], ops[i].op_name) == 0) {
       op_idx = i;
       break;
     }
@@ -333,7 +296,7 @@ main(int argc, char **argv)
   }
 
   // call the op function
-  OpFunc[op_idx](args);
+  OP_func(args);
   exit(0);
 }
 
