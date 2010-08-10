@@ -21,6 +21,14 @@
 #include <cstore/cstore-c.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
+static void
+_get_str_vec(vector<string>& vec, const char *strs[], int num_strs)
+{
+  for (int i = 0; i < num_strs; i++) {
+    vec.push_back(strs[i]);
+  }
+}
+
 void *
 cstore_init(void)
 {
@@ -41,9 +49,7 @@ cstore_validate_tmpl_path(void *handle, const char *path_comps[],
 {
   if (handle) {
     vector<string> vs;
-    for (int i = 0; i < num_comps; i++) {
-      vs.push_back(path_comps[i]);
-    }
+    _get_str_vec(vs, path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
     return (cs->validateTmplPath(vs, validate_tags) ? 1 : 0);
   }
@@ -56,9 +62,7 @@ cstore_validate_tmpl_path_d(void *handle, const char *path_comps[],
 {
   if (handle) {
     vector<string> vs;
-    for (int i = 0; i < num_comps; i++) {
-      vs.push_back(path_comps[i]);
-    }
+    _get_str_vec(vs, path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
     return (cs->validateTmplPath(vs, validate_tags, *def) ? 1 : 0);
   }
@@ -70,9 +74,7 @@ cstore_cfg_path_exists(void *handle, const char *path_comps[], int num_comps)
 {
   if (handle) {
     vector<string> vs;
-    for (int i = 0; i < num_comps; i++) {
-      vs.push_back(path_comps[i]);
-    }
+    _get_str_vec(vs, path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
     return (cs->cfgPathExists(vs) ? 1 : 0);
   }
@@ -108,13 +110,37 @@ cstore_cfg_path_deactivated(void *handle, const char *path_comps[],
 {
   if (handle) {
     vector<string> vs;
-    for (int i = 0; i < num_comps; i++) {
-      vs.push_back(path_comps[i]);
-    }
+    _get_str_vec(vs, path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
     return (cs->cfgPathDeactivated(vs, in_active) ? 1 : 0);
   }
   return 0;
+}
+
+char *
+cstore_cfg_path_get_effective_value(void *handle, const char *path_comps[],
+                                    int num_comps)
+{
+  if (handle) {
+    vector<string> vs;
+    _get_str_vec(vs, path_comps, num_comps);
+    Cstore *cs = (Cstore *) handle;
+    string val;
+    if (!cs->cfgPathGetEffectiveValue(vs, val)) {
+      return NULL;
+    }
+
+    int vsize = val.length();
+    char *buf = (char *) malloc(vsize + 1);
+    if (!buf) {
+      return NULL;
+    }
+    strncpy(buf, val.c_str(), vsize);
+    buf[vsize] = 0;
+
+    return buf;
+  }
+  return NULL;
 }
 
 char **
@@ -141,10 +167,12 @@ cstore_path_string_to_path_comps(const char *path_str, int *num_comps)
     vec.push_back(start);
   }
   char **ret = (char **) malloc(sizeof(char *) * vec.size());
-  for (unsigned int i = 0; i < vec.size(); i++) {
-    ret[i] = strdup(vec[i].c_str());
+  if (ret) {
+    for (unsigned int i = 0; i < vec.size(); i++) {
+      ret[i] = strdup(vec[i].c_str());
+    }
+    *num_comps = vec.size();
   }
-  *num_comps = vec.size();
   free(pstr);
   return ret;
 }
