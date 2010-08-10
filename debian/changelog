@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.111) unstable; urgency=low
+
+  * separate libvyatta-cfg1 package
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 10 Aug 2010 13:46:24 -0700
+
 vyatta-cfg (0.16.110) unstable; urgency=low
 
   * remove "def" and "node.val" usage from high-level operations.
