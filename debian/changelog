@@ -1,3 +1,12 @@
+vyatta-cfg (0.16.110) unstable; urgency=low
+
+  * remove "def" and "node.val" usage from high-level operations.
+  * commit needs to flush "progress file"
+  * provide default edit level
+  * add function to C API
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 09 Aug 2010 18:52:40 -0700
+
 vyatta-cfg (0.16.109) unstable; urgency=low
 
   * eval "allowed:" script in template
