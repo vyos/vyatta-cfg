@@ -41,6 +41,8 @@ static const char *op_name[] = {
   "teardownSession",
   "setupSession",
   "inSession",
+  "exists",
+  "existsActive",
   NULL
 };
 static const int op_exact_args[] = {
@@ -58,6 +60,8 @@ static const int op_exact_args[] = {
   0,
   0,
   0,
+  -1,
+  -1,
   -1
 };
 static const char *op_exact_error[] = {
@@ -75,6 +79,8 @@ static const char *op_exact_error[] = {
   "No argument expected",
   "No argument expected",
   "No argument expected",
+  NULL,
+  NULL,
   NULL
 };
 static const int op_min_args[] = {
@@ -92,6 +98,8 @@ static const int op_min_args[] = {
   -1,
   -1,
   -1,
+  1,
+  1,
   -1
 };
 static const char *op_min_error[] = {
@@ -109,6 +117,8 @@ static const char *op_min_error[] = {
   NULL,
   NULL,
   NULL,
+  "Must specify config path",
+  "Must specify config path",
   NULL
 };
 #define OP_exact_args op_exact_args[op_idx]
@@ -254,6 +264,20 @@ doInSession(const vector<string>& args)
   }
 }
 
+static void
+doExists(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  exit(cstore.cfgPathExists(args, false) ? 0 : 1);
+}
+
+static void
+doExistsActive(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  exit(cstore.cfgPathExists(args, true) ? 0 : 1);
+}
+
 typedef void (*OpFuncT)(const vector<string>& args);
 OpFuncT OpFunc[] = {
   &doGetSessionEnv,
@@ -270,6 +294,8 @@ OpFuncT OpFunc[] = {
   &doTeardownSession,
   &doSetupSession,
   &doInSession,
+  &doExists,
+  &doExistsActive,
   NULL
 };
 
