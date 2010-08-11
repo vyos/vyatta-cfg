@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.112) unstable; urgency=low
+
+  * add functions to shell API
+  * simplify extension of shell API
+  * further simplify shell API extension and add more functions.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 10 Aug 2010 19:16:20 -0700
+
 vyatta-cfg (0.16.111) unstable; urgency=low
 
   * separate libvyatta-cfg1 package
