@@ -1,3 +1,9 @@
+vyatta-cfg (0.16.103+larkspur7) unstable; urgency=low
+
+  * fix for bug 6032
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 11 Aug 2010 16:44:31 -0700
+
 vyatta-cfg (0.16.103+larkspur6) unstable; urgency=low
 
   * fix for bug 5982.
