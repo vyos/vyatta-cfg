@@ -102,14 +102,17 @@ install-exec-hook:
 	mkdir -p $(DESTDIR)$(commit_run_dir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
 	cd etc/shell/level; $(cpiop) $(DESTDIR)$(etc_shell_leveldir)
-	cd $(DESTDIR)/opt/vyatta/sbin; \
-	  ln -sf my_cli_bin my_set; \
-	  ln -sf my_cli_bin my_delete; \
-	  ln -sf my_cli_bin my_activate; \
-	  ln -sf my_cli_bin my_deactivate; \
-	  ln -sf my_cli_bin my_rename; \
-	  ln -sf my_cli_bin my_copy; \
-	  ln -sf my_cli_bin my_comment; \
-	  ln -sf my_cli_bin my_discard; \
-	  ln -sf my_cli_bin my_move
+	cd $(DESTDIR)$(sbindir); \
+	  $(LN_S) my_cli_bin my_set; \
+	  $(LN_S) my_cli_bin my_delete; \
+	  $(LN_S) my_cli_bin my_activate; \
+	  $(LN_S) my_cli_bin my_deactivate; \
+	  $(LN_S) my_cli_bin my_rename; \
+	  $(LN_S) my_cli_bin my_copy; \
+	  $(LN_S) my_cli_bin my_comment; \
+	  $(LN_S) my_cli_bin my_discard; \
+	  $(LN_S) my_cli_bin my_move
+	mkdir -p $(DESTDIR)/bin
+	cd $(DESTDIR)/bin ; \
+	  $(LN_S) $(sbindir)/my_cli_shell_api cli-shell-api
 
