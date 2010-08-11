@@ -689,11 +689,12 @@ vyatta_parse_tmpl ()
   local vhstr=$(grep '^val_help:' $1 | sed 's/^val_help:[ 	]*//;
                                      s/[ 	]*;[ 	]*/;/' \
                 | while read line; do
-                    if [[ "$line" == *";"* ]]; then
-                      echo "vyatta_cfg_val_type+=( \"${line%%;*}\" )"
-                      echo "vyatta_cfg_val_help+=( \"${line##*;}\" )"
+                    local nl=${line//\'/\'\\\\\\\'\'}
+                    if [[ "$nl" == *";"* ]]; then
+                      echo "vyatta_cfg_val_type+=( '${nl%%;*}' )"
+                      echo "vyatta_cfg_val_help+=( '${nl##*;}' )"
                     else
-                      echo "vyatta_cfg_val_help+=( \"$line\" )"
+                      echo "vyatta_cfg_val_help+=( '$nl' )"
                     fi
                   done)
   eval "$vhstr"
