@@ -25,6 +25,14 @@
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
+static void
+print_vec(const vector<string>& vec, const char *sep, const char *quote)
+{
+  for (unsigned int i = 0; i < vec.size(); i++) {
+    printf("%s%s%s%s", ((i > 0) ? sep : ""), quote, vec[i].c_str(), quote);
+  }
+}
+
 typedef void (*OpFuncT)(const vector<string>& args);
 
 typedef struct {
@@ -37,7 +45,7 @@ typedef struct {
 } OpT;
 
 static void
-doGetSessionEnv(const vector<string>& args)
+getSessionEnv(const vector<string>& args)
 {
   string env;
   UnionfsCstore cstore(args[0], env);
@@ -45,7 +53,7 @@ doGetSessionEnv(const vector<string>& args)
 }
 
 static void
-doGetEditEnv(const vector<string>& args)
+getEditEnv(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   string env;
@@ -56,7 +64,7 @@ doGetEditEnv(const vector<string>& args)
 }
 
 static void
-doGetEditUpEnv(const vector<string>& args)
+getEditUpEnv(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   string env;
@@ -67,7 +75,7 @@ doGetEditUpEnv(const vector<string>& args)
 }
 
 static void
-doGetEditResetEnv(const vector<string>& args)
+getEditResetEnv(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   string env;
@@ -78,14 +86,14 @@ doGetEditResetEnv(const vector<string>& args)
 }
 
 static void
-doEditLevelAtRoot(const vector<string>& args)
+editLevelAtRoot(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   exit(cstore.editLevelAtRoot() ? 0 : 1);
 }
 
 static void
-doGetCompletionEnv(const vector<string>& args)
+getCompletionEnv(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   string env;
@@ -96,23 +104,16 @@ doGetCompletionEnv(const vector<string>& args)
 }
 
 static void
-doGetEditLevelStr(const vector<string>& args)
+getEditLevelStr(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   vector<string> lvec;
   cstore.getEditLevel(lvec);
-  string level;
-  for (unsigned int i = 0; i < lvec.size(); i++) {
-    if (level.length() > 0) {
-      level += " ";
-    }
-    level += lvec[i];
-  }
-  printf("%s", level.c_str());
+  print_vec(lvec, " ", "");
 }
 
 static void
-doMarkSessionUnsaved(const vector<string>& args)
+markSessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.markSessionUnsaved()) {
@@ -121,7 +122,7 @@ doMarkSessionUnsaved(const vector<string>& args)
 }
 
 static void
-doUnmarkSessionUnsaved(const vector<string>& args)
+unmarkSessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.unmarkSessionUnsaved()) {
@@ -130,7 +131,7 @@ doUnmarkSessionUnsaved(const vector<string>& args)
 }
 
 static void
-doSessionUnsaved(const vector<string>& args)
+sessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.sessionUnsaved()) {
@@ -139,7 +140,7 @@ doSessionUnsaved(const vector<string>& args)
 }
 
 static void
-doSessionChanged(const vector<string>& args)
+sessionChanged(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.sessionChanged()) {
@@ -148,7 +149,7 @@ doSessionChanged(const vector<string>& args)
 }
 
 static void
-doTeardownSession(const vector<string>& args)
+teardownSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.teardownSession()) {
@@ -157,7 +158,7 @@ doTeardownSession(const vector<string>& args)
 }
 
 static void
-doSetupSession(const vector<string>& args)
+setupSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.setupSession()) {
@@ -166,7 +167,7 @@ doSetupSession(const vector<string>& args)
 }
 
 static void
-doInSession(const vector<string>& args)
+inSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.inSession()) {
@@ -175,84 +176,65 @@ doInSession(const vector<string>& args)
 }
 
 static void
-doExists(const vector<string>& args)
+exists(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   exit(cstore.cfgPathExists(args, false) ? 0 : 1);
 }
 
 static void
-doExistsActive(const vector<string>& args)
+existsActive(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
+static void
+listNodes(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> cnodes;
+  cstore.cfgPathGetChildNodes(args, cnodes, false);
+  print_vec(cnodes, " ", "'");
+}
+
+static void
+listActiveNodes(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> cnodes;
+  cstore.cfgPathGetChildNodes(args, cnodes, true);
+  print_vec(cnodes, " ", "'");
+}
+
+#define OP(name, exact, exact_err, min, min_err) \
+  { #name, exact, exact_err, min, min_err, &name }
+
 static int op_idx = -1;
 static OpT ops[] = {
-  {"getSessionEnv",
-   1, "Must specify session ID", -1, NULL,
-   &doGetSessionEnv},
+  OP(getSessionEnv, 1, "Must specify session ID", -1, NULL),
+  OP(getEditEnv, -1, NULL, 1, "Must specify config path"),
+  OP(getEditUpEnv, 0, "No argument expected", -1, NULL),
+  OP(getEditResetEnv, 0, "No argument expected", -1, NULL),
+  OP(editLevelAtRoot, 0, "No argument expected", -1, NULL),
+  OP(getCompletionEnv, -1, NULL,
+     2, "Must specify command and at least one component"),
+  OP(getEditLevelStr, 0, "No argument expected", -1, NULL),
 
-  {"getEditEnv",
-   -1, NULL, 1, "Must specify config path",
-   &doGetEditEnv},
+  OP(markSessionUnsaved, 0, "No argument expected", -1, NULL),
+  OP(unmarkSessionUnsaved, 0, "No argument expected", -1, NULL),
+  OP(sessionUnsaved, 0, "No argument expected", -1, NULL),
+  OP(sessionChanged, 0, "No argument expected", -1, NULL),
 
-  {"getEditUpEnv",
-   0, "No argument expected", -1, NULL,
-   &doGetEditUpEnv},
+  OP(teardownSession, 0, "No argument expected", -1, NULL),
+  OP(setupSession, 0, "No argument expected", -1, NULL),
+  OP(inSession, 0, "No argument expected", -1, NULL),
 
-  {"getEditResetEnv",
-   0, "No argument expected", -1, NULL,
-   &doGetEditResetEnv},
+  OP(exists, -1, NULL, 1, "Must specify config path"),
+  OP(existsActive, -1, NULL, 1, "Must specify config path"),
 
-  {"editLevelAtRoot",
-   0, "No argument expected", -1, NULL,
-   &doEditLevelAtRoot},
-
-  {"getCompletionEnv",
-   -1, NULL, 2, "Must specify command and at least one component",
-   &doGetCompletionEnv},
-
-  {"getEditLevelStr",
-   0, "No argument expected", -1, NULL,
-   &doGetEditLevelStr},
-
-  {"markSessionUnsaved",
-   0, "No argument expected", -1, NULL,
-   &doMarkSessionUnsaved},
-
-  {"unmarkSessionUnsaved",
-   0, "No argument expected", -1, NULL,
-   &doUnmarkSessionUnsaved},
-
-  {"sessionUnsaved",
-   0, "No argument expected", -1, NULL,
-   &doSessionUnsaved},
-
-  {"sessionChanged",
-   0, "No argument expected", -1, NULL,
-   &doSessionChanged},
-
-  {"teardownSession",
-   0, "No argument expected", -1, NULL,
-   &doTeardownSession},
-
-  {"setupSession",
-   0, "No argument expected", -1, NULL,
-   &doSetupSession},
-
-  {"inSession",
-   0, "No argument expected", -1, NULL,
-   &doInSession},
-
-  {"exists",
-   -1, NULL, 1, "Must specify config path",
-   &doExists},
-
-  {"existsActive",
-   -1, NULL, 1, "Must specify config path",
-   &doExistsActive},
+  OP(listNodes, -1, NULL, -1, NULL),
+  OP(listActiveNodes, -1, NULL, -1, NULL),
 
   {NULL, -1, NULL, -1, NULL, NULL}
 };
