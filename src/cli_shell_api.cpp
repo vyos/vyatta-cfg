@@ -207,6 +207,50 @@ listActiveNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
+static void
+returnValue(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  string val;
+  if (!cstore.cfgPathGetValue(args, val, false)) {
+    exit(1);
+  }
+  printf("%s", val.c_str());
+}
+
+static void
+returnActiveValue(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  string val;
+  if (!cstore.cfgPathGetValue(args, val, true)) {
+    exit(1);
+  }
+  printf("%s", val.c_str());
+}
+
+static void
+returnValues(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> vvec;
+  if (!cstore.cfgPathGetValues(args, vvec, false)) {
+    exit(1);
+  }
+  print_vec(vvec, " ", "'");
+}
+
+static void
+returnActiveValues(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> vvec;
+  if (!cstore.cfgPathGetValues(args, vvec, true)) {
+    exit(1);
+  }
+  print_vec(vvec, " ", "'");
+}
+
 #define OP(name, exact, exact_err, min, min_err) \
   { #name, exact, exact_err, min, min_err, &name }
 
@@ -232,9 +276,12 @@ static OpT ops[] = {
 
   OP(exists, -1, NULL, 1, "Must specify config path"),
   OP(existsActive, -1, NULL, 1, "Must specify config path"),
-
   OP(listNodes, -1, NULL, -1, NULL),
   OP(listActiveNodes, -1, NULL, -1, NULL),
+  OP(returnValue, -1, NULL, 1, "Must specify config path"),
+  OP(returnActiveValue, -1, NULL, 1, "Must specify config path"),
+  OP(returnValues, -1, NULL, 1, "Must specify config path"),
+  OP(returnActiveValues, -1, NULL, 1, "Must specify config path"),
 
   {NULL, -1, NULL, -1, NULL, NULL}
 };
@@ -249,7 +296,7 @@ main(int argc, char **argv)
 {
   int i = 0;
   if (argc < 2) {
-    printf("Must specify operation\n");
+    fprintf(stderr, "Must specify operation\n");
     exit(-1);
   }
   while (ops[i].op_name) {
@@ -260,15 +307,15 @@ main(int argc, char **argv)
     ++i;
   }
   if (op_idx == -1) {
-    printf("Invalid operation\n");
+    fprintf(stderr, "Invalid operation\n");
     exit(-1);
   }
   if (OP_exact_args >= 0 && (argc - 2) != OP_exact_args) {
-    printf("%s\n", OP_exact_error);
+    fprintf(stderr, "%s\n", OP_exact_error);
     exit(-1);
   }
   if (OP_min_args >= 0 && (argc - 2) < OP_min_args) {
-    printf("%s\n", OP_min_error);
+    fprintf(stderr, "%s\n", OP_min_error);
     exit(-1);
   }
 
