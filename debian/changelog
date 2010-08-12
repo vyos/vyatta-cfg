@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.0) unstable; urgency=low
+
+  * document equivalent perl API functions for shell API.
+  * add more functions to shell API
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 12:04:38 -0700
+
 vyatta-cfg (0.16.113) unstable; urgency=low
 
   * add symlink for shell API binary
