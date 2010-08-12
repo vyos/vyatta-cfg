@@ -5,8 +5,6 @@
 # (see /etc/bash_completion.d/20vyatta-cfg)
 
 {
-declare -x -r VYATTA_TAG_NAME=node.tag
-declare -x -r VYATTA_MOD_NAME=.modified
 declare -x -r VYATTA_CFG_GROUP_NAME=vyattacfg
 declare -x -r HISTIGNORE="*password*:*-secret*"
 } 2>/dev/null || :
