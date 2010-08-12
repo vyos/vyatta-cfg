@@ -85,6 +85,32 @@ sub interface_types {
     return @types;
 }
 
+# get all configured interfaces (in active or working configuration)
+sub get_all_cfg_interfaces {
+  my ($in_active) = @_;
+  my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
+
+  my $cfg = new Vyatta::Config;
+  my @ret_ifs = ();
+  for my $pfx (keys %net_prefix) {
+    my ($type, $vif) = ($net_prefix{$pfx}->{path}, $net_prefix{$pfx}->{vif});
+    my @vifs = (defined($vif)
+                ? ((ref($vif) eq 'ARRAY') ? @{$vif}
+                                            : ($vif))
+                  : ());
+    for my $tif ($cfg->$vfunc("interfaces $type")) {
+      push @ret_ifs, { 'name' => $tif, 'path' => "interfaces $type $tif" };
+      for my $vpath (@vifs) {
+        for my $vnum ($cfg->$vfunc("interfaces $type $tif $vpath")) {
+          push @ret_ifs, { 'name' => "$tif.$vnum",
+                           'path' => "interfaces $type $tif $vpath $vnum" };
+        }
+      }
+    }
+  }
+  return @ret_ifs;
+}
+
 # Read ppp config to fine associated interface for ppp device
 sub _ppp_intf {
     my $dev = shift;
