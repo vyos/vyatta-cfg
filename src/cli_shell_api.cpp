@@ -212,6 +212,14 @@ existsActive(const vector<string>& args)
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
+/* same as isEffective() in Perl API */
+static void
+existsEffective(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  exit(cstore.cfgPathEffective(args) ? 0 : 1);
+}
+
 /* same as listNodes() in Perl API.
  *
  * outputs a string representing multiple nodes. this string MUST be
@@ -247,6 +255,20 @@ listActiveNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
+/* same as listEffectiveNodes() in Perl API.
+ *
+ * outputs a string representing multiple nodes. this string MUST be
+ * "eval"ed into an array of nodes. see listNodes above.
+ */
+static void
+listEffectiveNodes(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> cnodes;
+  cstore.cfgPathGetEffectiveChildNodes(args, cnodes);
+  print_vec(cnodes, " ", "'");
+}
+
 /* same as returnValue() in Perl API. outputs a string. */
 static void
 returnValue(const vector<string>& args)
@@ -266,6 +288,18 @@ returnActiveValue(const vector<string>& args)
   UnionfsCstore cstore(true);
   string val;
   if (!cstore.cfgPathGetValue(args, val, true)) {
+    exit(1);
+  }
+  printf("%s", val.c_str());
+}
+
+/* same as returnEffectiveValue() in Perl API. outputs a string. */
+static void
+returnEffectiveValue(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  string val;
+  if (!cstore.cfgPathGetEffectiveValue(args, val)) {
     exit(1);
   }
   printf("%s", val.c_str());
@@ -318,6 +352,22 @@ returnActiveValues(const vector<string>& args)
   print_vec(vvec, " ", "'");
 }
 
+/* same as returnEffectiveValues() in Perl API.
+ *
+ * outputs a string representing multiple values. this string MUST be
+ * "eval"ed into an array of values. see returnValues above.
+ */
+static void
+returnEffectiveValues(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> vvec;
+  if (!cstore.cfgPathGetEffectiveValues(args, vvec)) {
+    exit(1);
+  }
+  print_vec(vvec, " ", "'");
+}
+
 #define OP(name, exact, exact_err, min, min_err) \
   { #name, exact, exact_err, min, min_err, &name }
 
@@ -343,12 +393,19 @@ static OpT ops[] = {
 
   OP(exists, -1, NULL, 1, "Must specify config path"),
   OP(existsActive, -1, NULL, 1, "Must specify config path"),
+  OP(existsEffective, -1, NULL, 1, "Must specify config path"),
+
   OP(listNodes, -1, NULL, -1, NULL),
   OP(listActiveNodes, -1, NULL, -1, NULL),
+  OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path"),
+
   OP(returnValue, -1, NULL, 1, "Must specify config path"),
   OP(returnActiveValue, -1, NULL, 1, "Must specify config path"),
+  OP(returnEffectiveValue, -1, NULL, 1, "Must specify config path"),
+
   OP(returnValues, -1, NULL, 1, "Must specify config path"),
   OP(returnActiveValues, -1, NULL, 1, "Must specify config path"),
+  OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path"),
 
   {NULL, -1, NULL, -1, NULL, NULL}
 };

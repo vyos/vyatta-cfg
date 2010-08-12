@@ -174,6 +174,7 @@ public:
                          bool active_cfg = false);
   bool cfgPathDefault(const vector<string>& path_comps,
                       bool active_cfg = false);
+
   /* observers for working AND active configs (at the same time).
    * MUST ONLY be used during config session.
    */
@@ -184,9 +185,10 @@ public:
                                    vector<string>& cnodes);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
                                   map<string, string>& cmap);
-  /* observers for "effective config" (a combination of working config,
-   * active config, and commit processing state) only.
-   * MUST ONLY be used during config session.
+
+  /* observers for "effective config". can be used both during a config
+   * session and outside a config session. more detailed information
+   * can be found in the source file.
    */
   bool cfgPathEffective(const vector<string>& path_comps);
   void cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
