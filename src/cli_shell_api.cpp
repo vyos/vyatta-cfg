@@ -25,6 +25,21 @@
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
+/* This program provides an API for shell scripts (e.g., snippets in
+ * templates, standalone scripts, etc.) to access the CLI cstore library.
+ * It is installed in "/opt/vyatta/sbin", but a symlink "/bin/cli-shell-api"
+ * is installed by the package so that it can be invoked simply as
+ * "cli-shell-api" (as long as "/bin" is in "PATH").
+ *
+ * The API functions communicate with the caller using a combination of
+ * output and exit status. For example, a "boolean" function "returns true"
+ * by exiting with status 0, and non-zero exit status means false. The
+ * functions are documented below when necessary.
+ */
+
+/* util function: prints a vector with the specified "separator" and "quote"
+ * characters.
+ */
 static void
 print_vec(const vector<string>& vec, const char *sep, const char *quote)
 {
@@ -44,6 +59,7 @@ typedef struct {
   OpFuncT op_func;
 } OpT;
 
+/* outputs an environment string to be "eval"ed */
 static void
 getSessionEnv(const vector<string>& args)
 {
@@ -52,6 +68,7 @@ getSessionEnv(const vector<string>& args)
   printf("%s", env.c_str());
 }
 
+/* outputs an environment string to be "eval"ed */
 static void
 getEditEnv(const vector<string>& args)
 {
@@ -63,6 +80,7 @@ getEditEnv(const vector<string>& args)
   printf("%s", env.c_str());
 }
 
+/* outputs an environment string to be "eval"ed */
 static void
 getEditUpEnv(const vector<string>& args)
 {
@@ -74,6 +92,7 @@ getEditUpEnv(const vector<string>& args)
   printf("%s", env.c_str());
 }
 
+/* outputs an environment string to be "eval"ed */
 static void
 getEditResetEnv(const vector<string>& args)
 {
@@ -92,6 +111,7 @@ editLevelAtRoot(const vector<string>& args)
   exit(cstore.editLevelAtRoot() ? 0 : 1);
 }
 
+/* outputs an environment string to be "eval"ed */
 static void
 getCompletionEnv(const vector<string>& args)
 {
@@ -103,6 +123,7 @@ getCompletionEnv(const vector<string>& args)
   printf("%s", env.c_str());
 }
 
+/* outputs a string */
 static void
 getEditLevelStr(const vector<string>& args)
 {
@@ -189,6 +210,16 @@ existsActive(const vector<string>& args)
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
+/* outputs a string representing multiple nodes. this string MUST be
+ * "eval"ed into an array of nodes. e.g.,
+ *
+ *   values=$(cli-shell-api listNodes interfaces)
+ *   eval "nodes=($values)"
+ *
+ * or a single step:
+ *
+ *   eval "nodes=($(cli-shell-api listNodes interfaces))"
+ */
 static void
 listNodes(const vector<string>& args)
 {
@@ -198,6 +229,9 @@ listNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
+/* outputs a string representing multiple nodes. this string MUST be
+ * "eval"ed into an array of nodes. see listNodes above.
+ */
 static void
 listActiveNodes(const vector<string>& args)
 {
@@ -207,6 +241,7 @@ listActiveNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
+/* outputs a string */
 static void
 returnValue(const vector<string>& args)
 {
@@ -218,6 +253,7 @@ returnValue(const vector<string>& args)
   printf("%s", val.c_str());
 }
 
+/* outputs a string */
 static void
 returnActiveValue(const vector<string>& args)
 {
@@ -229,6 +265,24 @@ returnActiveValue(const vector<string>& args)
   printf("%s", val.c_str());
 }
 
+/* outputs a string representing multiple values. this string MUST be
+ * "eval"ed into an array of values. see listNodes above.
+ *
+ * note that success/failure can be checked using the two-step invocation
+ * above. e.g.,
+ *
+ *   if valstr=$(cli-shell-api returnValues system ntp-server); then
+ *     # got the values
+ *     eval "values=($valstr)"
+ *     ...
+ *   else
+ *     # failed
+ *     ...
+ *   fi
+ *
+ * in most cases, the one-step invocation should be sufficient since a
+ * failure would result in an empty array after the eval.
+ */
 static void
 returnValues(const vector<string>& args)
 {
@@ -240,6 +294,9 @@ returnValues(const vector<string>& args)
   print_vec(vvec, " ", "'");
 }
 
+/* outputs a string representing multiple values. this string MUST be
+ * "eval"ed into an array of values. see returnValues above.
+ */
 static void
 returnActiveValues(const vector<string>& args)
 {
