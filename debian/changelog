@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.2) unstable; urgency=low
+
+  * add required special cases for adsl/pppo* interfaces.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 15:56:17 -0700
+
 vyatta-cfg (0.17.1) unstable; urgency=low
 
   * remove unneeded env variables
