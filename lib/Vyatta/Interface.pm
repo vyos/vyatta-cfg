@@ -108,6 +108,34 @@ sub get_all_cfg_interfaces {
       }
     }
   }
+
+  # now special cases for pppo*/adsl
+  for my $eth ($cfg->$vfunc('interfaces ethernet')) {
+    for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
+      push @ret_ifs, { 'name' => "pppoe$ep",
+                       'path' => "interfaces ethernet $eth pppoe $ep" };
+    }
+  }
+  for my $a ($cfg->$vfunc('interfaces adsl')) {
+    for my $p ($cfg->$vfunc("interfaces adsl $a pvc")) {
+      for my $t ($cfg->$vfunc("interfaces adsl $a pvc $p")) {
+        if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
+          # classical-ipoa or bridged-ethernet
+          push @ret_ifs,
+            { 'name' => $a,
+              'path' => "interfaces adsl $a pvc $p $t" };
+          next;
+        }
+        # pppo[ea]
+        for my $i ($cfg->$vfunc("interfaces adsl $a pvc $p $t")) {
+          push @ret_ifs,
+            { 'name' => "$t$i",
+              'path' => "interfaces adsl $a pvc $p $t $i" };
+        }
+      }
+    }
+  }
+
   return @ret_ifs;
 }
 
