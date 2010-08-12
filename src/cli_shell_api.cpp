@@ -196,6 +196,7 @@ inSession(const vector<string>& args)
   }
 }
 
+/* same as exists() in Perl API */
 static void
 exists(const vector<string>& args)
 {
@@ -203,6 +204,7 @@ exists(const vector<string>& args)
   exit(cstore.cfgPathExists(args, false) ? 0 : 1);
 }
 
+/* same as existsOrig() in Perl API */
 static void
 existsActive(const vector<string>& args)
 {
@@ -210,7 +212,9 @@ existsActive(const vector<string>& args)
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
-/* outputs a string representing multiple nodes. this string MUST be
+/* same as listNodes() in Perl API.
+ *
+ * outputs a string representing multiple nodes. this string MUST be
  * "eval"ed into an array of nodes. e.g.,
  *
  *   values=$(cli-shell-api listNodes interfaces)
@@ -229,7 +233,9 @@ listNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
-/* outputs a string representing multiple nodes. this string MUST be
+/* same as listOrigNodes() in Perl API.
+ *
+ * outputs a string representing multiple nodes. this string MUST be
  * "eval"ed into an array of nodes. see listNodes above.
  */
 static void
@@ -241,7 +247,7 @@ listActiveNodes(const vector<string>& args)
   print_vec(cnodes, " ", "'");
 }
 
-/* outputs a string */
+/* same as returnValue() in Perl API. outputs a string. */
 static void
 returnValue(const vector<string>& args)
 {
@@ -253,7 +259,7 @@ returnValue(const vector<string>& args)
   printf("%s", val.c_str());
 }
 
-/* outputs a string */
+/* same as returnOrigValue() in Perl API. outputs a string. */
 static void
 returnActiveValue(const vector<string>& args)
 {
@@ -265,7 +271,9 @@ returnActiveValue(const vector<string>& args)
   printf("%s", val.c_str());
 }
 
-/* outputs a string representing multiple values. this string MUST be
+/* same as returnValues() in Perl API.
+ *
+ * outputs a string representing multiple values. this string MUST be
  * "eval"ed into an array of values. see listNodes above.
  *
  * note that success/failure can be checked using the two-step invocation
@@ -294,7 +302,9 @@ returnValues(const vector<string>& args)
   print_vec(vvec, " ", "'");
 }
 
-/* outputs a string representing multiple values. this string MUST be
+/* same as returnOrigValues() in Perl API.
+ *
+ * outputs a string representing multiple values. this string MUST be
  * "eval"ed into an array of values. see returnValues above.
  */
 static void
