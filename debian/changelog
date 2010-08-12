@@ -1,3 +1,11 @@
+vyatta-cfg (0.16.113) unstable; urgency=low
+
+  * add symlink for shell API binary
+  * add functions to shell API
+  * add comments to document shell API usage
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 11 Aug 2010 17:00:42 -0700
+
 vyatta-cfg (0.16.112) unstable; urgency=low
 
   * add functions to shell API
