@@ -368,6 +368,26 @@ returnEffectiveValues(const vector<string>& args)
   print_vec(vvec, " ", "'");
 }
 
+/* checks if specified path is a valid "template path" *without* checking
+ * the validity of any "tag values" along the path.
+ */
+static void
+validateTmplPath(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  exit(cstore.validateTmplPath(args, false) ? 0 : 1);
+}
+
+/* checks if specified path is a valid "template path", *including* the
+ * validity of any "tag values" along the path.
+ */
+static void
+validateTmplValPath(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  exit(cstore.validateTmplPath(args, true) ? 0 : 1);
+}
+
 #define OP(name, exact, exact_err, min, min_err) \
   { #name, exact, exact_err, min, min_err, &name }
 
@@ -406,6 +426,9 @@ static OpT ops[] = {
   OP(returnValues, -1, NULL, 1, "Must specify config path"),
   OP(returnActiveValues, -1, NULL, 1, "Must specify config path"),
   OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path"),
+
+  OP(validateTmplPath, -1, NULL, 1, "Must specify config path"),
+  OP(validateTmplValPath, -1, NULL, 1, "Must specify config path"),
 
   {NULL, -1, NULL, -1, NULL, NULL}
 };
