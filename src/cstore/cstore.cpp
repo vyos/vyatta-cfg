@@ -565,7 +565,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
         // return all template children
         get_all_tmpl_child_node_names(ufvec);
       }
-      for (unsigned int i = 0; i < ufvec.size(); i++) {
+      for (size_t i = 0; i < ufvec.size(); i++) {
         if (last_comp == ""
             || ufvec[i].compare(0, last_comp.length(), last_comp) == 0) {
           comp_vals.push_back(ufvec[i]);
@@ -576,7 +576,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
         break;
       }
       sort(comp_vals.begin(), comp_vals.end());
-      for (unsigned int i = 0; i < comp_vals.size(); i++) {
+      for (size_t i = 0; i < comp_vals.size(); i++) {
         pair<string, string> hpair(comp_vals[i], "");
         push_tmpl_path(hpair.first);
         vtw_def cdef;
@@ -619,7 +619,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
         string cmd_str = ("export " + C_ENV_SHELL_CWORD_COUNT + "="
                            + cword_count.str() + "; ");
         cmd_str += ("export " + C_ENV_SHELL_CWORDS + "=(");
-        for (unsigned int i = 0; i < comps.size(); i++) {
+        for (size_t i = 0; i < comps.size(); i++) {
           cmd_str += (" '" + comps[i] + "'");
         }
         cmd_str += "); ";
@@ -677,7 +677,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
       }
       if (def.def_val_help) {
         // has val_help. first separate individual lines.
-        unsigned int start = 0, i = 0;
+        size_t start = 0, i = 0;
         vector<string> vhelps;
         for (i = 0; def.def_val_help[i]; i++) {
           if (def.def_val_help[i] == '\n') {
@@ -720,7 +720,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
 
     // this var is the array of possible completions
     env = (C_ENV_SHAPI_COMP_VALS + "=(");
-    for (unsigned int i = 0; i < comp_vals.size(); i++) {
+    for (size_t i = 0; i < comp_vals.size(); i++) {
       shell_escape_squotes(comp_vals[i]);
       env += ("'" + comp_vals[i] + "' ");
     }
@@ -753,7 +753,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
     string hitems = (C_ENV_SHAPI_HELP_ITEMS + "=(");
     // this var is the array of "help strings" corresponding to the items
     string hstrs = (C_ENV_SHAPI_HELP_STRS + "=(");
-    for (unsigned int i = 0; i < help_pairs.size(); i++) {
+    for (size_t i = 0; i < help_pairs.size(); i++) {
       string hi = help_pairs[i].first;
       string hs = help_pairs[i].second;
       shell_escape_squotes(hi);
@@ -1074,10 +1074,10 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
   vector<string> wcnodes;
   cfgPathGetChildNodesDA(path_comps, wcnodes, false, include_deactivated);
   map<string, bool> cmap;
-  for (unsigned int i = 0; i < wcnodes.size(); i++) {
+  for (size_t i = 0; i < wcnodes.size(); i++) {
     cmap[wcnodes[i]] = true;
   }
-  for (unsigned int i = 0; i < acnodes.size(); i++) {
+  for (size_t i = 0; i < acnodes.size(); i++) {
     if (cmap.find(acnodes[i]) == cmap.end()) {
       // in active but not in working
       cnodes.push_back(acnodes[i]);
@@ -1102,10 +1102,10 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
   vector<string> wcnodes;
   cfgPathGetChildNodes(path_comps, acnodes, true);
   cfgPathGetChildNodes(path_comps, wcnodes, false);
-  for (unsigned int i = 0; i < acnodes.size(); i++) {
+  for (size_t i = 0; i < acnodes.size(); i++) {
     umap[acnodes[i]] = true;
   }
-  for (unsigned int i = 0; i < wcnodes.size(); i++) {
+  for (size_t i = 0; i < wcnodes.size(); i++) {
     umap[wcnodes[i]] = true;
   }
 
@@ -1141,7 +1141,7 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
   // process deleted nodes first
   vector<string> del_nodes;
   cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
-  for (unsigned int i = 0; i < del_nodes.size(); i++) {
+  for (size_t i = 0; i < del_nodes.size(); i++) {
     cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
   }
 
@@ -1149,7 +1149,7 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
   vector<string> work_nodes;
   cfgPathGetChildNodesDA(path_comps, work_nodes, false);
   vector<string> ppath = path_comps;
-  for (unsigned int i = 0; i < work_nodes.size(); i++) {
+  for (size_t i = 0; i < work_nodes.size(); i++) {
     ppath.push_back(work_nodes[i]);
     /* note: in the DA version here, we do NOT check the deactivate state
      *       when considering the state of the child nodes (which include
@@ -1183,7 +1183,7 @@ bool
 Cstore::cfgPathDeactivated(const vector<string>& path_comps, bool active_cfg)
 {
   vector<string> ppath;
-  for (unsigned int i = 0; i < path_comps.size(); i++) {
+  for (size_t i = 0; i < path_comps.size(); i++) {
     ppath.push_back(path_comps[i]);
     if (cfgPathMarkedDeactivated(ppath, active_cfg)) {
       // an ancestor or itself is marked deactivated
@@ -1498,10 +1498,10 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
   vector<string> wcnodes;
   cfgPathGetChildNodes(path_comps, acnodes, true);
   cfgPathGetChildNodes(path_comps, wcnodes, false);
-  for (unsigned int i = 0; i < acnodes.size(); i++) {
+  for (size_t i = 0; i < acnodes.size(); i++) {
     cmap[acnodes[i]] = true;
   }
-  for (unsigned int i = 0; i < wcnodes.size(); i++) {
+  for (size_t i = 0; i < wcnodes.size(); i++) {
     cmap[wcnodes[i]] = true;
   }
 
@@ -1583,10 +1583,10 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
   vector<string> nvals;
   cfgPathGetValues(path_comps, ovals, true);
   cfgPathGetValues(path_comps, nvals, false);
-  for (unsigned int i = 0; i < ovals.size(); i++) {
+  for (size_t i = 0; i < ovals.size(); i++) {
     vmap[ovals[i]] = true;
   }
-  for (unsigned int i = 0; i < nvals.size(); i++) {
+  for (size_t i = 0; i < nvals.size(); i++) {
     vmap[nvals[i]] = true;
   }
 
@@ -1728,7 +1728,7 @@ Cstore::markCfgPathChanged(const vector<string>& path_comps)
 
   // now mark each level as changed
   vector<string> ppath;
-  for (unsigned int i = 0; i < path_comps.size(); i++) {
+  for (size_t i = 0; i < path_comps.size(); i++) {
     ppath.push_back(path_comps[i]);
     if (!cfg_path_exists(ppath, false, false)) {
       // this level no longer in working. nothing further.
@@ -1800,7 +1800,7 @@ bool
 Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
 {
   is_tag = false;
-  for (unsigned int i = 0; i < path_comps.size(); i++) {
+  for (size_t i = 0; i < path_comps.size(); i++) {
     push_tmpl_path(path_comps[i]);
     if (tmpl_node_exists()) {
       // got exact match. continue to next component.
@@ -1893,7 +1893,7 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
      */
     // first scan up to "full path - 1"
     bool valid = true;
-    for (unsigned int i = 0; i < (pcomps->size() - 1); i++) {
+    for (size_t i = 0; i < (pcomps->size() - 1); i++) {
       if ((*pcomps)[i] == "") {
         // only the last component is potentially allowed to be empty str
         valid = false;
@@ -2080,12 +2080,12 @@ Cstore::conv_move_args_for_rename(const vector<string>& args,
    *
    *   set the extra levels and then just validate as rename
    */
-  unsigned int num_args = args.size();
+  size_t num_args = args.size();
   if (num_args < 4) {
     // need at least 4 args
     return false;
   }
-  for (unsigned int i = 0; i < (num_args - 4); i++) {
+  for (size_t i = 0; i < (num_args - 4); i++) {
     edit_path_comps.push_back(args[i]);
   }
   rn_args.push_back(args[num_args - 4]); // vif
@@ -2137,7 +2137,7 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
   bool path_exists = true;
   // do the set from the top down
   SAVE_PATHS;
-  for (unsigned int i = 0; i < path_comps.size(); i++) {
+  for (size_t i = 0; i < path_comps.size(); i++) {
     // partial path
     ppath.push_back(path_comps[i]);
 
@@ -2145,7 +2145,7 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     if (!get_parsed_tmpl(ppath, false, def)) {
       output_internal("paths[%s,%s]\n", cfg_path_to_str().c_str(),
                       tmpl_path_to_str().c_str());
-      for (unsigned int i = 0; i < ppath.size(); i++) {
+      for (size_t i = 0; i < ppath.size(); i++) {
         output_internal("  [%s]\n", ppath[i].c_str());
       }
       exit_internal("failed to get tmpl during set. not validate first?\n");
@@ -2290,9 +2290,9 @@ Cstore::remove_value_from_multi(const string& value)
   }
 
   // remove the value
-  unsigned int bc = vvec.size();
+  size_t bc = vvec.size();
   vector<string> nvec(vvec.begin(), remove(vvec.begin(), vvec.end(), value));
-  unsigned int ac = nvec.size();
+  size_t ac = nvec.size();
 
   // sanity check
   if (ac == bc) {
@@ -2441,7 +2441,7 @@ Cstore::get_all_child_node_names(vector<string>& cnodes, bool active_cfg,
 {
   vector<string> nodes;
   get_all_child_node_names_impl(nodes, active_cfg);
-  for (unsigned int i = 0; i < nodes.size(); i++) {
+  for (size_t i = 0; i < nodes.size(); i++) {
     if (!include_deactivated) {
       push_cfg_path(nodes[i]);
       bool skip = marked_deactivated(active_cfg);
@@ -2465,7 +2465,7 @@ Cstore::create_default_children()
   vector<string> tcnodes;
   get_all_tmpl_child_node_names(tcnodes);
   bool ret = true;
-  for (unsigned int i = 0; i < tcnodes.size(); i++) {
+  for (size_t i = 0; i < tcnodes.size(); i++) {
     push_tmpl_path(tcnodes[i]);
     vtw_def def;
     if (tmpl_node_exists() && tmpl_parse(def)) {
@@ -2496,7 +2496,7 @@ Cstore::get_edit_env(string& env)
   vector<string> lvec;
   get_edit_level(lvec);
   string lvl;
-  for (unsigned int i = 0; i < lvec.size(); i++) {
+  for (size_t i = 0; i < lvec.size(); i++) {
     if (lvl.length() > 0) {
       lvl += " ";
     }

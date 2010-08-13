@@ -107,7 +107,7 @@ private:
     return pop_path(mutable_cfg_path);
   };
   void append_cfg_path(const vector<string>& path_comps) {
-    for (unsigned int i = 0; i < path_comps.size(); i++) {
+    for (size_t i = 0; i < path_comps.size(); i++) {
       push_cfg_path(path_comps[i]);
     }
   };

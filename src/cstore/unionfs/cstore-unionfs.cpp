@@ -101,7 +101,7 @@ _escape_path_name(const string& path)
 
   // special case for empty string
   string npath = (path.size() == 0) ? _fs_escape_chars[-1] : "";
-  for (unsigned int i = 0; i < path.size(); i++) {
+  for (size_t i = 0; i < path.size(); i++) {
     npath += _escape_char(path[i]);
   }
 
@@ -123,7 +123,7 @@ _unescape_path_name(const string& path)
 
   // assume all escape patterns are 3-char
   string npath = "";
-  for (unsigned int i = 0; i < path.size(); i++) {
+  for (size_t i = 0; i < path.size(); i++) {
     if ((path.size() - i) < 3) {
       npath += path.substr(i);
       break;
@@ -514,7 +514,7 @@ UnionfsCstore::read_value_vec(vector<string>& vvec, bool active_cfg)
      *     be writing it any more.
      */
     // separate values using newline as delimiter
-    unsigned int start_idx = 0, idx = 0;
+    size_t start_idx = 0, idx = 0;
     for (; idx < ostr.size(); idx++) {
       if (ostr[idx] == '\n') {
         // got a value
@@ -547,7 +547,7 @@ UnionfsCstore::write_value_vec(const vector<string>& vvec, bool active_cfg)
     }
 
     string ostr = "";
-    for (unsigned int i = 0; i < vvec.size(); i++) {
+    for (size_t i = 0; i < vvec.size(); i++) {
       if (i > 0) {
         // subsequent values require delimiter
         ostr += "\n";
@@ -734,7 +734,7 @@ UnionfsCstore::unmark_deactivated_descendants()
         }
         markers.push_back(di->path());
       }
-      for (unsigned int i = 0; i < markers.size(); i++) {
+      for (size_t i = 0; i < markers.size(); i++) {
         b_fs::remove(markers[i]);
       }
     } catch (...) {
@@ -828,11 +828,11 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
 
     // remove and count
     num_removed = 0;
-    for (unsigned int i = 0; i < files.size(); i++) {
+    for (size_t i = 0; i < files.size(); i++) {
       b_fs::remove(files[i]);
       num_removed++;
     }
-    for (unsigned int i = 0; i < directories.size(); i++) {
+    for (size_t i = 0; i < directories.size(); i++) {
       num_removed += b_fs::remove_all(directories[i]);
     }
   } catch (...) {

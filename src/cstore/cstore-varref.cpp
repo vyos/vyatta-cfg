@@ -166,7 +166,7 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       // tag node
       vector<string> cnodes;
       _cstore->cfgPathGetChildNodes(pcomps, cnodes, _active);
-      for (unsigned int i = 0; i < cnodes.size(); i++) {
+      for (size_t i = 0; i < cnodes.size(); i++) {
         pcomps.push_back(cnodes[i]);
         process_ref(rcomps, pcomps, def.def_type);
         pcomps.pop_back();
@@ -198,7 +198,7 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
         return;
       }
       string val;
-      for (unsigned int i = 0; i < vals.size(); i++) {
+      for (size_t i = 0; i < vals.size(); i++) {
         if (val.length() > 0) {
           val += " ";
         }
@@ -227,7 +227,7 @@ Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
   vector<string> result;
   map<string, bool> added;
   def_type = ERROR_TYPE;
-  for (unsigned int i = 0; i < _paths.size(); i++) {
+  for (size_t i = 0; i < _paths.size(); i++) {
     if (_paths[i].first.size() == 0) {
       // empty path
       continue;
@@ -259,7 +259,7 @@ Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
     def_type = TEXT_TYPE;
   }
   value = "";
-  for (unsigned int i = 0; i < result.size(); i++) {
+  for (size_t i = 0; i < result.size(); i++) {
     if (i > 0) {
       value += " ";
     }

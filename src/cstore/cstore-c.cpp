@@ -150,7 +150,7 @@ cstore_path_string_to_path_comps(const char *path_str, int *num_comps)
   size_t len = strlen(pstr);
   vector<string> vec;
   char *start = NULL;
-  for (unsigned int i = 0; i < len; i++) {
+  for (size_t i = 0; i < len; i++) {
     if (pstr[i] == '/') {
       if (start) {
         pstr[i] = 0;
@@ -168,7 +168,7 @@ cstore_path_string_to_path_comps(const char *path_str, int *num_comps)
   }
   char **ret = (char **) malloc(sizeof(char *) * vec.size());
   if (ret) {
-    for (unsigned int i = 0; i < vec.size(); i++) {
+    for (size_t i = 0; i < vec.size(); i++) {
       ret[i] = strdup(vec[i].c_str());
     }
     *num_comps = vec.size();
