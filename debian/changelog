@@ -1,3 +1,11 @@
+vyatta-cfg (0.17.4) unstable; urgency=low
+
+  * change all vector/string size to size_t just to be safe.
+  * get rid of lintian warning
+  * add API function for retrieving deleted values of a multi node.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 13 Aug 2010 11:19:25 -0700
+
 vyatta-cfg (0.17.3) unstable; urgency=low
 
   * add more functions to shell API
