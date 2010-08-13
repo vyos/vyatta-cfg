@@ -189,6 +189,17 @@ OUTPUT:
   RETVAL
 
 
+STRVEC *
+Cstore::cfgPathGetDeletedValues(STRVEC *vref)
+PREINIT:
+  vector<string> arg_strvec;
+CODE:
+  vector<string> ret_strvec;
+  THIS->cfgPathGetDeletedValues(arg_strvec, ret_strvec);
+OUTPUT:
+  RETVAL
+
+
 STRSTRMAP *
 Cstore::cfgPathGetChildNodesStatus(STRVEC *vref)
 PREINIT:

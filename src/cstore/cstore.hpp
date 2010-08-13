@@ -183,6 +183,8 @@ public:
   bool cfgPathChanged(const vector<string>& path_comps);
   void cfgPathGetDeletedChildNodes(const vector<string>& path_comps,
                                    vector<string>& cnodes);
+  void cfgPathGetDeletedValues(const vector<string>& path_comps,
+                               vector<string>& dvals);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
                                   map<string, string>& cmap);
 

@@ -1085,6 +1085,35 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
   }
 }
 
+/* get "deleted" values of specified "multi node" during commit
+ * operation. values are returned in dvals. if specified path is not
+ * a "multi node", it's a nop.
+ *
+ * NOTE: this function does not consider the "value ordering". the "deleted"
+ *       status is purely based on the presence/absence of a value.
+ */
+void
+Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
+                                vector<string>& dvals)
+{
+  vector<string> ovals;
+  vector<string> nvals;
+  if (!cfgPathGetValues(path_comps, ovals, true)
+      || !cfgPathGetValues(path_comps, nvals, false)) {
+    return;
+  }
+  map<string, bool> dmap;
+  for (size_t i = 0; i < nvals.size(); i++) {
+    dmap[nvals[i]] = true;
+  }
+  for (size_t i = 0; i < ovals.size(); i++) {
+    if (dmap.find(ovals[i]) == dmap.end()) {
+      // in active but not in working
+      dvals.push_back(ovals[i]);
+    }
+  }
+}
+
 /* this is the equivalent of the listNodeStatus() from the original
  * perl API. it provides the "status" ("deleted", "added", "changed",
  * or "static") of each child node of specified path.

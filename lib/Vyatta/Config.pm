@@ -356,6 +356,15 @@ sub listDeleted {
   return @{$ref};
 }
 
+## returnDeletedValues("level")
+# return array of deleted values of specified "multi node"
+sub returnDeletedValues {
+  my ($self, $path) = @_;
+  my $ref = $self->{_cstore}->cfgPathGetDeletedValues(
+                                $self->get_path_comps($path));
+  return @{$ref};
+}
+
 ## isAdded("node")
 # whether specified node has been added in working config
 sub isAdded {
