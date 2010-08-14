@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.5) unstable; urgency=low
+
+  * add function to perl API
+  * allow Vyatta::Config constructor to set level
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 13 Aug 2010 18:28:02 -0700
+
 vyatta-cfg (0.17.4) unstable; urgency=low
 
   * change all vector/string size to size_t just to be safe.
