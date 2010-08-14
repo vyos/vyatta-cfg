@@ -32,12 +32,13 @@ my %fields = (
 );
 
 sub new {
-  my $that = shift;
+  my ($that, $level) = @_;
   my $class = ref ($that) || $that;
   my $self = {
     %fields,
   };
   bless $self, $class;
+  $self->{_level} = $level if defined($level);
   $self->{_cstore} = new Cstore();
   return $self;
 }
