@@ -534,11 +534,18 @@ sub listNodeStatusDA {
 }
 
 ## returnComment("node")
-# return comment of "node" or undef if comment doesn't exist
+# return comment of "node" in working config or undef if comment doesn't exist
 sub returnComment {
   my ($self, $path) = @_;
   return $self->{_cstore}->cfgPathGetComment($self->get_path_comps($path),
                                              undef);
+}
+
+## returnOrigComment("node")
+# return comment of "node" in active config or undef if comment doesn't exist
+sub returnOrigComment {
+  my ($self, $path) = @_;
+  return $self->{_cstore}->cfgPathGetComment($self->get_path_comps($path), 1);
 }
 
 
