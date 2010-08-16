@@ -1,3 +1,10 @@
+vyatta-cfg (0.16.103+larkspur8) unstable; urgency=low
+
+  * fixed spaces in migrations scripts are unable to handle variable
+    white space on a key/value line. These scripts will need to be
+
+ -- Michael Larson <slioch@slioch.vyatta.com>  Mon, 16 Aug 2010 12:05:04 -0700
+
 vyatta-cfg (0.16.103+larkspur7) unstable; urgency=low
 
   * fix for bug 6032
