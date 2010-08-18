@@ -25,16 +25,19 @@ static int reg_fields_t[] = { DEFAULT, TAG, TYPE, MULTI, PRIORITY, 0 };
 static char *act_fields[] = { "help", "syntax", "commit",
                               "delete", "update", "activate", "create",
                               "begin", "end",
+                              "enumeration",
                               "comp_help", "allowed", "val_help",
                               NULL };
 static int act_fields_t[] = { HELP, SYNTAX, COMMIT,
                               ACTION, ACTION, ACTION, ACTION,
                               ACTION, ACTION,
-                              DUMMY, DUMMY, DUMMY,
+                              ENUMERATION,
+                              CHELP, ALLOWED, VHELP,
                               0 };
 static int act_types[] = { -1, -1, -1,
                            delete_act, update_act, activate_act, create_act,
                            begin_act, end_act,
+                           -1,
                            -1, -1, -1,
                            -1 };
 
@@ -266,7 +269,7 @@ RE_OP_OTHER (pattern|exec|,|\|\||&&|=|!|\(|\)|;)
 
 /* template fields */
 RE_REG_FIELD (default|tag|type|multi|priority)
-RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|comp_help|allowed|val_help)
+RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|enumeration|comp_help|allowed|val_help)
 
 %%
 

@@ -16,11 +16,13 @@ AM_INIT_AUTOMAKE([gnu no-dist-gzip dist-bzip2 subdir-objects])
 AC_PREFIX_DEFAULT([/opt/vyatta])
 
 AC_PROG_CC
+AC_PROG_CXX
 AM_PROG_AS
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_PROG_LEX
 AC_PROG_YACC
+AC_PROG_LN_S
 
 AC_ARG_ENABLE([nostrip],
 	AC_HELP_STRING([--enable-nostrip],
@@ -29,6 +31,7 @@ AC_ARG_ENABLE([nostrip],
 
 AC_CONFIG_FILES(
 	[Makefile]
+	[perl_dmod/Makefile]
   [debian/vyatta-cfg.postinst]
   [debian/vyatta-cfg.postrm])
 

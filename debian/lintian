@@ -1,6 +1,0 @@
-vyatta-cfg: file-in-unusual-dir
-vyatta-cfg: dir-or-file-in-opt
-vyatta-cfg: binary-or-shlib-defines-rpath ./opt/vyatta/sbin/my_set /opt/vyatta/lib
-vyatta-cfg: binary-or-shlib-defines-rpath ./opt/vyatta/sbin/my_commit /opt/vyatta/lib
-vyatta-cfg: binary-or-shlib-defines-rpath ./opt/vyatta/sbin/my_delete /opt/vyatta/lib
-vyatta-cfg: binary-or-shlib-defines-rpath ./opt/vyatta/sbin/check_tmpl /opt/vyatta/lib

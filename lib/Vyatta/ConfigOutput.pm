@@ -70,7 +70,9 @@ sub displayValues {
   my $prefix = $_[2];
   my $name = $_[3];
   my $simple_show = $_[4];
-  my ($is_multi, $is_text, $default) = $config->parseTmpl(\@cur_path);
+
+  $config->setLevel(join ' ', @cur_path);
+  my ($is_multi, $is_text, $default) = $config->parseTmpl();
   if ($is_text) {
     $default =~ /^"(.*)"$/;
     my $txt = $1;
@@ -81,11 +83,10 @@ sub displayValues {
   my $is_password = ($name =~ /^.*(passphrase|password|pre-shared-secret|key)$/);
 
   my $HIDE_PASSWORD = '****************';
-  $config->setLevel(join ' ', @cur_path);
 
   if ($is_multi) {
-    my @ovals = $config->returnOrigValues('','true');
-    my @nvals = $config->returnValues('','true');
+    my @ovals = $config->returnOrigValuesDA();
+    my @nvals = $config->returnValuesDA();
     if ($is_text) {
       @ovals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @ovals;
       @nvals = map { (txt_need_quotes($_)) ? "\"$_\"" : "$_"; } @nvals;
@@ -128,8 +129,13 @@ sub displayValues {
       print "$dis$diff$prefix$name $nval\n";
     }
   } else {
-    my $oval = $config->returnOrigValue('','true');
-    my $nval = $config->returnValue('','true');
+    if ($config->isDefault() and !$show_all) {
+      # not going to show anything so just return
+      return;
+    }
+
+    my $oval = $config->returnOrigValueDA();
+    my $nval = $config->returnValueDA();
     if ($is_text) {
       if (defined($oval) && txt_need_quotes($oval)) {
         $oval = "\"$oval\"";
@@ -139,17 +145,11 @@ sub displayValues {
       }
     }
 
-    my %cnodes = $config->listNodeStatus(undef,'true');
-    my @cnames = sort keys %cnodes;
-
     if (defined($simple_show)) {
-      if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
-          or $show_all) {
-        if ($is_password && $hide_password) {
-          $oval = $HIDE_PASSWORD;
-        }
-        print "$dis$prefix$name $oval\n";
+      if ($is_password && $hide_password) {
+        $oval = $HIDE_PASSWORD;
       }
+      print "$dis$prefix$name $oval\n";
       return;
     }
     my $value = $nval;
@@ -165,14 +165,10 @@ sub displayValues {
         $diff = '>';
       }
     }
-    # also need to handle the case where def marker is deleted.
-    if (!defined($cnodes{'def'}) or $cnodes{'def'} eq 'deleted'
-        or $show_all) {
-      if ($is_password && $hide_password) {
-        $value = $HIDE_PASSWORD;
-      }
-      print "$dis$diff$prefix$name $value\n";
+    if ($is_password && $hide_password) {
+      $value = $HIDE_PASSWORD;
     }
+    print "$dis$diff$prefix$name $value\n";
   }
 }
 
@@ -189,92 +185,91 @@ sub displayDeletedOrigChildren {
   if (defined($dont_show_as_deleted)) {
     $dprefix = '';
   }
+
   $config->setLevel('');
-
-  my @children = $config->listOrigNodes(join(' ', @cur_path),'true');
+  my @children = $config->listOrigNodesDA(join(' ', @cur_path));
   for my $child (sort @children) {
-    if ($child eq 'node.val') {
-      # should not happen!
-      next;
-    }
+    # reset level
+    $config->setLevel('');
+    my $is_tag = $config->isTagNode(join(' ', @cur_path, $child));
 
-    my $is_tag = $config->isTagNode([ @cur_path, $child ]);
-
-    if (!defined $is_tag) {
+    if (!$is_tag) {
 	my $path = join(' ',( @cur_path, $child ));
 	my $comment = $config->returnComment($path);
 	if (defined $comment) {
 	    print "$prefix /* $comment */\n";
 	}
 
-	my ($state, $n) = $config->getDeactivated($path);
-	if (defined $state) {
-	      if ($state eq 'active') {
-		  $dis = '! ';
-	      }
-	      elsif ($state eq 'local') {
-		  if (defined($dont_show_as_deleted)) {
-		      $dis = '  ';
-		  }
-		  else {
-		      $dis = 'D ';
-		  }
-	      }
-	      else {
-		  $dis = '! ';
-	      }
-	}	
-	else {
-	    $dis = '  ';
-	}
+        # check deactivate state
+        my $de_working = $config->deactivated($path);
+        my $de_active = $config->deactivatedOrig($path);
+        if ($de_active) {
+          if ($de_working) {
+            # deactivated in both
+            $dis = '! ';
+          } else {
+            # deactivated only in active
+            $dis = '! ';
+          }
+        } else {
+          if ($de_working) {
+            # deactivated only in working
+            if (defined($dont_show_as_deleted)) {
+              $dis = '  ';
+            } else {
+              $dis = 'D ';
+            }
+          } else {
+            # deactivated in neither
+            $dis = '  ';
+          }
+        }
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
-
-    my @cnames = grep(!/^def$/, sort($config->listOrigNodes(undef,'true')));
-
-    if ($cnames[0] eq 'node.val') {
+    if ($config->isLeafNode()) {
       displayValues([ @cur_path, $child ], $dis, $prefix, $child,
                     $dont_show_as_deleted);
-    } elsif ($cnames[0] eq 'def') {
-	#ignore
-    } elsif (scalar($#cnames) >= 0) {
-      if ($is_tag) {
-        @cnames = sort versioncmp @cnames;
-        foreach my $cname (@cnames) {
-          if ($cname eq 'node.val') {
-            # should not happen
-            next;
-          }
-	  
-	  my $path = join(' ',( @cur_path, $child, $cname ));
+      next;
+    }
 
-	  my $comment = $config->returnComment($path);
+    # not a leaf node
+    my @cnames = sort versioncmp ($config->listOrigNodesDA());
+    if (scalar(@cnames) > 0) {
+      if ($is_tag) {
+        foreach my $cname (@cnames) {
+	  my $path = join(' ',( @cur_path, $child, $cname ));
+          $config->setLevel($path);
+
+	  my $comment = $config->returnComment();
 	  if (defined $comment) {
 	      print "$prefix /* $comment */\n";
 	  }
 
-	  #need separate check here
-	  my ($state, $n) = $config->getDeactivated($path);
-	  if (defined $state) {
-	      if ($state eq 'active') {
-		  $dis = '! ';
-	      }
-	      elsif ($state eq 'local') {
-		  if (defined($dont_show_as_deleted)) {
-		      $dis = '  ';
-		  }
-		  else {
-		      $dis = 'D ';
-		  }
-	      }
-	      else {
-		  $dis = '! ';
-	      }
-	  }
-	  else {
-	      $dis = '  ';
-	  }
+          # check deactivate state
+          my $de_working = $config->deactivated();
+          my $de_active = $config->deactivatedOrig();
+          if ($de_active) {
+            if ($de_working) {
+              # deactivated in both
+              $dis = '! ';
+            } else {
+              # deactivated only in active
+              $dis = '! ';
+            }
+          } else {
+            if ($de_working) {
+              # deactivated only in working
+              if (defined($dont_show_as_deleted)) {
+                $dis = '  ';
+              } else {
+                $dis = 'D ';
+              }
+            } else {
+              # deactivated in neither
+              $dis = '  ';
+            }
+          }
 
           print "$dis$dprefix$prefix$child $cname {\n";
           displayDeletedOrigChildren([ @cur_path, $child, $cname ],
@@ -288,7 +283,7 @@ sub displayDeletedOrigChildren {
         print "$dis$dprefix$prefix}\n";
       }
     } else {
-      my $has_tmpl_children = $config->hasTmplChildren([ @cur_path, $child ]);
+      my $has_tmpl_children = $config->hasTmplChildren();
       print "$dis$dprefix$prefix$child"
             . ($has_tmpl_children ? " {\n$dis$dprefix$prefix}\n" : "\n");
     }
@@ -305,14 +300,6 @@ sub displayChildren {
   my $prefix = $_[3];
   for my $child (sort (keys %child_hash)) {
     my $dis = "";
-    my @tmp = @cur_path;
-    push (@tmp,$child);
-
-    if ($child eq 'node.val') {
-      # should not happen!
-      next;
-    }
-
     my ($diff, $vdiff) = (' ', ' ');
     if ($child_hash{$child} eq 'added') {
       $diff = '+';
@@ -323,90 +310,87 @@ sub displayChildren {
     } elsif ($child_hash{$child} eq 'changed') {
       $vdiff = '>';
     }
-    my $is_tag = $config->isTagNode([ @cur_path, $child ]);
 
-    if (!defined($is_tag)) {
+    $config->setLevel('');
+    my $is_tag = $config->isTagNode(join(' ', @cur_path, $child));
+
+    if (!$is_tag) {
 	my $path = join(' ',( @cur_path, $child ));
 	my $comment = $config->returnComment($path);
 	if (defined $comment) {
 	    print "$prefix /* $comment */\n";
 	}
 
-	my ($state, $n) = $config->getDeactivated($path);
-	if (defined $state) {
-	      if ($state eq 'active') {
-		  if ($child_hash{$child} eq 'deleted') {
-		      $dis = '! ';
-		  }
-		  else {
-		      $dis = 'A ';
-		  }
-	      }
-	      elsif ($state eq 'local') {
-		  $dis = 'D ';
-	      }
-	      else {
-		  $dis = '! ';
-	      }
-	}	
-	else {
-	    $dis = '  ';
-	}
+        # check deactivate state
+        my $de_working = $config->deactivated($path);
+        my $de_active = $config->deactivatedOrig($path);
+        if ($de_active) {
+          if ($de_working) {
+            # deactivated in both
+            $dis = '! ';
+          } else {
+            # deactivated only in active
+            if ($child_hash{$child} eq 'deleted') {
+              $dis = '! ';
+            } else {
+              $dis = 'A ';
+            }
+          }
+        } else {
+          if ($de_working) {
+            # deactivated only in working
+            $dis = 'D ';
+          } else {
+            # deactivated in neither
+            $dis = '  ';
+          }
+        }
     }
 
     $config->setLevel(join ' ', (@cur_path, $child));
-    my %cnodes = $config->listNodeStatus(undef,'true');
-    my @cnames = sort keys %cnodes;
-    
-    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
-    my $leaf = 0;
-    if ($cnodes{'def'}) {
-	if ($#cnames == 1 && $cnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    } else {
-	if ($#cnames == 0 && $cnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    }
-    
-    if ($leaf == 1) {
+    if ($config->isLeafNode()) {
       displayValues([ @cur_path, $child ], $dis, $prefix, $child);
-    } elsif (scalar($#cnames) >= 0) {
+      next;
+    }
+
+    # not a leaf node
+    my %cnodes = $config->listNodeStatusDA();
+    my @cnames = sort keys %cnodes;
+    if (scalar(@cnames) > 0) {
       if ($is_tag) {
         @cnames = sort versioncmp @cnames;
         foreach my $cname (@cnames) {
-          if ($cname eq 'node.val') {
-            # should not happen
-            next;
-          }
-
 	  my $path = join(' ',( @cur_path, $child, $cname ));
-	  my $comment = $config->returnComment($path);
+	  $config->setLevel($path);
+	  my $comment = $config->returnComment();
 	  if (defined $comment) {
 	      print "$prefix /* $comment */\n";
 	  }
 
-	  my ($state, $n) = $config->getDeactivated($path);
-	  if (defined $state) {
-	      if ($state eq 'active') {
-		  if ($cnodes{$cname} eq 'deleted') {
-		      $dis = '! ';
-		  }
-		  else {
-		      $dis = 'A ';
-		  }
-	      }
-	      elsif ($state eq 'local') {
-		  $dis = 'D ';
-	      }
-	      else {
-		  $dis = '! ';
-	      }
-	  }
-	  else {
-	      $dis = '  ';
-	  }
+          # check deactivate state
+          my $de_working = $config->deactivated();
+          my $de_active = $config->deactivatedOrig();
+          if ($de_active) {
+            if ($de_working) {
+              # deactivated in both
+              $dis = '! ';
+            } else {
+              # deactivated only in active
+              if ($cnodes{$cname} eq 'deleted') {
+                $dis = '! ';
+              } else {
+                $dis = 'A ';
+              }
+            }
+          } else {
+            if ($de_working) {
+              # deactivated only in working
+              $dis = 'D ';
+            } else {
+              # deactivated in neither
+              $dis = '  ';
+            }
+          }
 
           my $tdiff = ' ';
           if ($cnodes{$cname} eq 'deleted') {
@@ -420,7 +404,7 @@ sub displayChildren {
                                        $dis, "$prefix    ");
           } else {
             $config->setLevel(join ' ', (@cur_path, $child, $cname));
-            my %ccnodes = $config->listNodeStatus(undef,'true');
+            my %ccnodes = $config->listNodeStatusDA();
             displayChildren(\%ccnodes, [ @cur_path, $child, $cname ],
                             $dis, "$prefix    ");
           }
@@ -430,26 +414,29 @@ sub displayChildren {
         print "$dis$diff$prefix$child {\n";
         if ($child_hash{$child} eq 'deleted') {
           # this should not happen
-          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis,
+                                     "$prefix    ");
         } else {
-          displayChildren(\%cnodes, [ @cur_path, $child ], $dis, "$prefix    ");
+          displayChildren(\%cnodes, [ @cur_path, $child ], $dis,
+                          "$prefix    ");
         }
         print "$dis$diff$prefix}\n";
       }
     } else {
       if ($child_hash{$child} eq 'deleted') {
+        # XXX weird. already checked for leaf node above.
         $config->setLevel('');
-        my @onodes = $config->listOrigNodes(join ' ', (@cur_path, $child), 'true');
-        if ($#onodes == 0 && $onodes[0] eq 'node.val') {
+        if ($config->isLeafNode(join ' ', (@cur_path, $child))) {
           displayValues([ @cur_path, $child ], $dis, $prefix, $child);
         } else {
           print "$dis$diff$prefix$child {\n";
-          displayDeletedOrigChildren([ @cur_path, $child ], $dis, "$prefix    ");
+          displayDeletedOrigChildren([ @cur_path, $child ], $dis,
+                                     "$prefix    ");
           print "$dis$diff$prefix}\n";
         }
       } else {
         my $has_tmpl_children
-          = $config->hasTmplChildren([ @cur_path, $child ]);
+          = $config->hasTmplChildren();
         print "$dis$diff$prefix$child"
               . ($has_tmpl_children ? " {\n$dis$diff$prefix}\n" : "\n");
       }
@@ -462,34 +449,21 @@ sub displayChildren {
 sub outputNewConfig {
   $config = new Vyatta::Config;
   $config->setLevel(join ' ', @_);
-  my %rnodes = $config->listNodeStatus(undef,'true');
+  if ($config->isLeafNode()) {
+    displayValues([ @_ ], '', '', $_[$#_]);
+    return;
+  }
 
+  # not a leaf node
+  my %rnodes = $config->listNodeStatusDA();
   if (scalar(keys %rnodes) > 0) {
-    my @rn = keys %rnodes;
-
-    #if node.val exists and ct == 0 w/o def or ct ==1 w/ def
-    my $leaf = 0;
-    if ($rnodes{'def'}) {
-	if ($#rn == 1 && $rnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    } else {
-	if ($#rn == 0 && $rnodes{'node.val'}) {
-	    $leaf = 1;
-	}
-    }
-    
-    if ($leaf == 1) {
-      # this is a leaf value-node
-      displayValues([ @_ ], '', '', $_[$#_]);
-    } else {
-      displayChildren(\%rnodes, [ @_ ], '', '');
-    }
+    displayChildren(\%rnodes, [ @_ ], '', '');
   } else {
     if ($config->existsOrig() && ! $config->exists()) {
       # this is a deleted node
       print 'Configuration under "' . (join ' ', @_) . "\" has been deleted\n";
-    } elsif (!defined($config->getTmplPath(\@_))) {
+    } elsif (!$config->validateTmplPath('', 1)) {
+      # validation of current path (including values) failed
       print "Specified configuration path is not valid\n";
     } else {
       print 'Configuration under "' . (join ' ', @_) . "\" is empty\n";

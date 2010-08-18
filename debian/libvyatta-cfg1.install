@@ -1,0 +1,2 @@
+usr/lib/*.so.*
+opt/vyatta/share/perl5

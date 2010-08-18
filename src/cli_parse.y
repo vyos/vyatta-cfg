@@ -35,6 +35,10 @@ static  void cli_deferror(const char *);
 %token HELP
 %token DEFAULT
 %token PRIORITY
+%token ENUMERATION
+%token CHELP
+%token ALLOWED
+%token VHELP
 %token PATTERN
 %token EXEC
 %token SYNTAX
@@ -150,6 +154,10 @@ type:	      	TYPE TYPE_DEF
 cause:		help_cause
 		| default_cause
 		| priority_stmt
+                | enumeration_stmt
+                | chelp_stmt
+                | allowed_stmt
+                | vhelp_stmt
 		| syntax_cause
                 | ACTION action { append(parse_defp->actions + $1, $2, 0);}
                 | dummy_stmt
@@ -190,6 +198,45 @@ priority_stmt:  PRIORITY VALUE
                     parse_defp->def_priority = cval;
                   }
                 }
+
+enumeration_stmt: ENUMERATION STRING
+                  {
+                    parse_defp->def_enumeration = $2;
+                  }
+
+chelp_stmt: CHELP STRING
+            {
+              parse_defp->def_comp_help = $2;
+            }
+
+allowed_stmt: ALLOWED STRING
+              {
+                parse_defp->def_allowed = $2;
+              }
+
+vhelp_stmt: VHELP STRING
+            {
+              if (!(parse_defp->def_val_help)) {
+                /* first string */
+                parse_defp->def_val_help = $2;
+              } else {
+                /* subsequent strings */
+                char *optr = parse_defp->def_val_help;
+                int olen = strlen(parse_defp->def_val_help);
+                char *nptr = $2;
+                int nlen = strlen(nptr);
+                int len = olen + 1 /* "\n" */ + nlen + 1 /* 0 */;
+                char *mptr = (char *) malloc(len);
+                memcpy(mptr, optr, olen);
+                mptr[olen] = '\n';
+                memcpy(&(mptr[olen + 1]), nptr, nlen);
+                mptr[len - 1] = 0;
+                parse_defp->def_val_help = mptr;
+                free(optr);
+                free(nptr);
+              }
+              /* result is a '\n'-delimited string for val_help */
+            }
 
 syntax_cause:   SYNTAX exp {append(parse_defp->actions + syntax_act, $2, 0);}
 		;

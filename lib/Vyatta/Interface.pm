@@ -85,6 +85,60 @@ sub interface_types {
     return @types;
 }
 
+# get all configured interfaces (in active or working configuration)
+sub get_all_cfg_interfaces {
+  my ($in_active) = @_;
+  my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
+
+  my $cfg = new Vyatta::Config;
+  my @ret_ifs = ();
+  for my $pfx (keys %net_prefix) {
+    my ($type, $vif) = ($net_prefix{$pfx}->{path}, $net_prefix{$pfx}->{vif});
+    my @vifs = (defined($vif)
+                ? ((ref($vif) eq 'ARRAY') ? @{$vif}
+                                            : ($vif))
+                  : ());
+    for my $tif ($cfg->$vfunc("interfaces $type")) {
+      push @ret_ifs, { 'name' => $tif, 'path' => "interfaces $type $tif" };
+      for my $vpath (@vifs) {
+        for my $vnum ($cfg->$vfunc("interfaces $type $tif $vpath")) {
+          push @ret_ifs, { 'name' => "$tif.$vnum",
+                           'path' => "interfaces $type $tif $vpath $vnum" };
+        }
+      }
+    }
+  }
+
+  # now special cases for pppo*/adsl
+  for my $eth ($cfg->$vfunc('interfaces ethernet')) {
+    for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
+      push @ret_ifs, { 'name' => "pppoe$ep",
+                       'path' => "interfaces ethernet $eth pppoe $ep" };
+    }
+  }
+  for my $a ($cfg->$vfunc('interfaces adsl')) {
+    for my $p ($cfg->$vfunc("interfaces adsl $a pvc")) {
+      for my $t ($cfg->$vfunc("interfaces adsl $a pvc $p")) {
+        if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
+          # classical-ipoa or bridged-ethernet
+          push @ret_ifs,
+            { 'name' => $a,
+              'path' => "interfaces adsl $a pvc $p $t" };
+          next;
+        }
+        # pppo[ea]
+        for my $i ($cfg->$vfunc("interfaces adsl $a pvc $p $t")) {
+          push @ret_ifs,
+            { 'name' => "$t$i",
+              'path' => "interfaces adsl $a pvc $p $t $i" };
+        }
+      }
+    }
+  }
+
+  return @ret_ifs;
+}
+
 # Read ppp config to fine associated interface for ppp device
 sub _ppp_intf {
     my $dev = shift;

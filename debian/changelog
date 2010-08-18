@@ -1,3 +1,126 @@
+vyatta-cfg (0.17.5) unstable; urgency=low
+
+  * add function to perl API
+  * allow Vyatta::Config constructor to set level
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 13 Aug 2010 18:28:02 -0700
+
+vyatta-cfg (0.17.4) unstable; urgency=low
+
+  * change all vector/string size to size_t just to be safe.
+  * get rid of lintian warning
+  * add API function for retrieving deleted values of a multi node.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 13 Aug 2010 11:19:25 -0700
+
+vyatta-cfg (0.17.3) unstable; urgency=low
+
+  * add more functions to shell API
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 18:40:17 -0700
+
+vyatta-cfg (0.17.2) unstable; urgency=low
+
+  * add required special cases for adsl/pppo* interfaces.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 15:56:17 -0700
+
+vyatta-cfg (0.17.1) unstable; urgency=low
+
+  * remove unneeded env variables
+  * add util function to Interface.pm
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 14:58:42 -0700
+
+vyatta-cfg (0.17.0) unstable; urgency=low
+
+  * document equivalent perl API functions for shell API.
+  * add more functions to shell API
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 12 Aug 2010 12:04:38 -0700
+
+vyatta-cfg (0.16.113) unstable; urgency=low
+
+  * add symlink for shell API binary
+  * add functions to shell API
+  * add comments to document shell API usage
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 11 Aug 2010 17:00:42 -0700
+
+vyatta-cfg (0.16.112) unstable; urgency=low
+
+  * add functions to shell API
+  * simplify extension of shell API
+  * further simplify shell API extension and add more functions.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 10 Aug 2010 19:16:20 -0700
+
+vyatta-cfg (0.16.111) unstable; urgency=low
+
+  * separate libvyatta-cfg1 package
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 10 Aug 2010 13:46:24 -0700
+
+vyatta-cfg (0.16.110) unstable; urgency=low
+
+  * remove "def" and "node.val" usage from high-level operations.
+  * commit needs to flush "progress file"
+  * provide default edit level
+  * add function to C API
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 09 Aug 2010 18:52:40 -0700
+
+vyatta-cfg (0.16.109) unstable; urgency=low
+
+  * eval "allowed:" script in template
+  * new API change
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 03 Aug 2010 17:50:17 -0700
+
+vyatta-cfg (0.16.108) unstable; urgency=low
+
+  * handle potential exceptions from filesystem operations.
+  * make edit do implicit set
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Sat, 31 Jul 2010 15:06:24 -0700
+
+vyatta-cfg (0.16.107) unstable; urgency=low
+
+  * add default status observers
+  * new API changes
+  * make destructors virtual
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 30 Jul 2010 16:22:55 -0700
+
+vyatta-cfg (0.16.106) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add cstore-specific header file
+
+  [ Michael Larson ]
+  * timing syslog entries on commit hooks
+
+  [ An-Cheng Huang ]
+  * remove dev package dependency on vyatta-cfg
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 29 Jul 2010 18:56:20 -0700
+
+vyatta-cfg (0.16.105) unstable; urgency=low
+
+  [ Michael Larson ]
+  * first commit to mendocino!
+
+  [ An-Cheng Huang ]
+  * handle single quotes in comp_help
+
+  [ Stephen Hemminger ]
+  * Add range and ipv6range as val_help types
+
+  [ An-Cheng Huang ]
+  * add new cstore library
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 28 Jul 2010 14:31:31 -0700
+
 vyatta-cfg (0.16.104) unstable; urgency=low
 
   * UNRELEASED

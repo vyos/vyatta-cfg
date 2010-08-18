@@ -2,9 +2,10 @@
 #define CLI_DEF_H
 #include <stdio.h>
 
+#include <cli_cstore.h>
+
 #define BITWISE 0 /* no partial commit */
 
-#define boolean int
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -21,19 +22,6 @@ typedef enum {
   create_mode,
   update_mode
 }vtw_cmode;
-typedef enum {
-  ERROR_TYPE,
-  INT_TYPE,
-  IPV4_TYPE,
-  IPV4NET_TYPE,
-  IPV6_TYPE,
-  IPV6NET_TYPE,
-  MACADDR_TYPE,
-  DOMAIN_TYPE,  /*end of addr types */
-  TEXT_TYPE,
-  BOOL_TYPE,
-  PRIORITY_TYPE
-}vtw_type_e;
 
 typedef enum {
   EQ_COND = 1,
@@ -47,76 +35,10 @@ typedef enum {
 }vtw_cond_e;
 /* IN_COND is like EQ for singular compare, but OR for multivalue right operand */
 
-typedef enum {
-  LIST_OP,  /* right is next, left is list elem */
-  HELP_OP,  /* right is help string, left is elem */
-  EXEC_OP, /* left command string, right help string */
-  PATTERN_OP,  /* left to var, right to pattern */
-  OR_OP,    
-  AND_OP,
-  NOT_OP,
-  COND_OP,   /* aux field specifies cond type (GT, GE, etc.)*/
-  VAL_OP,    /* for strings used in other nodes */
-  VAR_OP,    /* string points to var */
-  B_QUOTE_OP, /* string points to operand to be executed */
-  ASSIGN_OP  /* left to var, right to exp */
-}vtw_oper_e;
-
-typedef struct {
-  vtw_type_e val_type;
-  char      *val;
-  int        cnt;  /* >0 means multivalue */
-  char     **vals; /* We might union with val */
-  vtw_type_e *val_types; /* used with vals and multitypes */
-  boolean    free_me;
-}valstruct;
-
-typedef struct vtw_node{
-  vtw_oper_e       vtw_node_oper;
-  struct vtw_node *vtw_node_left;
-  struct vtw_node *vtw_node_right;
-  char            *vtw_node_string;
-  int              vtw_node_aux;
-  vtw_type_e       vtw_node_type;
-  valstruct        vtw_node_val; /* we'll union it later */
-}vtw_node;
-
-typedef struct {
-  vtw_node *vtw_list_head;
-  vtw_node *vtw_list_tail;
-}vtw_list;
-
 typedef struct {
   int  t_lev;
   int  m_lev;
 }vtw_mark;
-
-typedef enum {
-  delete_act,
-  create_act,
-  activate_act,
-  update_act,
-  syntax_act,
-  commit_act,
-  begin_act,
-  end_act,
-  top_act
-}vtw_act_type;
-
-typedef struct {
-  vtw_type_e def_type;
-  vtw_type_e def_type2;
-  char      *def_type_help;
-  char      *def_node_help;
-  char      *def_default;
-  unsigned int def_priority;
-  char      *def_priority_ext;
-  unsigned int def_tag;
-  unsigned int def_multi;
-  boolean    tag;
-  boolean    multi;
-  vtw_list   actions[top_act];
-}vtw_def;
 
 typedef struct {
   const char *f_segp;
@@ -156,7 +78,6 @@ extern vtw_node *make_str_node(char *str);
 extern vtw_node *make_var_node(char *str);
 extern vtw_node *make_str_node0(char *str, vtw_oper_e op);
 extern void append(vtw_list *l, vtw_node *n, int aux);
-extern int parse_def(vtw_def *defp, const char *path, boolean type_only);
 
 extern int yy_cli_val_lex(void);
 extern void cli_val_start(char *s);
@@ -183,14 +104,10 @@ extern boolean val_cmp(const valstruct *left, const valstruct *right,
 		       vtw_cond_e cond);
 extern void out_of_memory(void)  __attribute__((noreturn));
 extern void subtract_values(char **lhs, const char *rhs);
-extern boolean validate_value(vtw_def *def, 
-			      char *value);
 extern void internal_error(int line, const char *file)
   __attribute__((noreturn));
 extern void done(void);
 extern void del_value(vtw_def *defp, char *cp);
-extern void bye(const char *msg, ...) 
-  __attribute__((format(printf, 1, 2), noreturn));
 extern void print_msg(const char *msg, ...)
   __attribute__((format(printf, 1, 2)));
 extern void switch_path(first_seg *seg);
@@ -199,7 +116,6 @@ extern void free_val(valstruct *val);
 extern void touch(void);
 extern int mkdir_p(const char *path);
 
-extern const char *type_to_name(vtw_type_e type);
 extern boolean execute_list(vtw_node *cur, vtw_def *def, const char **outbuf);
 extern void touch_dir(const char *dp);
 extern void touch_file(const char *name);
@@ -227,10 +143,7 @@ extern int get_config_lock(void);
 #define LOGFILE_STDERR "/tmp/cfg-stderr.log"
 
 extern int out_fd;
-extern FILE *out_stream;
 extern FILE *err_stream;
-
-extern int initialize_output(const char *op);
 
 /* debug hooks? */
 #define my_malloc(size, name)		malloc(size)

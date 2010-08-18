@@ -320,11 +320,7 @@ sub list_vrrp_intf {
         my $path = $intf->path();
         $config->setLevel($path);
         if (defined $val_func) {
-          if ($val_func eq 'isActive') {
-            push @intfs, $name if $config->$val_func("vrrp") == 0;
-          } else {
-            push @intfs, $name if $config->$val_func("vrrp");
-          }
+          push @intfs, $name if $config->$val_func("vrrp");
         } else {
           push @intfs, $name if $config->existsOrig("vrrp");
         }

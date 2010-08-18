@@ -311,6 +311,7 @@ main(int argc, char** argv)
 
     //now update the changes file
     update_change_file(fp_changes,nodes_visited_coll);
+    fflush(fp_changes);
 
     ++i;
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
@@ -373,9 +374,11 @@ main(int argc, char** argv)
 	    strcmp(dirp->d_name, "..") != 0) {
 	  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
 	  sprintf(buf,"%s/%s",COMMIT_HOOK_DIR,dirp->d_name);
+	  syslog(LOG_DEBUG,"Starting commit hook: %s",buf);
 	  if (system(buf) == -1) {
-	    syslog(LOG_DEBUG,"commit::main(), error on call to hook: %s", buf);
+	    syslog(LOG_WARNING,"Error on call to hook: %s", buf);
 	  }
+	  syslog(LOG_DEBUG,"Finished with commit hook: %s",buf);
 	}
       }
       unsetenv(ENV_COMMIT_STATUS);
