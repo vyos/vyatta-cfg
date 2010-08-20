@@ -1198,16 +1198,24 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
      *
      *       for "added" state, can't use cfgPathAdded() since it's not DA.
      *
+     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
+     *
      *       deleted ones already handled above.
      */
     if (!cfg_path_exists(ppath, true, true)
         && cfg_path_exists(ppath, false, true)) {
       cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
-    } else if (cfgPathChanged(ppath)) {
-      cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
     } else {
-      cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      SAVE_PATHS;
+      append_cfg_path(ppath);
+      if (marked_changed()) {
+        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
+      } else {
+        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      }
+      RESTORE_PATHS;
     }
+
     ppath.pop_back();
   }
 }
