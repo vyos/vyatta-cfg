@@ -2552,7 +2552,7 @@ Cstore::create_default_children()
         // has default value. set it.
         push_cfg_path(tcnodes[i]);
         if (!add_node() || !write_value(def.def_default)
-            || !mark_display_default()) {
+            || !mark_display_default() || !mark_changed()) {
           ret = false;
         }
         pop_cfg_path();
