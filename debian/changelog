@@ -1,3 +1,11 @@
+vyatta-cfg (0.17.7) unstable; urgency=low
+
+  * handle "changed" status properly
+  * remove workaround for "changed" status handling
+  * mark nodes created by "default" as "changed"
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 20 Aug 2010 13:52:02 -0700
+
 vyatta-cfg (0.17.6) unstable; urgency=low
 
   * add API function
