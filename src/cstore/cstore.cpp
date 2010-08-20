@@ -1096,10 +1096,19 @@ void
 Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
                                 vector<string>& dvals)
 {
+  cfgPathGetDeletedValuesDA(path_comps, dvals, false);
+}
+
+// same as above but DA
+void
+Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
+                                  vector<string>& dvals,
+                                  bool include_deactivated)
+{
   vector<string> ovals;
   vector<string> nvals;
-  if (!cfgPathGetValues(path_comps, ovals, true)
-      || !cfgPathGetValues(path_comps, nvals, false)) {
+  if (!cfgPathGetValuesDA(path_comps, ovals, true, include_deactivated)
+      || !cfgPathGetValuesDA(path_comps, nvals, false, include_deactivated)) {
     return;
   }
   map<string, bool> dmap;

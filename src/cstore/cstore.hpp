@@ -240,6 +240,9 @@ public:
   void cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
                                      vector<string>& cnodes,
                                      bool include_deactivated = true);
+  void cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
+                                 vector<string>& dvals,
+                                 bool include_deactivated = true);
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
                                     map<string, string>& cmap);
 
