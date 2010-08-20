@@ -38,6 +38,9 @@ char *cstore_cfg_path_get_effective_value(void *handle,
                                           const char *path_comps[],
                                           int num_comps);
 
+int cstore_unmark_cfg_path_changed(void *handle, const char *path_comps[],
+                                   int num_comps);
+
 /* the following are internal APIs for the library. they can only be used
  * during cstore operations since they operate on "current" paths constructed
  * by the operations.

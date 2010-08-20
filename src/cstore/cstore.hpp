@@ -144,6 +144,7 @@ public:
   virtual bool inSession() = 0;
   // common
   bool markCfgPathChanged(const vector<string>& path_comps);
+  bool unmarkCfgPathChanged(const vector<string>& path_comps);
   // XXX load
   //bool unmarkCfgPathDeactivatedDescendants(const vector<string>& path_comps);
 
@@ -306,6 +307,7 @@ private:
   virtual bool mark_deactivated() = 0;
   virtual bool unmark_deactivated() = 0;
   virtual bool unmark_deactivated_descendants() = 0;
+  virtual bool unmark_changed_with_descendants() = 0;
   virtual bool mark_changed() = 0;
   virtual bool remove_comment() = 0;
   virtual bool set_comment(const string& comment) = 0;

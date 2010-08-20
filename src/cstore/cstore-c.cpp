@@ -143,6 +143,19 @@ cstore_cfg_path_get_effective_value(void *handle, const char *path_comps[],
   return NULL;
 }
 
+int
+cstore_unmark_cfg_path_changed(void *handle, const char *path_comps[],
+                               int num_comps)
+{
+  if (handle) {
+    vector<string> vs;
+    _get_str_vec(vs, path_comps, num_comps);
+    Cstore *cs = (Cstore *) handle;
+    return (cs->unmarkCfgPathChanged(vs) ? 1 : 0);
+  }
+  return 0;
+}
+
 char **
 cstore_path_string_to_path_comps(const char *path_str, int *num_comps)
 {

@@ -1791,6 +1791,22 @@ Cstore::markCfgPathChanged(const vector<string>& path_comps)
   return true;
 }
 
+/* unmark "changed" status of specified path in working config.
+ * this is used, e.g., at the end of "commit" to reset a subtree.
+ * note: unmarking a node means all of its descendants are also unmarked,
+ *       i.e., they become "unchanged".
+ * return true if successful. otherwise return false.
+ */
+bool
+Cstore::unmarkCfgPathChanged(const vector<string>& path_comps)
+{
+  SAVE_PATHS;
+  append_cfg_path(path_comps);
+  bool ret = unmark_changed_with_descendants();
+  RESTORE_PATHS;
+  return ret;
+}
+
 
 ////// protected functions
 void

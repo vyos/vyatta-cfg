@@ -10,6 +10,8 @@
 #include "common/defs.h"
 #include "common/unionfs.h"
 
+#include <cstore/cstore-c.h>
+
 boolean g_debug;
 
 extern vtw_path m_path;
@@ -715,7 +717,26 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
     printf("common_commit_copy_to_live_config(): %s\n",path);
     syslog(LOG_DEBUG,"common_commit_copy_to_live_config(): %s\n",path);
   }
+
+  /* this function is called for each "subtree" that has been successfully
+   * committed. before doing anything else, remove the "changed" status
+   * from any changed nodes in this subtree first (since this subtree is
+   * going into the active config).
+   */
+  {
+    void *cs = cstore_init();
+    int ncomps;
+    char **pcomps = cstore_path_string_to_path_comps(path, &ncomps);
+    /* note: return status is not checked and operation continues even if
+     *       this fails. this follows the original logic.
+     */
+    cstore_unmark_cfg_path_changed(cs, pcomps, ncomps);
+    cstore_free_path_comps(pcomps, ncomps);
+    cstore_free(cs);
+  }
+
   char *command = malloc(MAX_LENGTH_DIR_PATH);
+  /* XXX must ... remove ... this ... */
   static const char format0[]="mkdir -p %s ; /bin/true";
   static const char formatpoint5[]="rm -fr '%s'"; /*tmpp*/
   static const char format1[]="cp -r -f %s/* %s"; /*mdirp, tmpp*/
@@ -854,8 +875,8 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   
   char *command;
   command = malloc(MAX_LENGTH_DIR_PATH);
+  /* XXX must ... remove ... this ... */
   static const char format2[]="sudo umount %s"; //mdirp
-  static const char format3[]="rm -f %s/" MOD_NAME " >&/dev/null ; /bin/true"; /*tmpp*/
   static const char format5[]="rm -fr '%s'/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
   static const char format7[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
 
@@ -902,26 +923,11 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
 		    (GNodeTraverseFunc)delete_wh_func,
 		    (gpointer)&sd);
   }
-  
-  sprintf(command, format3, tbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
 
-  sprintf(command, format3, cbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
-  if (test_mode == FALSE) {
-    system(command);
-  }
+  /* originally the root "changed" marker was being removed here. this is now
+   * handled in common_commit_copy_to_live_config() since we need to do it
+   * subtree-by-subtree (and also remove the markers from any descendants).
+   */
 
   sprintf(command, format5, cbuf);
   if (g_debug) {
