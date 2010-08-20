@@ -1763,6 +1763,23 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
  * note: if a node is changed, all of its ancestors are also considered
  *       changed.
  * return true if successful. otherwise return false.
+ *
+ * the original backend implementation only uses the "changed" marker at
+ * "root" to indicate whether the whole config has changed. for the rest
+ * of the config hierarchy, the original implementation treated all nodes
+ * that are present in the unionfs "changes only" directory as "changed".
+ *
+ * this worked until the introduction of "deactivate". since deactivated
+ * nodes are also present in the "changes only" directory, the backend
+ * treat them as "changed". on the other hand, deleted nodes don't appear
+ * in "changes only", so they are _not_ treated as "changed". this creates
+ * problems in various parts of the backend.
+ *
+ * the new CLI backend/library marks all changed nodes explicitly, and the
+ * "changed" status depends on such markers. note that the actual marking
+ * is done by the low-level implementation, so it does not have to be done
+ * as a "file marker" as long as the low-level implementation can correctly
+ * answer the "changed" query for a given path.
  */
 bool
 Cstore::markCfgPathChanged(const vector<string>& path_comps)
