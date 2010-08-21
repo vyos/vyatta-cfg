@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.8) unstable; urgency=low
+
+  * don't remove the workaround yet
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 20 Aug 2010 19:16:01 -0700
+
 vyatta-cfg (0.17.7) unstable; urgency=low
 
   * handle "changed" status properly
