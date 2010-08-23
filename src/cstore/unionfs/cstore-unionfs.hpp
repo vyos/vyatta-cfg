@@ -158,14 +158,14 @@ private:
   bool mark_deactivated();
   bool unmark_deactivated();
   bool unmark_deactivated_descendants();
+  bool mark_changed_with_ancestors();
   bool unmark_changed_with_descendants();
-  bool mark_changed();
   bool remove_comment();
   bool set_comment(const string& comment);
   bool discard_changes(unsigned long long& num_removed);
 
   // observers for work path
-  bool marked_changed();
+  bool cfg_node_changed();
 
   // observers for work path or active path
   bool cfg_node_exists(bool active_cfg);

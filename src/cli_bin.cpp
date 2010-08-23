@@ -165,8 +165,6 @@ doDiscard(Cstore& cstore, const vector<string>& args)
   if (!cstore.discardChanges()) {
     bye("discard failed\n");
   }
-  // special case for discard: don't return (don't want to mark changed)
-  exit(0);
 }
 
 static void
@@ -228,7 +226,6 @@ main(int argc, char **argv)
 
   // call the op function
   OpFunc[op_idx](cstore, path_comps);
-  cstore.markCfgPathChanged(path_comps);
   exit(0);
 }
 

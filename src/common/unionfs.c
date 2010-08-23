@@ -730,7 +730,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
     /* note: return status is not checked and operation continues even if
      *       this fails. this follows the original logic.
      */
-    cstore_unmark_cfg_path_changed(cs, pcomps, ncomps);
+    cstore_unmark_cfg_path_changed(cs, (const char **) pcomps, ncomps);
     cstore_free_path_comps(pcomps, ncomps);
     cstore_free(cs);
   }

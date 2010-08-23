@@ -749,6 +749,32 @@ UnionfsCstore::unmark_deactivated_descendants()
   return ret;
 }
 
+// mark current work path and all ancestors as "changed"
+bool
+UnionfsCstore::mark_changed_with_ancestors()
+{
+  b_fs::path opath = mutable_cfg_path; // use a copy
+  while (opath.has_parent_path()) {
+    b_fs::path marker = (work_root / opath);
+    pop_path(opath);
+    if (!b_fs_exists(marker) || !b_fs_is_directory(marker)) {
+      // don't do anything if the node is not there
+      continue;
+    }
+    marker /= C_MARKER_CHANGED;
+    if (b_fs_exists(marker)) {
+      // reached a node already marked => done
+      break;
+    }
+    if (!create_file(marker.file_string())) {
+      output_internal("failed to mark changed [%s]\n",
+                      marker.file_string().c_str());
+      return false;
+    }
+  }
+  return true;
+}
+
 /* remove all "changed" markers under the current work path. this is used,
  * e.g., at the end of "commit" to reset a subtree.
  */
@@ -774,39 +800,6 @@ UnionfsCstore::unmark_changed_with_descendants()
                     get_work_path().file_string().c_str());
     return false;
   }
-  return true;
-}
-
-bool
-UnionfsCstore::mark_changed()
-{
-  if (!mutable_cfg_path.has_parent_path()) {
-    /* at root, mark changed. root marker is needed by the original
-     * implementation as an indication of whether the whole config
-     * has changed.
-     */
-    b_fs::path marker = get_work_path() / C_MARKER_CHANGED;
-    if (b_fs_exists(marker)) {
-      // already marked. treat as success.
-      return true;
-    }
-    if (!create_file(marker.file_string())) {
-      output_internal("failed to mark changed [%s]\n",
-                      get_work_path().file_string().c_str());
-      return false;
-    }
-    return true;
-  }
-
-  /* XXX not at root => nop for now.
-   *     we should be marking changed here. however, as commit is still
-   *     using its own unionfs implementation, it will not understand the
-   *     markers and therefore will not perform the necessary cleanup when
-   *     it's done.
-   *
-   *     for now, don't mark anything besides root. the query function
-   *     will use unionfs-specific implementation (changes-only dir).
-   */
   return true;
 }
 
@@ -880,21 +873,12 @@ UnionfsCstore::get_comment(string& comment, bool active_cfg)
   return read_whole_file(cfile, comment);
 }
 
+// whether current work path is "changed"
 bool
-UnionfsCstore::marked_changed()
+UnionfsCstore::cfg_node_changed()
 {
-  /* this function is only called by cfgPathChanged() in base class.
-   *
-   * XXX currently just use the changes_only dir for this query.
-   *     see explanation in mark_changed().
-   *
-   *     this implementation relies on the fact that cfgPathChanged()
-   *     includes deleted/added nodes (including deactivated/activated
-   *     nodes since it's NOT deactivate-aware). if that is not the case,
-   *     result will be different between deleted nodes (NOT IN
-   *     changes_only) and deactivated nodes (IN changes_only).
-   */
-  return b_fs_exists(get_change_path());
+  b_fs::path marker = get_work_path() / C_MARKER_CHANGED;
+  return b_fs_exists(marker);
 }
 
 /* XXX currently "committed marking" is done inside commit.

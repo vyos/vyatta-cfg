@@ -220,10 +220,10 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
     /* assume default value is valid (parser should have validated).
      * also call unmark_deactivated() in case the node being deleted was
      * also deactivated. note that unmark_deactivated() succeeds if it's
-     * not marked deactivated.
+     * not marked deactivated. also mark "changed".
      */
     bool ret = (write_value(def.def_default) && mark_display_default()
-                && unmark_deactivated());
+                && unmark_deactivated() && mark_changed_with_ancestors());
     if (!ret) {
       output_user("Failed to set default value during delete\n");
     }
@@ -265,6 +265,10 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
       pop_cfg_path();
       ret = remove_node();
     }
+  }
+  if (ret) {
+    // mark changed
+    ret = mark_changed_with_ancestors();
   }
   RESTORE_PATHS;
   if (!ret) {
@@ -893,7 +897,12 @@ Cstore::renameCfgPath(const vector<string>& args)
   string otagval = args[1];
   string ntagval = args[4];
   push_cfg_path(otagnode);
-  bool ret = rename_child_node(otagval, ntagval);
+  /* also mark changed. note that it's marking the "tag node" but not the
+   * "tag values" since one is being "deleted" and the other is being
+   * "added" anyway.
+   */
+  bool ret = (rename_child_node(otagval, ntagval)
+              && mark_changed_with_ancestors());
   pop_cfg_path();
   return ret;
 }
@@ -909,7 +918,11 @@ Cstore::copyCfgPath(const vector<string>& args)
   string otagval = args[1];
   string ntagval = args[4];
   push_cfg_path(otagnode);
-  bool ret = copy_child_node(otagval, ntagval);
+  /* also mark changed. note that it's marking the "tag node" but not the
+   * new "tag value" since it is being "added" anyway.
+   */
+  bool ret = (copy_child_node(otagval, ntagval)
+              && mark_changed_with_ancestors());
   pop_cfg_path();
   return ret;
 }
@@ -1038,7 +1051,7 @@ Cstore::cfgPathAdded(const vector<string>& path_comps)
  *     (remember this functions is NOT "deactivate-aware")
  *       (1) cfgPathDeleted()
  *       (2) cfgPathAdded()
- *       (3) marked_changed()
+ *       (3) cfg_node_changed()
  */
 bool
 Cstore::cfgPathChanged(const vector<string>& path_comps)
@@ -1048,7 +1061,7 @@ Cstore::cfgPathChanged(const vector<string>& path_comps)
   }
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = marked_changed();
+  bool ret = cfg_node_changed();
   RESTORE_PATHS;
   return ret;
 }
@@ -1208,7 +1221,7 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
     } else {
       SAVE_PATHS;
       append_cfg_path(ppath);
-      if (marked_changed()) {
+      if (cfg_node_changed()) {
         cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
       } else {
         cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
@@ -1738,7 +1751,9 @@ Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
 
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = (mark_deactivated() && unmark_deactivated_descendants());
+  // note: also mark changed
+  bool ret = (mark_deactivated() && unmark_deactivated_descendants()
+              && mark_changed_with_ancestors());
   RESTORE_PATHS;
   return ret;
 }
@@ -1752,17 +1767,16 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
 {
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = unmark_deactivated();
+  // note: also mark changed
+  bool ret = (unmark_deactivated() && mark_changed_with_ancestors());
   RESTORE_PATHS;
   return ret;
 }
 
-/* mark specified path as changed in working config.
- * the marking is used during commit to check if a node has been changed.
- * this should be done after set/delete/activate/deactivate.
- * note: if a node is changed, all of its ancestors are also considered
- *       changed.
- * return true if successful. otherwise return false.
+/* "changed" status handling.
+ * the "changed" status is used during commit to check if a node has been
+ * changed. note that if a node is "changed", all of its ancestors are also
+ * considered changed (this follows the original logic).
  *
  * the original backend implementation only uses the "changed" marker at
  * "root" to indicate whether the whole config has changed. for the rest
@@ -1775,38 +1789,30 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
  * in "changes only", so they are _not_ treated as "changed". this creates
  * problems in various parts of the backend.
  *
- * the new CLI backend/library marks all changed nodes explicitly, and the
- * "changed" status depends on such markers. note that the actual marking
- * is done by the low-level implementation, so it does not have to be done
- * as a "file marker" as long as the low-level implementation can correctly
- * answer the "changed" query for a given path.
+ * the new CLI backend/library "marks" all changed nodes explicitly, and the
+ * "changed" status depends on such markers. the marking is done using the
+ * pure virtual mark_changed_with_ancestors() function, which is provided
+ * by the low-level implementation, so it does not have to be done as a
+ * "per-node file marker" as long as the low-level implementation can
+ * correctly answer the "changed" query for a given path.
+ *
+ * note that "changed" nodes does not include "added" and "deleted" nodes.
+ * for the convenience of implementation, the backend must always query
+ * for "changed" nodes *after* "added" and "deleted" nodes. in other
+ * words, the backend will only treat a node as "changed" if it is neither
+ * "added" nor "deleted". currently there are only two places that perform
+ * changed status query: cfgPathGetChildNodesStatus() and
+ * cfgPathGetChildNodesStatusDA(). see those two functions for the usage.
+ *
+ * what this means is that the backend can choose to either mark or not
+ * mark "added"/"deleted" nodes as "changed" at its convenience. for
+ * example, "set" and "delete" always do the marking, but "rename" and
+ * "copy" do not.
+ *
+ * changed status queries are provided by the cfg_node_changed() function,
+ * and changed markers can be removed by unmarkCfgPathChanged() below (used
+ * by "commit").
  */
-bool
-Cstore::markCfgPathChanged(const vector<string>& path_comps)
-{
-  // first mark the root changed
-  if (!mark_changed()) {
-    return false;
-  }
-
-  // now mark each level as changed
-  vector<string> ppath;
-  for (size_t i = 0; i < path_comps.size(); i++) {
-    ppath.push_back(path_comps[i]);
-    if (!cfg_path_exists(ppath, false, false)) {
-      // this level no longer in working. nothing further.
-      break;
-    }
-    SAVE_PATHS;
-    append_cfg_path(ppath);
-    bool ret = mark_changed();
-    RESTORE_PATHS;
-    if (!ret) {
-      return false;
-    }
-  }
-  return true;
-}
 
 /* unmark "changed" status of specified path in working config.
  * this is used, e.g., at the end of "commit" to reset a subtree.
@@ -2272,6 +2278,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
         }
       }
     }
+    if (!mark_changed_with_ancestors()) {
+      ret = false;
+      break;
+    }
     RESTORE_PATHS;
   }
   RESTORE_PATHS; // if "break" was hit
@@ -2289,29 +2299,32 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     pop_cfg_path();
     // only do it if it's previously marked default
     if (marked_display_default(false)) {
-      ret = unmark_display_default();
+      if ((ret = unmark_display_default())) {
+        /* XXX work around current commit's unionfs implementation problem.
+         * current commit's unionfs implementation looks at the "changes
+         * only" directory (i.e., the r/w portion of the union mount), which
+         * is wrong.
+         *
+         * all config information should be obtained from two directories:
+         * "active" and "working", e.g., instead of looking at whiteout
+         * files in "changes only" to find deleted nodes, nodes that are in
+         * "active" but not in "working" have been deleted.
+         *
+         * in this particular case, commit looks at "changes only" to read
+         * the node.val file. however, since the value didn't change (only
+         * the "default status" changed), node.val doesn't appear in
+         * "changes only". here we re-write the file to force it into
+         * "changes only" so that commit can work correctly.
+         */
+        vector<string> vvec;
+        read_value_vec(vvec, false);
+        write_value_vec(vvec);
 
-      /* XXX work around current commit's unionfs implementation problem.
-       * current commit's unionfs implementation looks at the "changes only"
-       * directory (i.e., the r/w portion of the union mount), which is wrong.
-       *
-       * all config information should be obtained from two directories:
-       * "active" and "working", e.g., instead of looking at whiteout files
-       * in "changes only" to find deleted nodes, nodes that are in "active"
-       * but not in "working" have been deleted.
-       *
-       * in this particular case, commit looks at "changes only" to read the
-       * node.val file. however, since the value didn't change (only the
-       * "default status" changed), node.val doesn't appear in "changes only".
-       * here we re-write the file to force it into "changes only" so that
-       * commit can work correctly.
-       */
-      vector<string> vvec;
-      read_value_vec(vvec, false);
-      write_value_vec(vvec);
-
-      // pretend it didn't exist since we changed the status
-      path_exists = false;
+        // pretend it didn't exist since we changed the status
+        path_exists = false;
+        // also mark changed
+        ret = mark_changed_with_ancestors();
+      }
     }
     RESTORE_PATHS;
   }

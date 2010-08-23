@@ -142,8 +142,7 @@ public:
   virtual bool setupSession() = 0;
   virtual bool teardownSession() = 0;
   virtual bool inSession() = 0;
-  // common
-  bool markCfgPathChanged(const vector<string>& path_comps);
+  // commit
   bool unmarkCfgPathChanged(const vector<string>& path_comps);
   // XXX load
   //bool unmarkCfgPathDeactivatedDescendants(const vector<string>& path_comps);
@@ -307,14 +306,14 @@ private:
   virtual bool mark_deactivated() = 0;
   virtual bool unmark_deactivated() = 0;
   virtual bool unmark_deactivated_descendants() = 0;
+  virtual bool mark_changed_with_ancestors() = 0;
   virtual bool unmark_changed_with_descendants() = 0;
-  virtual bool mark_changed() = 0;
   virtual bool remove_comment() = 0;
   virtual bool set_comment(const string& comment) = 0;
   virtual bool discard_changes(unsigned long long& num_removed) = 0;
 
   // observers for current work path
-  virtual bool marked_changed() = 0;
+  virtual bool cfg_node_changed() = 0;
 
   // observers for current work path or active path
   virtual bool read_value_vec(vector<string>& vvec, bool active_cfg) = 0;
