@@ -158,6 +158,7 @@ private:
   bool mark_deactivated();
   bool unmark_deactivated();
   bool unmark_deactivated_descendants();
+  bool unmark_changed_with_descendants();
   bool mark_changed();
   bool remove_comment();
   bool set_comment(const string& comment);

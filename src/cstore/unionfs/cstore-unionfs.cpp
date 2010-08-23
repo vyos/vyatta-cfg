@@ -749,6 +749,34 @@ UnionfsCstore::unmark_deactivated_descendants()
   return ret;
 }
 
+/* remove all "changed" markers under the current work path. this is used,
+ * e.g., at the end of "commit" to reset a subtree.
+ */
+bool
+UnionfsCstore::unmark_changed_with_descendants()
+{
+  try {
+    vector<b_fs::path> markers;
+    b_fs::recursive_directory_iterator di(get_work_path());
+    for (; di != b_fs::recursive_directory_iterator(); ++di) {
+      if (!b_fs_is_regular(di->path())
+          || di->path().filename() != C_MARKER_CHANGED) {
+        // not marker
+        continue;
+      }
+      markers.push_back(di->path());
+    }
+    for (size_t i = 0; i < markers.size(); i++) {
+      b_fs::remove(markers[i]);
+    }
+  } catch (...) {
+    output_internal("failed to unmark changed with descendants [%s]\n",
+                    get_work_path().file_string().c_str());
+    return false;
+  }
+  return true;
+}
+
 bool
 UnionfsCstore::mark_changed()
 {

@@ -1096,10 +1096,19 @@ void
 Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
                                 vector<string>& dvals)
 {
+  cfgPathGetDeletedValuesDA(path_comps, dvals, false);
+}
+
+// same as above but DA
+void
+Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
+                                  vector<string>& dvals,
+                                  bool include_deactivated)
+{
   vector<string> ovals;
   vector<string> nvals;
-  if (!cfgPathGetValues(path_comps, ovals, true)
-      || !cfgPathGetValues(path_comps, nvals, false)) {
+  if (!cfgPathGetValuesDA(path_comps, ovals, true, include_deactivated)
+      || !cfgPathGetValuesDA(path_comps, nvals, false, include_deactivated)) {
     return;
   }
   map<string, bool> dmap;
@@ -1189,16 +1198,24 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
      *
      *       for "added" state, can't use cfgPathAdded() since it's not DA.
      *
+     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
+     *
      *       deleted ones already handled above.
      */
     if (!cfg_path_exists(ppath, true, true)
         && cfg_path_exists(ppath, false, true)) {
       cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
-    } else if (cfgPathChanged(ppath)) {
-      cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
     } else {
-      cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      SAVE_PATHS;
+      append_cfg_path(ppath);
+      if (marked_changed()) {
+        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
+      } else {
+        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      }
+      RESTORE_PATHS;
     }
+
     ppath.pop_back();
   }
 }
@@ -1746,6 +1763,23 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
  * note: if a node is changed, all of its ancestors are also considered
  *       changed.
  * return true if successful. otherwise return false.
+ *
+ * the original backend implementation only uses the "changed" marker at
+ * "root" to indicate whether the whole config has changed. for the rest
+ * of the config hierarchy, the original implementation treated all nodes
+ * that are present in the unionfs "changes only" directory as "changed".
+ *
+ * this worked until the introduction of "deactivate". since deactivated
+ * nodes are also present in the "changes only" directory, the backend
+ * treat them as "changed". on the other hand, deleted nodes don't appear
+ * in "changes only", so they are _not_ treated as "changed". this creates
+ * problems in various parts of the backend.
+ *
+ * the new CLI backend/library marks all changed nodes explicitly, and the
+ * "changed" status depends on such markers. note that the actual marking
+ * is done by the low-level implementation, so it does not have to be done
+ * as a "file marker" as long as the low-level implementation can correctly
+ * answer the "changed" query for a given path.
  */
 bool
 Cstore::markCfgPathChanged(const vector<string>& path_comps)
@@ -1772,6 +1806,22 @@ Cstore::markCfgPathChanged(const vector<string>& path_comps)
     }
   }
   return true;
+}
+
+/* unmark "changed" status of specified path in working config.
+ * this is used, e.g., at the end of "commit" to reset a subtree.
+ * note: unmarking a node means all of its descendants are also unmarked,
+ *       i.e., they become "unchanged".
+ * return true if successful. otherwise return false.
+ */
+bool
+Cstore::unmarkCfgPathChanged(const vector<string>& path_comps)
+{
+  SAVE_PATHS;
+  append_cfg_path(path_comps);
+  bool ret = unmark_changed_with_descendants();
+  RESTORE_PATHS;
+  return ret;
 }
 
 
