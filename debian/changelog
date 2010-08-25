@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.10) unstable; urgency=low
+
+  * add extensible node sorting mechanism
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 24 Aug 2010 18:58:31 -0700
+
 vyatta-cfg (0.17.9) unstable; urgency=low
 
   * move "changed" status handling into library
