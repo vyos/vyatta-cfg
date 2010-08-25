@@ -38,7 +38,7 @@ using namespace std;
 
 class Cstore {
 public:
-  Cstore() {};
+  Cstore() { init(); };
   Cstore(string& env);
   virtual ~Cstore() {};
 
@@ -65,6 +65,7 @@ public:
   static const string C_LOGFILE_STDOUT;
 
   static const size_t MAX_CMD_OUTPUT_SIZE = 4096;
+
 
   ////// the public cstore interface
   //// functions implemented in this base class
@@ -186,7 +187,13 @@ public:
   void cfgPathGetDeletedValues(const vector<string>& path_comps,
                                vector<string>& dvals);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                  map<string, string>& cmap);
+                                  map<string, string>& cmap) {
+    vector<string> dummy;
+    cfgPathGetChildNodesStatus(path_comps, cmap, dummy);
+  };
+  void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
+                                  map<string, string>& cmap,
+                                  vector<string>& sorted_keys);
 
   /* observers for "effective config". can be used both during a config
    * session and outside a config session. more detailed information
@@ -244,7 +251,13 @@ public:
                                  vector<string>& dvals,
                                  bool include_deactivated = true);
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                    map<string, string>& cmap);
+                                    map<string, string>& cmap) {
+    vector<string> dummy;
+    cfgPathGetChildNodesStatusDA(path_comps, cmap, dummy);
+  };
+  void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
+                                    map<string, string>& cmap,
+                                    vector<string>& sorted_keys);
 
 
   /* these are internal API functions and operate on current cfg and
@@ -349,6 +362,28 @@ private:
   virtual string tmpl_path_to_str() = 0;
 
   ////// implemented
+  // for sorting
+  typedef enum {
+    SORT_DEFAULT = 0,
+    SORT_DEB_VERSION = 0,
+    SORT_NONE
+  } SortAlgT;
+  typedef bool (*SortFuncT)(std::string, std::string);
+  static map<SortAlgT, SortFuncT> _sort_func_map;
+
+  static bool sort_func_deb_version(string a, string b);
+  void sort_nodes(vector<string>& nvec, SortAlgT sort_alg = SORT_DEFAULT);
+
+  // init
+  static bool _init;
+  static void init() {
+    if (_init) {
+      return;
+    }
+    _init = true;
+    _sort_func_map[SORT_DEB_VERSION] = &sort_func_deb_version;
+  }
+
   // begin path modifiers (only these can change path permanently)
   bool append_tmpl_path(const vector<string>& path_comps, bool& is_tag);
   bool append_tmpl_path(const vector<string>& path_comps) {

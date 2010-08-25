@@ -25,6 +25,10 @@
 #include <algorithm>
 #include <sstream>
 
+// for debian's version comparison algorithm
+#define APT_COMPATIBILITY 986
+#include <apt-pkg/version.h>
+
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/cstore-varref.hpp>
@@ -58,6 +62,12 @@ const string Cstore::C_ENV_SHAPI_HELP_STRS = "_cli_shell_api_hstrs";
 const string Cstore::C_ENUM_SCRIPT_DIR = "/opt/vyatta/share/enumeration";
 const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
 
+
+////// static
+bool Cstore::_init = false;
+map<Cstore::SortAlgT, Cstore::SortFuncT> Cstore::_sort_func_map;
+
+
 ////// constructors/destructors
 /* this constructor just returns the generic environment string,
  * currently the two levels. implementation-specific environment
@@ -71,6 +81,8 @@ const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
  */
 Cstore::Cstore(string& env)
 {
+  init();
+
   string decl = "declare -x ";
   env = (decl + C_ENV_EDIT_LEVEL + "=/; ");
   env += (decl + C_ENV_TMPL_LEVEL + "=/;");
@@ -182,6 +194,7 @@ Cstore::tmplGetChildNodes(const vector<string>& path_comps,
   SAVE_PATHS;
   append_tmpl_path(path_comps);
   get_all_tmpl_child_node_names(cnodes);
+  sort_nodes(cnodes);
   RESTORE_PATHS;
 }
 
@@ -1096,6 +1109,7 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
       cnodes.push_back(acnodes[i]);
     }
   }
+  sort_nodes(cnodes);
 }
 
 /* get "deleted" values of specified "multi node" during commit
@@ -1145,7 +1159,8 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
  */
 void
 Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                   map<string, string>& cmap)
+                                   map<string, string>& cmap,
+                                   vector<string>& sorted_keys)
 {
   // get a union of active and working
   map<string, bool> umap;
@@ -1166,6 +1181,7 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
   for (; it != umap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
+    sorted_keys.push_back(c);
     // note: "changed" includes "deleted" and "added", so check those first.
     if (cfgPathDeleted(ppath)) {
       cmap[c] = C_NODE_STATUS_DELETED;
@@ -1178,6 +1194,7 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
     }
     ppath.pop_back();
   }
+  sort_nodes(sorted_keys);
 }
 
 /* DA version of the above function.
@@ -1187,12 +1204,14 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
  */
 void
 Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                     map<string, string>& cmap)
+                                     map<string, string>& cmap,
+                                     vector<string>& sorted_keys)
 {
   // process deleted nodes first
   vector<string> del_nodes;
   cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
   for (size_t i = 0; i < del_nodes.size(); i++) {
+    sorted_keys.push_back(del_nodes[i]);
     cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
   }
 
@@ -1202,6 +1221,7 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
   vector<string> ppath = path_comps;
   for (size_t i = 0; i < work_nodes.size(); i++) {
     ppath.push_back(work_nodes[i]);
+    sorted_keys.push_back(work_nodes[i]);
     /* note: in the DA version here, we do NOT check the deactivate state
      *       when considering the state of the child nodes (which include
      *       deactivated ones). the reason is that this DA function is used
@@ -1231,6 +1251,7 @@ Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
 
     ppath.pop_back();
   }
+  sort_nodes(sorted_keys);
 }
 
 /* check whether specified path is "deactivated" in working config or
@@ -1294,6 +1315,7 @@ Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
   append_cfg_path(path_comps);
   get_all_child_node_names(cnodes, active_cfg, include_deactivated);
   RESTORE_PATHS;
+  sort_nodes(cnodes);
 }
 
 /* get value of specified single-value node.
@@ -1575,6 +1597,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
     }
     ppath.pop_back();
   }
+  sort_nodes(cnodes);
 }
 
 /* get the "effective" value of specified path during commit operation.
@@ -1877,6 +1900,21 @@ Cstore::output_internal(const char *fmt, ...)
 
 
 ////// private functions
+bool
+Cstore::sort_func_deb_version(string a, string b)
+{
+  return (pkgVersionCompare(a, b) < 0);
+}
+
+void
+Cstore::sort_nodes(vector<string>& nvec, Cstore::SortAlgT sort_alg)
+{
+  if (_sort_func_map.find(sort_alg) == _sort_func_map.end()) {
+    return;
+  }
+  sort(nvec.begin(), nvec.end(), _sort_func_map[sort_alg]);
+}
+
 /* try to append the logical path to template path.
  *   is_tag: (output) whether the last component is a "tag".
  * return false if logical path is not valid. otherwise return true.

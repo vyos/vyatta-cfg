@@ -23,6 +23,7 @@ src_libvyatta_cfg_la_LIBADD = /usr/lib/libglib-2.0.la
 src_libvyatta_cfg_la_LIBADD += /usr/lib/libgio-2.0.la
 src_libvyatta_cfg_la_LIBADD += -lboost_system
 src_libvyatta_cfg_la_LIBADD += -lboost_filesystem
+src_libvyatta_cfg_la_LIBADD += -lapt-pkg
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
 src_libvyatta_cfg_la_SOURCES = src/cli_parse.y src/cli_def.l src/cli_val.l
 src_libvyatta_cfg_la_SOURCES += src/cli_new.c src/cli_path_utils.c

@@ -3,7 +3,7 @@ Section: contrib/net
 Priority: extra
 Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
 Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
- libboost-filesystem1.40-dev
+ libboost-filesystem1.40-dev, libapt-pkg-dev
 Standards-Version: 3.7.2
 
 Package: vyatta-cfg
