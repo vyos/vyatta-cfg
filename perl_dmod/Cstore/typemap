@@ -32,7 +32,7 @@ T_STRVEC_REF
 
 T_STRSTRMAP_REF
   HV *href = (HV *) sv_2mortal((SV *) newHV());
-  map<string, string>::iterator it = ret_strstrmap.begin();
+  Cstore::MapT<string, string>::iterator it = ret_strstrmap.begin();
   for (; it != ret_strstrmap.end(); ++it) {
     const char *key = (*it).first.c_str();
     const char *val = (*it).second.c_str();

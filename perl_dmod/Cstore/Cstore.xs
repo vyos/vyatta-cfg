@@ -25,7 +25,6 @@
 #include <cstring>
 #include <vector>
 #include <string>
-#include <map>
 
 /* currently use the UnionfsCstore implementation */
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -205,7 +204,7 @@ Cstore::cfgPathGetChildNodesStatus(STRVEC *vref)
 PREINIT:
   vector<string> arg_strvec;
 CODE:
-  map<string, string> ret_strstrmap;
+  Cstore::MapT<string, string> ret_strstrmap;
   THIS->cfgPathGetChildNodesStatus(arg_strvec, ret_strstrmap);
 OUTPUT:
   RETVAL
@@ -263,7 +262,7 @@ Cstore::cfgPathGetChildNodesStatusDA(STRVEC *vref)
 PREINIT:
   vector<string> arg_strvec;
 CODE:
-  map<string, string> ret_strstrmap;
+  Cstore::MapT<string, string> ret_strstrmap;
   THIS->cfgPathGetChildNodesStatusDA(arg_strvec, ret_strstrmap);
 OUTPUT:
   RETVAL
@@ -295,7 +294,7 @@ Cstore::getParsedTmpl(STRVEC *vref, bool allow_val)
 PREINIT:
   vector<string> arg_strvec;
 CODE:
-  map<string, string> ret_strstrmap;
+  Cstore::MapT<string, string> ret_strstrmap;
   if (!THIS->getParsedTmpl(arg_strvec, ret_strstrmap, allow_val)) {
     XSRETURN_UNDEF;
   }

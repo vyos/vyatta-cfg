@@ -18,7 +18,7 @@
 #define _CSTORE_H_
 #include <vector>
 #include <string>
-#include <map>
+#include <tr1/unordered_map>
 
 #include <cli_cstore.h>
 
@@ -41,6 +41,10 @@ public:
   Cstore() { init(); };
   Cstore(string& env);
   virtual ~Cstore() {};
+
+  // types
+  template<class K, class V>
+    class MapT : public tr1::unordered_map<K, V> {};
 
   // constants
   static const string C_NODE_STATUS_DELETED;
@@ -74,7 +78,7 @@ public:
   bool validateTmplPath(const vector<string>& path_comps, bool validate_vals,
                         vtw_def& def);
   bool getParsedTmpl(const vector<string>& path_comps,
-                     map<string, string>& tmap, bool allow_val = true);
+                     MapT<string, string>& tmap, bool allow_val = true);
   void tmplGetChildNodes(const vector<string>& path_comps,
                          vector<string>& cnodes);
 
@@ -187,12 +191,12 @@ public:
   void cfgPathGetDeletedValues(const vector<string>& path_comps,
                                vector<string>& dvals);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                  map<string, string>& cmap) {
+                                  MapT<string, string>& cmap) {
     vector<string> dummy;
     cfgPathGetChildNodesStatus(path_comps, cmap, dummy);
   };
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                  map<string, string>& cmap,
+                                  MapT<string, string>& cmap,
                                   vector<string>& sorted_keys);
 
   /* observers for "effective config". can be used both during a config
@@ -251,12 +255,12 @@ public:
                                  vector<string>& dvals,
                                  bool include_deactivated = true);
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                    map<string, string>& cmap) {
+                                    MapT<string, string>& cmap) {
     vector<string> dummy;
     cfgPathGetChildNodesStatusDA(path_comps, cmap, dummy);
   };
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                    map<string, string>& cmap,
+                                    MapT<string, string>& cmap,
                                     vector<string>& sorted_keys);
 
 
@@ -363,16 +367,18 @@ private:
 
   ////// implemented
   // for sorting
-  typedef enum {
-    SORT_DEFAULT = 0,
-    SORT_DEB_VERSION = 0,
-    SORT_NONE
-  } SortAlgT;
+  /* apparently unordered_map template does not work with "enum" type, so
+   * change this to simply unsigned ints to allow unifying all map types,
+   * i.e., "Cstore::MapT".
+   */
+  static const unsigned int SORT_DEFAULT;
+  static const unsigned int SORT_DEB_VERSION;
+  static const unsigned int SORT_NONE;
   typedef bool (*SortFuncT)(std::string, std::string);
-  static map<SortAlgT, SortFuncT> _sort_func_map;
+  static MapT<unsigned int, SortFuncT> _sort_func_map;
 
   static bool sort_func_deb_version(string a, string b);
-  void sort_nodes(vector<string>& nvec, SortAlgT sort_alg = SORT_DEFAULT);
+  void sort_nodes(vector<string>& nvec, unsigned int sort_alg = SORT_DEFAULT);
 
   // init
   static bool _init;

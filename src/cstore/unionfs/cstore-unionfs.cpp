@@ -17,7 +17,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <map>
 #include <fstream>
 #include <sstream>
 
@@ -63,8 +62,8 @@ const string UnionfsCstore::C_DEF_NAME = "node.def";
 
 
 ////// static
-static map<char, string> _fs_escape_chars;
-static map<string, char> _fs_unescape_chars;
+static Cstore::MapT<char, string> _fs_escape_chars;
+static Cstore::MapT<string, char> _fs_unescape_chars;
 static void
 _init_fs_escape_chars()
 {
@@ -80,7 +79,7 @@ _init_fs_escape_chars()
 static string
 _escape_char(char c)
 {
-  map<char, string>::iterator p = _fs_escape_chars.find(c);
+  Cstore::MapT<char, string>::iterator p = _fs_escape_chars.find(c);
   if (p != _fs_escape_chars.end()) {
     return _fs_escape_chars[c];
   } else {
@@ -88,12 +87,13 @@ _escape_char(char c)
   }
 }
 
-static map<string, string> _escape_path_name_cache;
+static Cstore::MapT<string, string> _escape_path_name_cache;
 
 static string
 _escape_path_name(const string& path)
 {
-  map<string, string>::iterator p = _escape_path_name_cache.find(path);
+  Cstore::MapT<string, string>::iterator p
+    = _escape_path_name_cache.find(path);
   if (p != _escape_path_name_cache.end()) {
     // found escaped string in cache. just return it.
     return _escape_path_name_cache[path];
@@ -110,12 +110,13 @@ _escape_path_name(const string& path)
   return npath;
 }
 
-static map<string, string> _unescape_path_name_cache;
+static Cstore::MapT<string, string> _unescape_path_name_cache;
 
 static string
 _unescape_path_name(const string& path)
 {
-  map<string, string>::iterator p = _unescape_path_name_cache.find(path);
+  Cstore::MapT<string, string>::iterator p
+    = _unescape_path_name_cache.find(path);
   if (p != _unescape_path_name_cache.end()) {
     // found unescaped string in cache. just return it.
     return _unescape_path_name_cache[path];
@@ -129,7 +130,7 @@ _unescape_path_name(const string& path)
       break;
     }
     string s = path.substr(i, 3);
-    map<string, char>::iterator p = _fs_unescape_chars.find(s);
+    Cstore::MapT<string, char>::iterator p = _fs_unescape_chars.find(s);
     if (p != _fs_unescape_chars.end()) {
       char c = _fs_unescape_chars[s];
       if (path.size() == 3 && c == -1) {

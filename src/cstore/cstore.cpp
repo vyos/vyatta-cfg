@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <map>
 #include <algorithm>
 #include <sstream>
 
@@ -62,10 +61,14 @@ const string Cstore::C_ENV_SHAPI_HELP_STRS = "_cli_shell_api_hstrs";
 const string Cstore::C_ENUM_SCRIPT_DIR = "/opt/vyatta/share/enumeration";
 const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
 
+//// sorting
+const unsigned int Cstore::SORT_DEFAULT = 0;
+const unsigned int Cstore::SORT_DEB_VERSION = 0;
+const unsigned int Cstore::SORT_NONE = 1;
 
 ////// static
 bool Cstore::_init = false;
-map<Cstore::SortAlgT, Cstore::SortFuncT> Cstore::_sort_func_map;
+Cstore::MapT<unsigned int, Cstore::SortFuncT> Cstore::_sort_func_map;
 
 
 ////// constructors/destructors
@@ -121,7 +124,7 @@ Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals,
  */
 bool
 Cstore::getParsedTmpl(const vector<string>& path_comps,
-                      map<string, string>& tmap, bool allow_val)
+                      Cstore::MapT<string, string>& tmap, bool allow_val)
 {
   vtw_def def;
   /* currently this function is used outside actual CLI operations, mainly
@@ -1099,7 +1102,7 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
   cfgPathGetChildNodesDA(path_comps, acnodes, true, include_deactivated);
   vector<string> wcnodes;
   cfgPathGetChildNodesDA(path_comps, wcnodes, false, include_deactivated);
-  map<string, bool> cmap;
+  MapT<string, bool> cmap;
   for (size_t i = 0; i < wcnodes.size(); i++) {
     cmap[wcnodes[i]] = true;
   }
@@ -1138,7 +1141,7 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
       || !cfgPathGetValuesDA(path_comps, nvals, false, include_deactivated)) {
     return;
   }
-  map<string, bool> dmap;
+  MapT<string, bool> dmap;
   for (size_t i = 0; i < nvals.size(); i++) {
     dmap[nvals[i]] = true;
   }
@@ -1159,11 +1162,11 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
  */
 void
 Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                   map<string, string>& cmap,
+                                   Cstore::MapT<string, string>& cmap,
                                    vector<string>& sorted_keys)
 {
   // get a union of active and working
-  map<string, bool> umap;
+  MapT<string, bool> umap;
   vector<string> acnodes;
   vector<string> wcnodes;
   cfgPathGetChildNodes(path_comps, acnodes, true);
@@ -1177,7 +1180,7 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
 
   // get the status of each one
   vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = umap.begin();
+  MapT<string, bool>::iterator it = umap.begin();
   for (; it != umap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
@@ -1204,7 +1207,7 @@ Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
  */
 void
 Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                     map<string, string>& cmap,
+                                     Cstore::MapT<string, string>& cmap,
                                      vector<string>& sorted_keys)
 {
   // process deleted nodes first
@@ -1574,7 +1577,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
   }
 
   // get a union of active and working
-  map<string, bool> cmap;
+  MapT<string, bool> cmap;
   vector<string> acnodes;
   vector<string> wcnodes;
   cfgPathGetChildNodes(path_comps, acnodes, true);
@@ -1588,7 +1591,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
 
   // get only the effective ones from the union
   vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = cmap.begin();
+  MapT<string, bool>::iterator it = cmap.begin();
   for (; it != cmap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
@@ -1660,7 +1663,7 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
   }
 
   // get a union of active and working
-  map<string, bool> vmap;
+  MapT<string, bool> vmap;
   vector<string> ovals;
   vector<string> nvals;
   cfgPathGetValues(path_comps, ovals, true);
@@ -1674,7 +1677,7 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
 
   // get only the effective ones from the union
   vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = vmap.begin();
+  MapT<string, bool>::iterator it = vmap.begin();
   for (; it != vmap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
@@ -1907,7 +1910,7 @@ Cstore::sort_func_deb_version(string a, string b)
 }
 
 void
-Cstore::sort_nodes(vector<string>& nvec, Cstore::SortAlgT sort_alg)
+Cstore::sort_nodes(vector<string>& nvec, unsigned int sort_alg)
 {
   if (_sort_func_map.find(sort_alg) == _sort_func_map.end()) {
     return;

@@ -83,7 +83,7 @@ private:
   // path buffers
   b_fs::path mutable_cfg_path;  // mutable part of config path
   b_fs::path tmpl_path;         // whole template path
-  map<const void *, pair<b_fs::path, b_fs::path> > saved_paths;
+  Cstore::MapT<const void *, pair<b_fs::path, b_fs::path> > saved_paths;
     // saved mutable part of cfg path and whole template path
 
   ////// virtual functions defined in base class
@@ -122,7 +122,7 @@ private:
     saved_paths[handle] = p;
   };
   void restore_paths(const void *handle = NULL) {
-    map<const void *, pair<b_fs::path, b_fs::path> >::iterator it
+    Cstore::MapT<const void *, pair<b_fs::path, b_fs::path> >::iterator it
       = saved_paths.find(handle);
     if (it == saved_paths.end()) {
       exit_internal("restore_paths: handle not found\n");
