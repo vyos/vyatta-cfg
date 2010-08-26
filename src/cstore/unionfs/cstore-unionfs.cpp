@@ -755,9 +755,15 @@ bool
 UnionfsCstore::mark_changed_with_ancestors()
 {
   b_fs::path opath = mutable_cfg_path; // use a copy
-  while (opath.has_parent_path()) {
-    b_fs::path marker = (work_root / opath);
-    pop_path(opath);
+  bool done = false;
+  while (!done) {
+    b_fs::path marker = work_root;
+    if (opath.has_parent_path()) {
+      marker /= opath;
+      pop_path(opath);
+    } else {
+      done = true;
+    }
     if (!b_fs_exists(marker) || !b_fs_is_directory(marker)) {
       // don't do anything if the node is not there
       continue;
