@@ -79,6 +79,7 @@ private:
   bool _is_default;
   bool _is_invalid;
   bool _is_empty;
+  bool _is_leaf_typeless;
   bool _active_only;
   string _tag_name;
   string _value;

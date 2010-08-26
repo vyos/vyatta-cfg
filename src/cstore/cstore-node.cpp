@@ -47,6 +47,7 @@ CstoreCfgNode::CstoreCfgNode(Cstore& cstore, vector<string>& path_comps,
     _pfx_deact(PFX_DEACT_NONE.c_str()),
     _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_invalid(false), _is_empty(false),
+    _is_leaf_typeless(false),
     _active_only(false), _comment(""), _comment_status(ST_STATIC)
 {
   init();
@@ -208,6 +209,12 @@ CstoreCfgNode::CstoreCfgNode(Cstore& cstore, vector<string>& path_comps,
   }
   if (cmap.empty()) {
     // empty subtree. finished.
+    vector<string> tcnodes;
+    _cstore->tmplGetChildNodes(path_comps, tcnodes);
+    if (tcnodes.size() == 0) {
+      // typeless leaf node
+      _is_leaf_typeless = true;
+    }
     _is_empty = true;
     return;
   }
@@ -294,14 +301,16 @@ CstoreCfgNode::show(int level, bool show_def, bool hide_secret)
         // at tag value and there is a tag node parent => print node name
         printf("%s ", _tag_name.c_str());
       }
-      printf("%s {\n", _name.c_str());
+      printf("%s%s\n", _name.c_str(), (_is_leaf_typeless ? "" : " {"));
     }
-    for (size_t i = 0; i < _child_nodes.size(); i++) {
-      _child_nodes[i]->show(level + 1, show_def, hide_secret);
-    }
-    if (print_this) {
-      print_indent(level);
-      printf("}\n");
+    if (!_is_leaf_typeless) {
+      for (size_t i = 0; i < _child_nodes.size(); i++) {
+        _child_nodes[i]->show(level + 1, show_def, hide_secret);
+      }
+      if (print_this) {
+        print_indent(level);
+        printf("}\n");
+      }
     }
   }
 }
