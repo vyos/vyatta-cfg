@@ -16,14 +16,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cerrno>
 #include <vector>
 #include <string>
-#include <libgen.h>
-#include <sys/mount.h>
+#include <getopt.h>
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
+#include <cstore/cstore-node.hpp>
 
 /* This program provides an API for shell scripts (e.g., snippets in
  * templates, standalone scripts, etc.) to access the CLI cstore library.
@@ -47,6 +46,12 @@ print_vec(const vector<string>& vec, const char *sep, const char *quote)
     printf("%s%s%s%s", ((i > 0) ? sep : ""), quote, vec[i].c_str(), quote);
   }
 }
+
+//// options
+// showCfg options
+int op_show_active_only = 0;
+int op_show_show_defaults = 0;
+int op_show_hide_secrets = 0;
 
 typedef void (*OpFuncT)(const vector<string>& args);
 
@@ -388,6 +393,15 @@ validateTmplValPath(const vector<string>& args)
   exit(cstore.validateTmplPath(args, true) ? 0 : 1);
 }
 
+static void
+showCfg(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  vector<string> nargs(args);
+  CstoreCfgNode root(cstore, nargs, op_show_active_only);
+  root.show_as_root(op_show_show_defaults, op_show_hide_secrets);
+}
+
 #define OP(name, exact, exact_err, min, min_err) \
   { #name, exact, exact_err, min, min_err, &name }
 
@@ -430,6 +444,8 @@ static OpT ops[] = {
   OP(validateTmplPath, -1, NULL, 1, "Must specify config path"),
   OP(validateTmplValPath, -1, NULL, 1, "Must specify config path"),
 
+  OP(showCfg, -1, NULL, -1, NULL),
+
   {NULL, -1, NULL, -1, NULL, NULL}
 };
 #define OP_exact_args  ops[op_idx].op_exact_args
@@ -438,16 +454,32 @@ static OpT ops[] = {
 #define OP_min_error   ops[op_idx].op_min_error
 #define OP_func        ops[op_idx].op_func
 
+struct option options[] = {
+  {"show-active-only", no_argument, &op_show_active_only, 1},
+  {"show-show-defaults", no_argument, &op_show_show_defaults, 1},
+  {"show-hide-secrets", no_argument, &op_show_hide_secrets, 1},
+  {NULL, 0, NULL, 0}
+};
+
 int
 main(int argc, char **argv)
 {
+  // handle options first
+  int c = 0;
+  while ((c = getopt_long(argc, argv, "", options, NULL)) != -1) {
+    // nothing for now
+  }
+  int nargs = argc - optind - 1;
+  char *oname = argv[optind];
+  char **nargv = &(argv[optind + 1]);
+
   int i = 0;
-  if (argc < 2) {
+  if (nargs < 0) {
     fprintf(stderr, "Must specify operation\n");
     exit(-1);
   }
   while (ops[i].op_name) {
-    if (strcmp(argv[1], ops[i].op_name) == 0) {
+    if (strcmp(oname, ops[i].op_name) == 0) {
       op_idx = i;
       break;
     }
@@ -457,18 +489,18 @@ main(int argc, char **argv)
     fprintf(stderr, "Invalid operation\n");
     exit(-1);
   }
-  if (OP_exact_args >= 0 && (argc - 2) != OP_exact_args) {
+  if (OP_exact_args >= 0 && nargs != OP_exact_args) {
     fprintf(stderr, "%s\n", OP_exact_error);
     exit(-1);
   }
-  if (OP_min_args >= 0 && (argc - 2) < OP_min_args) {
+  if (OP_min_args >= 0 && nargs < OP_min_args) {
     fprintf(stderr, "%s\n", OP_min_error);
     exit(-1);
   }
 
   vector<string> args;
-  for (int i = 2; i < argc; i++) {
-    args.push_back(argv[i]);
+  for (int i = 0; i < nargs; i++) {
+    args.push_back(nargv[i]);
   }
 
   // call the op function

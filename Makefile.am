@@ -32,6 +32,7 @@ src_libvyatta_cfg_la_SOURCES += src/cli_val_engine.c src/cli_objects.c
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-c.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-varref.cpp
+src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-node.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/unionfs/cstore-unionfs.cpp
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 LDADD = src/libvyatta-cfg.la
