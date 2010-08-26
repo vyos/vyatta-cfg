@@ -71,7 +71,7 @@ case "$1" in
    RET_STATUS=$?
    ;;
   show)
-   /opt/vyatta/sbin/vyatta-output-config.pl
+   ${vyatta_sbindir}/my_cli_shell_api showCfg
    RET_STATUS=$?
    ;;
   comment)
