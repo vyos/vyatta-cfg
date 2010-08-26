@@ -1,3 +1,13 @@
+vyatta-cfg (0.17.12) unstable; urgency=low
+
+  * new implementation for config output
+  * switch vyatta-cfg-cmd-wrapper to new config output implementation.
+  * mark changed ancestors up to the root
+  * switch "save" to use new config output implementation.
+  * don't show extra empty level for typeless leaf nodes.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 16:47:13 -0700
+
 vyatta-cfg (0.17.11) unstable; urgency=low
 
   * switch to unordered_map
