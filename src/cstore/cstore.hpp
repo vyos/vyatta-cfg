@@ -192,12 +192,13 @@ public:
                                vector<string>& dvals);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
                                   MapT<string, string>& cmap) {
-    vector<string> dummy;
-    cfgPathGetChildNodesStatus(path_comps, cmap, dummy);
+    get_child_nodes_status(path_comps, cmap, NULL);
   };
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
                                   MapT<string, string>& cmap,
-                                  vector<string>& sorted_keys);
+                                  vector<string>& sorted_keys) {
+    get_child_nodes_status(path_comps, cmap, &sorted_keys);
+  };
 
   /* observers for "effective config". can be used both during a config
    * session and outside a config session. more detailed information
@@ -256,12 +257,13 @@ public:
                                  bool include_deactivated = true);
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
                                     MapT<string, string>& cmap) {
-    vector<string> dummy;
-    cfgPathGetChildNodesStatusDA(path_comps, cmap, dummy);
+    get_child_nodes_status_da(path_comps, cmap, NULL);
   };
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
                                     MapT<string, string>& cmap,
-                                    vector<string>& sorted_keys);
+                                    vector<string>& sorted_keys) {
+    get_child_nodes_status_da(path_comps, cmap, &sorted_keys);
+  };
 
 
   /* these are internal API functions and operate on current cfg and
@@ -423,6 +425,12 @@ private:
   bool cfg_path_exists(const vector<string>& path_comps,
                        bool active_cfg, bool include_deactivated);
   bool set_cfg_path(const vector<string>& path_comps, bool output);
+  void get_child_nodes_status(const vector<string>& path_comps,
+                              Cstore::MapT<string, string>& cmap,
+                              vector<string> *sorted_keys);
+  void get_child_nodes_status_da(const vector<string>& path_comps,
+                                 Cstore::MapT<string, string>& cmap,
+                                 vector<string> *sorted_keys);
 
   // these operate on current work path (or active with "active_cfg")
   bool remove_tag();

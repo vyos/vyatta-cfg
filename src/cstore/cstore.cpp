@@ -1153,110 +1153,6 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
   }
 }
 
-/* this is the equivalent of the listNodeStatus() from the original
- * perl API. it provides the "status" ("deleted", "added", "changed",
- * or "static") of each child node of specified path.
- *   cmap: (output) contains the status of child nodes.
- *
- * note: this function is NOT "deactivate-aware".
- */
-void
-Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                   Cstore::MapT<string, string>& cmap,
-                                   vector<string>& sorted_keys)
-{
-  // get a union of active and working
-  MapT<string, bool> umap;
-  vector<string> acnodes;
-  vector<string> wcnodes;
-  cfgPathGetChildNodes(path_comps, acnodes, true);
-  cfgPathGetChildNodes(path_comps, wcnodes, false);
-  for (size_t i = 0; i < acnodes.size(); i++) {
-    umap[acnodes[i]] = true;
-  }
-  for (size_t i = 0; i < wcnodes.size(); i++) {
-    umap[wcnodes[i]] = true;
-  }
-
-  // get the status of each one
-  vector<string> ppath = path_comps;
-  MapT<string, bool>::iterator it = umap.begin();
-  for (; it != umap.end(); ++it) {
-    string c = (*it).first;
-    ppath.push_back(c);
-    sorted_keys.push_back(c);
-    // note: "changed" includes "deleted" and "added", so check those first.
-    if (cfgPathDeleted(ppath)) {
-      cmap[c] = C_NODE_STATUS_DELETED;
-    } else if (cfgPathAdded(ppath)) {
-      cmap[c] = C_NODE_STATUS_ADDED;
-    } else if (cfgPathChanged(ppath)) {
-      cmap[c] = C_NODE_STATUS_CHANGED;
-    } else {
-      cmap[c] = C_NODE_STATUS_STATIC;
-    }
-    ppath.pop_back();
-  }
-  sort_nodes(sorted_keys);
-}
-
-/* DA version of the above function.
- *   cmap: (output) contains the status of child nodes.
- *
- * note: this follows the original perl API listNodeStatus() implementation.
- */
-void
-Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                     Cstore::MapT<string, string>& cmap,
-                                     vector<string>& sorted_keys)
-{
-  // process deleted nodes first
-  vector<string> del_nodes;
-  cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
-  for (size_t i = 0; i < del_nodes.size(); i++) {
-    sorted_keys.push_back(del_nodes[i]);
-    cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
-  }
-
-  // get all nodes in working config
-  vector<string> work_nodes;
-  cfgPathGetChildNodesDA(path_comps, work_nodes, false);
-  vector<string> ppath = path_comps;
-  for (size_t i = 0; i < work_nodes.size(); i++) {
-    ppath.push_back(work_nodes[i]);
-    sorted_keys.push_back(work_nodes[i]);
-    /* note: in the DA version here, we do NOT check the deactivate state
-     *       when considering the state of the child nodes (which include
-     *       deactivated ones). the reason is that this DA function is used
-     *       for config output-related operations and should return whether
-     *       each node is actually added/deleted from the config independent
-     *       of its deactivate state.
-     *
-     *       for "added" state, can't use cfgPathAdded() since it's not DA.
-     *
-     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
-     *
-     *       deleted ones already handled above.
-     */
-    if (!cfg_path_exists(ppath, true, true)
-        && cfg_path_exists(ppath, false, true)) {
-      cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
-    } else {
-      SAVE_PATHS;
-      append_cfg_path(ppath);
-      if (cfg_node_changed()) {
-        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
-      } else {
-        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
-      }
-      RESTORE_PATHS;
-    }
-
-    ppath.pop_back();
-  }
-  sort_nodes(sorted_keys);
-}
-
 /* check whether specified path is "deactivated" in working config or
  * active config.
  * a node is "deactivated" if the node itself or any of its ancestors is
@@ -2377,6 +2273,122 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     // treat as success
   }
   return ret;
+}
+
+/* this is the equivalent of the listNodeStatus() from the original
+ * perl API. it provides the "status" ("deleted", "added", "changed",
+ * or "static") of each child node of specified path.
+ *   cmap: (output) contains the status of child nodes.
+ *   sorted_keys: (output) contains sorted keys. call with NULL if not needed.
+ *
+ * note: this function is NOT "deactivate-aware".
+ */
+void
+Cstore::get_child_nodes_status(const vector<string>& path_comps,
+                               Cstore::MapT<string, string>& cmap,
+                               vector<string> *sorted_keys)
+{
+  // get a union of active and working
+  MapT<string, bool> umap;
+  vector<string> acnodes;
+  vector<string> wcnodes;
+  cfgPathGetChildNodes(path_comps, acnodes, true);
+  cfgPathGetChildNodes(path_comps, wcnodes, false);
+  for (size_t i = 0; i < acnodes.size(); i++) {
+    umap[acnodes[i]] = true;
+  }
+  for (size_t i = 0; i < wcnodes.size(); i++) {
+    umap[wcnodes[i]] = true;
+  }
+
+  // get the status of each one
+  vector<string> ppath = path_comps;
+  MapT<string, bool>::iterator it = umap.begin();
+  for (; it != umap.end(); ++it) {
+    string c = (*it).first;
+    ppath.push_back(c);
+    if (sorted_keys) {
+      sorted_keys->push_back(c);
+    }
+    // note: "changed" includes "deleted" and "added", so check those first.
+    if (cfgPathDeleted(ppath)) {
+      cmap[c] = C_NODE_STATUS_DELETED;
+    } else if (cfgPathAdded(ppath)) {
+      cmap[c] = C_NODE_STATUS_ADDED;
+    } else if (cfgPathChanged(ppath)) {
+      cmap[c] = C_NODE_STATUS_CHANGED;
+    } else {
+      cmap[c] = C_NODE_STATUS_STATIC;
+    }
+    ppath.pop_back();
+  }
+  if (sorted_keys) {
+    sort_nodes(*sorted_keys);
+  }
+}
+
+/* DA version of the above function.
+ *   cmap: (output) contains the status of child nodes.
+ *   sorted_keys: (output) contains sorted keys. call with NULL if not needed.
+ *
+ * note: this follows the original perl API listNodeStatus() implementation.
+ */
+void
+Cstore::get_child_nodes_status_da(const vector<string>& path_comps,
+                                  Cstore::MapT<string, string>& cmap,
+                                  vector<string> *sorted_keys)
+{
+  // process deleted nodes first
+  vector<string> del_nodes;
+  cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
+  for (size_t i = 0; i < del_nodes.size(); i++) {
+    if (sorted_keys) {
+      sorted_keys->push_back(del_nodes[i]);
+    }
+    cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
+  }
+
+  // get all nodes in working config
+  vector<string> work_nodes;
+  cfgPathGetChildNodesDA(path_comps, work_nodes, false);
+  vector<string> ppath = path_comps;
+  for (size_t i = 0; i < work_nodes.size(); i++) {
+    ppath.push_back(work_nodes[i]);
+    if (sorted_keys) {
+      sorted_keys->push_back(work_nodes[i]);
+    }
+    /* note: in the DA version here, we do NOT check the deactivate state
+     *       when considering the state of the child nodes (which include
+     *       deactivated ones). the reason is that this DA function is used
+     *       for config output-related operations and should return whether
+     *       each node is actually added/deleted from the config independent
+     *       of its deactivate state.
+     *
+     *       for "added" state, can't use cfgPathAdded() since it's not DA.
+     *
+     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
+     *
+     *       deleted ones already handled above.
+     */
+    if (!cfg_path_exists(ppath, true, true)
+        && cfg_path_exists(ppath, false, true)) {
+      cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
+    } else {
+      SAVE_PATHS;
+      append_cfg_path(ppath);
+      if (cfg_node_changed()) {
+        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
+      } else {
+        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      }
+      RESTORE_PATHS;
+    }
+
+    ppath.pop_back();
+  }
+  if (sorted_keys) {
+    sort_nodes(*sorted_keys);
+  }
 }
 
 /* remove tag at current work path and its subtree.
