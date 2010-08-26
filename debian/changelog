@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.11) unstable; urgency=low
+
+  * switch to unordered_map
+  * remove sorting from unsorted API calls
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 25 Aug 2010 17:20:57 -0700
+
 vyatta-cfg (0.17.10) unstable; urgency=low
 
   * add extensible node sorting mechanism
