@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Author: An-Cheng Huang <ancheng@vyatta.com>
+# Author: Vyatta <eng@vyatta.com>
 # Date: 2007
 # Description: script to save the configuration
 
@@ -29,7 +29,7 @@ my $bootpath = $etcdir . "/config";
 my $save_file = $bootpath . "/config.boot";
 my $url_tmp_file = $bootpath . "/config.boot.$$";
 
-my $set_show_opt = 1;
+my $show_default = 1;
 if ($#ARGV > 1) {
   print "Usage: save [config_file_name] --no-defaults\n";
   exit 1;
@@ -41,11 +41,11 @@ if (defined($ARGV[0])) {
 	$save_file = $ARGV[0];
     }
     else {
-	$set_show_opt = 0;
+	$show_default = 0;
     }
 
     if (defined($ARGV[1]) && $ARGV[1] eq '--no-defaults') {
-	$set_show_opt = 0;
+	$show_default = 0;
     }
 }
 
@@ -100,8 +100,15 @@ if ($mode eq 'local') {
 }
 
 select $save;
-set_show_all($set_show_opt);
-outputActiveConfig();
+my @show_cmd = ('cli-shell-api', 'showCfg', '--show-active-only');
+if ($show_default) {
+  push @show_cmd, '--show-show-defaults';
+}
+open(my $show_fd, '-|', @show_cmd) or die 'Cannot execute config output';
+while (<$show_fd>) {
+  print;
+}
+close($show_fd);
 print $version_str;
 select STDOUT;
 
