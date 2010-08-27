@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.14) unstable; urgency=low
+
+  * fix for bug 5960
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 19:06:17 -0700
+
 vyatta-cfg (0.17.13) unstable; urgency=low
 
   * mark the root as "changed" after "comment" operation.
