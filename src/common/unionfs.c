@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <glib-2.0/glib.h>
@@ -23,6 +24,10 @@ extern vtw_path t_path;
  * behavior so no status is returned (since system() return code was not
  * checked). this should probably be changed so each invocation is checked
  * for error.
+ *
+ * XXX these (and many other things here) will need to be moved into the
+ *     library to consolidate the usage of all low-level implementation
+ *     details.
  */
 static inline void
 sys_mkdir_p(const char *path)
@@ -51,6 +56,25 @@ sys_cp(const char *src_file, const char *dst_file)
   if (!g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL)) {
     /* error */
     return;
+  }
+}
+
+static inline void
+sys_umount_session()
+{
+  if (umount(get_mdirp()) != 0) {
+    perror("umount");
+  }
+}
+
+static inline void
+sys_mount_session()
+{
+  char mopts[MAX_LENGTH_DIR_PATH * 2];
+  snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
+           get_cdirp(), get_adirp());
+  if (mount("unionfs", get_mdirp(), "unionfs", 0, mopts) != 0) {
+    perror("mount");
   }
 }
 
@@ -743,9 +767,6 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   static const char format1point1[]="mv -f %s/* -t %s"; /*mdirp, tmpp*/
   static const char format1point5[]="rm -fr '%s'/*"; /*tmpp*/
   
-  static const char format2[]="sudo umount %s"; //mdirp
-  static const char format8[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
-
   set_echo(TRUE);
 
   char mbuf[MAX_LENGTH_DIR_PATH];
@@ -802,15 +823,9 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
     system(command);
   }
 
-  //unmount temp (i.e. rm merge)
-  sprintf(command, format2, mbuf_root);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
+  // unmount the session dir
   if (test_mode == FALSE) {
-    system(command);
+    sys_umount_session();
   }
 
   if (suppress_piecewise_copy) {
@@ -837,14 +852,8 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
     piecewise_copy(node, test_mode);
   }
 
-  sprintf(command, format8, cbuf_root,abuf_root,mbuf_root);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
   if (test_mode == FALSE) {
-    system(command);
+    sys_mount_session();
   }
 
   fflush(NULL);
@@ -876,10 +885,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   char *command;
   command = malloc(MAX_LENGTH_DIR_PATH);
   /* XXX must ... remove ... this ... */
-  static const char format2[]="sudo umount %s"; //mdirp
   static const char format5[]="rm -fr '%s'/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
-  static const char format7[]="sudo mount -t unionfs -o dirs=%s=rw:%s=ro unionfs %s"; //cdirp, adirp, mdirp
-
 
   char tbuf[MAX_LENGTH_DIR_PATH];
   sprintf(tbuf,"%s",get_tmpp());
@@ -892,15 +898,8 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
 
   set_echo(TRUE);
 
-  sprintf(command, format2, mbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
-
   if (test_mode == FALSE) {
-    system(command);
+    sys_umount_session();
   }
 
   /*
@@ -939,14 +938,8 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
     system(command);
   }
 
-  sprintf(command, format7, cbuf,abuf,mbuf);
-  if (g_debug) {
-    printf("%s\n",command);
-    syslog(LOG_DEBUG,"%s\n",command);
-    fflush(NULL);
-  }
   if (test_mode == FALSE) {
-    system(command);
+    sys_mount_session();
   }
 
   /* notify other users in config mode */
