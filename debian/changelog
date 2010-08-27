@@ -1,3 +1,15 @@
+vyatta-cfg (0.17.15) unstable; urgency=low
+
+  [ Michael Larson ]
+  * allow commit hook commands to write to stdout.
+  * fix for bug 5982.
+
+  [ Mohit Mehta ]
+  * commits that don't need to be ported to mendocino from larkspur to
+    exclude file
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 27 Aug 2010 11:36:19 -0700
+
 vyatta-cfg (0.17.14) unstable; urgency=low
 
   * fix for bug 5960
