@@ -970,6 +970,10 @@ Cstore::commentCfgPath(const vector<string>& args, const vtw_def& def)
     }
   }
   RESTORE_PATHS;
+  if (ret) {
+    // mark the root as changed for "comment"
+    ret = mark_changed_with_ancestors();
+  }
   return ret;
 }
 
