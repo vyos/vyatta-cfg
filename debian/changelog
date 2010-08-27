@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.13) unstable; urgency=low
+
+  * mark the root as "changed" after "comment" operation.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 17:08:00 -0700
+
 vyatta-cfg (0.17.12) unstable; urgency=low
 
   * new implementation for config output
