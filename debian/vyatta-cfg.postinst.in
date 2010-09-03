@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
