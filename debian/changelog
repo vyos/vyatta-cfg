@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.16) unstable; urgency=low
+
+  * fix squeeze build issue
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 02 Sep 2010 18:27:53 -0700
+
 vyatta-cfg (0.17.15) unstable; urgency=low
 
   [ Michael Larson ]
