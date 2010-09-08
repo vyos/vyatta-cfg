@@ -84,19 +84,15 @@ done
 
 show ()
 {
-  local show_all=''
   local -a args=()
   for arg in "$@"; do
     if [ "$arg" == "-all" ]; then
-      show_all='-all'
+      args+=('--show-show-defaults')
     else
-      args[${#args[@]}]="$arg"
+      args+=("$arg")
     fi
   done
-  local level=$(vyatta_cli_shell_api NOEVAL getEditLevelStr)
-  ${vyatta_sbindir}/vyatta-output-config.pl ${show_all} \
-    $level ${args[@]} \
-  | eval "${VYATTA_PAGER:-cat}"
+  cli-shell-api showCfg "${args[@]}" | eval "${VYATTA_PAGER:-cat}"
 }
 
 commit ()

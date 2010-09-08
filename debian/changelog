@@ -1,3 +1,69 @@
+vyatta-cfg (0.17.17) unstable; urgency=low
+
+  * rebuild to link with latest apt
+  * remove lintian warnings
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 03 Sep 2010 13:16:07 -0700
+
+vyatta-cfg (0.17.16) unstable; urgency=low
+
+  * fix squeeze build issue
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 02 Sep 2010 18:27:53 -0700
+
+vyatta-cfg (0.17.15) unstable; urgency=low
+
+  [ Michael Larson ]
+  * allow commit hook commands to write to stdout.
+  * fix for bug 5982.
+
+  [ Mohit Mehta ]
+  * commits that don't need to be ported to mendocino from larkspur to
+    exclude file
+
+ -- Mohit Mehta <mohit.mehta@vyatta.com>  Fri, 27 Aug 2010 11:36:19 -0700
+
+vyatta-cfg (0.17.14) unstable; urgency=low
+
+  * fix for bug 5960
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 19:06:17 -0700
+
+vyatta-cfg (0.17.13) unstable; urgency=low
+
+  * mark the root as "changed" after "comment" operation.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 17:08:00 -0700
+
+vyatta-cfg (0.17.12) unstable; urgency=low
+
+  * new implementation for config output
+  * switch vyatta-cfg-cmd-wrapper to new config output implementation.
+  * mark changed ancestors up to the root
+  * switch "save" to use new config output implementation.
+  * don't show extra empty level for typeless leaf nodes.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 26 Aug 2010 16:47:13 -0700
+
+vyatta-cfg (0.17.11) unstable; urgency=low
+
+  * switch to unordered_map
+  * remove sorting from unsorted API calls
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 25 Aug 2010 17:20:57 -0700
+
+vyatta-cfg (0.17.10) unstable; urgency=low
+
+  * add extensible node sorting mechanism
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 24 Aug 2010 18:58:31 -0700
+
+vyatta-cfg (0.17.9) unstable; urgency=low
+
+  * move "changed" status handling into library
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 23 Aug 2010 14:51:19 -0700
+
 vyatta-cfg (0.17.8) unstable; urgency=low
 
   * don't remove the workaround yet

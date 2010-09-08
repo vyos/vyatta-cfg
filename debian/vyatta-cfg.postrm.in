@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 if [ "$1" = "purge" ]; then
   update-rc.d vyatta-router remove >/dev/null || exit $?

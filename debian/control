@@ -3,7 +3,7 @@ Section: contrib/net
 Priority: extra
 Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
 Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
- libboost-filesystem1.40-dev
+ libboost-filesystem1.42-dev, libapt-pkg-dev
 Standards-Version: 3.7.2
 
 Package: vyatta-cfg
@@ -49,7 +49,7 @@ Architecture: any
 Priority: optional
 Section: libdevel
 Depends: libvyatta-cfg1 (=${binary:Version}),
- libboost-filesystem1.40-dev
+ libboost-filesystem1.42-dev
 Description: libvyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
  library.

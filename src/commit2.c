@@ -369,6 +369,7 @@ main(int argc, char** argv)
 	setenv(ENV_COMMIT_STATUS,"FAILURE",1);
       }
       struct dirent *dirp = NULL;
+      restore_output();
       while ((dirp = readdir(dp)) != NULL) {
 	if (strcmp(dirp->d_name, ".") != 0 && 
 	    strcmp(dirp->d_name, "..") != 0) {

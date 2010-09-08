@@ -18,7 +18,7 @@
 #define _CSTORE_H_
 #include <vector>
 #include <string>
-#include <map>
+#include <tr1/unordered_map>
 
 #include <cli_cstore.h>
 
@@ -38,9 +38,13 @@ using namespace std;
 
 class Cstore {
 public:
-  Cstore() {};
+  Cstore() { init(); };
   Cstore(string& env);
   virtual ~Cstore() {};
+
+  // types
+  template<class K, class V>
+    class MapT : public tr1::unordered_map<K, V> {};
 
   // constants
   static const string C_NODE_STATUS_DELETED;
@@ -66,6 +70,7 @@ public:
 
   static const size_t MAX_CMD_OUTPUT_SIZE = 4096;
 
+
   ////// the public cstore interface
   //// functions implemented in this base class
   // these operate on template path
@@ -73,7 +78,7 @@ public:
   bool validateTmplPath(const vector<string>& path_comps, bool validate_vals,
                         vtw_def& def);
   bool getParsedTmpl(const vector<string>& path_comps,
-                     map<string, string>& tmap, bool allow_val = true);
+                     MapT<string, string>& tmap, bool allow_val = true);
   void tmplGetChildNodes(const vector<string>& path_comps,
                          vector<string>& cnodes);
 
@@ -142,8 +147,7 @@ public:
   virtual bool setupSession() = 0;
   virtual bool teardownSession() = 0;
   virtual bool inSession() = 0;
-  // common
-  bool markCfgPathChanged(const vector<string>& path_comps);
+  // commit
   bool unmarkCfgPathChanged(const vector<string>& path_comps);
   // XXX load
   //bool unmarkCfgPathDeactivatedDescendants(const vector<string>& path_comps);
@@ -187,7 +191,14 @@ public:
   void cfgPathGetDeletedValues(const vector<string>& path_comps,
                                vector<string>& dvals);
   void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                  map<string, string>& cmap);
+                                  MapT<string, string>& cmap) {
+    get_child_nodes_status(path_comps, cmap, NULL);
+  };
+  void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
+                                  MapT<string, string>& cmap,
+                                  vector<string>& sorted_keys) {
+    get_child_nodes_status(path_comps, cmap, &sorted_keys);
+  };
 
   /* observers for "effective config". can be used both during a config
    * session and outside a config session. more detailed information
@@ -245,7 +256,14 @@ public:
                                  vector<string>& dvals,
                                  bool include_deactivated = true);
   void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                    map<string, string>& cmap);
+                                    MapT<string, string>& cmap) {
+    get_child_nodes_status_da(path_comps, cmap, NULL);
+  };
+  void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
+                                    MapT<string, string>& cmap,
+                                    vector<string>& sorted_keys) {
+    get_child_nodes_status_da(path_comps, cmap, &sorted_keys);
+  };
 
 
   /* these are internal API functions and operate on current cfg and
@@ -307,14 +325,14 @@ private:
   virtual bool mark_deactivated() = 0;
   virtual bool unmark_deactivated() = 0;
   virtual bool unmark_deactivated_descendants() = 0;
+  virtual bool mark_changed_with_ancestors() = 0;
   virtual bool unmark_changed_with_descendants() = 0;
-  virtual bool mark_changed() = 0;
   virtual bool remove_comment() = 0;
   virtual bool set_comment(const string& comment) = 0;
   virtual bool discard_changes(unsigned long long& num_removed) = 0;
 
   // observers for current work path
-  virtual bool marked_changed() = 0;
+  virtual bool cfg_node_changed() = 0;
 
   // observers for current work path or active path
   virtual bool read_value_vec(vector<string>& vvec, bool active_cfg) = 0;
@@ -350,6 +368,30 @@ private:
   virtual string tmpl_path_to_str() = 0;
 
   ////// implemented
+  // for sorting
+  /* apparently unordered_map template does not work with "enum" type, so
+   * change this to simply unsigned ints to allow unifying all map types,
+   * i.e., "Cstore::MapT".
+   */
+  static const unsigned int SORT_DEFAULT;
+  static const unsigned int SORT_DEB_VERSION;
+  static const unsigned int SORT_NONE;
+  typedef bool (*SortFuncT)(std::string, std::string);
+  static MapT<unsigned int, SortFuncT> _sort_func_map;
+
+  static bool sort_func_deb_version(string a, string b);
+  void sort_nodes(vector<string>& nvec, unsigned int sort_alg = SORT_DEFAULT);
+
+  // init
+  static bool _init;
+  static void init() {
+    if (_init) {
+      return;
+    }
+    _init = true;
+    _sort_func_map[SORT_DEB_VERSION] = &sort_func_deb_version;
+  }
+
   // begin path modifiers (only these can change path permanently)
   bool append_tmpl_path(const vector<string>& path_comps, bool& is_tag);
   bool append_tmpl_path(const vector<string>& path_comps) {
@@ -383,6 +425,12 @@ private:
   bool cfg_path_exists(const vector<string>& path_comps,
                        bool active_cfg, bool include_deactivated);
   bool set_cfg_path(const vector<string>& path_comps, bool output);
+  void get_child_nodes_status(const vector<string>& path_comps,
+                              Cstore::MapT<string, string>& cmap,
+                              vector<string> *sorted_keys);
+  void get_child_nodes_status_da(const vector<string>& path_comps,
+                                 Cstore::MapT<string, string>& cmap,
+                                 vector<string> *sorted_keys);
 
   // these operate on current work path (or active with "active_cfg")
   bool remove_tag();

@@ -21,9 +21,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <map>
 #include <algorithm>
 #include <sstream>
+
+// for debian's version comparison algorithm
+#define APT_COMPATIBILITY 986
+#include <apt-pkg/version.h>
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
@@ -58,6 +61,16 @@ const string Cstore::C_ENV_SHAPI_HELP_STRS = "_cli_shell_api_hstrs";
 const string Cstore::C_ENUM_SCRIPT_DIR = "/opt/vyatta/share/enumeration";
 const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
 
+//// sorting
+const unsigned int Cstore::SORT_DEFAULT = 0;
+const unsigned int Cstore::SORT_DEB_VERSION = 0;
+const unsigned int Cstore::SORT_NONE = 1;
+
+////// static
+bool Cstore::_init = false;
+Cstore::MapT<unsigned int, Cstore::SortFuncT> Cstore::_sort_func_map;
+
+
 ////// constructors/destructors
 /* this constructor just returns the generic environment string,
  * currently the two levels. implementation-specific environment
@@ -71,6 +84,8 @@ const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
  */
 Cstore::Cstore(string& env)
 {
+  init();
+
   string decl = "declare -x ";
   env = (decl + C_ENV_EDIT_LEVEL + "=/; ");
   env += (decl + C_ENV_TMPL_LEVEL + "=/;");
@@ -109,7 +124,7 @@ Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals,
  */
 bool
 Cstore::getParsedTmpl(const vector<string>& path_comps,
-                      map<string, string>& tmap, bool allow_val)
+                      Cstore::MapT<string, string>& tmap, bool allow_val)
 {
   vtw_def def;
   /* currently this function is used outside actual CLI operations, mainly
@@ -182,6 +197,7 @@ Cstore::tmplGetChildNodes(const vector<string>& path_comps,
   SAVE_PATHS;
   append_tmpl_path(path_comps);
   get_all_tmpl_child_node_names(cnodes);
+  sort_nodes(cnodes);
   RESTORE_PATHS;
 }
 
@@ -220,10 +236,10 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
     /* assume default value is valid (parser should have validated).
      * also call unmark_deactivated() in case the node being deleted was
      * also deactivated. note that unmark_deactivated() succeeds if it's
-     * not marked deactivated.
+     * not marked deactivated. also mark "changed".
      */
     bool ret = (write_value(def.def_default) && mark_display_default()
-                && unmark_deactivated());
+                && unmark_deactivated() && mark_changed_with_ancestors());
     if (!ret) {
       output_user("Failed to set default value during delete\n");
     }
@@ -265,6 +281,10 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
       pop_cfg_path();
       ret = remove_node();
     }
+  }
+  if (ret) {
+    // mark changed
+    ret = mark_changed_with_ancestors();
   }
   RESTORE_PATHS;
   if (!ret) {
@@ -893,7 +913,12 @@ Cstore::renameCfgPath(const vector<string>& args)
   string otagval = args[1];
   string ntagval = args[4];
   push_cfg_path(otagnode);
-  bool ret = rename_child_node(otagval, ntagval);
+  /* also mark changed. note that it's marking the "tag node" but not the
+   * "tag values" since one is being "deleted" and the other is being
+   * "added" anyway.
+   */
+  bool ret = (rename_child_node(otagval, ntagval)
+              && mark_changed_with_ancestors());
   pop_cfg_path();
   return ret;
 }
@@ -909,7 +934,11 @@ Cstore::copyCfgPath(const vector<string>& args)
   string otagval = args[1];
   string ntagval = args[4];
   push_cfg_path(otagnode);
-  bool ret = copy_child_node(otagval, ntagval);
+  /* also mark changed. note that it's marking the "tag node" but not the
+   * new "tag value" since it is being "added" anyway.
+   */
+  bool ret = (copy_child_node(otagval, ntagval)
+              && mark_changed_with_ancestors());
   pop_cfg_path();
   return ret;
 }
@@ -941,6 +970,10 @@ Cstore::commentCfgPath(const vector<string>& args, const vtw_def& def)
     }
   }
   RESTORE_PATHS;
+  if (ret) {
+    // mark the root as changed for "comment"
+    ret = mark_changed_with_ancestors();
+  }
   return ret;
 }
 
@@ -1038,7 +1071,7 @@ Cstore::cfgPathAdded(const vector<string>& path_comps)
  *     (remember this functions is NOT "deactivate-aware")
  *       (1) cfgPathDeleted()
  *       (2) cfgPathAdded()
- *       (3) marked_changed()
+ *       (3) cfg_node_changed()
  */
 bool
 Cstore::cfgPathChanged(const vector<string>& path_comps)
@@ -1048,7 +1081,7 @@ Cstore::cfgPathChanged(const vector<string>& path_comps)
   }
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = marked_changed();
+  bool ret = cfg_node_changed();
   RESTORE_PATHS;
   return ret;
 }
@@ -1073,7 +1106,7 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
   cfgPathGetChildNodesDA(path_comps, acnodes, true, include_deactivated);
   vector<string> wcnodes;
   cfgPathGetChildNodesDA(path_comps, wcnodes, false, include_deactivated);
-  map<string, bool> cmap;
+  MapT<string, bool> cmap;
   for (size_t i = 0; i < wcnodes.size(); i++) {
     cmap[wcnodes[i]] = true;
   }
@@ -1083,6 +1116,7 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
       cnodes.push_back(acnodes[i]);
     }
   }
+  sort_nodes(cnodes);
 }
 
 /* get "deleted" values of specified "multi node" during commit
@@ -1111,7 +1145,7 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
       || !cfgPathGetValuesDA(path_comps, nvals, false, include_deactivated)) {
     return;
   }
-  map<string, bool> dmap;
+  MapT<string, bool> dmap;
   for (size_t i = 0; i < nvals.size(); i++) {
     dmap[nvals[i]] = true;
   }
@@ -1120,103 +1154,6 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
       // in active but not in working
       dvals.push_back(ovals[i]);
     }
-  }
-}
-
-/* this is the equivalent of the listNodeStatus() from the original
- * perl API. it provides the "status" ("deleted", "added", "changed",
- * or "static") of each child node of specified path.
- *   cmap: (output) contains the status of child nodes.
- *
- * note: this function is NOT "deactivate-aware".
- */
-void
-Cstore::cfgPathGetChildNodesStatus(const vector<string>& path_comps,
-                                   map<string, string>& cmap)
-{
-  // get a union of active and working
-  map<string, bool> umap;
-  vector<string> acnodes;
-  vector<string> wcnodes;
-  cfgPathGetChildNodes(path_comps, acnodes, true);
-  cfgPathGetChildNodes(path_comps, wcnodes, false);
-  for (size_t i = 0; i < acnodes.size(); i++) {
-    umap[acnodes[i]] = true;
-  }
-  for (size_t i = 0; i < wcnodes.size(); i++) {
-    umap[wcnodes[i]] = true;
-  }
-
-  // get the status of each one
-  vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = umap.begin();
-  for (; it != umap.end(); ++it) {
-    string c = (*it).first;
-    ppath.push_back(c);
-    // note: "changed" includes "deleted" and "added", so check those first.
-    if (cfgPathDeleted(ppath)) {
-      cmap[c] = C_NODE_STATUS_DELETED;
-    } else if (cfgPathAdded(ppath)) {
-      cmap[c] = C_NODE_STATUS_ADDED;
-    } else if (cfgPathChanged(ppath)) {
-      cmap[c] = C_NODE_STATUS_CHANGED;
-    } else {
-      cmap[c] = C_NODE_STATUS_STATIC;
-    }
-    ppath.pop_back();
-  }
-}
-
-/* DA version of the above function.
- *   cmap: (output) contains the status of child nodes.
- *
- * note: this follows the original perl API listNodeStatus() implementation.
- */
-void
-Cstore::cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
-                                     map<string, string>& cmap)
-{
-  // process deleted nodes first
-  vector<string> del_nodes;
-  cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
-  for (size_t i = 0; i < del_nodes.size(); i++) {
-    cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
-  }
-
-  // get all nodes in working config
-  vector<string> work_nodes;
-  cfgPathGetChildNodesDA(path_comps, work_nodes, false);
-  vector<string> ppath = path_comps;
-  for (size_t i = 0; i < work_nodes.size(); i++) {
-    ppath.push_back(work_nodes[i]);
-    /* note: in the DA version here, we do NOT check the deactivate state
-     *       when considering the state of the child nodes (which include
-     *       deactivated ones). the reason is that this DA function is used
-     *       for config output-related operations and should return whether
-     *       each node is actually added/deleted from the config independent
-     *       of its deactivate state.
-     *
-     *       for "added" state, can't use cfgPathAdded() since it's not DA.
-     *
-     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
-     *
-     *       deleted ones already handled above.
-     */
-    if (!cfg_path_exists(ppath, true, true)
-        && cfg_path_exists(ppath, false, true)) {
-      cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
-    } else {
-      SAVE_PATHS;
-      append_cfg_path(ppath);
-      if (marked_changed()) {
-        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
-      } else {
-        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
-      }
-      RESTORE_PATHS;
-    }
-
-    ppath.pop_back();
   }
 }
 
@@ -1281,6 +1218,7 @@ Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
   append_cfg_path(path_comps);
   get_all_child_node_names(cnodes, active_cfg, include_deactivated);
   RESTORE_PATHS;
+  sort_nodes(cnodes);
 }
 
 /* get value of specified single-value node.
@@ -1539,7 +1477,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
   }
 
   // get a union of active and working
-  map<string, bool> cmap;
+  MapT<string, bool> cmap;
   vector<string> acnodes;
   vector<string> wcnodes;
   cfgPathGetChildNodes(path_comps, acnodes, true);
@@ -1553,7 +1491,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
 
   // get only the effective ones from the union
   vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = cmap.begin();
+  MapT<string, bool>::iterator it = cmap.begin();
   for (; it != cmap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
@@ -1562,6 +1500,7 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
     }
     ppath.pop_back();
   }
+  sort_nodes(cnodes);
 }
 
 /* get the "effective" value of specified path during commit operation.
@@ -1624,7 +1563,7 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
   }
 
   // get a union of active and working
-  map<string, bool> vmap;
+  MapT<string, bool> vmap;
   vector<string> ovals;
   vector<string> nvals;
   cfgPathGetValues(path_comps, ovals, true);
@@ -1638,7 +1577,7 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
 
   // get only the effective ones from the union
   vector<string> ppath = path_comps;
-  map<string, bool>::iterator it = vmap.begin();
+  MapT<string, bool>::iterator it = vmap.begin();
   for (; it != vmap.end(); ++it) {
     string c = (*it).first;
     ppath.push_back(c);
@@ -1738,7 +1677,9 @@ Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
 
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = (mark_deactivated() && unmark_deactivated_descendants());
+  // note: also mark changed
+  bool ret = (mark_deactivated() && unmark_deactivated_descendants()
+              && mark_changed_with_ancestors());
   RESTORE_PATHS;
   return ret;
 }
@@ -1752,17 +1693,16 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
 {
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  bool ret = unmark_deactivated();
+  // note: also mark changed
+  bool ret = (unmark_deactivated() && mark_changed_with_ancestors());
   RESTORE_PATHS;
   return ret;
 }
 
-/* mark specified path as changed in working config.
- * the marking is used during commit to check if a node has been changed.
- * this should be done after set/delete/activate/deactivate.
- * note: if a node is changed, all of its ancestors are also considered
- *       changed.
- * return true if successful. otherwise return false.
+/* "changed" status handling.
+ * the "changed" status is used during commit to check if a node has been
+ * changed. note that if a node is "changed", all of its ancestors are also
+ * considered changed (this follows the original logic).
  *
  * the original backend implementation only uses the "changed" marker at
  * "root" to indicate whether the whole config has changed. for the rest
@@ -1775,38 +1715,30 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
  * in "changes only", so they are _not_ treated as "changed". this creates
  * problems in various parts of the backend.
  *
- * the new CLI backend/library marks all changed nodes explicitly, and the
- * "changed" status depends on such markers. note that the actual marking
- * is done by the low-level implementation, so it does not have to be done
- * as a "file marker" as long as the low-level implementation can correctly
- * answer the "changed" query for a given path.
+ * the new CLI backend/library "marks" all changed nodes explicitly, and the
+ * "changed" status depends on such markers. the marking is done using the
+ * pure virtual mark_changed_with_ancestors() function, which is provided
+ * by the low-level implementation, so it does not have to be done as a
+ * "per-node file marker" as long as the low-level implementation can
+ * correctly answer the "changed" query for a given path.
+ *
+ * note that "changed" nodes does not include "added" and "deleted" nodes.
+ * for the convenience of implementation, the backend must always query
+ * for "changed" nodes *after* "added" and "deleted" nodes. in other
+ * words, the backend will only treat a node as "changed" if it is neither
+ * "added" nor "deleted". currently there are only two places that perform
+ * changed status query: cfgPathGetChildNodesStatus() and
+ * cfgPathGetChildNodesStatusDA(). see those two functions for the usage.
+ *
+ * what this means is that the backend can choose to either mark or not
+ * mark "added"/"deleted" nodes as "changed" at its convenience. for
+ * example, "set" and "delete" always do the marking, but "rename" and
+ * "copy" do not.
+ *
+ * changed status queries are provided by the cfg_node_changed() function,
+ * and changed markers can be removed by unmarkCfgPathChanged() below (used
+ * by "commit").
  */
-bool
-Cstore::markCfgPathChanged(const vector<string>& path_comps)
-{
-  // first mark the root changed
-  if (!mark_changed()) {
-    return false;
-  }
-
-  // now mark each level as changed
-  vector<string> ppath;
-  for (size_t i = 0; i < path_comps.size(); i++) {
-    ppath.push_back(path_comps[i]);
-    if (!cfg_path_exists(ppath, false, false)) {
-      // this level no longer in working. nothing further.
-      break;
-    }
-    SAVE_PATHS;
-    append_cfg_path(ppath);
-    bool ret = mark_changed();
-    RESTORE_PATHS;
-    if (!ret) {
-      return false;
-    }
-  }
-  return true;
-}
 
 /* unmark "changed" status of specified path in working config.
  * this is used, e.g., at the end of "commit" to reset a subtree.
@@ -1871,6 +1803,21 @@ Cstore::output_internal(const char *fmt, ...)
 
 
 ////// private functions
+bool
+Cstore::sort_func_deb_version(string a, string b)
+{
+  return (pkgVersionCompare(a, b) < 0);
+}
+
+void
+Cstore::sort_nodes(vector<string>& nvec, unsigned int sort_alg)
+{
+  if (_sort_func_map.find(sort_alg) == _sort_func_map.end()) {
+    return;
+  }
+  sort(nvec.begin(), nvec.end(), _sort_func_map[sort_alg]);
+}
+
 /* try to append the logical path to template path.
  *   is_tag: (output) whether the last component is a "tag".
  * return false if logical path is not valid. otherwise return true.
@@ -2272,6 +2219,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
         }
       }
     }
+    if (!mark_changed_with_ancestors()) {
+      ret = false;
+      break;
+    }
     RESTORE_PATHS;
   }
   RESTORE_PATHS; // if "break" was hit
@@ -2289,29 +2240,32 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     pop_cfg_path();
     // only do it if it's previously marked default
     if (marked_display_default(false)) {
-      ret = unmark_display_default();
+      if ((ret = unmark_display_default())) {
+        /* XXX work around current commit's unionfs implementation problem.
+         * current commit's unionfs implementation looks at the "changes
+         * only" directory (i.e., the r/w portion of the union mount), which
+         * is wrong.
+         *
+         * all config information should be obtained from two directories:
+         * "active" and "working", e.g., instead of looking at whiteout
+         * files in "changes only" to find deleted nodes, nodes that are in
+         * "active" but not in "working" have been deleted.
+         *
+         * in this particular case, commit looks at "changes only" to read
+         * the node.val file. however, since the value didn't change (only
+         * the "default status" changed), node.val doesn't appear in
+         * "changes only". here we re-write the file to force it into
+         * "changes only" so that commit can work correctly.
+         */
+        vector<string> vvec;
+        read_value_vec(vvec, false);
+        write_value_vec(vvec);
 
-      /* XXX work around current commit's unionfs implementation problem.
-       * current commit's unionfs implementation looks at the "changes only"
-       * directory (i.e., the r/w portion of the union mount), which is wrong.
-       *
-       * all config information should be obtained from two directories:
-       * "active" and "working", e.g., instead of looking at whiteout files
-       * in "changes only" to find deleted nodes, nodes that are in "active"
-       * but not in "working" have been deleted.
-       *
-       * in this particular case, commit looks at "changes only" to read the
-       * node.val file. however, since the value didn't change (only the
-       * "default status" changed), node.val doesn't appear in "changes only".
-       * here we re-write the file to force it into "changes only" so that
-       * commit can work correctly.
-       */
-      vector<string> vvec;
-      read_value_vec(vvec, false);
-      write_value_vec(vvec);
-
-      // pretend it didn't exist since we changed the status
-      path_exists = false;
+        // pretend it didn't exist since we changed the status
+        path_exists = false;
+        // also mark changed
+        ret = mark_changed_with_ancestors();
+      }
     }
     RESTORE_PATHS;
   }
@@ -2323,6 +2277,122 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     // treat as success
   }
   return ret;
+}
+
+/* this is the equivalent of the listNodeStatus() from the original
+ * perl API. it provides the "status" ("deleted", "added", "changed",
+ * or "static") of each child node of specified path.
+ *   cmap: (output) contains the status of child nodes.
+ *   sorted_keys: (output) contains sorted keys. call with NULL if not needed.
+ *
+ * note: this function is NOT "deactivate-aware".
+ */
+void
+Cstore::get_child_nodes_status(const vector<string>& path_comps,
+                               Cstore::MapT<string, string>& cmap,
+                               vector<string> *sorted_keys)
+{
+  // get a union of active and working
+  MapT<string, bool> umap;
+  vector<string> acnodes;
+  vector<string> wcnodes;
+  cfgPathGetChildNodes(path_comps, acnodes, true);
+  cfgPathGetChildNodes(path_comps, wcnodes, false);
+  for (size_t i = 0; i < acnodes.size(); i++) {
+    umap[acnodes[i]] = true;
+  }
+  for (size_t i = 0; i < wcnodes.size(); i++) {
+    umap[wcnodes[i]] = true;
+  }
+
+  // get the status of each one
+  vector<string> ppath = path_comps;
+  MapT<string, bool>::iterator it = umap.begin();
+  for (; it != umap.end(); ++it) {
+    string c = (*it).first;
+    ppath.push_back(c);
+    if (sorted_keys) {
+      sorted_keys->push_back(c);
+    }
+    // note: "changed" includes "deleted" and "added", so check those first.
+    if (cfgPathDeleted(ppath)) {
+      cmap[c] = C_NODE_STATUS_DELETED;
+    } else if (cfgPathAdded(ppath)) {
+      cmap[c] = C_NODE_STATUS_ADDED;
+    } else if (cfgPathChanged(ppath)) {
+      cmap[c] = C_NODE_STATUS_CHANGED;
+    } else {
+      cmap[c] = C_NODE_STATUS_STATIC;
+    }
+    ppath.pop_back();
+  }
+  if (sorted_keys) {
+    sort_nodes(*sorted_keys);
+  }
+}
+
+/* DA version of the above function.
+ *   cmap: (output) contains the status of child nodes.
+ *   sorted_keys: (output) contains sorted keys. call with NULL if not needed.
+ *
+ * note: this follows the original perl API listNodeStatus() implementation.
+ */
+void
+Cstore::get_child_nodes_status_da(const vector<string>& path_comps,
+                                  Cstore::MapT<string, string>& cmap,
+                                  vector<string> *sorted_keys)
+{
+  // process deleted nodes first
+  vector<string> del_nodes;
+  cfgPathGetDeletedChildNodesDA(path_comps, del_nodes);
+  for (size_t i = 0; i < del_nodes.size(); i++) {
+    if (sorted_keys) {
+      sorted_keys->push_back(del_nodes[i]);
+    }
+    cmap[del_nodes[i]] = C_NODE_STATUS_DELETED;
+  }
+
+  // get all nodes in working config
+  vector<string> work_nodes;
+  cfgPathGetChildNodesDA(path_comps, work_nodes, false);
+  vector<string> ppath = path_comps;
+  for (size_t i = 0; i < work_nodes.size(); i++) {
+    ppath.push_back(work_nodes[i]);
+    if (sorted_keys) {
+      sorted_keys->push_back(work_nodes[i]);
+    }
+    /* note: in the DA version here, we do NOT check the deactivate state
+     *       when considering the state of the child nodes (which include
+     *       deactivated ones). the reason is that this DA function is used
+     *       for config output-related operations and should return whether
+     *       each node is actually added/deleted from the config independent
+     *       of its deactivate state.
+     *
+     *       for "added" state, can't use cfgPathAdded() since it's not DA.
+     *
+     *       for "changed" state, can't use cfgPathChanged() since it's not DA.
+     *
+     *       deleted ones already handled above.
+     */
+    if (!cfg_path_exists(ppath, true, true)
+        && cfg_path_exists(ppath, false, true)) {
+      cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
+    } else {
+      SAVE_PATHS;
+      append_cfg_path(ppath);
+      if (cfg_node_changed()) {
+        cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
+      } else {
+        cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
+      }
+      RESTORE_PATHS;
+    }
+
+    ppath.pop_back();
+  }
+  if (sorted_keys) {
+    sort_nodes(*sorted_keys);
+  }
 }
 
 /* remove tag at current work path and its subtree.
