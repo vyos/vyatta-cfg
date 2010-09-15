@@ -997,11 +997,12 @@ UnionfsCstore::get_all_child_dir_names(b_fs::path root, vector<string>& nodes)
         continue;
       }
       // name cannot start with "."
-      if (di->path().file_string().substr(0, 1) == ".") {
+      string cname = di->path().filename();
+      if (cname.length() < 1 || cname[0] == '.') {
         continue;
       }
       // found one
-      nodes.push_back(_unescape_path_name(di->path().filename()));
+      nodes.push_back(_unescape_path_name(cname));
     }
   } catch (...) {
     return;
