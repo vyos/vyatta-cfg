@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.19) unstable; urgency=low
+
+  * * move count_iptables_rule to MISC module
+
+ -- Mohit Mehta <mohit@vyatta.com>  Tue, 21 Sep 2010 17:36:22 -0700
+
 vyatta-cfg (0.17.18) unstable; urgency=low
 
   * fix for bug 6195
