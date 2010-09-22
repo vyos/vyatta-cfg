@@ -26,8 +26,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled
-		 isIpAddress is_ip_v4_or_v6 interface_description
-		 count_iptables_rules);
+		 isIpAddress is_ip_v4_or_v6 interface_description);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
@@ -416,16 +415,6 @@ sub interface_description {
     chomp $description if $description;
 
     return $description;
-}
-
-sub count_iptables_rules {
-    my ($command, $table, $chain) = @_;
-    my @lines = `sudo $command -t $table -L $chain -n --line`;
-    my $cnt = 0;
-    foreach my $line (@lines) {
-      $cnt++ if $line =~ /^\d/;
-    }
-    return $cnt;
 }
 
 1;
