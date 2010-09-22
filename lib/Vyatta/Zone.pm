@@ -121,16 +121,6 @@ sub get_zone_chain {
     return $chain;
 }
 
-sub count_iptables_rules {
-    my ($command, $table, $chain) = @_;
-    my @lines = `sudo $command -t $table -L $chain -n --line`;
-    my $cnt = 0;
-    foreach my $line (@lines) {
-      $cnt++ if $line =~ /^\d/;
-    }
-    return $cnt;
-}
-
 sub validity_checks {
     my @all_zones = get_all_zones("listNodes");
     my @all_interfaces = ();
