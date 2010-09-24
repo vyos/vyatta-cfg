@@ -472,7 +472,7 @@ char *clind_unescape(const char *name)
 {
   const char *cp;
   char *rcp, *ret;
-  char len;
+  unsigned long len;
   
   for(cp=name, len=0;*cp;++cp, ++len)
     if(*cp=='%')
