@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.22) unstable; urgency=low
+
+  * cleanup
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 24 Sep 2010 11:32:21 -0700
+
 vyatta-cfg (0.17.21) unstable; urgency=low
 
   * fix for bug 6213.
