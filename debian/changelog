@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.21) unstable; urgency=low
+
+  * fix for bug 6213.
+
+ -- root <root@vyatta-build2>  Fri, 24 Sep 2010 10:49:35 -0700
+
 vyatta-cfg (0.17.20) unstable; urgency=low
 
   * * move count_iptables_rules to Iptables::Mgr module
