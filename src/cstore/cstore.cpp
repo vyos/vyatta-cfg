@@ -600,7 +600,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
         pair<string, string> hpair(comp_vals[i], "");
         push_tmpl_path(hpair.first);
         vtw_def cdef;
-        if (tmpl_parse(cdef)) {
+        if (tmpl_parse(cdef) && cdef.def_node_help) {
           hpair.second = cdef.def_node_help;
         } else {
           hpair.second = "<No help text available>";
