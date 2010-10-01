@@ -176,7 +176,9 @@ sub validity_checks {
           if ($intf) {
             my $config = new Vyatta::Config;
             $config->setLevel($intf->path());
-            if ($config->exists("firewall")) {
+            if ($config->exists("firewall in name") ||
+                $config->exists("firewall out name") ||
+                $config->exists("firewall local name")) {
               $returnstring = 
 			"interface $interface has firewall configured, " .
 			"cannot be defined under a zone";
