@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.25) unstable; urgency=low
+
+  * add commit wrapper hook that allows errors with location to be
+    written to stdout.
+
+ -- root <root@vyatta-build>  Fri, 01 Oct 2010 09:58:30 -0700
+
 vyatta-cfg (0.17.24) unstable; urgency=low
 
   * Pass optional commit comment through commit to commit hooks.
