@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.24) unstable; urgency=low
+
+  * Pass optional commit comment through commit to commit hooks.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 01 Oct 2010 11:38:50 -0700
+
 vyatta-cfg (0.17.23) unstable; urgency=low
 
   * Fix Bug 6225 Unable to assign a pppoe interface to zone
