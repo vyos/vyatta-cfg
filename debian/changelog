@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.23) unstable; urgency=low
+
+  * Fix Bug 6225 Unable to assign a pppoe interface to zone
+
+ -- Mohit Mehta <mohit@vyatta.com>  Fri, 01 Oct 2010 11:15:14 -0700
+
 vyatta-cfg (0.17.22) unstable; urgency=low
 
   * cleanup
