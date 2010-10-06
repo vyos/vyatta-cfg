@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.26) unstable; urgency=low
+
+  * * don't allow adding an interface to a zone that has content-
+    inspection enabled
+
+ -- Mohit Mehta <mohit@vyatta.com>  Wed, 06 Oct 2010 16:23:51 -0700
+
 vyatta-cfg (0.17.25) unstable; urgency=low
 
   * add commit wrapper hook that allows errors with location to be
