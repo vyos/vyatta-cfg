@@ -171,17 +171,33 @@ sub validity_checks {
           return($returnstring, );
         }
         foreach my $interface (@zone_intfs) {
-          # make sure firewall is not applied to this interface
+          # make sure zone features are not being used on zone interface
           my $intf = new Vyatta::Interface($interface);
           if ($intf) {
             my $config = new Vyatta::Config;
             $config->setLevel($intf->path());
+            # make sure firewall is not applied to this interface
             if ($config->exists("firewall in name") ||
                 $config->exists("firewall out name") ||
-                $config->exists("firewall local name")) {
-              $returnstring = 
-			"interface $interface has firewall configured, " .
-			"cannot be defined under a zone";
+                $config->exists("firewall local name") ||
+                $config->exists("firewall in ipv6-name") ||
+                $config->exists("firewall out ipv6-name") ||
+                $config->exists("firewall local ipv6-name")) {
+              $returnstring =
+                        "interface $interface has firewall rule-set " .
+                        "configured, cannot be defined under a zone";
+              return($returnstring, );
+            }
+            # make sure content-inspection is not applied to this interface
+            if ($config->exists("content-inspection in enable") ||
+                $config->exists("content-inspection out enable") ||
+                $config->exists("content-inspection local enable") ||
+                $config->exists("content-inspection in ipv6-enable") ||
+                $config->exists("content-inspection out ipv6-enable") ||
+                $config->exists("content-inspection local ipv6-enable")) {
+              $returnstring =
+                        "interface $interface has content-inspection " .
+                        "configured, cannot be defined under a zone";
               return($returnstring, );
             }
           }
