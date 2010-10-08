@@ -676,6 +676,16 @@ sub compareValueLists {
   return %comp_hash;
 }
 
+sub outputError {
+    my ($self, $location, $msg) = @_;
+    print STDERR $msg . "\n";
+    if (defined($ENV{VYATTA_OUTPUT_ERROR_LOCATION})) {
+	foreach my $elem (@$location) {
+	    print STDERR "reference:[" . $elem . "]\n";
+	}
+    }
+}
+
 ############################################################
 # API functions that have not been converted
 ############################################################
