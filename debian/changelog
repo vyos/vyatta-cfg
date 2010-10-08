@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.29) unstable; urgency=low
+
+  * reference error location method in config module.
+
+ -- root <root@vyatta-build>  Fri, 08 Oct 2010 12:03:25 -0700
+
 vyatta-cfg (0.17.28) unstable; urgency=low
 
   * Bugfix 5830: Teach auto affinity script to use new queue naming
