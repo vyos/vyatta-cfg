@@ -681,7 +681,7 @@ sub outputError {
     print STDERR $msg . "\n";
     if (defined($ENV{VYATTA_OUTPUT_ERROR_LOCATION})) {
 	foreach my $elem (@$location) {
-	    print STDERR "reference:[" . $elem . "]\n";
+	    print STDERR "errloc:[" . $elem . "]\n";
 	}
     }
 }
