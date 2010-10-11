@@ -590,7 +590,7 @@ process_func(GNode *node, gpointer data)
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
 	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
 	if (g_display_error_node) {
-	  fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
+	  fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
 	}
 	result->_err_code = 1;
 	if (g_debug) {
@@ -1404,7 +1404,7 @@ validate_func(GNode *node, gpointer data)
     }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
-      fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
+      fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
     }
     result->_err_code = 1;
     if (g_debug) {
