@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.30) unstable; urgency=low
+
+  * change location tag for error from reference: to errloc:
+  * change error location tag from commit process
+
+ -- root <root@vyatta-build2>  Mon, 11 Oct 2010 15:51:37 -0700
+
 vyatta-cfg (0.17.29) unstable; urgency=low
 
   * reference error location method in config module.
