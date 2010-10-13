@@ -1,3 +1,79 @@
+vyatta-cfg (0.17.30) unstable; urgency=low
+
+  * change location tag for error from reference: to errloc:
+  * change error location tag from commit process
+
+ -- root <root@vyatta-build2>  Mon, 11 Oct 2010 15:51:37 -0700
+
+vyatta-cfg (0.17.29) unstable; urgency=low
+
+  * reference error location method in config module.
+
+ -- root <root@vyatta-build>  Fri, 08 Oct 2010 12:03:25 -0700
+
+vyatta-cfg (0.17.28) unstable; urgency=low
+
+  * Bugfix 5830: Teach auto affinity script to use new queue naming
+    scheme.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Fri, 08 Oct 2010 11:02:14 -0700
+
+vyatta-cfg (0.17.27) unstable; urgency=low
+
+  * moved code for zones to vyatta-zone package
+
+ -- Mohit Mehta <mohit@vyatta.com>  Thu, 07 Oct 2010 19:15:07 -0700
+
+vyatta-cfg (0.17.26) unstable; urgency=low
+
+  * * don't allow adding an interface to a zone that has content-
+    inspection enabled
+
+ -- Mohit Mehta <mohit@vyatta.com>  Wed, 06 Oct 2010 16:23:51 -0700
+
+vyatta-cfg (0.17.25) unstable; urgency=low
+
+  * add commit wrapper hook that allows errors with location to be
+    written to stdout.
+
+ -- root <root@vyatta-build>  Fri, 01 Oct 2010 09:58:30 -0700
+
+vyatta-cfg (0.17.24) unstable; urgency=low
+
+  * Pass optional commit comment through commit to commit hooks.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 01 Oct 2010 11:38:50 -0700
+
+vyatta-cfg (0.17.23) unstable; urgency=low
+
+  * Fix Bug 6225 Unable to assign a pppoe interface to zone
+
+ -- Mohit Mehta <mohit@vyatta.com>  Fri, 01 Oct 2010 11:15:14 -0700
+
+vyatta-cfg (0.17.22) unstable; urgency=low
+
+  * cleanup
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 24 Sep 2010 11:32:21 -0700
+
+vyatta-cfg (0.17.21) unstable; urgency=low
+
+  * fix for bug 6213.
+
+ -- root <root@vyatta-build2>  Fri, 24 Sep 2010 10:49:35 -0700
+
+vyatta-cfg (0.17.20) unstable; urgency=low
+
+  * * move count_iptables_rules to Iptables::Mgr module
+
+ -- Mohit Mehta <mohit@vyatta.com>  Tue, 21 Sep 2010 21:13:55 -0700
+
+vyatta-cfg (0.17.19) unstable; urgency=low
+
+  * * move count_iptables_rule to MISC module
+
+ -- Mohit Mehta <mohit@vyatta.com>  Tue, 21 Sep 2010 17:36:22 -0700
+
 vyatta-cfg (0.17.18) unstable; urgency=low
 
   * fix for bug 6195

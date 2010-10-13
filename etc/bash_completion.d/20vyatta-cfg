@@ -97,7 +97,22 @@ show ()
 
 commit ()
 {
-  if /opt/vyatta/sbin/my_commit "$@"; then
+  local comment="commit"
+  local next=0
+  local -a args=()
+  for arg in "$@"; do
+    if [ "$next" == "1" ]; then
+      comment=$arg
+      next=0;
+    elif [ "$arg" == "comment" ]; then
+      next=1
+    else
+      args[${#args[@]}]="$arg"    
+    fi
+  done
+  args+=("-C '$comment'")
+
+  if /opt/vyatta/sbin/my_commit "${args[@]}"; then
     vyatta_cli_shell_api markSessionUnsaved
   fi
 }
@@ -683,11 +698,11 @@ vyatta_config_complete ()
 
 if ! vyatta_cli_shell_api setupSession; then
   echo 'Failed to set up config session'
-  exit 1
+  builtin exit 1
 fi
 
 # disallow 'Ctrl-D' exit, since we need special actions on 'exit'
-set -o ignoreeof 1
+builtin set -o ignoreeof 1
 
 reset_edit_level
 alias set=/opt/vyatta/sbin/my_set

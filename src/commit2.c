@@ -133,12 +133,13 @@ main(int argc, char** argv)
   boolean full_commit_check = FALSE;
   boolean break_priority = FALSE;
   boolean disable_hook = FALSE;
+  char   *commit_comment  = NULL;  
 
   /* this is needed before calling certain glib functions */
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoafbr")) != -1) {
+  while ((ch = getopt(argc, argv, "dpthsecoafbrC:")) != -1) {
     switch (ch) {
     case 'd':
       g_debug = TRUE;
@@ -176,6 +177,9 @@ main(int argc, char** argv)
       break;
     case 'r':
       disable_hook = TRUE;
+      break;
+    case 'C':
+      commit_comment = strdup(optarg);
       break;
     default:
       usage();
@@ -374,7 +378,10 @@ main(int argc, char** argv)
 	if (strcmp(dirp->d_name, ".") != 0 && 
 	    strcmp(dirp->d_name, "..") != 0) {
 	  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
-	  sprintf(buf,"%s/%s",COMMIT_HOOK_DIR,dirp->d_name);
+	  if (commit_comment == NULL) {
+	      commit_comment="commit";
+	  }
+	  sprintf(buf,"%s/%s %s",COMMIT_HOOK_DIR,dirp->d_name, commit_comment);
 	  syslog(LOG_DEBUG,"Starting commit hook: %s",buf);
 	  if (system(buf) == -1) {
 	    syslog(LOG_WARNING,"Error on call to hook: %s", buf);
@@ -583,7 +590,7 @@ process_func(GNode *node, gpointer data)
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
 	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
 	if (g_display_error_node) {
-	  fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
+	  fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
 	}
 	result->_err_code = 1;
 	if (g_debug) {
@@ -1397,7 +1404,7 @@ validate_func(GNode *node, gpointer data)
     }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
-      fprintf(out_stream,"%s:[%s]\n",ActionNames[result->_action],d->_path);
+      fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
     }
     result->_err_code = 1;
     if (g_debug) {

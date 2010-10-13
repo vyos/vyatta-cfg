@@ -13,7 +13,7 @@
 # General Public License for more details.
 #
 # This code was originally developed by Vyatta, Inc.
-# Portions created by Vyatta are Copyright (C) 2009 Vyatta, Inc.
+# Portions created by Vyatta are Copyright (C) 2009,2010 Vyatta, Inc.
 # All Rights Reserved.
 #
 # Author: Bob Gilligan (gilligan@vyatta.com)
@@ -170,6 +170,75 @@ sub intel_func{
     }
 };
 
+
+# Affinity setting function for NICs using new intel queue scheme
+# that provides one IRQ for each pair of TX and RX queues
+sub intel_new_func{
+    my ($ifname, $numcpus, $numcores) = @_;
+    my $txrx_queues;	# number of rx/rx queue pairs
+    my $ht_factor;	# 2 if HT enabled, 1 if not
+
+    log_msg("intel_new_func was called.\n");
+
+    if ($numcpus > $numcores) {
+	$ht_factor = 2;
+    } else {
+	$ht_factor = 1;
+    }
+
+    log_msg("ht_factor is $ht_factor.\n");
+
+    # Figure out how many queues we have
+
+    $txrx_queues=`grep "$ifname-TxRx-" /proc/interrupts | wc -l`;
+    $txrx_queues =~ s/\n//;
+
+    log_msg("txrx_queues is $txrx_queues.\n");
+    
+    if ($txrx_queues <= 0) {
+	printf("Error: No TxRx queues found for new intel driver.\n");
+	exit 1;
+    }
+
+    # For i = 0 to number of queues:
+    #    Affinity of TX/RX queue $i gets CPU ($i * (2 if HT, 1 if no HT)) 
+    #                                   % number_of_cpus
+    for (my $queue = 0, my $cpu = 0; ($queue < $txrx_queues) ; $queue++) {
+	# Generate the hex string for the bitmask representing this CPU
+	my $cpu_bit = 1 << $cpu;
+	my $cpu_hex = sprintf("%x", $cpu_bit);
+	log_msg ("queue=$queue cpu=$cpu cpu_bit=$cpu_bit cpu_hex=$cpu_hex\n");
+	
+	# Get the IRQ number for RX queue
+	my $txrx_irq=`grep "$ifname-TxRx-$queue\$" /proc/interrupts | awk -F: '{print \$1}'`;
+	$txrx_irq =~ s/\n//;
+	$txrx_irq =~ s/ //g;
+
+	log_msg("txrx_irq = $txrx_irq.\n");
+
+	# Assign CPU affinity for this IRQs
+	system "echo $cpu_hex > /proc/irq/$txrx_irq/smp_affinity";
+
+	$cpu += $ht_factor;
+
+	if ($cpu >= $numcpus) {
+	    # Must "wrap"
+	    $cpu %= $numcpus;
+
+	    if ($ht_factor > 1) {
+		# Next time through, select the other CPU in a hyperthreaded 
+		# pair.
+		if ($cpu == 0) {
+		    $cpu++;
+		} else {
+		    $cpu--;
+		}
+	    }
+	}
+    }
+};
+
+
 # Affinity assignment function for Broadcom NICs using the bnx2 driver
 # or other multi-queue NICs that follow their queue naming convention.
 # This strategy is similar to that for Intel drivers.  But since
@@ -287,6 +356,7 @@ sub single_func {
 
 # Mapping from driver type to function that handles it.
 my %driver_hash = ( 'intel' => \&intel_func,
+		    'intel_new' => \&intel_new_func,
 		    'broadcom' => \&broadcom_func,
 		    'single' => \&single_func);
 
@@ -335,12 +405,20 @@ if (defined $setup_ifname) {
 	my $rx_queues=`grep "$ifname-rx-" /proc/interrupts | wc -l`;
 	$rx_queues =~ s/\n//;
 	if ($rx_queues > 0) {
-	    # Driver is following the Intel queue naming style
+	    # Driver is following the original Intel queue naming style
 	    $driver_style="intel";
 	} else {
-	    # The only other queue naming style that we have seen is the
-	    # one used by Broadcom NICs.
-	    $driver_style="broadcom";
+	    my $rx_queues=`grep "$ifname-TxRx-" /proc/interrupts | wc -l`;
+	    if ($rx_queues > 0) {
+		# Driver is following the new Intel queue naming
+		# style where on IRQ is used for each pair of
+		# TX and RX queues
+		$driver_style="intel_new";
+	    } else {
+		# The only other queue naming style that we have seen is the
+		# one used by Broadcom NICs.
+		$driver_style="broadcom";
+	    }
 	}
     } elsif ($numints == 1) {
 	# It is a single queue NIC.
