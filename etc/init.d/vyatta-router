@@ -202,6 +202,7 @@ start ()
 
     load_acpi_cpufreq
     cleanup_raid
+    telinit q
     bind_mount_boot
     chmod g-w,o-w /
 
