@@ -1,3 +1,10 @@
+vyatta-cfg (0.17.31) unstable; urgency=low
+
+  * Ignore run_init unless running in selinux
+  * Have init reread inittab after config
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 14 Oct 2010 16:19:07 -0700
+
 vyatta-cfg (0.17.30) unstable; urgency=low
 
   * change location tag for error from reference: to errloc:
