@@ -677,7 +677,7 @@ sub compareValueLists {
 }
 
 sub outputError {
-    my ($self, $location, $msg) = @_;
+    my ($location, $msg) = @_;
     print STDERR $msg . "\n";
     if (defined($ENV{VYATTA_OUTPUT_ERROR_LOCATION})) {
 	foreach my $elem (@$location) {
