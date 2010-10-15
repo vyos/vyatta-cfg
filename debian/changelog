@@ -1,3 +1,9 @@
+vyatta-cfg (0.17.32) unstable; urgency=low
+
+  * allow error output to be accessed without config object.
+
+ -- root <root@debian.vyatta.com>  Fri, 15 Oct 2010 15:04:49 -0700
+
 vyatta-cfg (0.17.31) unstable; urgency=low
 
   * Ignore run_init unless running in selinux
