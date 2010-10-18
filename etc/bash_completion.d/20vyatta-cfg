@@ -714,11 +714,6 @@ alias copy=/opt/vyatta/sbin/my_copy
 alias comment=/opt/vyatta/sbin/my_comment
 alias discard=/opt/vyatta/sbin/my_discard
 
-# ignore run_init unless selinux is enabled
-if ! -d /selinux; then
-  alias run_init=
-fi
-
 export VYATTA_COMP_LINE=""
 
 # readline bindings
