@@ -1,3 +1,13 @@
+vyatta-cfg (0.17.33) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Pull the little run_init hack out
+
+  [ An-Cheng Huang ]
+  * temporary workaround for bug 5708
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 18 Oct 2010 18:54:41 -0700
+
 vyatta-cfg (0.17.32) unstable; urgency=low
 
   * allow error output to be accessed without config object.
