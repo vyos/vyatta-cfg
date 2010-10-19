@@ -2022,6 +2022,17 @@ Cstore::validate_act_deact(const vector<string>& path_comps, const string& op,
     output_user("%s\n", terr.c_str());
     return false;
   }
+  {
+    /* XXX this is a temporary workaround for bug 5708, which should be
+     *     addressed _after_ the "default value"-related issues have been
+     *     resolved (see bug for more details). once those are resolved,
+     *     this workaround should be removed and the bug fixed properly.
+     */
+    if (!def.tag && def.def_type != ERROR_TYPE) {
+      output_user("Cannot %s a leaf configuration node\n", op.c_str());
+      return false;
+    }
+  }
   if (def.is_value && !def.tag) {
     /* last component is a value of a single- or multi-value node (i.e.,
      * a leaf value) => not allowed
