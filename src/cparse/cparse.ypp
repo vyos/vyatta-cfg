@@ -1,0 +1,100 @@
+/* bison -v -t --defines=cparse.h -o cparse.cpp cparse.ypp */
+%{
+#include <stdio.h>
+#include "cparse_def.h"
+
+extern "C" {
+int yylex();
+}
+
+void
+yyerror(const char *s)
+{
+  printf("%s\n", s);
+}
+
+int level = 0;
+int ndeact = 0;
+char *ncomment = NULL;
+char *nname = NULL;
+char *nval = NULL;
+
+void
+print_node()
+{
+  int i = 0;
+  if (ncomment) {
+    for (i = 0; i <= level; i++) {
+      printf("  ");
+    }
+    printf(" /*%s*/\n", ncomment);
+  }
+  printf("%s", ndeact ? "!" : " ");
+  for (i = 0; i <= level; i++) {
+    printf("  ");
+  }
+  printf("%s", nname);
+  if (nval) {
+    printf(" '%s'", nval);
+  }
+  printf("\n");
+}
+
+%}
+
+%token NODE
+%token VALUE
+%token COMMENT
+%token LEFTB
+%token RIGHTB
+
+%%
+
+input:      forest
+          | forest comment
+;
+
+forest:     /* empty */
+          | forest tree
+;
+
+tree:       node {
+              print_node();
+            }
+          | node {
+              print_node();
+            } LEFTB { ++level; } forest RIGHTB { --level; }
+;
+
+node:       nodec {
+              nval = NULL;
+            }
+          | nodec VALUE {
+              nval = $2.str;
+            }
+;
+
+nodec:      NODE {
+              ncomment = NULL;
+              nname = $1.str;
+              ndeact = $1.deactivated;
+            }
+          | COMMENT NODE {
+              ncomment = $1.str;
+              nname = $2.str;
+              ndeact = $2.deactivated;
+            }
+;
+
+comment:    COMMENT
+          | comment COMMENT
+;
+
+%%
+
+int
+main()
+{
+  return yyparse();
+}
+
