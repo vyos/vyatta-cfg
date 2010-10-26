@@ -512,7 +512,7 @@ process_func(GNode *node, gpointer data)
       if (g_coverage) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
-	fprintf(out_stream,"[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
+	fprintf(out_stream,"[START] %lu:%lu, %s@%s",(unsigned long)t.tv_sec,(unsigned long)t.tv_usec,ActionNames[result->_action],d->_path);
       }
 
 
@@ -584,7 +584,7 @@ process_func(GNode *node, gpointer data)
       if (g_coverage) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
-	fprintf(out_stream,"[END] %lu\n",t.tv_sec);
+	fprintf(out_stream,"[END] %lu:%lu\n",t.tv_sec,t.tv_usec);
       }
 
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
@@ -1336,7 +1336,7 @@ validate_func(GNode *node, gpointer data)
   if (g_coverage) {
     struct timeval t;
     gettimeofday(&t,NULL);
-    fprintf(out_stream,"[START] %lu, %s@%s",(unsigned long)t.tv_sec,ActionNames[result->_action],d->_path);
+    fprintf(out_stream,"[START] %lu:%lu, %s@%s",(unsigned long)t.tv_sec,(unsigned long)t.tv_usec,ActionNames[result->_action],d->_path);
   }
 
   char *outbuf = malloc(8192);
@@ -1369,7 +1369,7 @@ validate_func(GNode *node, gpointer data)
   if (g_coverage) {
     struct timeval t;
     gettimeofday(&t,NULL);
-    fprintf(out_stream,"[END] %lu\n",t.tv_sec);
+    fprintf(out_stream,"[END] %lu:%lu\n",t.tv_sec,t.tv_usec);
   }
 
   if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
