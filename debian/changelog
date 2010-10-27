@@ -1,3 +1,19 @@
+vyatta-cfg (0.18.1) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * initial lex/yacc config file parser
+
+  [ Michael Larson ]
+  * increase resolution of timing messages.
+
+  [ Stephen Hemminger ]
+  * Move irq affinity scripts out of this package
+  * Make dependency on current vyatta-cfg-system
+  * Update makefile to reflect moved irqaffin programs
+  * fix email addresses in changelog
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 27 Oct 2010 10:43:30 -0700
+
 vyatta-cfg (0.17.33) unstable; urgency=low
 
   [ Stephen Hemminger ]
