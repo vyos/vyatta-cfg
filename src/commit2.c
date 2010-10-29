@@ -415,6 +415,7 @@ process_func(GNode *node, gpointer data)
   gpointer gp = ((GNode*)node)->data;
   struct Config *c = &((struct VyattaNode*)gp)->_config;
   struct Data *d = &((struct VyattaNode*)gp)->_data;
+  struct Aux *a = &((struct VyattaNode*)gp)->_aux;
   NODE_OPERATION op = d->_operation;
 
   int status = 0;
@@ -523,27 +524,14 @@ process_func(GNode *node, gpointer data)
       //set location env
       setenv(ENV_DATA_PATH,d->_path,1);
 
-      //do first/last/only sibling check, restrict to nodes with operations defined
-      GNode *n_last_op = NULL;
-      GNode *n_first_op = NULL;
 
-      GNode *sib = g_node_first_sibling(node);
-      while (sib != NULL) {
-	if (!IS_NOOP(((struct VyattaNode*)(sib->data))->_data._operation)) {
-	  if (n_first_op == NULL) {
-	    n_first_op = sib;
-	  }
-	  n_last_op = sib;
-	}
-	sib = sib->next;
-      }
-      if (n_last_op != NULL && n_first_op != NULL && node == n_first_op && node == n_last_op) {
+      if (a->_first && a->_last) {
 	setenv(ENV_SIBLING_POSITION,"FIRSTLAST",1);
       }
-      else if (n_first_op != NULL && node == n_first_op) {
+      else if (a->_first) {
 	setenv(ENV_SIBLING_POSITION,"FIRST",1);
       }
-      else if (n_last_op != NULL && node == n_last_op) {
+      else if (a->_last) {
 	setenv(ENV_SIBLING_POSITION,"LAST",1);
       }
 
@@ -1251,7 +1239,42 @@ validate_func(GNode *node, gpointer data)
   gpointer gp = ((GNode*)node)->data;
   struct Config *c = &((struct VyattaNode*)gp)->_config;
   struct Data *d = &((struct VyattaNode*)gp)->_data;
+  struct Aux *a = &((struct VyattaNode*)gp)->_aux;
   struct Result *result = (struct Result*)data;
+
+
+
+
+  //let's mark first last nodes here for use later
+  //do first/last/only sibling check, restrict to nodes with operations defined
+  GNode *n_last_op = NULL;
+  GNode *n_first_op = NULL;
+  
+  GNode *sib = g_node_first_sibling(node);
+  while (sib != NULL) {
+    if (IS_DELETE(((struct VyattaNode*)(sib->data))->_data._operation)) {
+      if (n_first_op == NULL) {
+	n_first_op = sib;
+      }
+      n_last_op = sib;
+    }
+    sib = sib->next;
+  }
+
+  sib = g_node_first_sibling(node);
+  while (sib != NULL) {
+    if (IS_SET_OR_CREATE(((struct VyattaNode*)(sib->data))->_data._operation)) {
+      if (n_first_op == NULL) {
+	n_first_op = sib;
+      }
+      n_last_op = sib;
+    }
+    sib = sib->next;
+  }
+
+  a->_first = (node == n_first_op);
+  a->_last = (node == n_last_op);
+
 
   //since this visits all working nodes, let's maintain a set of nodes to commit
   GSList *coll = (GSList*)result->_data;

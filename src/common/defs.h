@@ -85,10 +85,20 @@ struct Data
   NODE_ACTIVATE   _disable_op; //is this node currently deactivated?
 };
 
+/*
+ * additional data to be defined and used by client
+ */
+struct Aux
+{
+  boolean        _first;
+  boolean        _last;
+};
+
 struct VyattaNode
 {
   struct Data   _data;
   struct Config _config;
+  struct Aux    _aux;
 };
 
 #endif //__DEFS_H__
