@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.2) unstable; urgency=low
+
+  * change first, last, firstlast behavior to apply environment setting
+    on each action applied. will be used to help resolve problems
+    identified w/ fw synchronization of rules.
+
+ -- Michael Larson <mike@vyatta.com>  Tue, 02 Nov 2010 09:34:48 -0700
+
 vyatta-cfg (0.18.1) unstable; urgency=low
 
   [ An-Cheng Huang ]
