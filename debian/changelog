@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.3) unstable; urgency=low
+
+  * Add hook to call config mode 'compare'
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 02 Nov 2010 17:38:36 -0700
+
 vyatta-cfg (0.18.2) unstable; urgency=low
 
   * change first, last, firstlast behavior to apply environment setting
