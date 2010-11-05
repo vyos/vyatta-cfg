@@ -28,6 +28,14 @@
     exit(-1); \
   } while (0);
 
+#define ASSERT_IN_SESSION do \
+  { \
+    if (!inSession()) { \
+      exit_internal("no session\n"); \
+    } \
+  } while (0);
+
+
 /* macros for saving/restoring paths.
  * note: this allows "nested" save/restore invocations but NOT recursive ones.
  */

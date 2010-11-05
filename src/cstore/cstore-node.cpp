@@ -109,8 +109,11 @@ CstoreCfgNode::CstoreCfgNode(Cstore& cstore, vector<string>& path_comps,
   // handle comment
   string ac_str;
   bool ac = _cstore->cfgPathGetComment(path_comps, ac_str, true);
-  string wc_str;
-  bool wc = _cstore->cfgPathGetComment(path_comps, wc_str, false);
+  string wc_str = ac_str;
+  bool wc = ac;
+  if (!_active_only) {
+    wc = _cstore->cfgPathGetComment(path_comps, wc_str, false);
+  }
   if (ac) {
     if (wc) {
       // has comment in both active and working

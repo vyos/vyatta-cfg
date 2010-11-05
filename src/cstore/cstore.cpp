@@ -210,6 +210,8 @@ Cstore::tmplGetChildNodes(const vector<string>& path_comps,
 bool
 Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
 {
+  ASSERT_IN_SESSION;
+
   if (!cfg_path_exists(path_comps, false, true)) {
     output_user("Nothing to delete (the specified %s does not exist)\n",
                 (!def.is_value || def.tag) ? "node" : "value");
@@ -299,6 +301,8 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
 bool
 Cstore::validateSetPath(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   // if we can get parsed tmpl, path is valid
   vtw_def def;
   string terr;
@@ -343,6 +347,8 @@ Cstore::validateSetPath(const vector<string>& path_comps)
 bool
 Cstore::validateDeletePath(const vector<string>& path_comps, vtw_def& def)
 {
+  ASSERT_IN_SESSION;
+
   string terr;
   if (!get_parsed_tmpl(path_comps, false, def, terr)) {
     output_user("%s\n", terr.c_str());
@@ -357,6 +363,8 @@ Cstore::validateDeletePath(const vector<string>& path_comps, vtw_def& def)
 bool
 Cstore::validateActivatePath(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   vtw_def def;
   if (!validate_act_deact(path_comps, "activate", def)) {
     return false;
@@ -392,6 +400,8 @@ Cstore::validateActivatePath(const vector<string>& path_comps)
 bool
 Cstore::validateDeactivatePath(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   vtw_def def;
   return validate_act_deact(path_comps, "deactivate", def);
 }
@@ -404,6 +414,8 @@ Cstore::validateDeactivatePath(const vector<string>& path_comps)
 bool
 Cstore::getEditEnv(const vector<string>& path_comps, string& env)
 {
+  ASSERT_IN_SESSION;
+
   vtw_def def;
   string terr;
   if (!get_parsed_tmpl(path_comps, false, def, terr)) {
@@ -459,6 +471,8 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
 bool
 Cstore::getEditUpEnv(string& env)
 {
+  ASSERT_IN_SESSION;
+
   /* "up" is based on current levels in environment. levels should already
    * be set up in constructor (with "use_edit_level" true).
    */
@@ -499,6 +513,8 @@ Cstore::getEditUpEnv(string& env)
 bool
 Cstore::getEditResetEnv(string& env)
 {
+  ASSERT_IN_SESSION;
+
   SAVE_PATHS;
   while (!edit_level_at_root()) {
     pop_cfg_path();
@@ -520,6 +536,8 @@ Cstore::getEditResetEnv(string& env)
 bool
 Cstore::getCompletionEnv(const vector<string>& comps, string& env)
 {
+  ASSERT_IN_SESSION;
+
   vector<string> pcomps = comps;
   string cmd = pcomps[0];
   string last_comp = pcomps.back();
@@ -808,6 +826,8 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
 bool
 Cstore::setCfgPath(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   return set_cfg_path(path_comps, true);
 }
 
@@ -817,6 +837,8 @@ Cstore::setCfgPath(const vector<string>& path_comps)
 bool
 Cstore::validateRenameArgs(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   return validate_rename_copy(args, "rename");
 }
 
@@ -826,6 +848,8 @@ Cstore::validateRenameArgs(const vector<string>& args)
 bool
 Cstore::validateCopyArgs(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   return validate_rename_copy(args, "copy");
 }
 
@@ -835,6 +859,8 @@ Cstore::validateCopyArgs(const vector<string>& args)
 bool
 Cstore::validateMoveArgs(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   vector<string> epath;
   vector<string> nargs;
   if (!conv_move_args_for_rename(args, epath, nargs)) {
@@ -855,6 +881,8 @@ Cstore::validateMoveArgs(const vector<string>& args)
 bool
 Cstore::validateCommentArgs(const vector<string>& args, vtw_def& def)
 {
+  ASSERT_IN_SESSION;
+
   /* separate path from comment.
    * follow the original implementation: the last arg is the comment, and
    * everything else is part of the path.
@@ -909,6 +937,8 @@ Cstore::validateCommentArgs(const vector<string>& args, vtw_def& def)
 bool
 Cstore::renameCfgPath(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   string otagnode = args[0];
   string otagval = args[1];
   string ntagval = args[4];
@@ -930,6 +960,8 @@ Cstore::renameCfgPath(const vector<string>& args)
 bool
 Cstore::copyCfgPath(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   string otagnode = args[0];
   string otagval = args[1];
   string ntagval = args[4];
@@ -949,6 +981,8 @@ Cstore::copyCfgPath(const vector<string>& args)
 bool
 Cstore::commentCfgPath(const vector<string>& args, const vtw_def& def)
 {
+  ASSERT_IN_SESSION;
+
   // separate path from comment
   vector<string> path_comps(args);
   string comment = args.back();
@@ -983,6 +1017,8 @@ Cstore::commentCfgPath(const vector<string>& args, const vtw_def& def)
 bool
 Cstore::discardChanges()
 {
+  ASSERT_IN_SESSION;
+
   // just call underlying implementation
   unsigned long long num_removed = 0;
   if (discard_changes(num_removed)) {
@@ -1003,6 +1039,8 @@ Cstore::discardChanges()
 bool
 Cstore::moveCfgPath(const vector<string>& args)
 {
+  ASSERT_IN_SESSION;
+
   vector<string> epath;
   vector<string> nargs;
   if (!conv_move_args_for_rename(args, epath, nargs)) {
@@ -1024,6 +1062,10 @@ Cstore::moveCfgPath(const vector<string>& args)
 bool
 Cstore::cfgPathExists(const vector<string>& path_comps, bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   return cfg_path_exists(path_comps, active_cfg, false);
 }
 
@@ -1032,6 +1074,10 @@ bool
 Cstore::cfgPathExistsDA(const vector<string>& path_comps, bool active_cfg,
                         bool include_deactivated)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   return cfg_path_exists(path_comps, active_cfg, include_deactivated);
 }
 
@@ -1040,6 +1086,8 @@ Cstore::cfgPathExistsDA(const vector<string>& path_comps, bool active_cfg,
 bool
 Cstore::cfgPathDeleted(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   // whether it's in active but not in working
   return (cfg_path_exists(path_comps, true, false)
           && !cfg_path_exists(path_comps, false, false));
@@ -1050,6 +1098,8 @@ Cstore::cfgPathDeleted(const vector<string>& path_comps)
 bool
 Cstore::cfgPathAdded(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   // whether it's not in active but in working
   return (!cfg_path_exists(path_comps, true, false)
           && cfg_path_exists(path_comps, false, false));
@@ -1076,6 +1126,8 @@ Cstore::cfgPathAdded(const vector<string>& path_comps)
 bool
 Cstore::cfgPathChanged(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   if (cfgPathDeleted(path_comps) || cfgPathAdded(path_comps)) {
     return true;
   }
@@ -1093,6 +1145,8 @@ void
 Cstore::cfgPathGetDeletedChildNodes(const vector<string>& path_comps,
                                     vector<string>& cnodes)
 {
+  ASSERT_IN_SESSION;
+
   cfgPathGetDeletedChildNodesDA(path_comps, cnodes, false);
 }
 
@@ -1102,6 +1156,8 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
                                       vector<string>& cnodes,
                                       bool include_deactivated)
 {
+  ASSERT_IN_SESSION;
+
   vector<string> acnodes;
   cfgPathGetChildNodesDA(path_comps, acnodes, true, include_deactivated);
   vector<string> wcnodes;
@@ -1130,6 +1186,8 @@ void
 Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
                                 vector<string>& dvals)
 {
+  ASSERT_IN_SESSION;
+
   cfgPathGetDeletedValuesDA(path_comps, dvals, false);
 }
 
@@ -1139,6 +1197,8 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
                                   vector<string>& dvals,
                                   bool include_deactivated)
 {
+  ASSERT_IN_SESSION;
+
   vector<string> ovals;
   vector<string> nvals;
   if (!cfgPathGetValuesDA(path_comps, ovals, true, include_deactivated)
@@ -1165,6 +1225,10 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
 bool
 Cstore::cfgPathDeactivated(const vector<string>& path_comps, bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   vector<string> ppath;
   for (size_t i = 0; i < path_comps.size(); i++) {
     ppath.push_back(path_comps[i]);
@@ -1185,6 +1249,10 @@ bool
 Cstore::cfgPathMarkedDeactivated(const vector<string>& path_comps,
                                  bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   SAVE_PATHS;
   append_cfg_path(path_comps);
   bool ret = marked_deactivated(active_cfg);
@@ -1199,6 +1267,10 @@ void
 Cstore::cfgPathGetChildNodes(const vector<string>& path_comps,
                              vector<string>& cnodes, bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   cfgPathGetChildNodesDA(path_comps, cnodes, active_cfg, false);
 }
 
@@ -1208,6 +1280,10 @@ Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
                                vector<string>& cnodes, bool active_cfg,
                                bool include_deactivated)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   if (!include_deactivated && cfgPathDeactivated(path_comps, active_cfg)) {
     /* this node is deactivated (an ancestor or this node itself is
      * marked deactivated) and we don't want to include deactivated. nop.
@@ -1231,6 +1307,10 @@ bool
 Cstore::cfgPathGetValue(const vector<string>& path_comps, string& value,
                         bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   return cfgPathGetValueDA(path_comps, value, active_cfg, false);
 }
 
@@ -1239,6 +1319,10 @@ bool
 Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
                           bool active_cfg, bool include_deactivated)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   vtw_def def;
   if (!get_parsed_tmpl(path_comps, false, def)) {
     // invalid node
@@ -1283,6 +1367,10 @@ bool
 Cstore::cfgPathGetValues(const vector<string>& path_comps,
                          vector<string>& values, bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   return cfgPathGetValuesDA(path_comps, values, active_cfg, false);
 }
 
@@ -1292,6 +1380,10 @@ Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
                            vector<string>& values, bool active_cfg,
                            bool include_deactivated)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   vtw_def def;
   if (!get_parsed_tmpl(path_comps, false, def)) {
     // invalid node
@@ -1328,6 +1420,10 @@ bool
 Cstore::cfgPathGetComment(const vector<string>& path_comps, string& comment,
                           bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   SAVE_PATHS;
   append_cfg_path(path_comps);
   bool ret = get_comment(comment, active_cfg);
@@ -1342,6 +1438,10 @@ Cstore::cfgPathGetComment(const vector<string>& path_comps, string& comment,
 bool
 Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
 {
+  if (!active_cfg) {
+    ASSERT_IN_SESSION;
+  }
+
   SAVE_PATHS;
   append_cfg_path(path_comps);
   bool ret = marked_display_default(active_cfg);
@@ -1669,6 +1769,8 @@ Cstore::setVarRef(const string& ref_str, const string& value, bool to_active)
 bool
 Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   if (cfgPathDeactivated(path_comps)) {
     output_user("The specified configuration node is already deactivated\n");
     // treat as success
@@ -1691,6 +1793,8 @@ Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
 bool
 Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   SAVE_PATHS;
   append_cfg_path(path_comps);
   // note: also mark changed
@@ -1749,6 +1853,8 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
 bool
 Cstore::unmarkCfgPathChanged(const vector<string>& path_comps)
 {
+  ASSERT_IN_SESSION;
+
   SAVE_PATHS;
   append_cfg_path(path_comps);
   bool ret = unmark_changed_with_descendants();
