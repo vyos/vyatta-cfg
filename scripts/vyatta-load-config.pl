@@ -277,11 +277,7 @@ foreach (@comment_list) {
     #ignore error on complaint re: nested nodes
 }
 
-system("$sbindir/my_commit");
-if ( $? >> 8 ) {
-    print "Load failed (commit failed)\n";
-    exit 1;
-}
-
-print "Done\n";
+my $load_merge = 'Load';
+$load_merge = 'Merge' if $merge_mode eq 'true';
+print "\n$load_merge complete.  Use 'commit' to make changes active.\n";
 exit 0;
