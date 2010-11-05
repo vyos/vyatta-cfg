@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.4) unstable; urgency=low
+
+  * Fix 6404: change load/merge commands to NOT automatically commit.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 04 Nov 2010 17:03:22 -0700
+
 vyatta-cfg (0.18.3) unstable; urgency=low
 
   * Add hook to call config mode 'compare'
