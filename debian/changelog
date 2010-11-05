@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.5) unstable; urgency=low
+
+  * add session assertion for API functions
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 04 Nov 2010 18:36:27 -0700
+
 vyatta-cfg (0.18.4) unstable; urgency=low
 
   * Fix 6404: change load/merge commands to NOT automatically commit.
