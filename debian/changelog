@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.6) unstable; urgency=low
+
+  * extend initial error location support to
+    begin,delete,create,update,end--currently only enabled via commit
+    flag.
+
+ -- Michael Larson <mike@vyatta.com>  Mon, 08 Nov 2010 18:01:09 -0800
+
 vyatta-cfg (0.18.5) unstable; urgency=low
 
   * add session assertion for API functions
