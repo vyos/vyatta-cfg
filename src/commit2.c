@@ -14,6 +14,7 @@ boolean g_display_error_node = FALSE;
 boolean g_coverage = FALSE;
 boolean g_dump_trans = FALSE;
 boolean g_dump_actions = FALSE;
+boolean g_print_error_location_all = FALSE;
 
 #define g_num_actions 5
 
@@ -115,7 +116,8 @@ usage(void)
   printf("\t-o\t\tdisable partial commit\n");
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
   printf("\t-b\t\tbreak on each priority node (debug mode)\n");
-  printf("\t-r [FILE]\trun hook script on finishing commit\n");
+  printf("\t-r\t\tdisable run hook script on finishing commit\n");
+  printf("\t-x\t\texperimental expand print error location feature\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -139,8 +141,11 @@ main(int argc, char** argv)
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "dpthsecoafbrC:")) != -1) {
+  while ((ch = getopt(argc, argv, "xdpthsecoafbrC:")) != -1) {
     switch (ch) {
+    case 'x':
+      g_print_error_location_all = TRUE;
+      break;
     case 'd':
       g_debug = TRUE;
       break;
@@ -548,8 +553,48 @@ process_func(GNode *node, gpointer data)
 	  setenv(ENV_ACTION_NAME,ENV_ACTION_ACTIVE,1);
       }
 
+      char *outbuf = NULL;
       if (g_dump_actions == FALSE) {
-	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL);
+	if (g_print_error_location_all == TRUE) {
+	  outbuf = malloc(8192);
+	  outbuf[0] = '\0';
+	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
+	}
+	else {
+	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL);
+	}
+	if (!status && g_print_error_location_all == TRUE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+	  //just need to convert slashes into spaces here
+	  char path_buf[1024];
+	  char tmp[1024];
+	  char *ptr;
+	  path_buf[0] = '\0';
+	  
+	  strcpy(tmp,d->_path);
+	  ptr = (char*)tmp;
+	  char *slash = strchr(tmp,'/');
+	  if (slash == NULL) {
+	    strcat(path_buf,d->_path);
+	  }
+	  else {
+	    do { 	//convert '/' to ' '
+	      strncat(path_buf,ptr,slash - ptr);
+	      strcat(path_buf," ");
+	      ++slash;
+	      ptr = slash;
+	    } while ((slash = strchr(slash,'/')) != NULL);
+	  }
+	  if (strncmp(ptr,"value:",6) == 0) {
+	    if (strlen(ptr)-6 > 0) {
+	      strncat(path_buf,ptr+6,strlen(ptr)-6);
+	    }
+	  }
+	  char *p = clind_unescape(path_buf);
+	  
+	  if (strlen(outbuf) > 0) {
+	    fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+	  }
+	}
       }
       else {
 	char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
