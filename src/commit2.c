@@ -592,7 +592,8 @@ process_func(GNode *node, gpointer data)
 	  char *p = clind_unescape(path_buf);
 	  
 	  if (strlen(outbuf) > 0) {
-	    fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+	    //currently set to format option for GUI client.
+	    fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
 	  }
 	}
       }
