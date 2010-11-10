@@ -564,36 +564,41 @@ process_func(GNode *node, gpointer data)
 	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL);
 	}
 	if (!status && g_print_error_location_all == TRUE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-	  //just need to convert slashes into spaces here
-	  char path_buf[1024];
-	  char tmp[1024];
-	  char *ptr;
-	  path_buf[0] = '\0';
-	  
-	  strcpy(tmp,d->_path);
-	  ptr = (char*)tmp;
-	  char *slash = strchr(tmp,'/');
-	  if (slash == NULL) {
-	    strcat(path_buf,d->_path);
+	  if (strstr(outbuf,"_errloc_:[") != NULL) {
+	    fprintf(out_stream,"%s\n",outbuf);
 	  }
 	  else {
-	    do { 	//convert '/' to ' '
-	      strncat(path_buf,ptr,slash - ptr);
-	      strcat(path_buf," ");
-	      ++slash;
-	      ptr = slash;
-	    } while ((slash = strchr(slash,'/')) != NULL);
-	  }
-	  if (strncmp(ptr,"value:",6) == 0) {
-	    if (strlen(ptr)-6 > 0) {
-	      strncat(path_buf,ptr+6,strlen(ptr)-6);
+	    //just need to convert slashes into spaces here
+	    char path_buf[1024];
+	    char tmp[1024];
+	    char *ptr;
+	    path_buf[0] = '\0';
+	    
+	    strcpy(tmp,d->_path);
+	    ptr = (char*)tmp;
+	    char *slash = strchr(tmp,'/');
+	    if (slash == NULL) {
+	      strcat(path_buf,d->_path);
 	    }
-	  }
-	  char *p = clind_unescape(path_buf);
-	  
-	  if (strlen(outbuf) > 0) {
-	    //currently set to format option for GUI client.
-	    fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+	    else {
+	      do { 	//convert '/' to ' '
+		strncat(path_buf,ptr,slash - ptr);
+		strcat(path_buf," ");
+		++slash;
+		ptr = slash;
+	      } while ((slash = strchr(slash,'/')) != NULL);
+	    }
+	    if (strncmp(ptr,"value:",6) == 0) {
+	      if (strlen(ptr)-6 > 0) {
+		strncat(path_buf,ptr+6,strlen(ptr)-6);
+	      }
+	    }
+	    char *p = clind_unescape(path_buf);
+	    
+	    if (strlen(outbuf) > 0) {
+	      //currently set to format option for GUI client.
+	      fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+	    }
 	  }
 	}
       }
@@ -624,7 +629,7 @@ process_func(GNode *node, gpointer data)
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
 	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
 	if (g_display_error_node) {
-	  fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
+	  fprintf(out_stream,"%s@_errloc_:[%s]\n",ActionNames[result->_action],d->_path);
 	}
 	result->_err_code = 1;
 	if (g_debug) {
@@ -1473,7 +1478,7 @@ validate_func(GNode *node, gpointer data)
     }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
-      fprintf(out_stream,"%s@errloc:[%s]\n",ActionNames[result->_action],d->_path);
+      fprintf(out_stream,"%s@_errloc_:[%s]\n",ActionNames[result->_action],d->_path);
     }
     result->_err_code = 1;
     if (g_debug) {
