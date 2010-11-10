@@ -1,3 +1,14 @@
+vyatta-cfg (0.18.7) unstable; urgency=low
+
+  [ Michael Larson ]
+  * modify formatting options for GUI client on -x option. Set option on
+    GUI invoked commit.
+
+  [ Stig Thormodsrud ]
+  * Add commit-confirm, confirm, and rollback to bash completions.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 09 Nov 2010 17:13:00 -0800
+
 vyatta-cfg (0.18.6) unstable; urgency=low
 
   * extend initial error location support to
