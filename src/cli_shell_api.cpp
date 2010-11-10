@@ -22,7 +22,8 @@
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
-#include <cstore/cstore-node.hpp>
+#include <cnode/cnode.hpp>
+#include <cnode/cnode-algorithm.hpp>
 
 /* This program provides an API for shell scripts (e.g., snippets in
  * templates, standalone scripts, etc.) to access the CLI cstore library.
@@ -398,8 +399,18 @@ showCfg(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   vector<string> nargs(args);
-  CstoreCfgNode root(cstore, nargs, op_show_active_only);
-  root.show_as_root(op_show_show_defaults, op_show_hide_secrets);
+  bool active_only = (!cstore.inSession() || op_show_active_only);
+  cnode::CfgNode aroot(cstore, nargs, true, true);
+
+  if (active_only) {
+    // just show the active config
+    cnode::show_diff(aroot, aroot, op_show_show_defaults,
+                     op_show_hide_secrets);
+  } else {
+    cnode::CfgNode wroot(cstore, nargs, false, true);
+    cnode::show_diff(aroot, wroot, op_show_show_defaults,
+                     op_show_hide_secrets);
+  }
 }
 
 #define OP(name, exact, exact_err, min, min_err) \

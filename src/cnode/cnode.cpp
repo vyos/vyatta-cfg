@@ -47,6 +47,7 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
       _is_default = cstore.cfgPathDefault(path_comps, active);
       _is_deactivated = cstore.cfgPathDeactivated(path_comps, active);
       cstore.cfgPathGetComment(path_comps, _comment, active);
+      // ignore return
 
       if (_is_leaf && _is_value) {
         /* recursion should never reach here. if path is specified by user,

@@ -131,6 +131,7 @@ _diff_print_comment(CfgNode *cfg1, CfgNode *cfg2, int level)
   } else {
     // same node => no diff
     pfx_diff = PFX_DIFF_NULL.c_str();
+    comment = cfg1->getComment();
   }
   if (comment == "") {
     // no comment

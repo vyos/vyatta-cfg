@@ -32,7 +32,6 @@ src_libvyatta_cfg_la_SOURCES += src/cli_val_engine.c src/cli_objects.c
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-c.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-varref.cpp
-src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-node.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/unionfs/cstore-unionfs.cpp
 src_libvyatta_cfg_la_SOURCES += src/cnode/cnode.cpp
 src_libvyatta_cfg_la_SOURCES += src/cnode/cnode-algorithm.cpp
