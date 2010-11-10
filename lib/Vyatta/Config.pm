@@ -684,6 +684,9 @@ sub outputError {
             print STDERR "_errloc_:[" . $elem . "]\n" . $msg . "\n";
         }
     }
+    else {
+	print STDERR $msg . "\n";
+    }
 }
 
 ############################################################
