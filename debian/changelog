@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.12) unstable; urgency=low
+
+  * fix typo in comment
+  * switch to new output framework
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 10 Nov 2010 14:09:34 -0800
+
 vyatta-cfg (0.18.11) unstable; urgency=low
 
   * initial rework of config output framework
