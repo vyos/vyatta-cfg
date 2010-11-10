@@ -119,12 +119,27 @@ commit ()
 
 commit-confirm ()
 {
-    cmd="${vyatta_sbindir}/vyatta-config-mgmt.pl --action=commit-confirm \
-                                                 --minutes=5"
-    eval "sudo sg vyattacfg \"$cmd\" "
-    if [ $? = 0 ]; then
-      commit "$@"
+  local -a args=()
+  local first=1
+  local minutes=10
+  for arg in "$@"; do
+    if [ "$first" = "1" ]; then
+      if [[ $arg = *[[:digit:]]* ]]; then
+        minutes=$arg
+      else
+        args[${#args[@]}]="$arg"    
+      fi
+      first=0
+    else
+      args[${#args[@]}]="$arg"    
     fi
+  done
+  cmd="${vyatta_sbindir}/vyatta-config-mgmt.pl --action=commit-confirm \
+                                               --minutes=$minutes"
+  eval "sudo sg vyattacfg \"$cmd\" "
+  if [ $? = 0 ]; then
+    commit "$@"
+  fi
 }
 
 confirm ()
