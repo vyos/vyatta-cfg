@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.8) unstable; urgency=low
+
+  * make commit aware of error location key and allow for passthrough.
+
+ -- Michael Larson <mike@vyatta.com>  Tue, 09 Nov 2010 17:29:59 -0800
+
 vyatta-cfg (0.18.7) unstable; urgency=low
 
   [ Michael Larson ]
