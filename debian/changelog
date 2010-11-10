@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.11) unstable; urgency=low
+
+  * initial rework of config output framework
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 09 Nov 2010 18:40:18 -0800
+
 vyatta-cfg (0.18.10) unstable; urgency=low
 
   * Add optional minutes parameter to commit-confirm.
