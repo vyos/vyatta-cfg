@@ -1493,7 +1493,7 @@ Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
  * note that when used outside a config session (i.e., definition (1)),
  * these functions are equivalent to the observers for the "active" config.
  *
- * to avoid any confusiton, when possible (e.g., in a script that is
+ * to avoid any confusion, when possible (e.g., in a script that is
  * exclusively used in op mode), developers should probably use those
  * "active" observers explicitly when outside a config session instead
  * of these "effective" observers.
