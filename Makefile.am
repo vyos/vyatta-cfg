@@ -34,6 +34,8 @@ src_libvyatta_cfg_la_SOURCES += src/cstore/cstore.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-varref.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-node.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/unionfs/cstore-unionfs.cpp
+src_libvyatta_cfg_la_SOURCES += src/cnode/cnode.cpp
+src_libvyatta_cfg_la_SOURCES += src/cnode/cnode-algorithm.cpp
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 LDADD = src/libvyatta-cfg.la
 LDADD += /usr/lib/libglib-2.0.la
@@ -47,6 +49,10 @@ vcinc_HEADERS += src/cstore/cstore.hpp
 
 vcuincdir = $(vcincdir)/unionfs
 vcuinc_HEADERS = src/cstore/unionfs/cstore-unionfs.hpp
+
+vnincdir = $(vincludedir)/cnode
+vninc_HEADERS = src/cnode/cnode.hpp
+vninc_HEADERS += src/cnode/cnode-algorithm.hpp
 
 sbin_PROGRAMS = src/priority
 sbin_PROGRAMS += src/my_commit

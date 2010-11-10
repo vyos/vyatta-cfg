@@ -78,6 +78,14 @@ public:
 
   static const size_t MAX_CMD_OUTPUT_SIZE = 4096;
 
+  // for sorting
+  /* apparently unordered_map template does not work with "enum" type, so
+   * change this to simply unsigned ints to allow unifying all map types,
+   * i.e., "Cstore::MapT".
+   */
+  static const unsigned int SORT_DEFAULT;
+  static const unsigned int SORT_DEB_VERSION;
+  static const unsigned int SORT_NONE;
 
   ////// the public cstore interface
   //// functions implemented in this base class
@@ -273,6 +281,11 @@ public:
     get_child_nodes_status_da(path_comps, cmap, &sorted_keys);
   };
 
+  // util functions
+  static void sortNodes(vector<string>& nvec,
+                        unsigned int sort_alg = SORT_DEFAULT) {
+    sort_nodes(nvec, sort_alg);
+  };
 
   /* these are internal API functions and operate on current cfg and
    * tmpl paths during cstore operations. they are only used to work around
@@ -377,18 +390,12 @@ private:
 
   ////// implemented
   // for sorting
-  /* apparently unordered_map template does not work with "enum" type, so
-   * change this to simply unsigned ints to allow unifying all map types,
-   * i.e., "Cstore::MapT".
-   */
-  static const unsigned int SORT_DEFAULT;
-  static const unsigned int SORT_DEB_VERSION;
-  static const unsigned int SORT_NONE;
   typedef bool (*SortFuncT)(std::string, std::string);
   static MapT<unsigned int, SortFuncT> _sort_func_map;
 
   static bool sort_func_deb_version(string a, string b);
-  void sort_nodes(vector<string>& nvec, unsigned int sort_alg = SORT_DEFAULT);
+  static void sort_nodes(vector<string>& nvec,
+                         unsigned int sort_alg = SORT_DEFAULT);
 
   // init
   static bool _init;
