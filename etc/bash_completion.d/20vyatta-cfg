@@ -117,6 +117,21 @@ commit ()
   fi
 }
 
+commit-confirm ()
+{
+    cmd="${vyatta_sbindir}/vyatta-config-mgmt.pl --action=commit-confirm \
+                                                 --minutes=5"
+    eval "sudo sg vyattacfg \"$cmd\" "
+    if [ $? = 0 ]; then
+      commit "$@"
+    fi
+}
+
+confirm ()
+{
+  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=confirm
+}
+
 compare ()
 {
   ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@"
@@ -137,6 +152,11 @@ save ()
 reboot ()
 {
   echo "Exit from configure mode before rebooting."
+}
+
+rollback ()
+{
+  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=rollback --revnum "$@"
 }
 
 shutdown ()
@@ -562,8 +582,10 @@ vyatta_config_complete ()
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
     _get_help_text_items=( "activate" \
+                           "confirm" \
                            "comment" \
                            "commit" \
+                           "commit-confirm" \
                            "compare" \
                            "copy" \
                            "deactivate" \
@@ -575,14 +597,17 @@ vyatta_config_complete ()
                            "loadkey" \
                            "merge" \
                            "rename" \
+                           "rollback" \
                            "run" \
                            "save" \
                            "set" \
                            "show" )
     _get_help_text_helps=( \
       "Activate this element" \
+      "Confirm prior commit" \
       "Add comment to this configuration element" \
       "Commit the current set of changes" \
+      "Commit the current set of changes with confirm" \
       "Compare configuration revisions" \
       "Copy a configuration element" \
       "Deactivate this element" \
@@ -594,6 +619,7 @@ vyatta_config_complete ()
       "Load user SSH key from a file" \
       "Load configuration from a file and merge running configuration" \
       "Rename a configuration element" \
+      "Rollback to a prior config revision (requires reboot)" \
       "Run an operational-mode command" \
       "Save configuration to a file" \
       "Set the value of a parameter or create a new element" \
@@ -749,6 +775,7 @@ complete -F vyatta_config_complete compare
 complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
+complete -F vyatta_config_complete rollback
 
 # Local Variables:
 # mode: shell-script
