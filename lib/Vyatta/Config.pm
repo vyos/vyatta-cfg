@@ -676,13 +676,16 @@ sub compareValueLists {
   return %comp_hash;
 }
 
+
 sub outputError {
     my ($location, $msg) = @_;
-    print STDERR $msg . "\n";
     if (defined($ENV{VYATTA_OUTPUT_ERROR_LOCATION})) {
-	foreach my $elem (@$location) {
-	    print STDERR "errloc:[" . $elem . "]\n";
-	}
+        foreach my $elem (@$location) {
+            print STDERR "_errloc_:[" . $elem . "]\n" . $msg . "\n";
+        }
+    }
+    else {
+	print STDERR $msg . "\n";
     }
 }
 
