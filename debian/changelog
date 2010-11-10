@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.10) unstable; urgency=low
+
+  * Add optional minutes parameter to commit-confirm.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 09 Nov 2010 18:14:19 -0800
+
 vyatta-cfg (0.18.9) unstable; urgency=low
 
   * additional change in support of error location.
