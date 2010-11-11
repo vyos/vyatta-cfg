@@ -376,6 +376,34 @@ vyatta_loadkey_complete()
   esac
 }
 
+vyatta_rollback_complete ()
+{
+  # Generate completion help for the "rollback" command
+
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+
+  # Only provide completions after command name has been typed, but
+  # before any characters of the command argument have been entered.
+  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
+      echo
+      echo "Possible completions:"
+      local -a array
+      eval "array=($(${vyatta_sbindir}/vyatta-config-mgmt.pl --action=show-commit-log-brief))"
+      local count=0
+      for i in "${array[@]}"; do
+          i=${i//_/ }
+          echo -e "$count\t$i"
+          (( count++ ))
+      done
+      COMPREPLY=( "" " " )
+  else
+      COMPREPLY=()
+  fi
+
+  eval $restore_shopts
+}
+
 get_prefix_filtered_list ()
 {
   # $1: prefix
@@ -790,7 +818,7 @@ complete -F vyatta_config_complete compare
 complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
-complete -F vyatta_config_complete rollback
+complete -F vyatta_rollback_complete rollback
 
 # Local Variables:
 # mode: shell-script
