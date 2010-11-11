@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.14) unstable; urgency=low
+
+  * Add completion for rollback.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 11 Nov 2010 15:29:53 -0800
+
 vyatta-cfg (0.18.13) unstable; urgency=low
 
   * consolidate similar logic and simplify code
