@@ -43,7 +43,6 @@ public:
   const std::string& getValue() const { return _value; }
   const std::vector<std::string>& getValues() const { return _values; }
   const std::string& getComment() const { return _comment; }
-  const std::vector<CfgNode *>& getTagValues() const { return _tag_values; }
   const std::vector<CfgNode *>& getChildNodes() const { return _child_nodes; }
 
 private:
@@ -60,7 +59,6 @@ private:
   std::string _value;
   std::vector<std::string> _values;
   std::string _comment;
-  std::vector<CfgNode *> _tag_values;
   std::vector<CfgNode *> _child_nodes;
 };
 

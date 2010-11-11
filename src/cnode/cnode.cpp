@@ -111,13 +111,7 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
   for (size_t i = 0; i < cnodes.size(); i++) {
     path_comps.push_back(cnodes[i]);
     CfgNode *cn = new CfgNode(cstore, path_comps, active, recursive);
-    if (_is_tag && !_is_value) {
-      // tag node
-      _tag_values.push_back(cn);
-    } else {
-      // intermediate node or tag value
-      _child_nodes.push_back(cn);
-    }
+    _child_nodes.push_back(cn);
     path_comps.pop_back();
   }
 }

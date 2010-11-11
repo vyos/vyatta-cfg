@@ -79,19 +79,19 @@ _diff_print_indent(CfgNode *cfg1, CfgNode *cfg2, int level,
                    const char *pfx_diff)
 {
   const char *pfx_deact = PFX_DEACT_NONE.c_str();
-  if (cfg1 && cfg2) {
-    if (cfg1->isDeactivated()) {
-      if (cfg2->isDeactivated()) {
-        pfx_deact = PFX_DEACT_D.c_str();
-      } else {
-        pfx_deact = PFX_DEACT_AP.c_str();
-      }
+  bool de1 = (cfg1 ? cfg1->isDeactivated() : false);
+  bool de2 = (cfg2 ? cfg2->isDeactivated() : false);
+  if (de1) {
+    if (de2) {
+      pfx_deact = PFX_DEACT_D.c_str();
     } else {
-      if (cfg2->isDeactivated()) {
-        pfx_deact = PFX_DEACT_DP.c_str();
-      }
-      // 4th case handled by default
+      pfx_deact = PFX_DEACT_AP.c_str();
     }
+  } else {
+    if (de2) {
+      pfx_deact = PFX_DEACT_DP.c_str();
+    }
+    // 4th case handled by default
   }
 
   printf("%s %s", pfx_deact, pfx_diff);
@@ -236,54 +236,6 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
   return true;
 }
 
-static bool
-_diff_check_and_show_tag(CfgNode *cfg1, CfgNode *cfg2, int level,
-                         bool show_def, bool hide_secret)
-{
-  if ((cfg1 && !cfg1->isTag()) || (cfg2 && !cfg2->isTag())) {
-    // not a tag node
-    return false;
-  }
-
-  vector<CfgNode *> vals1, vals2;
-  if (cfg1) {
-    vals1 = cfg1->getTagValues();
-  }
-  if (cfg2) {
-    vals2 = cfg2->getTagValues();
-  }
-
-  Cstore::MapT<string, bool> vmap;
-  Cstore::MapT<string, CfgNode *> vnmap1, vnmap2;
-  for (size_t i = 0; i < vals1.size(); i++) {
-    vmap[vals1[i]->getValue()] = true;
-    vnmap1[vals1[i]->getValue()] = vals1[i];
-  }
-  for (size_t i = 0; i < vals2.size(); i++) {
-    vmap[vals2[i]->getValue()] = true;
-    vnmap2[vals2[i]->getValue()] = vals2[i];
-  }
-
-  vector<string> values;
-  Cstore::MapT<string, bool>::iterator it = vmap.begin();
-  for (; it != vmap.end(); ++it) {
-    values.push_back((*it).first);
-  }
-  Cstore::sortNodes(values);
-
-  for (size_t i = 0; i < values.size(); i++) {
-    bool in1 = (vnmap1.find(values[i]) != vnmap1.end());
-    bool in2 = (vnmap2.find(values[i]) != vnmap2.end());
-    CfgNode *c1 = (in1 ? vnmap1[values[i]] : NULL);
-    CfgNode *c2 = (in2 ? vnmap2[values[i]] : NULL);
-    /* note: if the root is a tag node (level == -1), then need to make
-     *       level 0 when calling tag values' show().
-     */
-    _show_diff(c1, c2, ((level >= 0) ? level : 0), show_def, hide_secret);
-  }
-  return true;
-}
-
 static void 
 _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
                  bool hide_secret)
@@ -302,8 +254,14 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     }
   }
 
+  /* only print "this" node if it
+   *   (1) is a tag value or an intermediate node,
+   *   (2) is not "root", and
+   *   (3) has a "name".
+   */
   const string& name = cfg->getName();
-  bool print_this = (level >= 0 && name.size() > 0);
+  bool print_this = (((cfg1 && !cfg1->isTag()) || (cfg2 && !cfg2->isTag()))
+                     && level >= 0 && name.size() > 0);
   if (print_this) {
     _diff_print_comment(cfg1, cfg2, level);
     _diff_print_indent(cfg1, cfg2, level, pfx_diff);
@@ -317,6 +275,7 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     printf("%s\n", (cfg->isLeafTypeless() ? "" : " {"));
   }
 
+  // handle child nodes
   vector<CfgNode *> cnodes1, cnodes2;
   if (cfg1) {
     cnodes1 = cfg1->getChildNodes();
@@ -328,12 +287,16 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
   Cstore::MapT<string, bool> map;
   Cstore::MapT<string, CfgNode *> nmap1, nmap2;
   for (size_t i = 0; i < cnodes1.size(); i++) {
-    map[cnodes1[i]->getName()] = true;
-    nmap1[cnodes1[i]->getName()] = cnodes1[i];
+    string key
+      = (cfg->isTag() ? cnodes1[i]->getValue() : cnodes1[i]->getName());
+    map[key] = true;
+    nmap1[key] = cnodes1[i];
   }
   for (size_t i = 0; i < cnodes2.size(); i++) {
-    map[cnodes2[i]->getName()] = true;
-    nmap2[cnodes2[i]->getName()] = cnodes2[i];
+    string key
+      = (cfg->isTag() ? cnodes2[i]->getValue() : cnodes2[i]->getName());
+    map[key] = true;
+    nmap2[key] = cnodes2[i];
   }
 
   vector<string> cnodes;
@@ -348,9 +311,12 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     bool in2 = (nmap2.find(cnodes[i]) != nmap2.end());
     CfgNode *c1 = (in1 ? nmap1[cnodes[i]] : NULL);
     CfgNode *c2 = (in2 ? nmap2[cnodes[i]] : NULL);
-    _show_diff(c1, c2, level + 1, show_def, hide_secret);
+
+    int next_level = (cfg->isTag() ? ((level >= 0) ? level : 0) : (level + 1));
+    _show_diff(c1, c2, next_level, show_def, hide_secret);
   }
 
+  // finish printing "this" node if necessary
   if (print_this && !cfg->isLeafTypeless()) {
     _diff_print_indent(cfg1, cfg2, level, pfx_diff);
     printf("}\n");
@@ -382,12 +348,8 @@ _show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
   if (_diff_check_and_show_leaf(cfg1, cfg2, level, show_def, hide_secret)) {
     // leaf node has been shown. done.
     return;
-  } else if (_diff_check_and_show_tag(cfg1, cfg2, level, show_def,
-                                      hide_secret)) {
-    // tag node has been shown. done.
-    return;
   } else {
-    // intermediate node or tag value
+    // intermediate node, tag node, or tag value
     _diff_show_other(cfg1, cfg2, level, show_def, hide_secret);
   }
 }
