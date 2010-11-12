@@ -41,5 +41,8 @@ libtool
 /src/cli_parse.c
 /src/cli_parse.h
 /src/cli_val.c
+/src/cparse/cparse.cpp
+/src/cparse/cparse.h
+/src/cparse/cparse_lex.c
 /tools/rl_passwd
 

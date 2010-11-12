@@ -18,6 +18,12 @@ completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 
+src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
+	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
+
+src/cparse/cparse_lex.c: src/cparse/cparse_lex.l src/cparse/cparse.cpp
+	flex -P cparse_ -o $@ $<
+
 lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LIBADD = /usr/lib/libglib-2.0.la
 src_libvyatta_cfg_la_LIBADD += /usr/lib/libgio-2.0.la
@@ -35,7 +41,11 @@ src_libvyatta_cfg_la_SOURCES += src/cstore/cstore-varref.cpp
 src_libvyatta_cfg_la_SOURCES += src/cstore/unionfs/cstore-unionfs.cpp
 src_libvyatta_cfg_la_SOURCES += src/cnode/cnode.cpp
 src_libvyatta_cfg_la_SOURCES += src/cnode/cnode-algorithm.cpp
+src_libvyatta_cfg_la_SOURCES += src/cparse/cparse.cpp
+src_libvyatta_cfg_la_SOURCES += src/cparse/cparse_lex.c
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
+CLEANFILES += src/cparse/cparse.cpp src/cparse/cparse.h
+CLEANFILES += src/cparse/cparse_lex.c
 LDADD = src/libvyatta-cfg.la
 LDADD += /usr/lib/libglib-2.0.la
 
@@ -52,6 +62,9 @@ vcuinc_HEADERS = src/cstore/unionfs/cstore-unionfs.hpp
 vnincdir = $(vincludedir)/cnode
 vninc_HEADERS = src/cnode/cnode.hpp
 vninc_HEADERS += src/cnode/cnode-algorithm.hpp
+
+vpincdir = $(vincludedir)/cparse
+vpinc_HEADERS = src/cparse/cparse.hpp
 
 sbin_PROGRAMS = src/priority
 sbin_PROGRAMS += src/my_commit

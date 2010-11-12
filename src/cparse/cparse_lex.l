@@ -1,4 +1,3 @@
-/* flex -o cparse_lex.c cparse_lex.l */
 /* definitions */
 %x sComment
 %x sID
@@ -16,35 +15,44 @@ SPACE ([[:space:]]{-}[\n])
 
 #define STR_BUF_INC 4096
 
-int line_number = 0;
-int node_deactivated = 0;
-char *str_buf = NULL;
-char *out_buf = NULL;
-char *str_ptr = NULL;
-size_t str_buf_len = 0;
+static int node_deactivated = 0;
+static char *str_buf = NULL;
+static char *out_buf = NULL;
+static char *str_ptr = NULL;
+static size_t str_buf_len = 0;
 
-void
+static void
+prepare_buffers(size_t add_len)
+{
+  size_t slen = str_ptr - str_buf;
+  if (str_buf && (slen + add_len) < str_buf_len) {
+    // nothing to do
+    return;
+  }
+
+  str_buf_len += STR_BUF_INC;
+  str_buf = realloc(str_buf, str_buf_len);
+  out_buf = realloc(out_buf, str_buf_len);
+  if (!str_buf || !out_buf) {
+    printf("realloc failed\n");
+    exit(1);
+  }
+  str_ptr = str_buf + slen;
+}
+
+static void
 append_str(char *text)
 {
   size_t tlen = strlen(text);
-  size_t slen = str_ptr - str_buf;
-  if (!str_buf || (slen + tlen) >= str_buf_len) {
-    str_buf_len += STR_BUF_INC;
-    str_buf = realloc(str_buf, str_buf_len);
-    out_buf = realloc(out_buf, str_buf_len);
-    if (!str_buf || !out_buf) {
-      printf("realloc failed\n");
-      exit(1);
-    }
-    str_ptr = str_buf + slen;
-  }
+  prepare_buffers(tlen);
   strcpy(str_ptr, text);
   str_ptr += tlen;
 }
 
-void
+static void
 set_ret_str()
 {
+  prepare_buffers(0);
   *str_ptr = 0;
   strcpy(out_buf, str_buf);
   str_ptr = str_buf;
@@ -59,21 +67,21 @@ set_ret_str()
 }
 
 <sComment>[^*\n]* {
-  append_str(yytext);
+  append_str(cparse_text);
 }
 
 <sComment>\*[^/] {
-  append_str(yytext);
+  append_str(cparse_text);
 }
 
 <sComment>\n {
-  append_str(yytext);
-  ++line_number;
+  append_str(cparse_text);
+  ++cparse_lineno;
 }
 
 <sComment>"*/" {
   set_ret_str();
-  yylval.str = strdup(out_buf);
+  cparse_lval.str = strdup(out_buf);
   BEGIN(INITIAL);
   return COMMENT;
 }
@@ -91,15 +99,15 @@ set_ret_str()
 }
 
 <INITIAL>{ID} {
-  yylval.str = strdup(yytext);
-  yylval.deactivated = node_deactivated;
+  cparse_lval.str = strdup(cparse_text);
+  cparse_lval.deactivated = node_deactivated;
   node_deactivated = 0;
   BEGIN(sID);
   return NODE;
 }
 
 <sID>:?{SPACE}+[^{\n] {
-  unput(yytext[yyleng - 1]);
+  unput(cparse_text[cparse_leng - 1]);
   BEGIN(sValue);
 }
 
@@ -112,7 +120,7 @@ set_ret_str()
 }
 
 <sID>\n {
-  ++line_number;
+  ++cparse_lineno;
   BEGIN(INITIAL);
 }
 
@@ -126,29 +134,29 @@ set_ret_str()
 }
 
 <sQStr>[^\"\\\n]+ {
-  append_str(yytext);
+  append_str(cparse_text);
 }
 
 <sQStr>\\. {
-  char tmp[2] = { yytext[1], 0 };
+  char tmp[2] = { cparse_text[1], 0 };
   append_str(tmp);
 }
 
 <sQStr>\n {
-  append_str(yytext);
-  ++line_number;
+  append_str(cparse_text);
+  ++cparse_lineno;
 }
 
 <sQStr>\" {
   set_ret_str();
-  yylval.str = strdup(out_buf);
+  cparse_lval.str = strdup(out_buf);
   BEGIN(sValue);
   return VALUE;
 }
 
-<sValue>[^{"[:space:]][^{[:space:]]+ {
+<sValue>[^{"[:space:]][^{[:space:]]* {
   /* unquoted string */
-  yylval.str = strdup(yytext);
+  cparse_lval.str = strdup(cparse_text);
   return VALUE;
 }
 
@@ -158,8 +166,12 @@ set_ret_str()
 }
 
 <sValue>\n {
-  ++line_number;
+  ++cparse_lineno;
   BEGIN(INITIAL);
+}
+
+<*>. {
+  return SYNTAX_ERROR;
 }
 
 %%

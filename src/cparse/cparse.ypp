@@ -1,16 +1,22 @@
-/* bison -v -t --defines=cparse.h -o cparse.cpp cparse.ypp */
 %{
-#include <stdio.h>
+#include <cstdio>
+
+#include "cparse.hpp"
 #include "cparse_def.h"
 
+// stuff from lex
 extern "C" {
-int yylex();
+extern int cparse_lineno;
+extern char *cparse_text;
+int cparse_lex();
+void cparse_set_in(FILE *fin);
 }
 
-void
-yyerror(const char *s)
+static void
+cparse_error(const char *s)
 {
-  printf("%s\n", s);
+  printf("Invalid config file (%s): error at line %d, text [%s]\n",
+         s, cparse_lineno, cparse_text);
 }
 
 int level = 0;
@@ -19,7 +25,7 @@ char *ncomment = NULL;
 char *nname = NULL;
 char *nval = NULL;
 
-void
+static void
 print_node()
 {
   int i = 0;
@@ -47,6 +53,7 @@ print_node()
 %token COMMENT
 %token LEFTB
 %token RIGHTB
+%token SYNTAX_ERROR
 
 %%
 
@@ -93,8 +100,9 @@ comment:    COMMENT
 %%
 
 int
-main()
+cparse::parse_file(FILE *fin)
 {
-  return yyparse();
+  cparse_set_in(fin);
+  return cparse_parse();
 }
 
