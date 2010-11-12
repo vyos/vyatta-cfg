@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.15) unstable; urgency=low
+
+  * Add tab completion for "compare" command.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 11 Nov 2010 16:17:45 -0800
+
 vyatta-cfg (0.18.14) unstable; urgency=low
 
   * Add completion for rollback.
