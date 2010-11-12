@@ -154,6 +154,9 @@ compare ()
 
 save ()
 {
+  if vyatta_cli_shell_api sessionChanged; then
+    echo -e "Warning: you have uncommitted changes that will not be saved.\n"
+  fi
   # transform individual args into quoted strings
   local arg=''
   local save_cmd="${vyatta_sbindir}/vyatta-save-config.pl"
