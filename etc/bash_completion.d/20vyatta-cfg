@@ -442,6 +442,38 @@ vyatta_compare_complete ()
   eval $restore_shopts
 }
 
+vyatta_commit_complete ()
+{
+  # Generate completion help for the "commit-confirm" command
+
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+
+  # Only provide completions after command name has been typed, but
+  # before any characters of the command argument have been entered.
+  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
+      echo
+      echo "Possible completions:"
+      if [ "${COMP_WORDS[0]}" = "commit" ]; then
+         echo -e "<enter>\tCommit working configuration"
+      elif [ "${COMP_WORDS[0]}" = "commit-confirm" ]; then
+         echo -e "<enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
+         echo -e "<N>\tCommit, rollback/reboot in N minutes if no confirm"
+      fi
+      echo -e "comment\tComment for commit log"
+      COMPREPLY=( "" " " )
+  elif [ "${COMP_WORDS[1]}" = "comment" ]; then
+            echo
+      echo "Possible completions:"
+      echo -e "<txt>\tText comment for commit log (e.g. \"add user bob\")"
+      COMPREPLY=( "" " " )
+  else
+      COMPREPLY=()
+  fi
+
+  eval $restore_shopts
+}
+
 get_prefix_filtered_list ()
 {
   # $1: prefix
@@ -857,6 +889,8 @@ complete -F vyatta_config_complete comment
 complete -F vyatta_config_complete copy
 complete -F vyatta_config_complete rename
 complete -F vyatta_rollback_complete rollback
+complete -F vyatta_commit_complete commit
+complete -F vyatta_commit_complete commit-confirm
 
 # Local Variables:
 # mode: shell-script
