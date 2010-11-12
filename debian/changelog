@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.17) unstable; urgency=low
+
+  * Add warning when saving if there are uncommitted changes.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 11 Nov 2010 18:10:06 -0800
+
 vyatta-cfg (0.18.16) unstable; urgency=low
 
   * Add completion for commit and commit-confirm.
