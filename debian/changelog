@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.18) unstable; urgency=low
+
+  * continue config parser work
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 11 Nov 2010 19:16:10 -0800
+
 vyatta-cfg (0.18.17) unstable; urgency=low
 
   * Add warning when saving if there are uncommitted changes.
