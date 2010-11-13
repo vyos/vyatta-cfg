@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.20) unstable; urgency=low
+
+  * remove extra process layer--required before this command is expanded
+    to handle other commit actions (i.e. ones that rely on consistent
+    parent process id in scripts).
+
+ -- Michael Larson <mike@vyatta.com>  Fri, 12 Nov 2010 20:23:08 -0800
+
 vyatta-cfg (0.18.19) unstable; urgency=low
 
   * initial work to parse config file into data structure.
