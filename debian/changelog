@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.19) unstable; urgency=low
+
+  * initial work to parse config file into data structure.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 12 Nov 2010 19:13:18 -0800
+
 vyatta-cfg (0.18.18) unstable; urgency=low
 
   * continue config parser work
