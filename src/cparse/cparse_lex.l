@@ -9,6 +9,9 @@ ID ([-[:alnum:]_]+)
 SPACE ([[:space:]]{-}[\n])
 
 %{
+/* get rid of compiler warning */
+#define YY_NO_INPUT 1
+
 #include <string.h>
 #include "cparse_def.h"
 #include "cparse.h"
@@ -80,8 +83,21 @@ set_ret_str()
 }
 
 <sComment>"*/" {
+  char *tmp;
+  size_t tlen;
   set_ret_str();
-  cparse_lval.str = strdup(out_buf);
+
+  /* need to strip out leading or trailing space */
+  tmp = out_buf;
+  tlen = strlen(tmp);
+  if (tlen > 0 && tmp[tlen - 1] == ' ') {
+    tmp[tlen - 1] = 0;
+    --tlen;
+  }
+  if (tlen > 0 && tmp[0] == ' ') {
+    ++tmp;
+  }
+  cparse_lval.str = strdup(tmp);
   BEGIN(INITIAL);
   return COMMENT;
 }
@@ -90,7 +106,11 @@ set_ret_str()
   node_deactivated = 1;
 }
 
-<INITIAL>[[:space:]]+ {
+<INITIAL>{SPACE}+ {
+}
+
+<INITIAL>\n {
+  ++cparse_lineno;
 }
 
 <INITIAL>\} {

@@ -25,6 +25,8 @@ namespace cnode {
 
 class CfgNode {
 public:
+  CfgNode(vector<string>& path_comps, char *name, char *val, char *comment,
+          int deact, Cstore *cstore);
   CfgNode(Cstore& cstore, std::vector<string>& path_comps,
           bool active = false, bool recursive = true);
   ~CfgNode() {};
@@ -44,6 +46,9 @@ public:
   const std::vector<std::string>& getValues() const { return _values; }
   const std::string& getComment() const { return _comment; }
   const std::vector<CfgNode *>& getChildNodes() const { return _child_nodes; }
+
+  void addMultiValue(char *val) { _values.push_back(val); }
+  void addChildNode(CfgNode *cnode) { _child_nodes.push_back(cnode); }
 
 private:
   bool _is_tag;

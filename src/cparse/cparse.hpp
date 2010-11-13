@@ -17,9 +17,12 @@
 #ifndef _CPARSE_HPP_
 #define _CPARSE_HPP_
 
+#include <cstore/cstore.hpp>
+#include <cnode/cnode.hpp>
+
 namespace cparse {
 
-int parse_file(FILE *fin);
+int parse_file(FILE *fin, Cstore& cs);
 
 } // namespace cparse
 

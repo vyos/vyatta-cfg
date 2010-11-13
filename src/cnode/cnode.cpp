@@ -26,11 +26,82 @@
 using namespace std;
 using namespace cnode;
 
+/* XXX
+   from cstore: extra level for tag node
+   delayed processing for _is_empty, _is_leaf_typeless
+ */
+
 ////// constructors/destructors
+CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
+                 char *comment, int deact, Cstore *cstore)
+  : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
+    _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
+    _is_invalid(false), _is_empty(false)
+{
+  if (name && name[0]) {
+    // name must be non-empty
+    path_comps.push_back(name);
+  }
+  if (val) {
+    // value could be empty
+    path_comps.push_back(val);
+  }
+
+  while (1) {
+    if (path_comps.size() == 0) {
+      // nothing to do for root node
+      break;
+    }
+
+    vtw_def def;
+    if (cstore->validateTmplPath(path_comps, false, def)) {
+      // got the def
+      _is_value = def.is_value;
+      _is_tag = def.tag;
+      _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);
+      _is_multi = def.multi;
+
+      /* XXX given the current definition of "default", the concept of
+       * "default" doesn't really apply to config files.
+       */
+      _is_default = false;
+      _is_deactivated = deact;
+      if (name) {
+        _name = name;
+      }
+      if (val) {
+        if (_is_multi) {
+          _values.push_back(val);
+        } else {
+          _value = val;
+        }
+      }
+      if (comment) {
+        _comment = comment;
+      }
+      // ignore return
+    } else {
+      // not a valid node
+      _is_invalid = true;
+      break;
+    }
+
+    break;
+  }
+
+  // restore path_comps
+  if (val) {
+    path_comps.pop_back();
+  }
+  if (name && name[0]) {
+    path_comps.pop_back();
+  }
+}
+
 CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
                  bool active, bool recursive)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
-    _is_default(false), _is_deactivated(false), _is_leaf_typeless(false), 
+    _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
     _is_invalid(false), _is_empty(false)
 {
   /* first get the def (only if path is not empty). if path is empty, i.e.,
@@ -41,17 +112,17 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
     if (cstore.validateTmplPath(path_comps, false, def)) {
       // got the def
       _is_value = def.is_value;
-      _is_tag = (def.tag && !_is_value);
-      _is_leaf = (!_is_tag && !_is_value && def.def_type != ERROR_TYPE);
-      _is_multi = (_is_leaf && def.multi);
+      _is_tag = def.tag;
+      _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);
+      _is_multi = def.multi;
       _is_default = cstore.cfgPathDefault(path_comps, active);
       _is_deactivated = cstore.cfgPathDeactivated(path_comps, active);
       cstore.cfgPathGetComment(path_comps, _comment, active);
       // ignore return
 
       if (_is_leaf && _is_value) {
-        /* recursion should never reach here. if path is specified by user,
-         * nothing further to do.
+        /* "leaf value" so recursion should never reach here. if path is
+         * specified by user, nothing further to do.
          */
         return;
       }

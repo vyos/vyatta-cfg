@@ -260,7 +260,8 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
    *   (3) has a "name".
    */
   const string& name = cfg->getName();
-  bool print_this = (((cfg1 && !cfg1->isTag()) || (cfg2 && !cfg2->isTag()))
+  bool print_this = (((cfg1 && (!cfg1->isTag() || cfg1->isValue()))
+                      || (cfg2 && (!cfg2->isTag() || cfg2->isValue())))
                      && level >= 0 && name.size() > 0);
   if (print_this) {
     _diff_print_comment(cfg1, cfg2, level);
@@ -288,13 +289,15 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
   Cstore::MapT<string, CfgNode *> nmap1, nmap2;
   for (size_t i = 0; i < cnodes1.size(); i++) {
     string key
-      = (cfg->isTag() ? cnodes1[i]->getValue() : cnodes1[i]->getName());
+      = ((cfg->isTag() && !cfg->isValue())
+         ? cnodes1[i]->getValue() : cnodes1[i]->getName());
     map[key] = true;
     nmap1[key] = cnodes1[i];
   }
   for (size_t i = 0; i < cnodes2.size(); i++) {
     string key
-      = (cfg->isTag() ? cnodes2[i]->getValue() : cnodes2[i]->getName());
+      = ((cfg->isTag() && !cfg->isValue())
+         ? cnodes2[i]->getValue() : cnodes2[i]->getName());
     map[key] = true;
     nmap2[key] = cnodes2[i];
   }
@@ -312,7 +315,8 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     CfgNode *c1 = (in1 ? nmap1[cnodes[i]] : NULL);
     CfgNode *c2 = (in2 ? nmap2[cnodes[i]] : NULL);
 
-    int next_level = (cfg->isTag() ? ((level >= 0) ? level : 0) : (level + 1));
+    int next_level = ((cfg->isTag() && !cfg->isValue())
+                      ? ((level >= 0) ? level : 0) : (level + 1));
     _show_diff(c1, c2, next_level, show_def, hide_secret);
   }
 

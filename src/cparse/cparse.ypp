@@ -1,8 +1,15 @@
 %{
 #include <cstdio>
+#include <vector>
+#include <string>
 
+#include <cstore/cstore.hpp>
+#include <cnode/cnode.hpp>
 #include "cparse.hpp"
 #include "cparse_def.h"
+
+using namespace std;
+using namespace cnode;
 
 // stuff from lex
 extern "C" {
@@ -19,31 +26,84 @@ cparse_error(const char *s)
          s, cparse_lineno, cparse_text);
 }
 
-int level = 0;
-int ndeact = 0;
-char *ncomment = NULL;
-char *nname = NULL;
-char *nval = NULL;
+static int ndeact = 0;
+static char *ncomment = NULL;
+static char *nname = NULL;
+static char *nval = NULL;
+
+static Cstore *cstore = NULL;
+static CfgNode *cur_node = NULL;
+static CfgNode *cur_parent = NULL;
+static CfgNode *prev_sibling = NULL;
+static vector<CfgNode *> cur_path;
+static vector<string> pcomps;
+static vector<bool> pcomp_is_value;
 
 static void
-print_node()
+print_path()
 {
-  int i = 0;
-  if (ncomment) {
-    for (i = 0; i <= level; i++) {
-      printf("  ");
+  printf("[%p,%p] p[", cur_parent, cur_node);
+  for (size_t i = 0; i < pcomps.size(); i++) {
+    if (i > 0) {
+      printf(",");
     }
-    printf(" /*%s*/\n", ncomment);
+    printf("%s", pcomps[i].c_str());
   }
-  printf("%s", ndeact ? "!" : " ");
-  for (i = 0; i <= level; i++) {
-    printf("  ");
-  }
-  printf("%s", nname);
+  printf("] n[%s]", nname);
   if (nval) {
-    printf(" '%s'", nval);
+    printf(" v[%s]", nval);
+  }
+  if (ncomment) {
+    printf(" c[%s]", ncomment);
+  }
+  if (ndeact) {
+    printf(" D");
   }
   printf("\n");
+}
+
+static void
+add_node()
+{
+  if (prev_sibling && nval
+      && prev_sibling->isValue() && prev_sibling->isMulti()
+      && prev_sibling->getName() == nname) {
+    prev_sibling->addMultiValue(nval);
+  } else {
+    cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+    cur_parent->addChildNode(cur_node);
+    prev_sibling = cur_node;
+  }
+}
+
+static void
+go_down()
+{
+  cur_path.push_back(cur_parent);
+  cur_parent = cur_node;
+  prev_sibling = NULL;
+
+  pcomps.push_back(nname);
+  pcomp_is_value.push_back(false);
+  if (nval) {
+    pcomps.push_back(nval);
+    pcomp_is_value.push_back(true);
+  }
+}
+
+static void
+go_up()
+{
+  cur_parent = cur_path.back();
+  cur_path.pop_back();
+  prev_sibling = NULL;
+
+  if (pcomp_is_value.back()) {
+    pcomps.pop_back();
+    pcomp_is_value.pop_back();
+  }
+  pcomps.pop_back();
+  pcomp_is_value.pop_back();
 }
 
 %}
@@ -62,15 +122,27 @@ input:      forest
 ;
 
 forest:     /* empty */
-          | forest tree
+          | forest {
+              if (!cur_parent) {
+                // root node
+                cur_parent = new CfgNode(pcomps, nname, nval, ncomment,
+                                         ndeact, cstore);
+              }
+            } tree
 ;
 
 tree:       node {
-              print_node();
+              add_node();
+              print_path();
             }
           | node {
-              print_node();
-            } LEFTB { ++level; } forest RIGHTB { --level; }
+              add_node();
+              print_path();
+            } LEFTB {
+              go_down();
+            } forest RIGHTB {
+              go_up();
+            }
 ;
 
 node:       nodec {
@@ -100,9 +172,10 @@ comment:    COMMENT
 %%
 
 int
-cparse::parse_file(FILE *fin)
+cparse::parse_file(FILE *fin, Cstore& cs)
 {
   cparse_set_in(fin);
+  cstore = &cs;
   return cparse_parse();
 }
 
