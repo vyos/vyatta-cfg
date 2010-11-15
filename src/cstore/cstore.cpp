@@ -543,7 +543,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
   string last_comp = pcomps.back();
   pcomps.erase(pcomps.begin());
   pcomps.pop_back();
-  bool exists_only = (cmd == "delete" || cmd == "show" || cmd == "edit"
+  bool exists_only = (cmd == "delete" || cmd == "show"
                       || cmd == "comment" || cmd == "activate"
                       || cmd == "deactivate");
 
