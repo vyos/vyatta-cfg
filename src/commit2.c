@@ -1481,7 +1481,7 @@ validate_func(GNode *node, gpointer data)
     char *p = clind_unescape(path_buf);
     if (strlen(outbuf) > 0) {
       if (g_print_error_location_all == TRUE) {
-	fprintf(out_stream,"_errloc_:[ %s ] \n  %s\n",p,outbuf);
+	fprintf(out_stream,"_errloc_:[%s]\n  %s\n",p,outbuf);
       }
       else {
 	fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
