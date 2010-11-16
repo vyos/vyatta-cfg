@@ -27,7 +27,6 @@ using namespace std;
 using namespace cnode;
 
 /* XXX
-   from cstore: extra level for tag node
    delayed processing for _is_empty, _is_leaf_typeless
  */
 
@@ -56,9 +55,11 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
     vtw_def def;
     if (cstore->validateTmplPath(path_comps, false, def)) {
       // got the def
-      _is_value = def.is_value;
       _is_tag = def.tag;
       _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);
+
+      // match constructor from cstore (leaf node never _is_value)
+      _is_value = (def.is_value && !_is_leaf);
       _is_multi = def.multi;
 
       /* XXX given the current definition of "default", the concept of

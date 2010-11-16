@@ -1,6 +1,7 @@
 %{
 #include <cstdio>
 #include <vector>
+#include <map>
 #include <string>
 
 #include <cstore/cstore.hpp>
@@ -31,10 +32,11 @@ static char *ncomment = NULL;
 static char *nname = NULL;
 static char *nval = NULL;
 
+// XXX optimize: use unordered_map with non-vector
+static map<vector<string>, CfgNode *> node_map;
 static Cstore *cstore = NULL;
 static CfgNode *cur_node = NULL;
 static CfgNode *cur_parent = NULL;
-static CfgNode *prev_sibling = NULL;
 static vector<CfgNode *> cur_path;
 static vector<string> pcomps;
 static vector<bool> pcomp_is_value;
@@ -65,14 +67,47 @@ print_path()
 static void
 add_node()
 {
-  if (prev_sibling && nval
-      && prev_sibling->isValue() && prev_sibling->isMulti()
-      && prev_sibling->getName() == nname) {
-    prev_sibling->addMultiValue(nval);
+  pcomps.push_back(nname);
+  CfgNode *onode = NULL;
+  if (node_map.find(pcomps) != node_map.end()) {
+    onode = node_map[pcomps];
+  }
+  pcomps.pop_back();
+  if (onode) {
+    if (nval) {
+      if (onode->isMulti()) {
+        // a new value for a "multi node"
+        onode->addMultiValue(nval);
+        cur_node = onode;
+      } else if (onode->isTag()) {
+        // a new value for a "tag node"
+        cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+        onode->addChildNode(cur_node);
+      } else {
+        /* a new value for a single-value node => invalid?
+         * for now, use the newer value.
+         */
+        cur_node = onode;
+        cur_node->setValue(nval);
+      }
+    } else {
+      // existing intermediate node => move current node pointer
+      cur_node = onode;
+    }
   } else {
+    // new node
     cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
-    cur_parent->addChildNode(cur_node);
-    prev_sibling = cur_node;
+    CfgNode *mapped_node = cur_node;
+    if (cur_node->isTag() && cur_node->isValue()) {
+      // tag value => need to add the "tag node" on top
+      CfgNode *p = new CfgNode(pcomps, nname, NULL, NULL, ndeact, cstore);
+      p->addChildNode(cur_node);
+      mapped_node = p;
+    }
+    cur_parent->addChildNode(mapped_node);
+    pcomps.push_back(nname);
+    node_map[pcomps] = mapped_node;
+    pcomps.pop_back();
   }
 }
 
@@ -81,7 +116,6 @@ go_down()
 {
   cur_path.push_back(cur_parent);
   cur_parent = cur_node;
-  prev_sibling = NULL;
 
   pcomps.push_back(nname);
   pcomp_is_value.push_back(false);
@@ -96,7 +130,6 @@ go_up()
 {
   cur_parent = cur_path.back();
   cur_path.pop_back();
-  prev_sibling = NULL;
 
   if (pcomp_is_value.back()) {
     pcomps.pop_back();
@@ -171,11 +204,19 @@ comment:    COMMENT
 
 %%
 
-int
+CfgNode *
 cparse::parse_file(FILE *fin, Cstore& cs)
 {
   cparse_set_in(fin);
   cstore = &cs;
-  return cparse_parse();
+  if (cparse_parse() != 0) {
+    // parsing failed
+    return NULL;
+  }
+  if (cur_path.size() > 0) {
+    // didn't return to top-level => invalid
+    return NULL;
+  }
+  return cur_parent;
 }
 

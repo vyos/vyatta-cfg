@@ -164,9 +164,9 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
     }
   }
 
+  _diff_print_comment(cfg1, cfg2, level);
   if (cfg->isMulti()) {
     // multi-value node
-    _diff_print_comment(cfg1, cfg2, level);
     if (force_pfx_diff) {
       // simple case: just use the same diff prefix for all values
       const vector<string>& vvec = cfg->getValues();
