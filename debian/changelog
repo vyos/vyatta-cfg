@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.24) unstable; urgency=low
+
+  * remove error flag now that error locations will be exposed by
+    default.
+
+ -- Michael Larson <mike@vyatta.com>  Tue, 16 Nov 2010 13:18:58 -0800
+
 vyatta-cfg (0.18.23) unstable; urgency=low
 
   * update to perl error location support.
