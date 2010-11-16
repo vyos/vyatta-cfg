@@ -86,7 +86,7 @@ case "$1" in
     RET_STATUS=$?
     ;;
   commit_with_error)
-    /opt/vyatta/sbin/my_commit -x
+    /opt/vyatta/sbin/my_commit
     RET_STATUS=$?
     ;;
   save)
