@@ -192,6 +192,12 @@ main(int argc, char** argv)
     }
   }
 
+  //can also be set via environment variable
+  if (getenv("VYATTA_OUTPUT_ERROR_LOCATION") != NULL) {
+    g_print_error_location_all = TRUE;
+  }
+
+
   initialize_output("Commit");
   init_paths(TRUE);
   if (g_debug) {
@@ -1474,7 +1480,12 @@ validate_func(GNode *node, gpointer data)
     }
     char *p = clind_unescape(path_buf);
     if (strlen(outbuf) > 0) {
-      fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+      if (g_print_error_location_all == TRUE) {
+	fprintf(out_stream,"_errloc_:[ %s ] \n  %s\n",p,outbuf);
+      }
+      else {
+	fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+      }
     }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
