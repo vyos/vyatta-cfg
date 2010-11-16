@@ -49,6 +49,7 @@ public:
 
   void addMultiValue(char *val) { _values.push_back(val); }
   void addChildNode(CfgNode *cnode) { _child_nodes.push_back(cnode); }
+  void setValue(char *val) { _value = val; }
 
 private:
   bool _is_tag;

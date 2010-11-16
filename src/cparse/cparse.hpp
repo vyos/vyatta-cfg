@@ -22,7 +22,7 @@
 
 namespace cparse {
 
-int parse_file(FILE *fin, Cstore& cs);
+cnode::CfgNode *parse_file(FILE *fin, Cstore& cs);
 
 } // namespace cparse
 
