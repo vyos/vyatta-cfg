@@ -379,7 +379,8 @@ cnode::show_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
     printf("Specified configuration path is not valid\n");
     return;
   }
-  if (cfg1.isEmpty() && cfg2.isEmpty()) {
+  if ((cfg1.isEmpty() && cfg2.isEmpty())
+      || (!cfg1.exists() && !cfg2.exists())) {
     printf("Configuration under specified path is empty\n");
     return;
   }
