@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.27) unstable; urgency=low
+
+  * change error message when showing non-existing paths.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 18 Nov 2010 09:35:59 -0800
+
 vyatta-cfg (0.18.26) unstable; urgency=low
 
   * continue work on parser/output framework
