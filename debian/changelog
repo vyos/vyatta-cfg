@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.28) unstable; urgency=low
+
+  * rebuild to test autobuild scripts
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 18 Nov 2010 15:11:00 -0800
+
 vyatta-cfg (0.18.27) unstable; urgency=low
 
   * change error message when showing non-existing paths.
