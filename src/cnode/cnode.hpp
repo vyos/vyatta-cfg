@@ -40,6 +40,7 @@ public:
   bool isLeafTypeless() const { return _is_leaf_typeless; }
   bool isInvalid() const { return _is_invalid; }
   bool isEmpty() const { return _is_empty; }
+  bool exists() const { return _exists; }
 
   const std::string& getName() const { return _name; }
   const std::string& getValue() const { return _value; }
@@ -48,7 +49,10 @@ public:
   const std::vector<CfgNode *>& getChildNodes() const { return _child_nodes; }
 
   void addMultiValue(char *val) { _values.push_back(val); }
-  void addChildNode(CfgNode *cnode) { _child_nodes.push_back(cnode); }
+  void addChildNode(CfgNode *cnode) {
+    _child_nodes.push_back(cnode);
+    _is_empty = false;
+  }
   void setValue(char *val) { _value = val; }
 
 private:
@@ -61,6 +65,7 @@ private:
   bool _is_leaf_typeless;
   bool _is_invalid;
   bool _is_empty;
+  bool _exists;
   std::string _name;
   std::string _value;
   std::vector<std::string> _values;

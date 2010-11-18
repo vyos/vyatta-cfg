@@ -315,8 +315,10 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     CfgNode *c1 = (in1 ? nmap1[cnodes[i]] : NULL);
     CfgNode *c2 = (in2 ? nmap2[cnodes[i]] : NULL);
 
-    int next_level = ((cfg->isTag() && !cfg->isValue())
-                      ? ((level >= 0) ? level : 0) : (level + 1));
+    int next_level = level + 1;
+    if (!print_this) {
+      next_level = (level >= 0 ? level : 0);
+    }
     _show_diff(c1, c2, next_level, show_def, hide_secret);
   }
 
@@ -331,6 +333,14 @@ static void
 _show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
            bool hide_secret)
 {
+  // if doesn't exist, treat as NULL
+  if (cfg1 && !cfg1->exists()) {
+    cfg1 = NULL;
+  }
+  if (cfg2 && !cfg2->exists()) {
+    cfg2 = NULL;
+  }
+
   /* cfg1 and cfg2 point to the same config node in two configs. a "diff"
    * output is shown comparing the two configs recursively with this node
    * as the root of the config tree.
@@ -349,7 +359,8 @@ _show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
     exit(1);
   }
 
-  if (_diff_check_and_show_leaf(cfg1, cfg2, level, show_def, hide_secret)) {
+  if (_diff_check_and_show_leaf(cfg1, cfg2, (level >= 0 ? level : 0),
+                                show_def, hide_secret)) {
     // leaf node has been shown. done.
     return;
   } else {

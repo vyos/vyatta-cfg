@@ -26,16 +26,12 @@
 using namespace std;
 using namespace cnode;
 
-/* XXX
-   delayed processing for _is_empty, _is_leaf_typeless
- */
-
 ////// constructors/destructors
 CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
                  char *comment, int deact, Cstore *cstore)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
-    _is_invalid(false), _is_empty(false)
+    _is_invalid(false), _is_empty(true), _exists(true)
 {
   if (name && name[0]) {
     // name must be non-empty
@@ -77,6 +73,14 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
           _value = val;
         }
       }
+
+      vector<string> tcnodes;
+      cstore->tmplGetChildNodes(path_comps, tcnodes);
+      if (tcnodes.size() == 0) {
+        // typeless leaf node
+        _is_leaf_typeless = true;
+      }
+
       if (comment) {
         _comment = comment;
       }
@@ -103,12 +107,18 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
                  bool active, bool recursive)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
-    _is_invalid(false), _is_empty(false)
+    _is_invalid(false), _is_empty(false), _exists(true)
 {
   /* first get the def (only if path is not empty). if path is empty, i.e.,
    * "root", treat it as an intermediate node.
    */
   if (path_comps.size() > 0) {
+    if (!cstore.cfgPathExists(path_comps, active)) {
+      // path doesn't exist
+      _exists = false;
+      return;
+    }
+
     vtw_def def;
     if (cstore.validateTmplPath(path_comps, false, def)) {
       // got the def
