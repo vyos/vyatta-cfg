@@ -180,7 +180,7 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
       // need to actually do a diff.
       // this follows the original perl logic.
       const vector<string>& ovec = cfg1->getValues();
-      const vector<string>& nvec = cfg1->getValues();
+      const vector<string>& nvec = cfg2->getValues();
       vector<string> values;
       vector<const char *> pfxs;
       Cstore::MapT<string, bool> nmap;
@@ -217,9 +217,10 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
   } else {
     // single-value node
     if (show_def || !cfg->isDefault()) {
-      const string& val = cfg->getValue();
+      string val = cfg->getValue();
       if (!force_pfx_diff) {
         const string& val1 = cfg1->getValue();
+        val = cfg2->getValue();
         if (val == val1) {
           force_pfx_diff = PFX_DIFF_NONE.c_str();
         } else {
