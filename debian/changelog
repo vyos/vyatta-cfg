@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.32) unstable; urgency=low
+
+  * fix for bug 6448
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 19 Nov 2010 15:21:13 -0800
+
 vyatta-cfg (0.18.31) unstable; urgency=low
 
   * fix existence check in "syntax" when builtin expression is used.
