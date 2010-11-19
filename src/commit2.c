@@ -401,7 +401,7 @@ main(int argc, char** argv)
   //remove tmp changes file as all the work is now done
   unlink(COMMIT_CHANGES_FILE);
 
-  exit (errors == 2);
+  exit (errors == 2 ? 0 : 1);
 }
 
 
