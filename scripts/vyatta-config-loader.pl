@@ -25,119 +25,101 @@
 use strict;
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::ConfigLoad;
+use Sys::Syslog qw(:standard :macros);
+
+my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
+my $CONFIG_LOG = '/tmp/vyatta-config.log';
+my $COMMIT_CMD = "$CWRAPPER commit";
+my $CLEANUP_CMD = "$CWRAPPER cleanup";
 
 umask 0002;
 
-if (!open(OLDOUT, ">&STDOUT") || !open(OLDERR, ">&STDERR")
-    || !open(STDOUT, "|/usr/bin/logger -t config-loader -p local0.notice")
-    || !open(STDERR, ">&STDOUT")) {
-  print STDERR "Cannot dup STDOUT/STDERR: $!\n";
-  exit 1;
-}
-    
-if (!open(WARN, "|/usr/bin/logger -t config-loader -p local0.warning")) {
-  print OLDERR "Cannot open syslog: $!\n";
-  exit 1;
-}
-
-sub restore_fds {
-  open(STDOUT, ">&OLDOUT");
-  open(STDERR, ">&OLDERR");
-}
+# Set up logging
+openlog("config-loader", "nofail", LOG_LOCAL0);
+open (STDOUT, '>>', $CONFIG_LOG)
+    or die "Can not open $CONFIG_LOG : $!";
+open (STDERR, '>&STDOUT') 
+    or die "Can not dup STDOUT";
 
 # get a list of all config statement in the startup config file
 my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
 my @all_nodes    = @{ $cfg_hier{'set'} };
-my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
-if (scalar(@all_nodes) == 0) {
-  # no config statements
-  restore_fds();
-  exit 1;
-}
+
+# empty configuration?
+exit 1 if (scalar(@all_nodes) == 0);
 
 # set up the config environment
-my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
-system("$CWRAPPER begin");
-if ($? >> 8) {
-  print OLDOUT "Cannot set up configuration environment\n";
-  print WARN "Cannot set up configuration environment\n";
-  restore_fds();
-  exit 1;
+unless (system("$CWRAPPER begin") == 0) {
+    syslog(LOG_WARNING, "Cannot set up configuration environment");
+    die "Cannot set up configuration environment";
 }
 
 #cmd below is added to debug last set of command ordering
-my $commit_cmd = "$CWRAPPER commit";
-my $cleanup_cmd = "$CWRAPPER cleanup";
-my $ret = 0;
-my $rank; #not used
 foreach (@all_nodes) {
-  my ($path_ref, $rank) = @$_;
+    my ($path_ref, $rank) = @$_;
+    my @pr = @$path_ref;
 
-  my @pr = @$path_ref;
-  if (@pr[0] =~ /^comment$/) {
-      my $ct = 0;
-      my $rel_path;
-      foreach my $rp (@pr[1..$#pr]) {
-          $ct++;
-          my $tmp_path = $rel_path . "/" . $rp;
-	  my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/" . $tmp_path . "/node.def";
-	  if ($rp eq '"') {
-	      last;
-	  }
-	  elsif ($rp eq '""') {
-	      last;
-          }
-	  elsif (!-e $node_path) {
-	      #pop this element
-	      delete @pr[$ct];
-	      last;
-	  }
-	  $rel_path = $tmp_path;
+    if ($pr[0] =~ /^comment$/) {
+	my $ct = 0;
+	my $rel_path;
+	foreach my $rp (@pr[1..$#pr]) {
+	    $ct++;
+	    my $tmp_path = $rel_path . "/" . $rp;
+	    my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/" 
+			   . $tmp_path . "/node.def";
+
+	    last if ($rp eq '"');
+	    last if ($rp eq '""');
+
+	    if ( !-e $node_path ) {
+		#pop this element
+		delete $pr[$ct];
+		last;
+	    }
+	    $rel_path = $tmp_path;
       }
 
       my $comment_cmd = "$CWRAPPER " . join(" ",@pr) ;
       `$comment_cmd`;
       next;
-  }
+    }
 
-  my $cmd = "$CWRAPPER set " . (join ' ', @pr);
-  # this debug file should be deleted before release
-  system("echo [$cmd] >> /tmp/foo");
-  $ret = system("$cmd");
-  if ($ret >> 8) {
-    $cmd =~ s/^.*?set /set /;
-    print OLDOUT "[[$cmd]] failed\n";
-    print WARN "[[$cmd]] failed\n";
-    # continue after set failure (or should we abort?)
-  }
+    # Show all commands in log
+    printf "[%s]\n", $cmd;
+
+    my $cmd = "$CWRAPPER set " . (join ' ', @pr);
+    unless (system($cmd) == 0) {
+	$cmd =~ s/^.*?set /set /;
+	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
+	warn "[[$cmd]] failed\n";
+    }
 }
 
-$ret = system("$commit_cmd");
-if ($ret >> 8) {
-  print OLDOUT "Commit failed at boot\n";
-  print WARN "Commit failed at boot\n";
-  system("$cleanup_cmd");
-  # exit normally after cleanup (or should we exit with error?)
+unless (system($COMMIT_CMD) == 0) {
+    syslog (LOG_NOTICE, "Commit failed at boot");
+    warn "Commit failed at boot\n";
+    system($CLEANUP_CMD);
+    exit 1;
 }
 
-# Now deactivate these nodes
-for (@deactivate_nodes) {
+# Now process any deactivate nodes
+my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
+if (@deactivate_nodes) {
     my $cmd = "$CWRAPPER deactivate " . $_;
-    system("$cmd");
-}
+    unless (system($cmd) == 0) {
+	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
+	warn "[[$cmd]] failed\n";
+    }
 
-$ret = system("$commit_cmd");
-if ($ret >> 8) {
-  print OLDOUT "Commit failed at boot\n";
-  print WARN "Commit failed at boot\n";
-  system("$cleanup_cmd");
-  # exit normally after cleanup (or should we exit with error?)
+    unless (system($COMMIT_CMD) == 0) {
+	syslog(LOG_NOTICE, "Commit deactivate failed at boot");
+	warn "Commit deactivate failed at boot\n";
+	system($CLEANUP_CMD);
+    }
 }
-
 
 # really clean up
-system("$CWRAPPER end");
-restore_fds();
+exec "$CWRAPPER end";
 
-exit 0;
+die "exec of $CWRAPPER failed";
 
