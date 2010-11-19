@@ -38,8 +38,6 @@ umask 0002;
 openlog("config-loader", "nofail", LOG_LOCAL0);
 open (STDOUT, '>>', $CONFIG_LOG)
     or die "Can not open $CONFIG_LOG : $!";
-open (STDERR, '>&STDOUT') 
-    or die "Can not dup STDOUT";
 
 # get a list of all config statement in the startup config file
 my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
@@ -54,6 +52,7 @@ unless (system("$CWRAPPER begin") == 0) {
     die "Cannot set up configuration environment";
 }
 
+my $fail = 0;
 #cmd below is added to debug last set of command ordering
 foreach (@all_nodes) {
     my ($path_ref, $rank) = @$_;
@@ -91,12 +90,16 @@ foreach (@all_nodes) {
     $cmd =  "$CWRAPPER set " . $cmd;
     unless (system($cmd) == 0) {
 	$cmd =~ s/^.*?set /set /;
+	printf "[[%s] failed: %d\n", $cmd, $?;
 	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
-	warn "[[$cmd]] failed\n";
+	++$fail;
     }
 }
 
+warn "$fail failures (see $CONFIG_LOG)\n" if ($fail > 0);
+
 unless (system($COMMIT_CMD) == 0) {
+    printf "commit failed: %d\n", $?;
     syslog (LOG_NOTICE, "Commit failed at boot");
     warn "Commit failed at boot\n";
     system($CLEANUP_CMD);
@@ -106,13 +109,17 @@ unless (system($COMMIT_CMD) == 0) {
 # Now process any deactivate nodes
 my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
 if (@deactivate_nodes) {
+    $fail = 0;
+
     my $cmd = "$CWRAPPER deactivate " . $_;
     unless (system($cmd) == 0) {
+	printf "[[%s] failed: %d\n", $cmd, $?;
 	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
-	warn "[[$cmd]] failed\n";
     }
 
+    warn "$fail deactivate failures (see $CONFIG_LOG)\n" if ($fail > 0);
     unless (system($COMMIT_CMD) == 0) {
+	printf "deactivate commit failed: %d\n", $?;
 	syslog(LOG_NOTICE, "Commit deactivate failed at boot");
 	warn "Commit deactivate failed at boot\n";
 	system($CLEANUP_CMD);
@@ -120,7 +127,6 @@ if (@deactivate_nodes) {
 }
 
 # really clean up
-exec "$CWRAPPER end";
-
-die "exec of $CWRAPPER failed";
+exec "$CWRAPPER end"
+  or die "exec of $CWRAPPER failed";
 
