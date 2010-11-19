@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.29) unstable; urgency=low
+
+  [ Michael Larson ]
+  * 1) Ordered evaluation of these scripts similar to what is found in
+
+  [ Stig Thormodsrud ]
+  * Add --show-working-only option to showCfg.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 18 Nov 2010 17:07:28 -0800
+
 vyatta-cfg (0.18.28) unstable; urgency=low
 
   * rebuild to test autobuild scripts
