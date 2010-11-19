@@ -238,7 +238,9 @@ Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
     }
     if (_paths[i].second == ERROR_TYPE
         && !_cstore->cfgPathExists(_paths[i].first, _active)) {
-      // path doesn't exist
+      // path doesn't exist => empty string
+      added[""] = true;
+      result.push_back("");
       continue;
     }
     if (_paths[i].second != ERROR_TYPE) {
