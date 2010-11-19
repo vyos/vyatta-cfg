@@ -20,7 +20,8 @@
 #define ENV_COMMIT_STATUS "COMMIT_STATUS"
 
 #define COMMIT_CHANGES_FILE "/tmp/.changes"
-#define COMMIT_HOOK_DIR "/etc/commit"
+#define POST_COMMIT_HOOK_DIR "/etc/commit"
+#define PRE_COMMIT_HOOK_DIR "/etc/pre_commit"
 
 struct Result
 {

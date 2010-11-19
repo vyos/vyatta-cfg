@@ -76,6 +76,9 @@ process_func(GNode *node, gpointer data);
 boolean
 process_priority_node(GNode *priority_node);
 
+void
+execute_hook(const char* dir, const char* comment);
+
 static gboolean
 enclosing_process_func(GNode *node, gpointer data);
 
@@ -88,6 +91,12 @@ validate_configuration(GNode *root_node, boolean mode,
 
 static void
 update_change_file(FILE *fp, GSList *coll);
+
+static gboolean
+execute_hook_compare_func(gconstpointer a, gconstpointer b, gpointer data);
+
+static gboolean
+execute_hook_func(GNode *node, gpointer data);
 
 /*
 NOTES: reverse: use the n-nary tree in commit2.c and only encapuslate data store. pass in func pointer for processing of commands below.
@@ -198,6 +207,10 @@ main(int argc, char** argv)
   }
 
 
+  if (disable_hook == FALSE) {
+    execute_hook(PRE_COMMIT_HOOK_DIR,commit_comment);
+  } 
+
   initialize_output("Commit");
   init_paths(TRUE);
   if (g_debug) {
@@ -257,7 +270,7 @@ main(int argc, char** argv)
 
   GSList *completed_root_node_coll = NULL;
   GSList *nodes_visited_coll = NULL;
-  boolean no_errors = TRUE;
+  int errors = 0;
   int i = 0;
   do {
     boolean success = FALSE;
@@ -317,11 +330,14 @@ main(int argc, char** argv)
     }
 
     if (success == FALSE) {
-      no_errors = FALSE;
+      errors |= 1;
       if (g_debug == TRUE) {
 	printf("commit2: Failed in processing node\n");
 	syslog(LOG_DEBUG,"commit2: Failed in processing node\n");
       }
+    }
+    else {
+      errors |= 2;
     }
 
     //now update the changes file
@@ -331,7 +347,7 @@ main(int argc, char** argv)
     ++i;
   } while ((trans_child_node = (GNode*)g_node_nth_child((GNode*)trans_coll,(guint)i)) != NULL);
 
-  if (no_errors == TRUE) {
+  if (errors == 2) {
     //    if (disable_partial_commit == TRUE && g_dump_actions == FALSE) {
     //      completed_root_node_coll = g_slist_append(completed_root_node_coll,orig_node_tree);
     //    }
@@ -366,50 +382,131 @@ main(int argc, char** argv)
   if (fp_changes != NULL) {
     fclose(fp_changes);
   }
-
+ 
+  restore_output();
   if (disable_hook == FALSE) {
-    DIR *dp;
-    if ((dp = opendir(COMMIT_HOOK_DIR)) == NULL){
-      if (g_debug) {
-	//could also be a terminating value now
-	printf("could not open hook directory\n");
-	syslog(LOG_DEBUG,"could not open hook directory");
-      }
+    if (errors == 2) {
+      setenv(ENV_COMMIT_STATUS,"SUCCESS",1);
+    }
+    else if (errors == 3) {
+      setenv(ENV_COMMIT_STATUS,"PARTIAL",1);
     }
     else {
-      if (no_errors == TRUE) {
-	setenv(ENV_COMMIT_STATUS,"SUCCESS",1);
-      }
-      else {
-	setenv(ENV_COMMIT_STATUS,"FAILURE",1);
-      }
-      struct dirent *dirp = NULL;
-      restore_output();
-      while ((dirp = readdir(dp)) != NULL) {
-	if (strcmp(dirp->d_name, ".") != 0 && 
-	    strcmp(dirp->d_name, "..") != 0) {
-	  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
-	  if (commit_comment == NULL) {
-	      commit_comment="commit";
-	  }
-	  sprintf(buf,"%s/%s %s",COMMIT_HOOK_DIR,dirp->d_name, commit_comment);
-	  syslog(LOG_DEBUG,"Starting commit hook: %s",buf);
-	  if (system(buf) == -1) {
-	    syslog(LOG_WARNING,"Error on call to hook: %s", buf);
-	  }
-	  syslog(LOG_DEBUG,"Finished with commit hook: %s",buf);
-	}
-      }
-      unsetenv(ENV_COMMIT_STATUS);
-      closedir(dp);
+      setenv(ENV_COMMIT_STATUS,"FAILURE",1);
     }
-  }
+    execute_hook(POST_COMMIT_HOOK_DIR,commit_comment);
+    unsetenv(ENV_COMMIT_STATUS);
+  } 
 
   //remove tmp changes file as all the work is now done
   unlink(COMMIT_CHANGES_FILE);
 
-  exit (no_errors == FALSE);
+  exit (errors == 2);
 }
+
+
+struct ExecuteHookData
+{
+  char *_dir;
+  char *_comment;
+};
+
+/**
+ *
+ *
+ **/
+void
+execute_hook(const char* dir, const char* comment)
+{
+  if (dir == NULL) {
+    return;
+  }
+
+  GPtrArray *gparray;
+  gparray = g_ptr_array_new();
+  DIR *dp;
+  if ((dp = opendir(dir)) == NULL){
+    if (g_debug) {
+      //could also be a terminating value now
+      printf("could not open hook directory\n");
+      syslog(LOG_DEBUG,"could not open hook directory");
+    }
+    return;
+  }
+
+  struct dirent *dirp = NULL;
+  while ((dirp = readdir(dp)) != NULL) {
+    if (strcmp(dirp->d_name, ".") != 0 && 
+	strcmp(dirp->d_name, "..") != 0) {
+      
+      char *dirname = (char*)malloc(4096);
+      strcpy(dirname,dirp->d_name);
+      g_ptr_array_add (gparray, (gpointer) dirname);
+    }
+  }    
+  //sort gparray here
+  g_ptr_array_sort(gparray,(GCompareFunc)execute_hook_compare_func);
+  
+  struct ExecuteHookData ehd;
+  ehd._comment = (char*)comment;
+  ehd._dir = (char*)dir;
+  
+  //now loop over gparray here
+  g_ptr_array_foreach(gparray,(GFunc)execute_hook_func,(gpointer)&ehd);
+
+  g_ptr_array_free (gparray, TRUE);
+  closedir(dp);
+}
+
+/**
+ *
+ *
+ **/
+gboolean
+execute_hook_compare_func(gconstpointer a, gconstpointer b, gpointer data)
+{
+  //just compare first two chars numerically
+  char* c_a = *(char**)a;
+  char* c_b = *(char**)b;
+  int i_a = strtoul(c_a,NULL,10);
+  int i_b = strtoul(c_b,NULL,10);
+  return (i_a >= i_b);
+}
+
+/**
+ *
+ *
+ **/  
+gboolean
+execute_hook_func(GNode *node, gpointer data)
+{
+  char *comment = ((struct ExecuteHookData*)data)->_comment;
+  char *dir = ((struct ExecuteHookData*)data)->_dir;
+  char *name = (char*)node;
+
+  if (name == NULL || dir == NULL) {
+    return FALSE;
+  }
+  
+  char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+  if (comment == NULL) {
+    comment="commit";
+  }
+  
+  sprintf(buf,"%s/%s %s",dir,name, comment);
+  syslog(LOG_DEBUG,"Starting commit hook: %s",buf);
+  
+  if (system(buf) == -1) {
+    syslog(LOG_WARNING,"Error on call to hook: %s", buf);
+  }
+  syslog(LOG_DEBUG,"Finished with commit hook: %s",buf);
+
+  //release directory name
+  free(name);
+
+  return FALSE;
+}
+
 
 /**
  *
