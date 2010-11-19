@@ -1,3 +1,16 @@
+vyatta-cfg (0.18.34) unstable; urgency=low
+
+  [ Michael ]
+  * proper exit on failure.
+  * 0.18.33
+
+  [ Stephen Hemminger ]
+  * Cleanup config loader
+  * Fix typo's in logging printf
+  * Display serious errors to console and syslog
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 19 Nov 2010 15:56:56 -0800
+
 vyatta-cfg (0.18.33) unstable; urgency=low
 
   * proper exit on failure.
