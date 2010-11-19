@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.30) unstable; urgency=low
+
+  * remove parser debug output and move existence check.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 19 Nov 2010 10:23:56 -0800
+
 vyatta-cfg (0.18.29) unstable; urgency=low
 
   [ Michael Larson ]
