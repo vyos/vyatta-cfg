@@ -85,9 +85,10 @@ foreach (@all_nodes) {
     }
 
     # Show all commands in log
+    my $cmd = join ' ', @pr;
     printf "[%s]\n", $cmd;
 
-    my $cmd = "$CWRAPPER set " . (join ' ', @pr);
+    $cmd =  "$CWRAPPER set " . $cmd;
     unless (system($cmd) == 0) {
 	$cmd =~ s/^.*?set /set /;
 	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
