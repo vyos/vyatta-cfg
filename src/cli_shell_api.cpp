@@ -53,6 +53,7 @@ print_vec(const vector<string>& vec, const char *sep, const char *quote)
 int op_show_active_only = 0;
 int op_show_show_defaults = 0;
 int op_show_hide_secrets = 0;
+int op_show_working_only = 0;
 
 typedef void (*OpFuncT)(const vector<string>& args);
 
@@ -400,11 +401,17 @@ showCfg(const vector<string>& args)
   UnionfsCstore cstore(true);
   vector<string> nargs(args);
   bool active_only = (!cstore.inSession() || op_show_active_only);
+  bool working_only = (cstore.inSession() && op_show_working_only);
   cnode::CfgNode aroot(cstore, nargs, true, true);
 
   if (active_only) {
     // just show the active config
     cnode::show_diff(aroot, aroot, op_show_show_defaults,
+                     op_show_hide_secrets);
+  } else if (working_only) {
+    // just show the working config without diff markers
+    cnode::CfgNode wroot(cstore, nargs, false, true);
+    cnode::show_diff(wroot, wroot, op_show_show_defaults,
                      op_show_hide_secrets);
   } else {
     cnode::CfgNode wroot(cstore, nargs, false, true);
@@ -469,6 +476,7 @@ struct option options[] = {
   {"show-active-only", no_argument, &op_show_active_only, 1},
   {"show-show-defaults", no_argument, &op_show_show_defaults, 1},
   {"show-hide-secrets", no_argument, &op_show_hide_secrets, 1},
+  {"show-working-only", no_argument, &op_show_working_only, 1},
   {NULL, 0, NULL, 0}
 };
 
