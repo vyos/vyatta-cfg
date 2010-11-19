@@ -113,15 +113,15 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
    * "root", treat it as an intermediate node.
    */
   if (path_comps.size() > 0) {
-    if (!cstore.cfgPathExists(path_comps, active)) {
-      // path doesn't exist
-      _exists = false;
-      return;
-    }
-
     vtw_def def;
     if (cstore.validateTmplPath(path_comps, false, def)) {
       // got the def
+      if (!cstore.cfgPathExists(path_comps, active)) {
+        // path doesn't exist
+        _exists = false;
+        return;
+      }
+
       _is_value = def.is_value;
       _is_tag = def.tag;
       _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);

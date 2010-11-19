@@ -42,29 +42,6 @@ static vector<string> pcomps;
 static vector<bool> pcomp_is_value;
 
 static void
-print_path()
-{
-  printf("[%p,%p] p[", cur_parent, cur_node);
-  for (size_t i = 0; i < pcomps.size(); i++) {
-    if (i > 0) {
-      printf(",");
-    }
-    printf("%s", pcomps[i].c_str());
-  }
-  printf("] n[%s]", nname);
-  if (nval) {
-    printf(" v[%s]", nval);
-  }
-  if (ncomment) {
-    printf(" c[%s]", ncomment);
-  }
-  if (ndeact) {
-    printf(" D");
-  }
-  printf("\n");
-}
-
-static void
 add_node()
 {
   pcomps.push_back(nname);
@@ -166,11 +143,9 @@ forest:     /* empty */
 
 tree:       node {
               add_node();
-              print_path();
             }
           | node {
               add_node();
-              print_path();
             } LEFTB {
               go_down();
             } forest RIGHTB {
