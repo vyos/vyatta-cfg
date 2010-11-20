@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.35) unstable; urgency=low
+
+  * Fix 6434: load asks to use 'commit' to make changes active even when
+    nothing has changed
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 19 Nov 2010 16:47:35 -0800
+
 vyatta-cfg (0.18.34) unstable; urgency=low
 
   [ Michael ]
