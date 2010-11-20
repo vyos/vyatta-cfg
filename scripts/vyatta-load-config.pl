@@ -277,6 +277,17 @@ foreach (@comment_list) {
     #ignore error on complaint re: nested nodes
 }
 
+my $tmp_config_file  = "/tmp/config.boot.$$";
+my $tmp_config_file2 = "/tmp/config.boot2.$$";
+system("cli-shell-api showCfg --show-active-only  > $tmp_config_file");
+system("cli-shell-api showCfg --show-working-only > $tmp_config_file2");
+my $diff = `diff -u $tmp_config_file $tmp_config_file2`;
+system("rm $tmp_config_file $tmp_config_file2");
+if (defined $diff and length($diff) < 1) {
+    print "No configuration changes to commit\n";
+    exit 0;
+}
+
 my $load_merge = 'Load';
 $load_merge = 'Merge' if $merge_mode eq 'true';
 print "\n$load_merge complete.  Use 'commit' to make changes active.\n";
