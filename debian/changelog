@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.37) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * export backend sessionChanged() through perl API
+
+  [ Stig Thormodsrud ]
+  * Add warning if using "commit confirm" instead of "commit-confirm".
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 22 Nov 2010 12:26:38 -0800
+
 vyatta-cfg (0.18.36) unstable; urgency=low
 
   * Simplify check for if there are changes to commit after load/merge.
