@@ -317,3 +317,11 @@ OUTPUT:
   RETVAL
 
 
+bool
+Cstore::sessionChanged()
+CODE:
+  RETVAL = THIS->sessionChanged();
+OUTPUT:
+  RETVAL
+
+

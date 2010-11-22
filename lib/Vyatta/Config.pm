@@ -179,6 +179,13 @@ sub returnOrigValues {
   return @{$ref};
 }
 
+## sessionChanged()
+# return whether the config session has uncommitted changes
+sub sessionChanged {
+  my ($self) = @_;
+  return $self->{_cstore}->sessionChanged();
+}
+
 ######
 # observers of the "effective" config.
 # they can be used
