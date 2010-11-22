@@ -106,6 +106,9 @@ commit ()
       next=0;
     elif [ "$arg" == "comment" ]; then
       next=1
+    elif [ "$arg" == "confirm" ]; then
+      echo Use commit-confirm command
+      return 1;
     else
       args[${#args[@]}]="$arg"    
     fi
