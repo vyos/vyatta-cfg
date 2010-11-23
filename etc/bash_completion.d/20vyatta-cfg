@@ -115,9 +115,11 @@ commit ()
   done
   args+=("-C '$comment'")
 
+  export COMMIT_VIA=cli
   if /opt/vyatta/sbin/my_commit "${args[@]}"; then
     vyatta_cli_shell_api markSessionUnsaved
   fi
+  unset COMMIT_VIA
 }
 
 commit-confirm ()

@@ -79,11 +79,13 @@ case "$1" in
    RET_STATUS=$?
    ;;
   commit)
+    export COMMIT_VIA=cfg-cmd-wrapper
     # debug file /tmp/bar should be deleted before release
     /opt/vyatta/sbin/my_commit -a >> /tmp/bar
     /opt/vyatta/sbin/my_commit -s >> /tmp/bar
     /opt/vyatta/sbin/my_commit -e -d >> /tmp/bar
     RET_STATUS=$?
+    unset COMMIT_VIA
     ;;
   commit_with_error)
     /opt/vyatta/sbin/my_commit
