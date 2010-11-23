@@ -840,7 +840,10 @@ UnionfsCstore::set_comment(const string& comment)
 bool
 UnionfsCstore::discard_changes(unsigned long long& num_removed)
 {
-  // unionfs-specific implementation
+  // need to keep unsaved marker
+  bool unsaved = sessionUnsaved();
+  bool ret = true;
+
   vector<b_fs::path> files;
   vector<b_fs::path> directories;
   try {
@@ -866,9 +869,15 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
   } catch (...) {
     output_internal("discard failed [%s]\n",
                     change_root.file_string().c_str());
-    return false;
+    ret = false;
   }
-  return true;
+
+  if (unsaved) {
+    // restore unsaved marker
+    num_removed--;
+    markSessionUnsaved();
+  }
+  return ret;
 }
 
 // get comment at the current work or active path
