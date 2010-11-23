@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.39) unstable; urgency=low
+
+  * Add COMMIT_VIA environment variable.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 23 Nov 2010 15:39:38 -0800
+
 vyatta-cfg (0.18.38) unstable; urgency=low
 
   * fix for bug 6459
