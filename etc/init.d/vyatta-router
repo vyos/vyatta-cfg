@@ -137,21 +137,6 @@ cleanup_raid()
     rmmod $MD_MODULES > /tmp/vyatta_raid_cleanup_log 2>&1
 }
 
-#
-# Load the acpi_cpufreq kernel module, but only for certain processors.
-# Some Intel CPUs need to have it loaded in order to initialize
-# properly.
-#
-load_acpi_cpufreq()
-{
-    manuf=`dmidecode -s system-manufacturer`
-    prod=`dmidecode -s system-product-name`
-    if [ "$manuf" = "Vyatta" -a "$prod" = "Series 2500" ]; then
-	logger -t "$progname" -p user.notice "loading acpi_cpufreq module"
-	modprobe acpi_cpufreq
-    fi
-}
-
 # 
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
@@ -228,7 +213,6 @@ start ()
 	log_success_msg
     fi
 
-    load_acpi_cpufreq
     cleanup_raid
     telinit q
     bind_mount_boot
