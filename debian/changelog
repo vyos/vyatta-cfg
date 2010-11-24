@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.41) unstable; urgency=low
+
+  * Remove unused net_set
+  * update gitignore
+  * Rename bash completion script
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 24 Nov 2010 11:50:51 -0800
+
 vyatta-cfg (0.18.40) unstable; urgency=low
 
   * Bind mount /opt/vyatta/etc/config to /config.
