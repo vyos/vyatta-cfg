@@ -115,7 +115,6 @@ migrate_bootfile ()
 # load the initial config
 load_bootfile ()
 {
-  if [ -x $vyatta_sbindir/vyatta-config-loader.pl ]; then
     log_progress_msg configure
     (
       if [ -f /etc/default/vyatta-load-boot ]; then
@@ -124,7 +123,7 @@ load_bootfile ()
       fi
       sg ${GROUP} -c "$vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE"
     )
-  fi
+    log_end_msg $?
 }
 
 
@@ -216,19 +215,24 @@ start ()
     for s in ${subinit[@]} ; do
 	if ! disabled $s; then 
 	    log_progress_msg $s
-	    ${vyatta_sbindir}/${s}.init start || (log_end_msg $? && return)
+	    if ! ${vyatta_sbindir}/${s}.init start
+	    then log_end_msg $?
+		 exit 1
+	    fi
 	fi
     done
 
-    disabled configure || load_bootfile
+    if ! disabled configure; then
+	load_bootfile
+    else
+	log_success_msg
+    fi
 
     load_acpi_cpufreq
     cleanup_raid
     telinit q
     bind_mount_boot
     chmod g-w,o-w /
-
-    log_end_msg $?
 }
 
 stop()
