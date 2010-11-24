@@ -134,7 +134,7 @@ load_bootfile ()
 cleanup_raid()
 {
     MD_MODULES='linear multipath raid0 raid1 raid456 raid5 raid6 raid10'
-    rmmod $MD_MODULES > /tmp/vyatta_raid_cleanup_log 2>&1
+    rmmod $MD_MODULES > /tmp/vyatta_raid_cleanup.log 2>&1
 }
 
 # 
