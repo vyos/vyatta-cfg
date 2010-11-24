@@ -26,33 +26,50 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::ConfigLoad;
 use Sys::Syslog qw(:standard :macros);
+use POSIX qw(strftime);
 
 my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
-my $CONFIG_LOG = '/tmp/vyatta-config.log';
-my $COMMIT_CMD = "$CWRAPPER commit";
+my $CONFIG_LOG = '/tmp/vyatta-config-loader.log';
+my $COMMIT_CMD  = "$CWRAPPER commit";
 my $CLEANUP_CMD = "$CWRAPPER cleanup";
+my $BEGIN_CMD   = "$CWRAPPER begin";
+my $END_CMD     = "$CWRAPPER end";
 
 umask 0002;
 
 # Set up logging
 openlog("config-loader", "nofail", LOG_LOCAL0);
+
+open (STDIN, '<', "/dev/null")
+    or die "Can't open /dev/null : $!";
 open (STDOUT, '>>', $CONFIG_LOG)
-    or die "Can not open $CONFIG_LOG : $!";
+    or die "Can't open $CONFIG_LOG : $!";
+open (STDERR, '>&STDOUT')
+    or die "Can't redirect stderr: $!";
+
+sub trace {
+    my $str = shift;
+
+    printf "%s %s\n", strftime("%F %T ", localtime), $str;
+}
 
 # get a list of all config statement in the startup config file
 my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
 my @all_nodes    = @{ $cfg_hier{'set'} };
 
 # empty configuration?
-exit 1 if (scalar(@all_nodes) == 0);
+die "Empty configuration!\n"
+    if (scalar(@all_nodes) == 0);
 
 # set up the config environment
-unless (system("$CWRAPPER begin") == 0) {
+unless (system($BEGIN_CMD) == 0) {
     syslog(LOG_WARNING, "Cannot set up configuration environment");
-    die "Cannot set up configuration environment";
+    die "Cannot set up configuration environment\n";
 }
 
-my $fail = 0;
+my $start = time;
+trace "-- begin";
+
 #cmd below is added to debug last set of command ordering
 foreach (@all_nodes) {
     my ($path_ref, $rank) = @$_;
@@ -64,7 +81,7 @@ foreach (@all_nodes) {
 	foreach my $rp (@pr[1..$#pr]) {
 	    $ct++;
 	    my $tmp_path = $rel_path . "/" . $rp;
-	    my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/" 
+	    my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/"
 			   . $tmp_path . "/node.def";
 
 	    last if ($rp eq '"');
@@ -83,50 +100,58 @@ foreach (@all_nodes) {
       next;
     }
 
-    # Show all commands in log
-    my $cmd = join ' ', @pr;
-    printf "[%s]\n", $cmd;
+    my $cmd = 'set ' . join(' ', @pr);
 
-    $cmd =  "$CWRAPPER set " . $cmd;
-    unless (system($cmd) == 0) {
-	$cmd =~ s/^.*?set /set /;
-	printf "[[%s] failed: %d\n", $cmd, $?;
+    # Show all commands in log
+    trace $cmd;
+    unless (system("$CWRAPPER $cmd") == 0) {
+	warn "*** %s failed: %d\n", $cmd, $?;
 	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
-	++$fail;
     }
 }
 
-warn "$fail failures (see $CONFIG_LOG)\n" if ($fail > 0);
+my $commit_start = time;
+trace "commit";
+syslog(LOG_INFO, "Configuration took %d seconds.", $commit_start - $start);
 
 unless (system($COMMIT_CMD) == 0) {
-    printf "commit failed: %d\n", $?;
-    syslog (LOG_NOTICE, "Commit failed at boot");
-    warn "Commit failed at boot\n";
+    warn "*** Commit failed: %d\n", $?;
+    syslog (LOG_WARNING, "Commit failed at boot");
+
     system($CLEANUP_CMD);
+    system($END_CMD);
     exit 1;
 }
+
+my $commit_end = time;
+syslog(LOG_INFO, "Commit succeeded took %d seconds.",
+       $commit_end - $commit_start);
 
 # Now process any deactivate nodes
 my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
 if (@deactivate_nodes) {
-    $fail = 0;
+    foreach (@deactivate_nodes) {
+	my $cmd = "deactivate " . $_;
+	trace $cmd;
 
-    my $cmd = "$CWRAPPER deactivate " . $_;
-    unless (system($cmd) == 0) {
-	printf "[[%s] failed: %d\n", $cmd, $?;
-	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
+	unless (system("$CWRAPPER $cmd") == 0) {
+	    warn "*** %s failed: %d\n", $cmd, $?;
+	    syslog(LOG_WARNING, "[[%s]] failed", $cmd);
+	    last;
+	}
     }
 
-    warn "$fail deactivate failures (see $CONFIG_LOG)\n" if ($fail > 0);
     unless (system($COMMIT_CMD) == 0) {
-	printf "deactivate commit failed: %d\n", $?;
+	warn  "deactivate commit failed: %d\n", $?;
 	syslog(LOG_NOTICE, "Commit deactivate failed at boot");
-	warn "Commit deactivate failed at boot\n";
 	system($CLEANUP_CMD);
     }
 }
 
-# really clean up
-exec "$CWRAPPER end"
-  or die "exec of $CWRAPPER failed";
+unless (system($END_CMD) == 0) {
+    syslog(LOG_WARNING, "Cannot teardown configuration environment");
+    die "Cannot teardown configuration environment\n";
+}
+trace "done.";
 
+exit 0;
