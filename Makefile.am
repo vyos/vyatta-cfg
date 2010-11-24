@@ -14,7 +14,7 @@ AM_CXXFLAGS = -I src -Wall -Werror
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
-completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
+completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 
@@ -71,7 +71,6 @@ sbin_PROGRAMS += src/my_commit
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/check_tmpl
-sbin_PROGRAMS += src/net_set
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
 
@@ -80,7 +79,6 @@ src_my_commit_SOURCES = src/commit2.c
 src_exe_action_SOURCES = src/exe_action.c
 src_dump_SOURCES = src/dump_session.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
-src_net_set_SOURCES = src/net_set.c
 src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
 
