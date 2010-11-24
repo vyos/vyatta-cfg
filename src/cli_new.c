@@ -129,7 +129,7 @@ void bye(const char *msg, ...)
   printf(is_echo()? "\";":"\n");
   va_end(ap);
 
-  exit(-1);
+  exit(1);
 }
 
 /* msg:

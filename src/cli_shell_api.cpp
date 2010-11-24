@@ -82,7 +82,7 @@ getEditEnv(const vector<string>& args)
   UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditEnv(args, env)) {
-    exit(-1);
+    exit(1);
   }
   printf("%s", env.c_str());
 }
@@ -94,7 +94,7 @@ getEditUpEnv(const vector<string>& args)
   UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditUpEnv(env)) {
-    exit(-1);
+    exit(1);
   }
   printf("%s", env.c_str());
 }
@@ -106,7 +106,7 @@ getEditResetEnv(const vector<string>& args)
   UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditResetEnv(env)) {
-    exit(-1);
+    exit(1);
   }
   printf("%s", env.c_str());
 }
@@ -125,7 +125,7 @@ getCompletionEnv(const vector<string>& args)
   UnionfsCstore cstore(true);
   string env;
   if (!cstore.getCompletionEnv(args, env)) {
-    exit(-1);
+    exit(1);
   }
   printf("%s", env.c_str());
 }
@@ -145,7 +145,7 @@ markSessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.markSessionUnsaved()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -154,7 +154,7 @@ unmarkSessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.unmarkSessionUnsaved()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -163,7 +163,7 @@ sessionUnsaved(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.sessionUnsaved()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -172,7 +172,7 @@ sessionChanged(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.sessionChanged()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -181,7 +181,7 @@ teardownSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.teardownSession()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -190,7 +190,7 @@ setupSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.setupSession()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -199,7 +199,7 @@ inSession(const vector<string>& args)
 {
   UnionfsCstore cstore(true);
   if (!cstore.inSession()) {
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -495,7 +495,7 @@ main(int argc, char **argv)
   int i = 0;
   if (nargs < 0) {
     fprintf(stderr, "Must specify operation\n");
-    exit(-1);
+    exit(1);
   }
   while (ops[i].op_name) {
     if (strcmp(oname, ops[i].op_name) == 0) {
@@ -506,15 +506,15 @@ main(int argc, char **argv)
   }
   if (op_idx == -1) {
     fprintf(stderr, "Invalid operation\n");
-    exit(-1);
+    exit(1);
   }
   if (OP_exact_args >= 0 && nargs != OP_exact_args) {
     fprintf(stderr, "%s\n", OP_exact_error);
-    exit(-1);
+    exit(1);
   }
   if (OP_min_args >= 0 && nargs < OP_min_args) {
     fprintf(stderr, "%s\n", OP_min_error);
-    exit(-1);
+    exit(1);
   }
 
   vector<string> args;

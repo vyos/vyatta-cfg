@@ -206,7 +206,7 @@ main(int argc, char **argv)
   }
   if (op_idx == -1) {
     printf("Invalid operation\n");
-    exit(-1);
+    exit(1);
   }
 
   if (initialize_output(OP_Str) == -1) {
