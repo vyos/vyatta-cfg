@@ -14,7 +14,7 @@ AM_CXXFLAGS = -I src -Wall -Werror
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
-completion_SCRIPTS = etc/bash_completion.d/20vyatta-cfg
+completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 
