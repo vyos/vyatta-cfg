@@ -180,6 +180,26 @@ bind_mount_boot()
     fi
 }
 
+#
+# On live booted machines (i.e. systems booted from LiveCD and systems
+# booted from images), the /opt/vyatta/etc/config directory is bind
+# mounted to /config.  We want all machines to have the config directory
+# mounted under /config because it is a more convenient location.  So we
+# bind mount /opt/vyatta/etc/config to /config here if it has not already
+# been done.
+#
+mount_slash_config ()
+{
+    mounted=`mount | grep /opt/vyatta/etc/config`
+
+    if [ -z "$mounted" ]; then
+	if [ ! -d /config ]; then
+	    mkdir /config
+	fi
+	mount --bind /opt/vyatta/etc/config /config
+    fi
+}
+
 start ()
 {
     log_action_begin_msg "Mounting Vyatta Config"
@@ -188,6 +208,8 @@ start ()
     log_action_end_msg $?
 
     disabled bootfile || init_bootfile
+
+    mount_slash_config
 
     log_daemon_msg "Starting Vyatta router"
     disabled migrate || migrate_bootfile
