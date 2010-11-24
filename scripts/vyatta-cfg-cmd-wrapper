@@ -8,12 +8,12 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # This code was originally developed by Vyatta, Inc.
 # Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
 # All Rights Reserved.
@@ -33,71 +33,54 @@ SID=$PPID
 if [ -n "$CMD_WRAPPER_SESSION_ID" ]; then
   SID=$CMD_WRAPPER_SESSION_ID
 fi
+
 # set up the session environment (get it from the unified lib)
 session_env=$(${vyatta_sbindir}/my_cli_shell_api getSessionEnv $SID)
 eval "$session_env"
 
-RET_STATUS=0
-
 case "$1" in
-  begin)
-    # set up the session
-    ${vyatta_sbindir}/my_cli_shell_api setupSession
-    RET_STATUS=$?
+  begin)    # set up the session
+    exec ${vyatta_sbindir}/my_cli_shell_api setupSession
     ;;
-  end)
-    # tear down the session
-    ${vyatta_sbindir}/my_cli_shell_api teardownSession
-    RET_STATUS=$?
+  end)    # tear down the session
+    exec ${vyatta_sbindir}/my_cli_shell_api teardownSession
     ;;
   cleanup|discard)
-    /opt/vyatta/sbin/my_discard
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/my_discard
     ;;
   set)
-    /opt/vyatta/sbin/my_set "${@:2}"
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/my_set "${@:2}"
     ;;
   delete)
-    /opt/vyatta/sbin/my_delete "${@:2}"
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/my_delete "${@:2}"
     ;;
   deactivate)
-   /opt/vyatta/sbin/my_deactivate "${@:2}"
-   RET_STATUS=$?
-   ;;
+    exec ${vyatta_sbindir}/my_deactivate "${@:2}"
+    ;;
   activate)
-   /opt/vyatta/sbin/my_activate "${@:2}"
-   RET_STATUS=$?
-   ;;
+    exec ${vyatta_sbindir}/my_activate "${@:2}"
+    ;;
   show)
-   ${vyatta_sbindir}/my_cli_shell_api showCfg
-   RET_STATUS=$?
-   ;;
+    exec ${vyatta_sbindir}/my_cli_shell_api showCfg
+    ;;
   comment)
-   /opt/vyatta/sbin/my_comment "${@:2}"
-   RET_STATUS=$?
-   ;;
+    exec ${vyatta_sbindir}/my_comment "${@:2}"
+    ;;
   commit)
     export COMMIT_VIA=cfg-cmd-wrapper
-    # debug file /tmp/bar should be deleted before release
-    /opt/vyatta/sbin/my_commit -a >> /tmp/bar
-    /opt/vyatta/sbin/my_commit -s >> /tmp/bar
-    /opt/vyatta/sbin/my_commit -e -d >> /tmp/bar
-    RET_STATUS=$?
-    unset COMMIT_VIA
+    ${vyatta_sbindir}/my_commit -a >> /tmp/vyatta-commit.log
+    ${vyatta_sbindir}/my_commit -s >> /tmp/vyatta-commit.log
+    ${vyatta_sbindir}/my_commit -e -d >> /tmp/vyatta-commit.log
+    exit 0
     ;;
   commit_with_error)
-    /opt/vyatta/sbin/my_commit
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/my_commit
     ;;
   save)
-    /opt/vyatta/sbin/vyatta-save-config.pl "${@:2}"
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/vyatta-save-config.pl "${@:2}"
     ;;
   load)
-    /opt/vyatta/sbin/vyatta-load-config.pl "${@:2}"
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/vyatta-load-config.pl "${@:2}"
     ;;
   rule-rename)
     # this option is to be used for renaming firewall and nat rules only
@@ -107,11 +90,9 @@ case "$1" in
     #             2   3    4         5  6    7
     # rule-rename nat rule $rule_num to rule $rename_rulenum
     if [ "$2" == "firewall" ]; then
-      /opt/vyatta/sbin/my_move firewall name "$3" rule "$5" to "$8"
-      RET_STATUS=$?
+      exec ${vyatta_sbindir}/my_move firewall name "$3" rule "$5" to "$8"
     elif [ "$2" == "nat" ]; then
-      /opt/vyatta/sbin/my_move service nat rule "$4" to "$7"
-      RET_STATUS=$?
+      exec ${vyatta_sbindir}/my_move service nat rule "$4" to "$7"
     fi
     ;;
   move)
@@ -119,14 +100,15 @@ case "$1" in
     # e.g., "move interfaces ethernet eth2 vif 100 to 200"
     # is similar to "edit interfaces ethernet eth2" plus
     # "rename vif 100 to vif 200".
-    /opt/vyatta/sbin/my_move "${@:2}"
-    RET_STATUS=$?
+    exec ${vyatta_sbindir}/my_move "${@:2}"
     ;;
   *)
     echo "Invalid command \"$1\" for vyatta-cfg-cmd-wrapper"
-    RET_STATUS=1  
+    exit 1
     ;;
 esac
 
-exit $RET_STATUS
+# Only get here if exec failed.
+echo "!!! Missing Vyatta shell infrastructure for $1 !!!!"
+exit 1
 
