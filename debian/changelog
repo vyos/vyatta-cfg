@@ -1,3 +1,20 @@
+vyatta-cfg (0.18.42) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Use exec to get proper exit status
+  * Use LSB log status routines correctly
+  * Remove ACPI cpufreq hack
+  * Change config-loader error message handling and logging
+  * Rename raid cleanup log file
+  * Don't put sh-bang on bash completion script
+
+  [ An-Cheng Huang ]
+  * use exit code 1 to ease init script usage
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 24 Nov 2010 12:13:32 -0800
+
 vyatta-cfg (0.18.41) unstable; urgency=low
 
   * Remove unused net_set
