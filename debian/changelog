@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.43) unstable; urgency=low
+
+  * implementation of err location support for commit process. commit
+    failures will now look different (via cli):
+
+ -- Michael Larson <mike@vyatta.com>  Wed, 24 Nov 2010 23:14:34 -0800
+
 vyatta-cfg (0.18.42) unstable; urgency=low
 
   [ Stephen Hemminger ]
