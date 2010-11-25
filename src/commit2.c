@@ -98,6 +98,9 @@ execute_hook_compare_func(gconstpointer a, gconstpointer b, gpointer data);
 static gboolean
 execute_hook_func(GNode *node, gpointer data);
 
+char*
+process_script_path(char* in);
+
 /*
 NOTES: reverse: use the n-nary tree in commit2.c and only encapuslate data store. pass in func pointer for processing of commands below.
 
@@ -658,49 +661,28 @@ process_func(GNode *node, gpointer data)
 
       char *outbuf = NULL;
       if (g_dump_actions == FALSE) {
-	if (g_print_error_location_all == TRUE) {
-	  outbuf = malloc(8192);
-	  outbuf[0] = '\0';
-	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
-	}
-	else {
-	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL);
-	}
-	if (!status && g_print_error_location_all == TRUE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-	  if (strstr(outbuf,"_errloc_:[") != NULL) {
-	    fprintf(out_stream,"%s\n",outbuf);
+	outbuf = malloc(8192);
+	outbuf[0] = '\0';
+	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
+	if (strlen(outbuf) > 0) {
+          if (strstr(outbuf,"_errloc_:[") != NULL) {
+	    if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+	      fprintf(out_stream,"%s\n",outbuf+strlen("_errloc_:"));
+            }
+            else {
+	      fprintf(out_stream,"%s\n",outbuf);
+            }
 	  }
 	  else {
-	    //just need to convert slashes into spaces here
-	    char path_buf[1024];
-	    char tmp[1024];
-	    char *ptr;
-	    path_buf[0] = '\0';
-	    
-	    strcpy(tmp,d->_path);
-	    ptr = (char*)tmp;
-	    char *slash = strchr(tmp,'/');
-	    if (slash == NULL) {
-	      strcat(path_buf,d->_path);
-	    }
-	    else {
-	      do { 	//convert '/' to ' '
-		strncat(path_buf,ptr,slash - ptr);
-		strcat(path_buf," ");
-		++slash;
-		ptr = slash;
-	      } while ((slash = strchr(slash,'/')) != NULL);
-	    }
-	    if (strncmp(ptr,"value:",6) == 0) {
-	      if (strlen(ptr)-6 > 0) {
-		strncat(path_buf,ptr+6,strlen(ptr)-6);
+	    //currently set to format option for GUI client.
+	    char *p = process_script_path(d->_path);
+	    if (p != NULL) {
+	      if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+		fprintf(out_stream,"[%s]\n%s\n",p,outbuf);
 	      }
-	    }
-	    char *p = clind_unescape(path_buf);
-	    
-	    if (strlen(outbuf) > 0) {
-	      //currently set to format option for GUI client.
-	      fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+	      else {
+		fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+              }
 	    }
 	  }
 	}
@@ -745,6 +727,48 @@ process_func(GNode *node, gpointer data)
   }
   return FALSE;
 }
+
+
+/**
+ *
+ **/
+char*
+process_script_path(char* in)
+{
+  if (in == NULL) {
+    return NULL;
+  }
+  
+  //just need to convert slashes into spaces here
+  char path_buf[4096];
+  char tmp[4096];
+  char *ptr;
+  path_buf[0] = '\0';
+  
+  strcpy(tmp,in);
+  ptr = (char*)tmp;
+  char *slash = strchr(tmp,'/');
+  if (slash == NULL) {
+    strcat(path_buf,in);
+  }
+  else {
+    do {       //convert '/' to ' '
+      strncat(path_buf,ptr,slash - ptr);
+      strcat(path_buf," ");
+      ++slash;
+      ptr = slash;
+    } while ((slash = strchr(slash,'/')) != NULL);
+  }
+  if (strncmp(ptr,"value:",6) == 0) {
+    if (strlen(ptr)-6 > 0) {
+      strncat(path_buf,ptr+6,strlen(ptr)-6);
+      strcat(path_buf," ");
+    }
+  }
+  return clind_unescape(path_buf);
+}
+
+
 
 
 /**
@@ -1548,40 +1572,17 @@ validate_func(GNode *node, gpointer data)
     gettimeofday(&t,NULL);
     fprintf(out_stream,"[END] %lu:%lu\n",t.tv_sec,t.tv_usec);
   }
-
+  
   if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-    //just need to convert slashes into spaces here
-    char path_buf[1024];
-    char tmp[1024];
-    char *ptr;
-    path_buf[0] = '\0';
-
-    strcpy(tmp,d->_path);
-    ptr = (char*)tmp;
-    char *slash = strchr(tmp,'/');
-    if (slash == NULL) {
-      strcat(path_buf,d->_path);
-    }
-    else {
-      do { 	//convert '/' to ' '
-	strncat(path_buf,ptr,slash - ptr);
-	strcat(path_buf," ");
-	++slash;
-	ptr = slash;
-      } while ((slash = strchr(slash,'/')) != NULL);
-    }
-    if (strncmp(ptr,"value:",6) == 0) {
-      if (strlen(ptr)-6 > 0) {
-	strncat(path_buf,ptr+6,strlen(ptr)-6);
-      }
-    }
-    char *p = clind_unescape(path_buf);
-    if (strlen(outbuf) > 0) {
-      if (g_print_error_location_all == TRUE) {
-	fprintf(out_stream,"_errloc_:[%s]\n  %s\n",p,outbuf);
-      }
-      else {
-	fprintf(out_stream,"[ %s ] \n  %s\n",p,outbuf);
+    char *p = process_script_path(d->_path);
+    if (p != NULL) {
+      if (strlen(outbuf) > 0) {
+	if (g_print_error_location_all == TRUE) {
+	  fprintf(out_stream,"_errloc_:[%s]\n  %s\n",p,outbuf);
+	}
+	else {
+	  fprintf(out_stream,"[%s] \n  %s\n",p,outbuf);
+	}
       }
     }
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);

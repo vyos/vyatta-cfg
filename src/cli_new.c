@@ -2535,49 +2535,46 @@ old_system_out(const char *command)
 }
 
 int
-system_out(const char *cmd, const char **outbuf)                                                                                           
-{                                                                                                                                          
-  //  fprintf(out_stream,"system out\n");                                                                                                  
-  if (outbuf == NULL) {                                                                                                                    
-    return old_system_out(cmd);                                                                                                            
-  }                                                                                                                                        
-                                                                                                                                           
-  if (cmd == NULL) {                                                                                                                       
-    return -1;                                                                                                                             
-  }                                                                                                                                        
-                                                                                                                                           
-  int cp[2]; // Child to parent pipe                                                                                                       
-                                                                                                                                           
-  if( pipe(cp) < 0) {                                                                                                                      
-    return -1;                                                                                                                             
-  }                                                                                                                                        
-                                                                                                                                           
-  pid_t pid = fork();                                                                                                                      
-  if (pid == 0) {                                                                                                                          
-    //child                                                                                                                                
-    close(1); // Close current stdout./                                                                                                    
-    dup2( cp[1],1); // Make stdout go to write end of pipe.                                                                                
-    dup2( cp[1],2); // Make stderr go to write end of pipe.                                                                                
-    close(0); // Close current stdin.                                                                                                      
-    close( cp[0]);                                                                                                                         
-                                                                                                                                           
-    int ret = 0;                                                                                                                           
-    if (execl("/bin/sh","sh","-c",cmd,NULL) == -1) {                                                                                       
+system_out(const char *cmd, const char **outbuf) 
+{
+  //  fprintf(out_stream,"system out\n");
+  if (outbuf == NULL) {                 
+    return old_system_out(cmd);
+  }                                                                                                             
+  if (cmd == NULL) {
+    return -1;               
+  }
+
+  int cp[2]; // Child to parent pipe
+  if( pipe(cp) < 0) {                                                                                                       return -1;
+  }
+
+  pid_t pid = fork();                                                                                 
+  if (pid == 0) {                                                                                          
+    //child
+    close(1); // Close current stdout./
+    dup2(cp[1],1); // Make stdout go to write end of pipe.
+    dup2(cp[1],2); // Make stderr go to write end of pipe.
+    close(0); // Close current stdin.
+    close(cp[0]);
+    close(cp[1]);
+    int ret = 0;  
+    if (execl("/bin/sh","sh","-c",cmd,NULL) == -1) {                                   
       ret = errno;
     }
-    close( cp[1]);
+    close(cp[1]);
     exit(ret);
   }
   else {
-    //parent                                                                                                                               
+    //parent         
     char buf[1025];
     memset(buf,'\0',1025);
     close(cp[1]);
-    if (read(cp[0], &buf, 1024) > 0) {
+    while (read(cp[0], &buf, 1024) > 0) {
       strcat((char*)*outbuf,buf);
     }
 
-    //now wait on child to kick the bucket                                                                                                 
+    //now wait on child to kick the bucket                  
     int status;
     wait(&status);
     close(cp[0]);
