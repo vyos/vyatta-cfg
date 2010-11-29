@@ -2570,9 +2570,11 @@ system_out(const char *cmd, const char **outbuf)
     char buf[8192];
     memset(buf,'\0',8192);
     close(cp[1]);
-    while (read(cp[0], &buf, 8192) > 0) {
+    int ct = 0, total = 0;
+    while ((ct = read(cp[0], &buf, 8192)) > 0 && (total < 8192)) {
       strcat((char*)*outbuf,buf);
       memset(buf,'\0',8192);
+      total += ct;
     }
 
     //now wait on child to kick the bucket                  
