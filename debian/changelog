@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.44) unstable; urgency=low
+
+  * fix for duplicate messages on some system commands.
+
+ -- Michael Larson <mike@vyatta.com>  Mon, 29 Nov 2010 12:21:47 -0800
+
 vyatta-cfg (0.18.43) unstable; urgency=low
 
   * implementation of err location support for commit process. commit
