@@ -2567,11 +2567,12 @@ system_out(const char *cmd, const char **outbuf)
   }
   else {
     //parent         
-    char buf[1025];
-    memset(buf,'\0',1025);
+    char buf[8192];
+    memset(buf,'\0',8192);
     close(cp[1]);
-    while (read(cp[0], &buf, 1024) > 0) {
+    while (read(cp[0], &buf, 8192) > 0) {
       strcat((char*)*outbuf,buf);
+      memset(buf,'\0',8192);
     }
 
     //now wait on child to kick the bucket                  
