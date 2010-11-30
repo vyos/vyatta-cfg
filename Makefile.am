@@ -120,8 +120,6 @@ install-exec-hook:
 	cd $(DESTDIR)$(sbindir); \
 	  $(LN_S) my_cli_bin my_set; \
 	  $(LN_S) my_cli_bin my_delete; \
-	  $(LN_S) my_cli_bin my_activate; \
-	  $(LN_S) my_cli_bin my_deactivate; \
 	  $(LN_S) my_cli_bin my_rename; \
 	  $(LN_S) my_cli_bin my_copy; \
 	  $(LN_S) my_cli_bin my_comment; \

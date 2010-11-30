@@ -33,11 +33,6 @@ static const string PFX_DIFF_UPD = ">"; // changed
 static const string PFX_DIFF_NONE = " ";
 static const string PFX_DIFF_NULL = "";
 
-static const string PFX_DEACT_D = "!";  // deactivated
-static const string PFX_DEACT_DP = "D"; // deactivate pending
-static const string PFX_DEACT_AP = "A"; // activate pending
-static const string PFX_DEACT_NONE = " ";
-
 
 ////// static (internal) functions
 static void
@@ -78,23 +73,11 @@ static void
 _diff_print_indent(CfgNode *cfg1, CfgNode *cfg2, int level,
                    const char *pfx_diff)
 {
-  const char *pfx_deact = PFX_DEACT_NONE.c_str();
-  bool de1 = (cfg1 ? cfg1->isDeactivated() : false);
-  bool de2 = (cfg2 ? cfg2->isDeactivated() : false);
-  if (de1) {
-    if (de2) {
-      pfx_deact = PFX_DEACT_D.c_str();
-    } else {
-      pfx_deact = PFX_DEACT_AP.c_str();
-    }
-  } else {
-    if (de2) {
-      pfx_deact = PFX_DEACT_DP.c_str();
-    }
-    // 4th case handled by default
-  }
-
-  printf("%s %s", pfx_deact, pfx_diff);
+  /* note: activate/deactivate state output was handled here. pending
+   *       redesign, the output notation will be changed to "per-subtree"
+   *       marking, so the output will be handled with the rest of the node.
+   */
+  printf("%s", pfx_diff);
   for (int i = 0; i < level; i++) {
     printf("    ");
   }

@@ -702,14 +702,12 @@ vyatta_config_complete ()
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
-    _get_help_text_items=( "activate" \
-                           "confirm" \
+    _get_help_text_items=( "confirm" \
                            "comment" \
                            "commit" \
                            "commit-confirm" \
                            "compare" \
                            "copy" \
-                           "deactivate" \
                            "delete" \
                            "discard" \
                            "edit" \
@@ -724,14 +722,12 @@ vyatta_config_complete ()
                            "set" \
                            "show" )
     _get_help_text_helps=( \
-      "Activate this element" \
       "Confirm prior commit" \
       "Add comment to this configuration element" \
       "Commit the current set of changes" \
       "Commit the current set of changes with confirm" \
       "Compare configuration revisions" \
       "Copy a configuration element" \
-      "Deactivate this element" \
       "Delete a configuration element" \
       "Discard uncommitted changes" \
       "Edit a sub-element" \
@@ -861,8 +857,6 @@ builtin set -o ignoreeof 1
 reset_edit_level
 alias set=/opt/vyatta/sbin/my_set
 alias delete=/opt/vyatta/sbin/my_delete
-alias activate=/opt/vyatta/sbin/my_activate
-alias deactivate=/opt/vyatta/sbin/my_deactivate
 alias rename=/opt/vyatta/sbin/my_rename
 alias copy=/opt/vyatta/sbin/my_copy
 alias comment=/opt/vyatta/sbin/my_comment
@@ -880,8 +874,6 @@ if ! bind -p |grep -q '\\C-x\\C-o'; then
 fi
 
 complete -F vyatta_config_complete ''
-complete -F vyatta_config_complete activate
-complete -F vyatta_config_complete deactivate
 complete -F vyatta_config_complete set
 complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
