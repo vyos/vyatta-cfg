@@ -27,9 +27,15 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::ConfigLoad;
 
-my $conf_file = '/opt/vyatta/etc/config/config.boot';
+my $conf_file;
+my $conf_tmp = "/tmp/config.boot.$$";
 
-$conf_file = $ARGV[0] if defined $ARGV[0];
+if (defined $ARGV[0]) {
+    $conf_file = $ARGV[0];
+} else {
+    system("cli-shell-api showCfg --show-active-only  > $conf_tmp");
+    $conf_file = $conf_tmp;
+}
 
 # get a list of all config statement in the startup config file
 my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($conf_file);
@@ -49,7 +55,8 @@ foreach (@all_nodes) {
   my $cmd = "set $path " . @$path_ref[($elements - 1)];
   print "$cmd\n";
 }
-print "commit\n";
+
+system("rm -f $conf_tmp") if $conf_file eq $conf_tmp;
 
 exit 0;
 
