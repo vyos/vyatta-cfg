@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.46) unstable; urgency=low
+
+  * Fix 6362: "show configuration cmds" actually returns set commands
+    for saved config.boot instead of running config
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 29 Nov 2010 18:15:43 -0800
+
 vyatta-cfg (0.18.45) unstable; urgency=low
 
   [ Michael Larson ]
