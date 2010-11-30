@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.45) unstable; urgency=low
+
+  [ Michael Larson ]
+  * add limit check on stdout capture (8192 characters).
+
+  [ An-Cheng Huang ]
+  * disable activate/deactivate for mendocino as discussed.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 29 Nov 2010 17:37:05 -0800
+
 vyatta-cfg (0.18.44) unstable; urgency=low
 
   * fix for duplicate messages on some system commands.
