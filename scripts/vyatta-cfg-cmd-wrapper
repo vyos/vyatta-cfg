@@ -70,8 +70,7 @@ case "$1" in
     export COMMIT_VIA=cfg-cmd-wrapper
     ${vyatta_sbindir}/my_commit -a >> /tmp/vyatta-commit.log
     ${vyatta_sbindir}/my_commit -s >> /tmp/vyatta-commit.log
-    ${vyatta_sbindir}/my_commit -e -d >> /tmp/vyatta-commit.log
-    exit 0
+    exec ${vyatta_sbindir}/my_commit -e -d >> /tmp/vyatta-commit.log
     ;;
   commit_with_error)
     exec ${vyatta_sbindir}/my_commit
