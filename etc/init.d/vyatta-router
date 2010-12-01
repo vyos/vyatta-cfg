@@ -123,7 +123,6 @@ load_bootfile ()
       fi
       sg ${GROUP} -c "$vyatta_sbindir/vyatta-config-loader.pl $BOOTFILE"
     )
-    log_end_msg $?
 }
 
 
@@ -201,17 +200,14 @@ start ()
 	if ! disabled $s; then 
 	    log_progress_msg $s
 	    if ! ${vyatta_sbindir}/${s}.init start
-	    then log_end_msg $?
+	    then log_failure_msg
 		 exit 1
 	    fi
 	fi
     done
 
-    if ! disabled configure; then
-	load_bootfile
-    else
-	log_success_msg
-    fi
+    disabled configure || load_bootfile
+    log_end_msg $?
 
     cleanup_raid
     telinit q
