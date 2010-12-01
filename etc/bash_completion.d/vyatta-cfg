@@ -873,7 +873,7 @@ if ! bind -p |grep -q '\\C-x\\C-o'; then
   bind '"\C-x\C-o": copy-region-as-kill'
 fi
 
-complete -F vyatta_config_complete ''
+complete -E -F vyatta_config_complete 
 complete -F vyatta_config_complete set
 complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
