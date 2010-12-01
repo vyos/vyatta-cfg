@@ -25,7 +25,7 @@ use strict;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
-		 is_address_enabled is_dhcp_enabled
+		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
 		 isIpAddress is_ip_v4_or_v6 interface_description);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
@@ -34,6 +34,22 @@ our @EXPORT_OK = qw(generate_dhclient_intf_files
 use Vyatta::Config;
 use Vyatta::Interface;
 use NetAddr::IP;
+
+#
+# returns a hash of ipaddrs => interface
+#
+sub get_ipaddr_intf_hash {
+  my %config_ipaddrs = ();
+  my @lines = `ip addr show | grep 'inet '`;
+  chomp @lines;
+  foreach my $line (@lines) {
+    if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+        $config_ipaddrs{$1} = $2;
+    }
+  }
+  return \%config_ipaddrs;
+}
+
 
 sub get_sysfs_value {
     my ( $intf, $name ) = @_;
