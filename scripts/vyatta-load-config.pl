@@ -62,11 +62,6 @@ GetOptions(
     "merge:s"              => \$merge,
     ) or usage();
 
-my $merge_mode = 'false';
-if (defined $merge) {
-    $merge_mode = 'true';
-}
-
 my $mode = 'local';
 my $proto;
 
@@ -195,7 +190,7 @@ my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
 my @activate_list = @{ $cfg_diff{'activate'} };
 my @comment_list    = @{ $cfg_diff{'comment'} };
 
-if ($merge_mode eq 'false') {
+if (!defined($merge)) {
     my @delete_list = @{ $cfg_diff{'delete'} };
     
     foreach (@delete_list) {
@@ -244,7 +239,7 @@ foreach (@deactivate_list) {
 foreach (@comment_list) {
     my ( $cmd_ref ) = $_;
     #apply comment if it doesn't have an empty element at the array and a .comment file exists and this is not a merge
-    if ($merge_mode eq 'false' && $cmd_ref =~ /\"\"$/) {
+    if (!defined($merge) && $cmd_ref =~ /\"\"$/) {
 	my @cmd_array = split(" ",$cmd_ref);
 	pop(@cmd_array);
 	my $rel_path = join '/', @cmd_array;
@@ -283,7 +278,6 @@ if (defined $rc and $rc > 0) {
     exit 0;
 }
 
-my $load_merge = 'Load';
-$load_merge = 'Merge' if $merge_mode eq 'true';
-print "\n$load_merge complete.  Use 'commit' to make changes active.\n";
+print ("\n" . (defined($merge) ? 'Merge' : 'Load')
+       . " complete.  Use 'commit' to make changes active.\n");
 exit 0;
