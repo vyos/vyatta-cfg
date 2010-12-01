@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.49) unstable; urgency=low
+
+  * move general code for returning a hash of ipaddrs=>interface from
+    Webproxy.pm
+
+ -- Mohit Mehta <mohit@vyatta.com>  Wed, 01 Dec 2010 12:30:35 -0800
+
 vyatta-cfg (0.18.48) unstable; urgency=low
 
   * Fix default completion in commit mode
