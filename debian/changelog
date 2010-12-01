@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.47) unstable; urgency=low
+
+  * Propgate error code from my_commit in command wrapper
+  * Use new bash empty command completion
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 30 Nov 2010 20:46:52 -0800
+
 vyatta-cfg (0.18.46) unstable; urgency=low
 
   * Fix 6362: "show configuration cmds" actually returns set commands
