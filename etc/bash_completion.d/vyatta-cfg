@@ -874,6 +874,7 @@ if ! bind -p |grep -q '\\C-x\\C-o'; then
 fi
 
 complete -E -F vyatta_config_complete 
+complete -D -F vyatta_config_complete
 complete -F vyatta_config_complete set
 complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
