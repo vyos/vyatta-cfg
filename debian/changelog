@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.50) unstable; urgency=low
+
+  * clean up merge argument processing
+  * implement load function in new config input/output infrastructure.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 02 Dec 2010 14:37:06 -0800
+
 vyatta-cfg (0.18.49) unstable; urgency=low
 
   * move general code for returning a hash of ipaddrs=>interface from
