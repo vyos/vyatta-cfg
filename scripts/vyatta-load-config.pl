@@ -186,9 +186,6 @@ if ( scalar( keys %cfg_hier ) == 0 ) {
 
 my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff(\%cfg_hier);
 my @set_list    = @{ $cfg_diff{'set'} };
-my @deactivate_list    = @{ $cfg_diff{'deactivate'} };
-my @activate_list = @{ $cfg_diff{'activate'} };
-my @comment_list    = @{ $cfg_diff{'comment'} };
 
 if (!defined($merge)) {
     my @delete_list = @{ $cfg_diff{'delete'} };
@@ -214,62 +211,6 @@ foreach (@set_list) {
         $cmd_str =~ s/^$sbindir\/my_//;
         print "\"$cmd_str\" failed\n";
     }
-}
-
-
-
-
-foreach (@activate_list) {
-  my $cmd = "$sbindir/my_activate $_";
-  system("$cmd 1>/dev/null");
-  #ignore error on complaint re: nested nodes
-}
-
-my $cobj = new Vyatta::Config;
-foreach (@deactivate_list) {
-  if ($cobj->isLeafValue($_)) {
-    # a leaf value. go up 1 level by removing the last comp.
-    s/\s+\S+$//;
-  }
-  my $cmd = "$sbindir/my_deactivate $_";
-  system("$cmd 1>/dev/null");
-  #ignore error on complaint re: nested nodes
-}
-
-foreach (@comment_list) {
-    my ( $cmd_ref ) = $_;
-    #apply comment if it doesn't have an empty element at the array and a .comment file exists and this is not a merge
-    if (!defined($merge) && $cmd_ref =~ /\"\"$/) {
-	my @cmd_array = split(" ",$cmd_ref);
-	pop(@cmd_array);
-	my $rel_path = join '/', @cmd_array;
-	my $path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
-	if (-e $path) {
-	    my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
-	    my $cmd_str = join ' ', @cmd;
-	    system("$cmd_str 1>/dev/null");
-	}
-	else {
-	    #not found, maybe a leaf?
-	    pop(@cmd_array);
-	    $rel_path = join '/', @cmd_array;
-	    my $leaf = "/opt/vyatta/config/active/" . $rel_path . "/node.val";
-	    if (-e $leaf) {
-		$path = "/opt/vyatta/config/active/" . $rel_path . "/.comment";
-		if (-e $path) {
-		    my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
-		    my $cmd_str = join ' ', @cmd;
-		    system("$cmd_str 1>/dev/null");
-		}
-	    }
-	}
-    }
-    else {
-	my @cmd = ( "$sbindir/my_comment ", $cmd_ref );
-	my $cmd_str = join ' ', @cmd;
-	system("$cmd_str 1>/dev/null");
-    }
-    #ignore error on complaint re: nested nodes
 }
 
 my $rc = system("cli-shell-api sessionChanged");
