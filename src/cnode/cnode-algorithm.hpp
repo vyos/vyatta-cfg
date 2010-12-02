@@ -21,8 +21,19 @@
 
 namespace cnode {
 
-void show_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
-               bool hide_secret);
+void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
+                   bool hide_secret);
+void show_cfg(const CfgNode& cfg, bool show_def, bool hide_secret);
+
+void show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2);
+void show_cmds(const CfgNode& cfg);
+
+void get_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2,
+                   vector<vector<string> >& del_list,
+                   vector<vector<string> >& set_list,
+                   vector<vector<string> >& com_list);
+void get_cmds(const CfgNode& cfg, vector<vector<string> >& set_list,
+              vector<vector<string> >& com_list);
 
 } // namespace cnode
 

@@ -112,7 +112,7 @@ public:
    *   edit-related commands (invoked from shell functions)
    *   completion-related (for completion script)
    *   session-related (setup, teardown, etc.)
-   *   load (XXX currently still implemented in perl)
+   *   load
    *
    * these operate on the "working config" and the session and MUST NOT
    * be used by anything other than the listed operations.
@@ -165,8 +165,8 @@ public:
   virtual bool inSession() = 0;
   // commit
   bool unmarkCfgPathChanged(const vector<string>& path_comps);
-  // XXX load
-  //bool unmarkCfgPathDeactivatedDescendants(const vector<string>& path_comps);
+  // load
+  bool loadFile(const char *filename);
 
   /******
    * these functions are observers of the current "working config" or
@@ -476,6 +476,8 @@ private:
   // util functions
   string get_shell_prompt(const string& level);
   void shell_escape_squotes(string& str);
+  void print_str_vec(const char *pre, const char *post,
+                     const vector<string>& vec, const char *quote);
 };
 
 #endif /* _CSTORE_H_ */

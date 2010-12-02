@@ -24,6 +24,7 @@
 #include <cstore/unionfs/cstore-unionfs.hpp>
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
+#include <cparse/cparse.hpp>
 
 /* This program provides an API for shell scripts (e.g., snippets in
  * templates, standalone scripts, etc.) to access the CLI cstore library.
@@ -405,18 +406,27 @@ showCfg(const vector<string>& args)
   cnode::CfgNode aroot(cstore, nargs, true, true);
 
   if (active_only) {
-    // just show the active config
-    cnode::show_diff(aroot, aroot, op_show_show_defaults,
-                     op_show_hide_secrets);
-  } else if (working_only) {
-    // just show the working config without diff markers
-    cnode::CfgNode wroot(cstore, nargs, false, true);
-    cnode::show_diff(wroot, wroot, op_show_show_defaults,
-                     op_show_hide_secrets);
+    // just show the active config (no diff)
+    cnode::show_cfg(aroot, op_show_show_defaults, op_show_hide_secrets);
   } else {
     cnode::CfgNode wroot(cstore, nargs, false, true);
-    cnode::show_diff(aroot, wroot, op_show_show_defaults,
-                     op_show_hide_secrets);
+    if (working_only) {
+      // just show the working config (no diff)
+      cnode::show_cfg(wroot, op_show_show_defaults, op_show_hide_secrets);
+    } else {
+      cnode::show_cfg_diff(aroot, wroot, op_show_show_defaults,
+                           op_show_hide_secrets);
+    }
+  }
+}
+
+static void
+loadFile(const vector<string>& args)
+{
+  UnionfsCstore cstore(true);
+  if (!cstore.loadFile(args[0].c_str())) {
+    // loadFile failed
+    exit(1);
   }
 }
 
@@ -463,6 +473,7 @@ static OpT ops[] = {
   OP(validateTmplValPath, -1, NULL, 1, "Must specify config path"),
 
   OP(showCfg, -1, NULL, -1, NULL),
+  OP(loadFile, 1, "Must specify config file", -1, NULL),
 
   {NULL, -1, NULL, -1, NULL, NULL}
 };

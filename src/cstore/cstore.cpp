@@ -31,6 +31,9 @@
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/cstore-varref.hpp>
+#include <cnode/cnode.hpp>
+#include <cnode/cnode-algorithm.hpp>
+#include <cparse/cparse.hpp>
 
 
 ////// constants
@@ -1803,6 +1806,63 @@ Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
   return ret;
 }
 
+// load specified config file
+bool
+Cstore::loadFile(const char *filename)
+{
+  if (!inSession()) {
+    output_user("Cannot load config outside configuration session\n");
+    // exit handled by assert below
+  }
+  ASSERT_IN_SESSION;
+
+  FILE *fin = fopen(filename, "r");
+  if (!fin) {
+    output_user("Failed to open specified config file\n");
+    return false;
+  }
+
+  // get the config tree from the file
+  cnode::CfgNode *froot = cparse::parse_file(fin, *this);
+  if (!froot) {
+    output_user("Failed to parse specified config file\n");
+    return false;
+  }
+
+  // get the config tree from the active config
+  vector<string> args;
+  cnode::CfgNode aroot(*this, args, true, true);
+
+  // get the "commands diff" between the two
+  vector<vector<string> > del_list;
+  vector<vector<string> > set_list;
+  vector<vector<string> > com_list;
+  cnode::get_cmds_diff(aroot, *froot, del_list, set_list, com_list);
+
+  // "apply" the changes to the working config
+  for (size_t i = 0; i < del_list.size(); i++) {
+    vtw_def def;
+    if (!validateDeletePath(del_list[i], def)
+        || !deleteCfgPath(del_list[i], def)) {
+      print_str_vec("Delete [", "] failed\n", del_list[i], "'");
+    }
+  }
+  for (size_t i = 0; i < set_list.size(); i++) {
+    if (!validateSetPath(set_list[i]) || !setCfgPath(set_list[i])) {
+      print_str_vec("Set [", "] failed\n", set_list[i], "'");
+    }
+  }
+  for (size_t i = 0; i < com_list.size(); i++) {
+    vtw_def def;
+    if (!validateCommentArgs(com_list[i], def)
+        || !commentCfgPath(com_list[i], def)) {
+      print_str_vec("Comment [", "] failed\n", com_list[i], "'");
+    }
+  }
+
+  return true;
+}
+
 /* "changed" status handling.
  * the "changed" status is used during commit to check if a node has been
  * changed. note that if a node is "changed", all of its ancestors are also
@@ -2795,5 +2855,20 @@ Cstore::shell_escape_squotes(string& str)
     str.replace(sq, 1, "'\\''");
     sq += 4;
   }
+}
+
+// print a vector of strings
+void
+Cstore::print_str_vec(const char *pre, const char *post,
+                      const vector<string>& vec, const char *quote)
+{
+  output_user("%s", pre);
+  for (size_t i = 0; i < vec.size(); i++) {
+    if (i > 0) {
+      output_user(" ");
+    }
+    output_user("%s%s%s", quote, vec[i].c_str(), quote);
+  }
+  output_user("%s", post);
 }
 
