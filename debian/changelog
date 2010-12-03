@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.51) unstable; urgency=low
+
+  * remove comment/activate/deactivate from load-config.pl.
+  * change "load" to use new backend loadFile implementation.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 02 Dec 2010 19:23:51 -0800
+
 vyatta-cfg (0.18.50) unstable; urgency=low
 
   * clean up merge argument processing
