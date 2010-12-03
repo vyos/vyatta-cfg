@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.52) unstable; urgency=low
+
+  * update to errloc. changed reader so that stderr/stdout is printed as
+    it is received. Also added new -x option to commit to force messages
+    to be printed via the old format.
+
+ -- Michael Larson <mike@vyatta.com>  Thu, 02 Dec 2010 20:08:30 -0800
+
 vyatta-cfg (0.18.51) unstable; urgency=low
 
   * remove comment/activate/deactivate from load-config.pl.
