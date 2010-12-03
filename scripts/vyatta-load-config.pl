@@ -171,52 +171,45 @@ syslog( "warning", "Load config [$orig_load_file] by $login" );
 # do config migration
 system("$sbindir/vyatta_config_migrate.pl $load_file");
 
+# note: "load" is now handled in the backend so only "merge" is actually
+# handled in this script. "merge" hasn't been moved into the backend since
+# the command itself needs to be revisited after mendocino time frame.
 print "Loading configuration from '$load_file'...\n";
-my %cfg_hier = Vyatta::ConfigLoad::loadConfigHierarchy($load_file,$merge);
-if ( scalar( keys %cfg_hier ) == 0 ) {
+my $cobj = new Vyatta::Config;
+if (!defined($merge)) {
+  # "load" => use backend through API
+  $cobj->loadFile($load_file);
+} else {
+  # "merge" => handled here
+  my %cfg_hier = Vyatta::ConfigLoad::loadConfigHierarchy($load_file,$merge);
+  if ( scalar( keys %cfg_hier ) == 0 ) {
     print "The specified file does not contain any configuration.\n";
     print
       "Do you want to remove everything in the running configuration? [no] ";
     my $resp = <STDIN>;
     if ( !( $resp =~ /^yes$/i ) ) {
-        print "Configuration not loaded\n";
-        exit 1;
+      print "Configuration not loaded\n";
+      exit 1;
     }
-}
+  }
 
-my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff(\%cfg_hier);
-my @set_list    = @{ $cfg_diff{'set'} };
-
-if (!defined($merge)) {
-    my @delete_list = @{ $cfg_diff{'delete'} };
-    
-    foreach (@delete_list) {
-	my ( $cmd_ref, $rank ) = @{$_};
-	my @cmd = ( "$sbindir/my_delete", @{$cmd_ref} );
-	my $cmd_str = join ' ', @cmd;
-	system("$cmd_str");
-	if ( $? >> 8 ) {
-	    $cmd_str =~ s/^$sbindir\/my_//;
-	    print "\"$cmd_str\" failed\n";
-	}
-    }
-}
-
-foreach (@set_list) {
+  my %cfg_diff = Vyatta::ConfigLoad::getConfigDiff(\%cfg_hier);
+  my @set_list    = @{ $cfg_diff{'set'} };
+  foreach (@set_list) {
     my ( $cmd_ref, $rank ) = @{$_};
     my @cmd = ( "$sbindir/my_set", @{$cmd_ref} );
     my $cmd_str = join ' ', @cmd;
     system("$cmd_str");
     if ( $? >> 8 ) {
-        $cmd_str =~ s/^$sbindir\/my_//;
-        print "\"$cmd_str\" failed\n";
+      $cmd_str =~ s/^$sbindir\/my_//;
+      print "\"$cmd_str\" failed\n";
     }
+  }
 }
 
-my $rc = system("cli-shell-api sessionChanged");
-if (defined $rc and $rc > 0) {
-    print "No configuration changes to commit\n";
-    exit 0;
+if (!($cobj->sessionChanged())) {
+  print "No configuration changes to commit\n";
+  exit 0;
 }
 
 print ("\n" . (defined($merge) ? 'Merge' : 'Load')

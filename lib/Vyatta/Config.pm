@@ -186,6 +186,13 @@ sub sessionChanged {
   return $self->{_cstore}->sessionChanged();
 }
 
+## loadFile()
+# "load" the specified file
+sub loadFile {
+  my ($self, $file) = @_;
+  return $self->{_cstore}->loadFile($file);
+}
+
 ######
 # observers of the "effective" config.
 # they can be used

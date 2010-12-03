@@ -325,3 +325,11 @@ OUTPUT:
   RETVAL
 
 
+bool
+Cstore::loadFile(char *filename)
+CODE:
+  RETVAL = THIS->loadFile(filename);
+OUTPUT:
+  RETVAL
+
+
