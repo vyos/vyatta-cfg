@@ -391,6 +391,7 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
 							 clind_path_ref tmpl_path,
 							 clind_cmd *cmd,
 							 int *result_len) {
+
   clind_path_ref* ret=NULL;
 
   DPRINT("eng_apply_cmd cfg=[%s] tmpl=[%s] type=%d\n",

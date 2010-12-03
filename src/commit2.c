@@ -15,6 +15,7 @@ boolean g_coverage = FALSE;
 boolean g_dump_trans = FALSE;
 boolean g_dump_actions = FALSE;
 boolean g_print_error_location_all = FALSE;
+boolean g_old_print_output = FALSE;
 
 #define g_num_actions 5
 
@@ -129,7 +130,7 @@ usage(void)
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
   printf("\t-b\t\tbreak on each priority node (debug mode)\n");
   printf("\t-r\t\tdisable run hook script on finishing commit\n");
-  printf("\t-x\t\texperimental expand print error location feature\n");
+  printf("\t-x\t\t\disable new print feature\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -156,7 +157,7 @@ main(int argc, char** argv)
   while ((ch = getopt(argc, argv, "xdpthsecoafbrC:")) != -1) {
     switch (ch) {
     case 'x':
-      g_print_error_location_all = TRUE;
+      g_old_print_output = TRUE;
       break;
     case 'd':
       g_debug = TRUE;
@@ -659,11 +660,18 @@ process_func(GNode *node, gpointer data)
 	  setenv(ENV_ACTION_NAME,ENV_ACTION_ACTIVE,1);
       }
 
-      char *outbuf = NULL;
       if (g_dump_actions == FALSE) {
-	outbuf = malloc(8192);
-	outbuf[0] = '\0';
-	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
+	//need to add g_print_error_location_all, and processed location
+	if (g_old_print_output == TRUE) {
+	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
+	}
+	else {
+	  char *p = process_script_path(d->_path);
+	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
+	}
+	//	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
+
+	/*
 	if (strlen(outbuf) > 0) {
           if (strstr(outbuf,"_errloc_:[") != NULL) {
 	    if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
@@ -675,7 +683,6 @@ process_func(GNode *node, gpointer data)
 	  }
 	  else {
 	    //currently set to format option for GUI client.
-	    char *p = process_script_path(d->_path);
 	    if (p != NULL) {
 	      if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
 		fprintf(out_stream,"[%s]\n%s\n",p,outbuf);
@@ -686,6 +693,8 @@ process_func(GNode *node, gpointer data)
 	    }
 	  }
 	}
+	*/
+
       }
       else {
 	char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
@@ -759,13 +768,17 @@ process_script_path(char* in)
       ptr = slash;
     } while ((slash = strchr(slash,'/')) != NULL);
   }
+  char *p = clind_unescape(path_buf);
+  char *ret = malloc(4096);
+  strcpy(ret,p); //copy back
+  free(p);
   if (strncmp(ptr,"value:",6) == 0) {
     if (strlen(ptr)-6 > 0) {
-      strncat(path_buf,ptr+6,strlen(ptr)-6);
-      strcat(path_buf," ");
+      strncat(ret,ptr+6,strlen(ptr)-6);
+      strcat(ret," ");
     }
   }
-  return clind_unescape(path_buf);
+  return ret;
 }
 
 
@@ -1540,13 +1553,17 @@ validate_func(GNode *node, gpointer data)
     fprintf(out_stream,"[START] %lu:%lu, %s@%s",(unsigned long)t.tv_sec,(unsigned long)t.tv_usec,ActionNames[result->_action],d->_path);
   }
 
-  char *outbuf = malloc(8192);
-  outbuf[0] = '\0';
   boolean status = 1;
   if (g_dump_actions == FALSE) {
     //set location env
     setenv(ENV_DATA_PATH,d->_path,1);
-    status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,(const char**)&outbuf);
+    if (g_old_print_output == TRUE) {
+      status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
+    }
+    else {
+      char *p = process_script_path(d->_path);
+      status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
+    }
     unsetenv(ENV_DATA_PATH);
   }
   else {
@@ -1574,6 +1591,7 @@ validate_func(GNode *node, gpointer data)
   }
   
   if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+    /*
     char *p = process_script_path(d->_path);
     if (p != NULL) {
       if (strlen(outbuf) > 0) {
@@ -1585,6 +1603,7 @@ validate_func(GNode *node, gpointer data)
 	}
       }
     }
+    */
     syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
     if (g_display_error_node) {
       fprintf(out_stream,"%s@_errloc_:[%s]\n",ActionNames[result->_action],d->_path);
@@ -1594,10 +1613,8 @@ validate_func(GNode *node, gpointer data)
       printf("commit2::validate_func(): FAILURE: status: %d\n",status);
       syslog(LOG_DEBUG,"commit2::validate_func(): FAILURE: status: %d",status);
     }
-    free(outbuf);
     return result->_mode ? FALSE: TRUE; //WILL STOP AT THIS POINT if mode is not set for full syntax check
   }
-  free(outbuf);
   return FALSE;
 }
 

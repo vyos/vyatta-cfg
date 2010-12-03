@@ -100,7 +100,7 @@ main(int argc, char** argv)
 	//BROKEN--NEEDS TO BE FIX BELOW FOR DPATH AND CPATH
 	common_set_context(path,path);
 
-	status = execute_list(def.actions[act].vtw_list_head,&def,NULL);
+	status = execute_list(def.actions[act].vtw_list_head,&def,NULL,FALSE);
 	if (status == FALSE) {
 	  printf("command failed! status: %d\n", status);
 	}

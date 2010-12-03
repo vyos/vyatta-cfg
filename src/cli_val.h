@@ -116,7 +116,7 @@ extern void free_val(valstruct *val);
 extern void touch(void);
 extern int mkdir_p(const char *path);
 
-extern boolean execute_list(vtw_node *cur, vtw_def *def, const char **outbuf);
+extern boolean execute_list(vtw_node *cur, vtw_def *def, const char *outbuf,boolean format);
 extern void touch_dir(const char *dp);
 extern void touch_file(const char *name);
 

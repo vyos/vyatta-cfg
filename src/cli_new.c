@@ -82,8 +82,8 @@ static valstruct validate_value_val;  /* value being validated
 /* Local function declarations: */
 
 static int check_comp(vtw_node *cur);
-static boolean check_syn_func(vtw_node *cur,const char **outbuf, const char* func,int line);
-#define check_syn(cur,out_buf) check_syn_func((cur),(out_buf),__FUNCTION__,__LINE__)
+static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean format, const char* func,int line);
+#define check_syn(cur,msg_buf,format) check_syn_func((cur),(msg_buf),(format),__FUNCTION__,__LINE__)
 void copy_path(vtw_path *to, vtw_path *from);
 static int eval_va(valstruct *res, vtw_node *node);
 static int expand_string(char *p);
@@ -692,14 +692,14 @@ void vtw_sort(valstruct *valp, vtw_sorted *sortp)
 /* returns FALSE if execution returns non-null,
    returns TRUE if every excution returns NULL
 */
-boolean execute_list(vtw_node *cur, vtw_def *def, const char **outbuf) 
+boolean execute_list(vtw_node *cur, vtw_def *def, const char *prepend_msg,boolean format) 
 {
   boolean ret;
   int status;
   set_in_exec(TRUE);
   status = char2val(def, get_at_string(), &validate_value_val);  
   if (status) return FALSE;
-  ret = check_syn(cur,outbuf);
+  ret = check_syn(cur,prepend_msg,format);
   free_val(&validate_value_val);
   set_in_exec(FALSE);
   return ret;
@@ -1229,7 +1229,7 @@ static int change_var_value(const char* var_reference,const char* value, int act
   return ret;
 }
 
-int system_out(const char *command, const char **outbuf);
+int system_out(const char *command, const char *prepend_msg, boolean format);
 
 /****************************************************
  check_syn:
@@ -1237,7 +1237,7 @@ int system_out(const char *command, const char **outbuf);
    returns TRUE if all checks are OK,
    returns FALSE if check fails.
 ****************************************************/
-static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func,int line)
+static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean format,const char* func,int line)
 {
   int status;
   int ret;
@@ -1247,21 +1247,36 @@ static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func
   case LIST_OP:
     ret = TRUE;
     if (is_in_commit() || !cur->vtw_node_aux) {
-      ret = check_syn(cur->vtw_node_left,outbuf);
+      ret = check_syn(cur->vtw_node_left,prepend_msg,format);
     }
     if (!ret || !cur->vtw_node_right) /* or no right operand */
       return ret;
-    return check_syn(cur->vtw_node_right,outbuf);
+    return check_syn(cur->vtw_node_right,prepend_msg,format);
   case HELP_OP:
-    ret = check_syn(cur->vtw_node_left,outbuf);
+    ret = check_syn(cur->vtw_node_left,prepend_msg,format);
     if (ret <= 0){
       if (expand_string(cur->vtw_node_right->vtw_node_string) == VTWERR_OK) {
-	if (outbuf == NULL) {
-          OUTPUT_USER("%s\n", exe_string);
+	//NEED TO PROCESS THIS ACCORDING TO ERROR LOC STRING...
+	
+	if (strstr(exe_string,"_errloc_:[") != NULL) {
+	  if (format == FALSE) { 
+	    OUTPUT_USER("%s\n\n",exe_string+strlen("_errloc_:"));
+	  }
+	  else {
+	    OUTPUT_USER("%s\n\n",exe_string);
+	  }
 	}
 	else {
-	  strcat((char*)*outbuf, exe_string);
-	}
+	  //currently set to format option for GUI client.
+	  if (prepend_msg != NULL) {
+	    if (format == FALSE) { 
+	      OUTPUT_USER("[%s]\n%s\n\n",prepend_msg,exe_string);
+	    }
+	    else {
+	      OUTPUT_USER("_errloc_:[%s]\n%s\n\n",prepend_msg,exe_string);
+	    }
+	  }
+	}	
       }
     }
     return ret;
@@ -1325,7 +1340,7 @@ static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func
 	  set_at_string(save_at);
 	  return FALSE;
 	}
-	ret = system_out(exe_string,outbuf);
+	ret = system_out(exe_string,prepend_msg,format);
 	if (ret) {
 	  set_at_string(save_at);
 	  return FALSE;
@@ -1339,7 +1354,7 @@ static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func
     if (status != VTWERR_OK) {
       return FALSE;
     }
-    ret = system_out(exe_string,outbuf);
+    ret = system_out(exe_string,prepend_msg,format);
     return !ret;
     
   case PATTERN_OP:  /* left to var, right to pattern */
@@ -1377,15 +1392,15 @@ static boolean check_syn_func(vtw_node *cur,const char **outbuf,const char* func
     }
     
   case OR_OP:
-    ret = check_syn(cur->vtw_node_left,outbuf) || 
-      check_syn(cur->vtw_node_right,outbuf);
+    ret = check_syn(cur->vtw_node_left,prepend_msg,format) || 
+      check_syn(cur->vtw_node_right,prepend_msg,format);
     return ret;
   case AND_OP:
-    ret = check_syn(cur->vtw_node_left,outbuf) && 
-      check_syn(cur->vtw_node_right,outbuf);
+    ret = check_syn(cur->vtw_node_left,prepend_msg,format) && 
+      check_syn(cur->vtw_node_right,prepend_msg,format);
     return ret;
   case NOT_OP:
-    ret = check_syn(cur->vtw_node_left,outbuf);
+    ret = check_syn(cur->vtw_node_left,prepend_msg,format);
     return !ret;
     
   case COND_OP:   /* aux field specifies cond type (GT, GE, etc.)*/
@@ -2197,7 +2212,7 @@ boolean validate_value(vtw_def *def, char *cp)
   ret = TRUE;
   if (def->actions  && def->actions[syntax_act].vtw_list_head){
     in_validate_val = TRUE;
-    ret = check_syn(def->actions[syntax_act].vtw_list_head,(const char **)NULL);
+    ret = check_syn(def->actions[syntax_act].vtw_list_head,(const char *)NULL,FALSE);
     in_validate_val = FALSE;
   }
  validate_value_free_and_return:
@@ -2524,7 +2539,7 @@ old_system_out(const char *command)
   if (out_stream && restore_output() == -1) {
     return -1;
   }
-
+  
   ret = system(command);
   if (out_stream && redirect_output() == -1) {
     return -1;
@@ -2535,10 +2550,10 @@ old_system_out(const char *command)
 }
 
 int
-system_out(const char *cmd, const char **outbuf) 
+system_out(const char *cmd, const char *prepend_msg, boolean format) 
 {
   //  fprintf(out_stream,"system out\n");
-  if (outbuf == NULL) {                 
+  if (prepend_msg == NULL) {                 
     return old_system_out(cmd);
   }                                                                                                             
   if (cmd == NULL) {
@@ -2546,7 +2561,8 @@ system_out(const char *cmd, const char **outbuf)
   }
 
   int cp[2]; // Child to parent pipe
-  if( pipe(cp) < 0) {                                                                                                       return -1;
+  if( pipe(cp) < 0) {                                                                                                       
+    return -1;
   }
 
   pid_t pid = fork();                                                                                 
@@ -2559,6 +2575,7 @@ system_out(const char *cmd, const char **outbuf)
     close(cp[0]);
     close(cp[1]);
     int ret = 0;  
+    //    fprintf(out_stream,"executing: %s\n",cmd);
     if (execl("/bin/sh","sh","-c",cmd,NULL) == -1) {                                   
       ret = errno;
     }
@@ -2568,15 +2585,68 @@ system_out(const char *cmd, const char **outbuf)
   else {
     //parent         
     char buf[8192];
+    char last_char = '\0';
     memset(buf,'\0',8192);
     close(cp[1]);
-    int ct = 0, total = 0;
-    while ((ct = read(cp[0], &buf, 8192)) > 0 && (total < 8192)) {
-      strcat((char*)*outbuf,buf);
-      memset(buf,'\0',8192);
-      total += ct;
+    boolean first = TRUE;
+    boolean print = FALSE;
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(cp[0], &rfds);
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    while (select(FD_SETSIZE, &rfds, NULL, NULL, &tv) != -1) {
+      int err = 0;
+      if ((err = read(cp[0], &buf, 8191)) > 0) {
+	print = TRUE;
+	if (first == TRUE) {
+	  if (strstr(buf,"_errloc_:[") != NULL) {
+	    if (format == FALSE) { 
+	      fprintf(out_stream,"%s",buf+strlen("_errloc_:"));
+	    }
+	    else {
+	      fprintf(out_stream,"%s",buf);
+	    }
+	  }
+	  else {
+	    //currently set to format option for GUI client.
+	    if (prepend_msg != NULL) {
+	      if (format == FALSE) { 
+		fprintf(out_stream,"[%s]\n%s",prepend_msg,buf);
+	      }
+	      else {
+		fprintf(out_stream,"_errloc_:[%s]\n%s",prepend_msg,buf);
+	      }
+	    }
+	  }	
+	}
+	else {
+	  fprintf(out_stream,"%s",buf);
+	}
+	first = FALSE;
+	last_char = buf[strlen(buf)-2];
+	memset(buf,'\0',8192);
+      }
+      else if (err == -1 && errno == EAGAIN) {
+	//try again
+      }
+      else {
+	break;
+      }
+      FD_ZERO(&rfds);
+      FD_SET(cp[0], &rfds);
+      tv.tv_sec = 1;
+      tv.tv_usec = 0;
+
+      fflush(NULL);
     }
 
+    if (print == TRUE && last_char != '\n') {
+      fprintf(out_stream,"\n");
+    }
     //now wait on child to kick the bucket                  
     int status;
     wait(&status);
