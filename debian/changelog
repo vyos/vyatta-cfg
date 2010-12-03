@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.53) unstable; urgency=low
+
+  * Pipe "compare" output through pager.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 03 Dec 2010 15:08:17 -0800
+
 vyatta-cfg (0.18.52) unstable; urgency=low
 
   * update to errloc. changed reader so that stderr/stdout is printed as
