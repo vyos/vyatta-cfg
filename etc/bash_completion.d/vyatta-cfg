@@ -154,7 +154,7 @@ confirm ()
 
 compare ()
 {
-  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@"
+  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@" | eval "${VYATTA_PAGER:-cat}"
 }
 
 save ()
