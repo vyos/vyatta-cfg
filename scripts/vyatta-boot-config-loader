@@ -1,0 +1,74 @@
+#!/bin/bash
+
+BOOT_FILE=$1
+shift
+
+CAPI=/bin/cli-shell-api
+CLOG=/tmp/vyatta-config-loader.log
+COMMIT=/opt/vyatta/sbin/my_commit
+COMMIT_LOG=/tmp/vyatta-commit.log
+
+do_log () {
+  local level=$1
+  shift
+  logger -t 'boot-config-loader' -p "local0.$level" -- "$*"
+}
+
+do_commit () {
+  $COMMIT "$@" >>$COMMIT_LOG
+}
+
+trace () {
+  echo "$(date +'%F %T')  $*"
+}
+
+umask 0002
+
+(
+  trace '== begin boot-config-loader'
+  # set up config session
+  SID=$$
+  SENV=$($CAPI getSessionEnv $SID)
+  eval "$SENV"
+  if ! $CAPI setupSession; then
+    do_log err 'Cannot set up configuration session.'
+    trace 'Cannot set up configuration session.'
+    exit 1
+  fi
+
+  # do load
+  trace '-- begin load'
+  if ! $CAPI loadFile $BOOT_FILE; then
+    do_log warn "Failure(s) encountered during load. See $CLOG for details."
+    trace '-- load finished with failure(s)'
+  else
+    trace '-- load finished successfully'
+  fi
+
+  # do commit
+  trace '-- begin commit'
+  ret=0
+  export COMMIT_VIA=boot-config-loader
+  do_commit -a
+  do_commit -s
+  if ! do_commit -e -d; then
+    do_log err 'Commit failed at boot.'
+    trace '-- commit failed'
+    ret=1
+  else
+    trace '-- commit succeeded'
+  fi
+
+  # clean up
+  if ! $CAPI teardownSession; then
+    do_log warn 'Failed to tear down configuration session.'
+    trace '-- teardown failed'
+  else
+    trace '-- teardown succeeded'
+  fi
+  trace '-- exiting'
+  exit $ret
+) </dev/null >>$CLOG 2>&1
+
+exit $?
+

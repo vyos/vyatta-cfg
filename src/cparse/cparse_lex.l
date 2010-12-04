@@ -158,8 +158,8 @@ set_ret_str()
 }
 
 <sQStr>\\. {
-  char tmp[2] = { cparse_text[1], 0 };
-  append_str(tmp);
+  /* this will consume the \" sequence */
+  append_str(cparse_text);
 }
 
 <sQStr>\n {
