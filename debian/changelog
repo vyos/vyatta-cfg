@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.54) unstable; urgency=low
+
+  * change boot-time config loading to use new implementation in
+    backend.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 03 Dec 2010 19:10:41 -0800
+
 vyatta-cfg (0.18.53) unstable; urgency=low
 
   * Pipe "compare" output through pager.
