@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.56) unstable; urgency=low
+
+  * Add is_local_address to Misc.pm
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 06 Dec 2010 15:11:07 -0800
+
 vyatta-cfg (0.18.55) unstable; urgency=low
 
   * handle case for non-commit client with latest error location
