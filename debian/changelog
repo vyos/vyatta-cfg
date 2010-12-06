@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.55) unstable; urgency=low
+
+  * handle case for non-commit client with latest error location
+    changes.
+
+ -- Michael Larson <mike@vyatta.com>  Mon, 06 Dec 2010 10:01:38 -0800
+
 vyatta-cfg (0.18.54) unstable; urgency=low
 
   * change boot-time config loading to use new implementation in
