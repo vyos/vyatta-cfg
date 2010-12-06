@@ -1276,6 +1276,9 @@ static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean form
 	      OUTPUT_USER("_errloc_:[%s]\n%s\n\n",prepend_msg,exe_string);
 	    }
 	  }
+	  else {
+	    OUTPUT_USER("%s\n",exe_string);
+	  }
 	}	
       }
     }
