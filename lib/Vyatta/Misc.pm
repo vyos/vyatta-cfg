@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
 		 isIpAddress is_ip_v4_or_v6 interface_description
-		 is_local_addres);
+		 is_local_address);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
