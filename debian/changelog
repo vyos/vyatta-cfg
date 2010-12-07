@@ -1,3 +1,14 @@
+vyatta-cfg (0.18.60) unstable; urgency=low
+
+  [ Daniil Baturin ]
+  * Add a method to check whether an IPv4 address is a primary address
+    to Vyatta::Misc
+
+  [ Stig Thormodsrud ]
+  * Fix return value for address not configure on system.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 07 Dec 2010 15:10:23 -0800
+
 vyatta-cfg (0.18.59) unstable; urgency=low
 
   * fix for bug 6494
