@@ -26,7 +26,8 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
-		 isIpAddress is_ip_v4_or_v6 interface_description);
+		 isIpAddress is_ip_v4_or_v6 interface_description
+		 is_local_addres);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
@@ -34,7 +35,7 @@ our @EXPORT_OK = qw(generate_dhclient_intf_files
 use Vyatta::Config;
 use Vyatta::Interface;
 use NetAddr::IP;
-
+use Socket;
 #
 # returns a hash of ipaddrs => interface
 #
@@ -123,6 +124,18 @@ sub getInterfaces {
 			  } readdir $sys_class;
     closedir $sys_class;
     return @interfaces;
+}
+
+# Test if IP address is local to the system.
+# Implemented by doing bind since by default
+# Linux will only allow binding to local addresses
+sub is_local_address {
+    my $addr = shift;
+
+    socket( my $sock, PF_INET, SOCK_STREAM, 0)
+	or die "socket failed\n";
+
+    return bind($sock, sockaddr_in(0, inet_aton($addr)));
 }
 
 # get list of IPv4 and IPv6 addresses
