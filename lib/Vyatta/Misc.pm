@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
 		 isIpAddress is_ip_v4_or_v6 interface_description
-		 is_local_address);
+		 is_local_address, is_primary_address);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
@@ -51,6 +51,26 @@ sub get_ipaddr_intf_hash {
   return \%config_ipaddrs;
 }
 
+# Check whether an address is the primary address on some interface
+sub is_primary_address {
+  my $ip_address = shift;
+
+  my $ref = get_ipaddr_intf_hash();
+  my %hash = %{$ref};
+  if (!defined $hash{$ip_address}) {
+    return 1;
+  }
+
+  my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
+  chomp($line);
+  my $primary_address = undef;
+  if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+    $primary_address = $1;
+  }
+
+  return 1 if ($ip_address eq $primary_address);
+  return;
+}
 
 sub get_sysfs_value {
     my ( $intf, $name ) = @_;
