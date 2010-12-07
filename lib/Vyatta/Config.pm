@@ -693,9 +693,7 @@ sub compareValueLists {
 
 sub outputError {
     my ($location,$msg) = @_;
-    if (defined($ENV{VYATTA_OUTPUT_ERROR_LOCATION})) {
-	print STDERR "_errloc_:[" . join(" ",@{$location}) . "]\n";
-    }
+    print STDERR "_errloc_:[" . join(" ",@{$location}) . "]\n";
     print STDERR $msg . "\n";
 }
 
