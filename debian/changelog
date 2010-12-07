@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.59) unstable; urgency=low
+
+  * fix for bug 6494
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 06 Dec 2010 17:16:38 -0800
+
 vyatta-cfg (0.18.58) unstable; urgency=low
 
   * Fix typo in export
