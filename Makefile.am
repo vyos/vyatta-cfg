@@ -97,6 +97,7 @@ sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-strip-migration-comments.pl
 
 share_perl5_DATA = lib/Vyatta/Config.pm
+share_perl5_DATA += lib/Vyatta/File.pm
 share_perl5_DATA += lib/Vyatta/Misc.pm
 share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
