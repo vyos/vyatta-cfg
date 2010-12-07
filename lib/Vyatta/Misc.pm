@@ -58,7 +58,7 @@ sub is_primary_address {
   my $ref = get_ipaddr_intf_hash();
   my %hash = %{$ref};
   if (!defined $hash{$ip_address}) {
-    return 1;
+    return;
   }
 
   my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
