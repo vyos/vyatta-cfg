@@ -685,7 +685,7 @@ vyatta_config_complete ()
   shopt -s extglob nullglob
 
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
-    VYATTA_COMP_LINE=''
+    VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
     vyatta_do_help=true
   else
     VYATTA_COMP_LINE=$COMP_LINE
@@ -862,7 +862,8 @@ alias copy=/opt/vyatta/sbin/my_copy
 alias comment=/opt/vyatta/sbin/my_comment
 alias discard=/opt/vyatta/sbin/my_discard
 
-export VYATTA_COMP_LINE=""
+export VYATTA_COMP_LINE_EMPTY=VYATTA_COMP_LINE_EMPTY
+export VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
 
 # readline bindings
 bind 'set show-all-if-ambiguous on'
