@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.61) unstable; urgency=low
+
+  * Allow _errloc_ to be place on any line in output, not restricted to
+    first line.
+
+ -- Michael Larson <mike@vyatta.com>  Tue, 07 Dec 2010 23:14:29 -0800
+
 vyatta-cfg (0.18.60) unstable; urgency=low
 
   [ Daniil Baturin ]
