@@ -2667,7 +2667,10 @@ system_out(const char *cmd, const char *prepend_msg, boolean format)
     int status;
     wait(&status);
     close(cp[0]);
-    return WEXITSTATUS(status);
+    if (WIFEXITED(status)) {
+      return WEXITSTATUS(status);
+    }
+    return 1;
   }
 }
 
