@@ -2571,11 +2571,10 @@ system_out(const char *cmd, const char *prepend_msg, boolean format)
   pid_t pid = fork();                                                                                 
   if (pid == 0) {                                                                                          
     //child
-    close(1); // Close current stdout./
-    dup2(cp[1],1); // Make stdout go to write end of pipe.
-    dup2(cp[1],2); // Make stderr go to write end of pipe.
-    close(0); // Close current stdin.
     close(cp[0]);
+    close(STDIN_FILENO); // Close current stdout./
+    dup2(cp[1],STDOUT_FILENO); // Make stdout go to write end of pipe.
+    dup2(cp[1],STDERR_FILENO); // Make stderr go to write end of pipe.
     close(cp[1]);
     int ret = 0;  
     //    fprintf(out_stream,"executing: %s\n",cmd);
@@ -2595,20 +2594,27 @@ system_out(const char *cmd, const char *prepend_msg, boolean format)
     boolean print = FALSE;
     fd_set rfds;
     struct timeval tv;
+    char errloc_buf[] = "_errloc_:";
+    size_t errloc_len = strlen(errloc_buf);
 
     FD_ZERO(&rfds);
     FD_SET(cp[0], &rfds);
     tv.tv_sec = 1;
     tv.tv_usec = 0;
 
+    int flags = fcntl(cp[0], F_GETFL); 
+    flags |= O_NONBLOCK; fcntl(cp[0], F_SETFL, flags);
+
     while (select(FD_SETSIZE, &rfds, NULL, NULL, &tv) != -1) {
       int err = 0;
       if ((err = read(cp[0], &buf, 8191)) > 0) {
+
+
 	print = TRUE;
 	if (first == TRUE) {
-	  if (strstr(buf,"_errloc_:[") != NULL) {
+	  if (strncmp(buf,errloc_buf,errloc_len) == 0) {
 	    if (format == FALSE) { 
-	      fprintf(out_stream,"%s",buf+strlen("_errloc_:"));
+	      fprintf(out_stream,"%s",buf+errloc_len);
 	    }
 	    else {
 	      fprintf(out_stream,"%s",buf);
@@ -2621,14 +2627,21 @@ system_out(const char *cmd, const char *prepend_msg, boolean format)
 		fprintf(out_stream,"[%s]\n%s",prepend_msg,buf);
 	      }
 	      else {
-		fprintf(out_stream,"_errloc_:[%s]\n%s",prepend_msg,buf);
+		fprintf(out_stream,"%s[%s]\n%s",errloc_buf,prepend_msg,buf);
 	      }
 	    }
 	  }	
 	}
 	else {
-	  fprintf(out_stream,"%s",buf);
+	  if (strncmp(buf,errloc_buf,errloc_len) == 0 && format == FALSE) { 
+	    fprintf(out_stream,"%s",buf+errloc_len);
+	  }
+	  else {
+	    fprintf(out_stream,"%s",buf);
+	  }
 	}
+
+
 	first = FALSE;
 	last_char = buf[strlen(buf)-2];
 	memset(buf,'\0',8192);
