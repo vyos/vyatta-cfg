@@ -197,7 +197,8 @@ sub vrrp_get_config {
  
     $path = $interface->path();
     $config->setLevel($path);
-    my $primary_addr = $config->returnOrigValue("address"); 
+    my @addr = getIP($intf, 4);
+    my $primary_addr = shift @addr;
     if (!defined $primary_addr) {
 	$primary_addr = "0.0.0.0";
     }
