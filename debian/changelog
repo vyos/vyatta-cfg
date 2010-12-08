@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.62) unstable; urgency=low
+
+  * Fix typo in export of is_local_address
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 08 Dec 2010 08:24:32 -0800
+
 vyatta-cfg (0.18.61) unstable; urgency=low
 
   * Allow _errloc_ to be place on any line in output, not restricted to
