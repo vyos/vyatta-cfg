@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.64) unstable; urgency=low
+
+  * Fix display of source address in "show vrrp".
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 08 Dec 2010 15:41:08 -0800
+
 vyatta-cfg (0.18.63) unstable; urgency=low
 
   * need to check if process terminated normally before checking return
