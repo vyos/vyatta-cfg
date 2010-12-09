@@ -31,7 +31,9 @@
 #define ASSERT_IN_SESSION do \
   { \
     if (!inSession()) { \
-      exit_internal("no session\n"); \
+      output_user("Internal error: calling %s() without config session\n", \
+                  __func__); \
+      exit_internal("calling %s() without config session\n", __func__); \
     } \
   } while (0);
 
