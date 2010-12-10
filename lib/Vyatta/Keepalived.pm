@@ -186,6 +186,9 @@ sub get_state_files {
     return @state_files;
 }
 
+#
+# this is meant to be called from op mode, so Orig functions are used.
+#
 sub vrrp_get_config {
     my ($intf, $group) = @_;
 
@@ -197,9 +200,11 @@ sub vrrp_get_config {
  
     $path = $interface->path();
     $config->setLevel($path);
-    my @addr = getIP($intf, 4);
+    # don't use getIP() to get IP addresses because we only
+    # want configured addresses, not vrrp VIP addresses.
+    my @addr = $config->returnOrigValues('address');
     my $primary_addr = shift @addr;
-    if (!defined $primary_addr) {
+    if (!defined $primary_addr or $primary_addr eq 'dhcp') {
 	$primary_addr = "0.0.0.0";
     }
     if ($primary_addr =~ m/(\d+\.\d+\.\d+\.\d+)\/\d+/) {
