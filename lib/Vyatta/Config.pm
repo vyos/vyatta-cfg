@@ -186,6 +186,13 @@ sub sessionChanged {
   return $self->{_cstore}->sessionChanged();
 }
 
+## inSession()
+# returns whether in a config session
+sub inSession {
+  my ($self) = @_;
+  return $self->{_cstore}->inSession();
+}
+
 ## loadFile()
 # "load" the specified file
 sub loadFile {

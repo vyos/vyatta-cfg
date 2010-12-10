@@ -333,3 +333,9 @@ OUTPUT:
   RETVAL
 
 
+bool
+Cstore::inSession()
+CODE:
+  RETVAL = THIS->inSession();
+OUTPUT:
+  RETVAL
