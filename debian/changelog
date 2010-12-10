@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.66) unstable; urgency=low
+
+  * Export inSession to the perl api.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Fri, 10 Dec 2010 14:23:02 -0800
+
 vyatta-cfg (0.18.65) unstable; urgency=low
 
   * output session assert message to user
