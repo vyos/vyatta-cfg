@@ -29,7 +29,8 @@ our @EXPORT = qw(get_conf_file get_state_script get_state_file
                  vrrp_log vrrp_get_init_state get_changes_file
                  start_daemon restart_daemon stop_daemon
                  vrrp_get_config list_vrrp_intf list_vrrp_group
-                 list_vrrp_sync_group list_all_vrrp_sync_grps);
+                 list_vrrp_sync_group list_all_vrrp_sync_grps
+                 vrrp_get_primary_addr);
 use base qw(Exporter);
 
 use Vyatta::Config;
@@ -186,6 +187,33 @@ sub get_state_files {
     return @state_files;
 }
 
+sub vrrp_get_primary_addr {
+    my ($intf) = @_;
+
+    my $path;
+    my $config = new Vyatta::Config;
+    my $interface = new Vyatta::Interface($intf);
+    die "Unknown interface type: $intf" unless $interface;
+ 
+    $path = $interface->path();
+    $config->setLevel($path);
+    # don't use getIP() to get IP addresses because we only
+    # want configured addresses, not vrrp VIP addresses.
+    my @addrs = ();
+    if ($config->inSession) {
+        @addrs = $config->returnValues('address');
+    } else {
+        @addrs = $config->returnOrigValues('address');
+    }
+    my $primary_addr = shift @addrs;
+
+    if (defined $primary_addr and 
+        $primary_addr =~ m/(\d+\.\d+\.\d+\.\d+)\/\d+/) {
+	$primary_addr = $1;  # strip /mask
+    }
+    return $primary_addr;
+}
+
 #
 # this is meant to be called from op mode, so Orig functions are used.
 #
@@ -194,23 +222,15 @@ sub vrrp_get_config {
 
     my $path;
     my $config = new Vyatta::Config;
-
     my $interface = new Vyatta::Interface($intf);
     die "Unknown interface type: $intf" unless $interface;
- 
-    $path = $interface->path();
-    $config->setLevel($path);
-    # don't use getIP() to get IP addresses because we only
-    # want configured addresses, not vrrp VIP addresses.
-    my @addr = $config->returnOrigValues('address');
-    my $primary_addr = shift @addr;
+
+    my $primary_addr = vrrp_get_primary_addr($intf);
     if (!defined $primary_addr or $primary_addr eq 'dhcp') {
 	$primary_addr = "0.0.0.0";
     }
-    if ($primary_addr =~ m/(\d+\.\d+\.\d+\.\d+)\/\d+/) {
-	$primary_addr = $1;  # strip /mask
-    }
 
+    $path = $interface->path();
     $config->setLevel("$path vrrp vrrp-group $group");
     my $source_addr = $config->returnOrigValue("hello-source-address"); 
     $primary_addr = $source_addr if defined $source_addr;
