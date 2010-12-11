@@ -71,7 +71,10 @@ private:
   static const string C_VAL_NAME;
   static const string C_DEF_NAME;
 
-  static const size_t MAX_FILE_READ_SIZE = 8192;
+  /* max size for a file.
+   * currently this includes value file and comment file.
+   */
+  static const size_t C_UNIONFS_MAX_FILE_SIZE = 262144;
 
   // root dirs (constant)
   b_fs::path work_root;   // working root (union)

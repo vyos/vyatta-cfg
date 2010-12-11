@@ -1021,6 +1021,10 @@ UnionfsCstore::get_all_child_dir_names(b_fs::path root, vector<string>& nodes)
 bool
 UnionfsCstore::write_file(const string& file, const string& data)
 {
+  if (data.size() > C_UNIONFS_MAX_FILE_SIZE) {
+    output_internal("write_file too large\n");
+    return false;
+  }
   try {
     // make sure the path exists
     b_fs::path fpath(file);
@@ -1048,7 +1052,8 @@ UnionfsCstore::read_whole_file(const b_fs::path& fpath, string& data)
     return false;
   }
   try {
-    if (b_fs::file_size(fpath) > MAX_FILE_READ_SIZE) {
+    if (b_fs::file_size(fpath) > C_UNIONFS_MAX_FILE_SIZE) {
+      output_internal("read_whole_file too large\n");
       return false;
     }
 
