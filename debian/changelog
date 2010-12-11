@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.68) unstable; urgency=low
+
+  * fix for bug 6026
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 10 Dec 2010 16:09:15 -0800
+
 vyatta-cfg (0.18.67) unstable; urgency=low
 
   * Return configured address in vrrp_get_config().
