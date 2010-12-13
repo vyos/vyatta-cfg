@@ -16,26 +16,27 @@
 
 #ifndef _CSTORE_H_
 #define _CSTORE_H_
+#include <cstdarg>
 #include <vector>
 #include <string>
 #include <tr1/unordered_map>
 
 #include <cli_cstore.h>
 
-#define exit_internal(fmt, args...) do \
-  { \
-    output_internal("[%s:%d] " fmt, __FILE__, __LINE__ , ##args); \
-    exit(-1); \
-  } while (0);
+/* declare perl internal functions. just need these two so don't include
+ * all the perl headers.
+ */
+extern "C" void Perl_croak_nocontext(const char* pat, ...)
+  __attribute__((noreturn))
+  __attribute__((format(__printf__,1,2)))
+  __attribute__((nonnull(1)));
 
-#define ASSERT_IN_SESSION do \
-  { \
-    if (!inSession()) { \
-      output_user("Internal error: calling %s() without config session\n", \
-                  __func__); \
-      exit_internal("calling %s() without config session\n", __func__); \
-    } \
-  } while (0);
+extern "C" void* Perl_get_context(void)
+  __attribute__((warn_unused_result));
+
+#define ASSERT_IN_SESSION assert_internal(inSession(), \
+                            "calling %s() without config session", \
+                            __func__);
 
 
 /* macros for saving/restoring paths.
@@ -300,7 +301,10 @@ public:
 protected:
   ////// functions for subclasses
   void output_user(const char *fmt, ...);
+  void output_user_err(const char *fmt, ...);
   void output_internal(const char *fmt, ...);
+  void exit_internal(const char *fmt, ...);
+  void assert_internal(bool cond, const char *fmt, ...);
 
 private:
   ////// member class
@@ -480,6 +484,11 @@ private:
   void shell_escape_squotes(string& str);
   void print_str_vec(const char *pre, const char *post,
                      const vector<string>& vec, const char *quote);
+
+  // output functions
+  void voutput_user(FILE *out, FILE *dout, const char *fmt, va_list alist);
+  void voutput_internal(const char *fmt, va_list alist);
+  void vexit_internal(const char *fmt, va_list alist);
 };
 
 #endif /* _CSTORE_H_ */

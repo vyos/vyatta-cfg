@@ -1929,11 +1929,16 @@ Cstore::output_user(const char *fmt, ...)
 {
   va_list alist;
   va_start(alist, fmt);
-  if (out_stream) {
-    vfprintf(out_stream, fmt, alist);
-  } else {
-    vprintf(fmt, alist);
-  }
+  voutput_user(out_stream, stdout, fmt, alist);
+  va_end(alist);
+}
+
+void
+Cstore::output_user_err(const char *fmt, ...)
+{
+  va_list alist;
+  va_start(alist, fmt);
+  voutput_user(err_stream, stderr, fmt, alist);
   va_end(alist);
 }
 
@@ -1942,29 +1947,30 @@ Cstore::output_internal(const char *fmt, ...)
 {
   va_list alist;
   va_start(alist, fmt);
-
-  int fdout = -1;
-  FILE *fout = NULL;
-  do {
-    if ((fdout = open(C_LOGFILE_STDOUT.c_str(),
-                      O_WRONLY | O_CREAT, 0660)) == -1) {
-      break;
-    }
-    if (lseek(fdout, 0, SEEK_END) == ((off_t) -1)) {
-      break;
-    }
-    if ((fout = fdopen(fdout, "a")) == NULL) {
-      break;
-    }
-    vfprintf(fout, fmt, alist);
-  } while (0);
+  voutput_internal(fmt, alist);
   va_end(alist);
-  if (fout) {
-    fclose(fout);
-    // fdout is implicitly closed
-  } else if (fdout >= 0) {
-    close(fdout);
+}
+
+void
+Cstore::exit_internal(const char *fmt, ...)
+{
+  va_list alist;
+  va_start(alist, fmt);
+  vexit_internal(fmt, alist);
+  va_end(alist);
+}
+
+void
+Cstore::assert_internal(bool cond, const char *fmt, ...)
+{
+  if (cond) {
+    return;
   }
+
+  va_list alist;
+  va_start(alist, fmt);
+  vexit_internal(fmt, alist);
+  va_end(alist);
 }
 
 
@@ -2870,5 +2876,63 @@ Cstore::print_str_vec(const char *pre, const char *post,
     output_user("%s%s%s", quote, vec[i].c_str(), quote);
   }
   output_user("%s", post);
+}
+
+void
+Cstore::voutput_user(FILE *out, FILE *dout, const char *fmt, va_list alist)
+{
+  if (out) {
+    vfprintf(out, fmt, alist);
+  } else if (dout) {
+    vfprintf(dout, fmt, alist);
+  } else {
+    vprintf(fmt, alist);
+  }
+}
+
+void
+Cstore::voutput_internal(const char *fmt, va_list alist)
+{
+  int fdout = -1;
+  FILE *fout = NULL;
+  do {
+    if ((fdout = open(C_LOGFILE_STDOUT.c_str(),
+                      O_WRONLY | O_CREAT, 0660)) == -1) {
+      break;
+    }
+    if (lseek(fdout, 0, SEEK_END) == ((off_t) -1)) {
+      break;
+    }
+    if ((fout = fdopen(fdout, "a")) == NULL) {
+      break;
+    }
+    vfprintf(fout, fmt, alist);
+  } while (0);
+  if (fout) {
+    fclose(fout);
+    // fdout is implicitly closed
+  } else if (fdout >= 0) {
+    close(fdout);
+  }
+}
+
+void
+Cstore::vexit_internal(const char *fmt, va_list alist)
+{
+  char buf[256];
+  vsnprintf(buf, 256, fmt, alist);
+  output_internal("%s\n", buf);
+  if (Perl_get_context()) {
+    /* we're in a perl context. do a croak to provide more information.
+     * note that the message should not end in "\n", or the croak message
+     * will be truncated for some reason.
+     */
+    Perl_croak_nocontext("%s", buf);
+    // does not return
+  } else {
+    // output error message and exit
+    output_user_err("%s\n", buf);
+    exit(1);
+  }
 }
 

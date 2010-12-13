@@ -116,6 +116,7 @@ typedef struct {
 /* extern variables */
 extern void *var_ref_handle;
 extern FILE *out_stream;
+extern FILE *err_stream;
 
 /* note that some functions may be used outside the actual CLI operations,
  * so output may not have been initialized. nop in such cases.
