@@ -874,8 +874,33 @@ if ! bind -p |grep -q '\\C-x\\C-o'; then
   bind '"\C-x\C-o": copy-region-as-kill'
 fi
 
+# note: now that we're using bash's new "empty completion" (-E), it becomes
+# necessary to capture the "default completion" (-D) as well in order to
+# provide completion "within the first word". (see below for -E and -D
+# assignments.) however, this changes the previous behavior that uses
+# "filename completion" as default completion.
+#
+# since we explicitly specify the completion function for each vyatta command,
+# the "default completion" only applies in two scenarios:
+#   1. "within" the first word, and
+#   2. after any non-vyatta commands that do not have completion functions.
+#
+# therefore, to provide the previous behavior, just detect scenario 2 above
+# and use filename completion.
+vyatta_config_default_complete ()
+{
+  local wc=${#COMP_WORDS[@]}
+  if (( wc < 2 )); then
+    vyatta_config_complete
+  else
+    # after the first word => cannot be vyatta command so use original default
+    compopt -o filenames
+    _filedir_xspec
+  fi
+}
+
 complete -E -F vyatta_config_complete 
-complete -D -F vyatta_config_complete
+complete -D -F vyatta_config_default_complete
 complete -F vyatta_config_complete set
 complete -F vyatta_config_complete delete
 complete -F vyatta_config_complete show
