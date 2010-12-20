@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.71) unstable; urgency=low
+
+  * provide default filename completion
+  * make output-related functions static
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 20 Dec 2010 13:51:33 -0800
+
 vyatta-cfg (0.18.70) unstable; urgency=low
 
   * make the library croak when internal error occurs in perl context.
