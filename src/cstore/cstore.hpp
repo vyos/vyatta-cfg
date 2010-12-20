@@ -300,11 +300,11 @@ public:
 
 protected:
   ////// functions for subclasses
-  void output_user(const char *fmt, ...);
-  void output_user_err(const char *fmt, ...);
-  void output_internal(const char *fmt, ...);
-  void exit_internal(const char *fmt, ...);
-  void assert_internal(bool cond, const char *fmt, ...);
+  static void output_user(const char *fmt, ...);
+  static void output_user_err(const char *fmt, ...);
+  static void output_internal(const char *fmt, ...);
+  static void exit_internal(const char *fmt, ...);
+  static void assert_internal(bool cond, const char *fmt, ...);
 
 private:
   ////// member class
@@ -486,9 +486,10 @@ private:
                      const vector<string>& vec, const char *quote);
 
   // output functions
-  void voutput_user(FILE *out, FILE *dout, const char *fmt, va_list alist);
-  void voutput_internal(const char *fmt, va_list alist);
-  void vexit_internal(const char *fmt, va_list alist);
+  static void voutput_user(FILE *out, FILE *dout, const char *fmt,
+                           va_list alist);
+  static void voutput_internal(const char *fmt, va_list alist);
+  static void vexit_internal(const char *fmt, va_list alist);
 };
 
 #endif /* _CSTORE_H_ */
