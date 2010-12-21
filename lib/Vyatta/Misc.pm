@@ -36,6 +36,8 @@ use Vyatta::Config;
 use Vyatta::Interface;
 use NetAddr::IP;
 use Socket;
+use Socket6;
+
 #
 # returns a hash of ipaddrs => interface
 #
@@ -151,11 +153,23 @@ sub getInterfaces {
 # Linux will only allow binding to local addresses
 sub is_local_address {
     my $addr = shift;
+    my $ip = new NetAddr::IP $addr;
+    die "$addr: not a valid IP address"
+	unless $ip;
 
-    socket( my $sock, PF_INET, SOCK_STREAM, 0)
+    my ($pf, $sockaddr);
+    if ($ip->version() == 4) {
+	$pf = PF_INET;
+	$sockaddr = sockaddr_in(0, $ip->aton());
+    } else {
+	$pf = PF_INET6;
+	$sockaddr = sockaddr_in6(0, $ip->aton());
+    }
+
+    socket( my $sock, $pf, SOCK_STREAM, 0)
 	or die "socket failed\n";
 
-    return bind($sock, sockaddr_in(0, inet_aton($addr)));
+    return bind($sock, $sockaddr);
 }
 
 # get list of IPv4 and IPv6 addresses

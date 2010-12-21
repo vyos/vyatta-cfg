@@ -23,6 +23,7 @@ Depends: sed (>= 4.1.5),
  ethtool,
  iproute,
  curl,
+ libsocket6-perl,
  libvyatta-cfg1 (=${binary:Version}),
  ${perl:Depends}, ${shlibs:Depends}
 Replaces: vyatta-cfg-firewall, 
