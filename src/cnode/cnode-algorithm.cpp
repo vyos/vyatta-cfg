@@ -36,12 +36,12 @@ static const string PFX_DIFF_NULL = "";
 
 ////// static (internal) functions
 static void
-_show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
+_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level, bool show_def,
            bool hide_secret);
 
 static void
-_get_cmds_diff(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
-               vector<vector<string> >& del_list,
+_get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
+               vector<string>& cur_path, vector<vector<string> >& del_list,
                vector<vector<string> >& set_list,
                vector<vector<string> >& com_list);
 
@@ -54,8 +54,8 @@ _get_cmds_diff(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
  * comparison follows the original perl logic.
  */
 static bool
-_cmp_multi_values(CfgNode *cfg1, CfgNode *cfg2, vector<string>& values,
-                  vector<const char *>& pfxs)
+_cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
+                  vector<string>& values, vector<const char *>& pfxs)
 {
   const vector<string>& ovec = cfg1->getValues();
   const vector<string>& nvec = cfg2->getValues();
@@ -91,12 +91,13 @@ _cmp_multi_values(CfgNode *cfg1, CfgNode *cfg2, vector<string>& values,
 }
 
 static void
-_cmp_non_leaf_nodes(CfgNode *cfg1, CfgNode *cfg2, vector<CfgNode *>& rcnodes1,
+_cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
+                    vector<CfgNode *>& rcnodes1,
                     vector<CfgNode *>& rcnodes2, bool& not_tag_node,
                     bool& is_value, bool& is_leaf_typeless,
                     string& name, string& value)
 {
-  CfgNode *cfg = (cfg1 ? cfg1 : cfg2);
+  const CfgNode *cfg = (cfg1 ? cfg1 : cfg2);
   is_value = cfg->isValue();
   not_tag_node = (!cfg->isTag() || is_value);
   is_leaf_typeless = cfg->isLeafTypeless();
@@ -197,7 +198,7 @@ _print_value_str(const string& name, const char *vstr, bool hide_secret)
 }
 
 static void
-_diff_print_indent(CfgNode *cfg1, CfgNode *cfg2, int level,
+_diff_print_indent(const CfgNode *cfg1, const CfgNode *cfg2, int level,
                    const char *pfx_diff)
 {
   /* note: activate/deactivate state output was handled here. pending
@@ -211,7 +212,7 @@ _diff_print_indent(CfgNode *cfg1, CfgNode *cfg2, int level,
 }
 
 static void
-_diff_print_comment(CfgNode *cfg1, CfgNode *cfg2, int level)
+_diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level)
 {
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   string comment = "";
@@ -252,7 +253,7 @@ _diff_print_comment(CfgNode *cfg1, CfgNode *cfg2, int level)
 }
 
 static bool
-_diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
+_diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
                           bool show_def, bool hide_secret)
 {
   if ((cfg1 && !cfg1->isLeaf()) || (cfg2 && !cfg2->isLeaf())) {
@@ -260,7 +261,7 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
     return false;
   }
 
-  CfgNode *cfg = NULL;
+  const CfgNode *cfg = NULL;
   const char *force_pfx_diff = NULL;
   if (!cfg1) {
     cfg = cfg2;
@@ -322,8 +323,8 @@ _diff_check_and_show_leaf(CfgNode *cfg1, CfgNode *cfg2, int level,
 }
 
 static void 
-_diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
-                 bool hide_secret)
+_diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
+                 bool show_def, bool hide_secret)
 {
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   if (!cfg1) {
@@ -377,7 +378,7 @@ _diff_show_other(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
 }
 
 static void
-_show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
+_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level, bool show_def,
            bool hide_secret)
 {
   // if doesn't exist, treat as NULL
@@ -417,7 +418,8 @@ _show_diff(CfgNode *cfg1, CfgNode *cfg2, int level, bool show_def,
 }
 
 static void
-_get_comment_diff_cmd(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
+_get_comment_diff_cmd(const CfgNode *cfg1, const CfgNode *cfg2,
+                      vector<string>& cur_path,
                       vector<vector<string> >& com_list, const string *val)
 {
   const string *comment = NULL;
@@ -467,7 +469,8 @@ _get_comment_diff_cmd(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
 }
 
 static bool
-_get_cmds_diff_leaf(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
+_get_cmds_diff_leaf(const CfgNode *cfg1, const CfgNode *cfg2,
+                    vector<string>& cur_path,
                     vector<vector<string> >& del_list,
                     vector<vector<string> >& set_list,
                     vector<vector<string> >& com_list)
@@ -477,7 +480,7 @@ _get_cmds_diff_leaf(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
     return false;
   }
 
-  CfgNode *cfg = NULL;
+  const CfgNode *cfg = NULL;
   vector<vector<string> > *list = NULL;
   if (cfg1) {
     cfg = cfg1;
@@ -538,7 +541,8 @@ _get_cmds_diff_leaf(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
 }
 
 static void
-_get_cmds_diff_other(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
+_get_cmds_diff_other(const CfgNode *cfg1, const CfgNode *cfg2,
+                     vector<string>& cur_path,
                      vector<vector<string> >& del_list,
                      vector<vector<string> >& set_list,
                      vector<vector<string> >& com_list)
@@ -593,8 +597,8 @@ _get_cmds_diff_other(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
 }
 
 static void
-_get_cmds_diff(CfgNode *cfg1, CfgNode *cfg2, vector<string>& cur_path,
-               vector<vector<string> >& del_list,
+_get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
+               vector<string>& cur_path, vector<vector<string> >& del_list,
                vector<vector<string> >& set_list,
                vector<vector<string> >& com_list)
 {
@@ -647,8 +651,7 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
     printf("Configuration under specified path is empty\n");
     return;
   }
-  _show_diff(const_cast<CfgNode *>(&cfg1), const_cast<CfgNode *>(&cfg2), -1,
-             show_def, hide_secret);
+  _show_diff(&cfg1, &cfg2, -1, show_def, hide_secret);
 }
 
 void
@@ -664,8 +667,7 @@ cnode::show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2)
   vector<vector<string> > del_list;
   vector<vector<string> > set_list;
   vector<vector<string> > com_list;
-  _get_cmds_diff(const_cast<CfgNode *>(&cfg1), const_cast<CfgNode *>(&cfg2),
-                 cur_path, del_list, set_list, com_list);
+  _get_cmds_diff(&cfg1, &cfg2, cur_path, del_list, set_list, com_list);
 
   _print_cmds_list("delete", del_list);
   _print_cmds_list("set", set_list);
@@ -685,8 +687,7 @@ cnode::get_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2,
                      vector<vector<string> >& com_list)
 {
   vector<string> cur_path;
-  _get_cmds_diff(const_cast<CfgNode *>(&cfg1), const_cast<CfgNode *>(&cfg2),
-                 cur_path, del_list, set_list, com_list);
+  _get_cmds_diff(&cfg1, &cfg2, cur_path, del_list, set_list, com_list);
 }
 
 void
@@ -695,7 +696,6 @@ cnode::get_cmds(const CfgNode& cfg, vector<vector<string> >& set_list,
 {
   vector<string> cur_path;
   vector<vector<string> > del_list;
-  _get_cmds_diff(const_cast<CfgNode *>(&cfg), const_cast<CfgNode *>(&cfg),
-                 cur_path, del_list, set_list, com_list);
+  _get_cmds_diff(&cfg, &cfg, cur_path, del_list, set_list, com_list);
 }
 
