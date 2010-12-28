@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.74) unstable; urgency=low
+
+  * new branch
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 28 Dec 2010 13:46:23 -0800
+
 vyatta-cfg (0.18.73) unstable; urgency=low
 
   * propagate constness
