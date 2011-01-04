@@ -2180,15 +2180,20 @@ boolean validate_value(vtw_def *def, char *cp)
   /* certain characters are not allowed */
   {
     int i = 0;
+    static const char *disallowed[] = {
+      "'", "single quote (')",
+      "\n", "newline",
+      "\"", "double quote (\")",
+      NULL, NULL
+    };
     for (i = 0; i < strlen(cp); i++) {
-      if (cp[i] == '\'') {
-        OUTPUT_USER("Cannot use the \"'\" (single quote) character "
-                    "in a value string\n");
-        return FALSE;
-      }
-      if (cp[i] == '\n') {
-        OUTPUT_USER("Cannot use the newline character in a value string\n");
-        return FALSE;
+      int j = 0;
+      for (j = 0; disallowed[j]; j += 2) {
+        if (cp[i] == disallowed[j][0]) {
+          OUTPUT_USER("Cannot use the %s character in a value string\n",
+                      disallowed[j + 1]);
+          return FALSE;
+        }
       }
     }
   }
