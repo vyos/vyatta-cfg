@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino2) unstable; urgency=low
+
+  * workaround for bug 5388
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 04 Jan 2011 13:54:43 -0800
+
 vyatta-cfg (0.18.73+mendocino1) unstable; urgency=low
 
   * new branch
