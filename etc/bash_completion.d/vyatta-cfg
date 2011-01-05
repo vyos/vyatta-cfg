@@ -28,6 +28,10 @@ export HISTFILESIZE=10000
 export HISTSIZE=10000
 export HISTTIMEFORMAT='%FT%T%z ' 
 export PROMPT_COMMAND='history -a'
+
+# remove colon from completion word seperators
+export COMP_WORDBREAKS=${COMP_WORDBREAKS/:/}
+
 builtin set histappend=1
 
 # only do this if we are going into configure mode
