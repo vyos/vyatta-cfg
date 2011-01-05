@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino3) unstable; urgency=low
+
+  * Fix completion of IPv6 address
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 04 Jan 2011 17:25:20 -0800
+
 vyatta-cfg (0.18.73+mendocino2) unstable; urgency=low
 
   * workaround for bug 5388
