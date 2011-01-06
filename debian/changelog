@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino4) unstable; urgency=low
+
+  * fix for bug 6641
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 05 Jan 2011 16:46:15 -0800
+
 vyatta-cfg (0.18.73+mendocino3) unstable; urgency=low
 
   * Fix completion of IPv6 address
