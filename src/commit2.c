@@ -133,7 +133,7 @@ usage(void)
   printf("\t-b\t\tbreak on each priority node (debug mode)\n");
   printf("\t-r\t\tdisable run hook script on finishing commit\n");
   printf("\t-x\t\tdisable new print feature\n");
-  printf("\t-l\t\tforce removal of commit lock\n");
+  printf("\t-l\t\tforce commit through removal of commit lock\n");
   printf("\t-h\t\thelp\n");
 }
 
