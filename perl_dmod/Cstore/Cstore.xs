@@ -26,8 +26,7 @@
 #include <vector>
 #include <string>
 
-/* currently use the UnionfsCstore implementation */
-#include <cstore/unionfs/cstore-unionfs.hpp>
+#include <cstore/cstore.hpp>
 
 typedef SV STRVEC;
 typedef SV STRSTRMAP;
@@ -38,7 +37,7 @@ MODULE = Cstore		PACKAGE = Cstore
 Cstore *
 Cstore::new()
 CODE:
-  RETVAL = new UnionfsCstore();
+  RETVAL = Cstore::createCstore(false);
 OUTPUT:
   RETVAL
 

@@ -33,7 +33,7 @@ namespace b_fs = boost::filesystem;
 
 class UnionfsCstore : public Cstore {
 public:
-  UnionfsCstore(bool use_edit_level = false);
+  UnionfsCstore(bool use_edit_level);
   UnionfsCstore(const string& session_id, string& env);
   virtual ~UnionfsCstore();
 

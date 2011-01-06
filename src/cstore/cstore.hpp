@@ -53,6 +53,10 @@ public:
   Cstore(string& env);
   virtual ~Cstore() {};
 
+  // factory functions
+  static Cstore *createCstore(bool use_edit_level = false);
+  static Cstore *createCstore(const string& session_id, string& env);
+
   // types
   template<class K, class V>
     class MapT : public tr1::unordered_map<K, V> {};

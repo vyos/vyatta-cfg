@@ -15,11 +15,12 @@
  */
 
 #include <cstring>
+#include <cstdlib>
 #include <vector>
 #include <string>
 
+#include <cstore/cstore.hpp>
 #include <cstore/cstore-c.h>
-#include <cstore/unionfs/cstore-unionfs.hpp>
 
 static void
 _get_str_vec(vector<string>& vec, const char *strs[], int num_strs)
@@ -32,14 +33,14 @@ _get_str_vec(vector<string>& vec, const char *strs[], int num_strs)
 void *
 cstore_init(void)
 {
-  Cstore *handle = new UnionfsCstore();
+  Cstore *handle = Cstore::createCstore(false);
   return (void *) handle;
 }
 
 void
 cstore_free(void *handle)
 {
-  UnionfsCstore *h = (UnionfsCstore *) handle;
+  Cstore *h = (Cstore *) handle;
   delete h;
 }
 

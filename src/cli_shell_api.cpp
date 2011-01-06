@@ -15,13 +15,14 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 #include <string>
 #include <getopt.h>
 
 #include <cli_cstore.h>
-#include <cstore/unionfs/cstore-unionfs.hpp>
+#include <cstore/cstore.hpp>
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
 #include <cparse/cparse.hpp>
@@ -56,7 +57,7 @@ int op_show_show_defaults = 0;
 int op_show_hide_secrets = 0;
 int op_show_working_only = 0;
 
-typedef void (*OpFuncT)(const vector<string>& args);
+typedef void (*OpFuncT)(Cstore& cstore, const vector<string>& args);
 
 typedef struct {
   const char *op_name;
@@ -64,23 +65,25 @@ typedef struct {
   const char *op_exact_error;
   const int op_min_args;
   const char *op_min_error;
+  bool op_use_edit;
   OpFuncT op_func;
 } OpT;
 
 /* outputs an environment string to be "eval"ed */
 static void
-getSessionEnv(const vector<string>& args)
+getSessionEnv(Cstore& cstore, const vector<string>& args)
 {
+  // need a "session-specific" cstore so ignore the default one
   string env;
-  UnionfsCstore cstore(args[0], env);
+  Cstore *cs = Cstore::createCstore(args[0], env);
   printf("%s", env.c_str());
+  delete cs;
 }
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditEnv(const vector<string>& args)
+getEditEnv(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditEnv(args, env)) {
     exit(1);
@@ -90,9 +93,8 @@ getEditEnv(const vector<string>& args)
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditUpEnv(const vector<string>& args)
+getEditUpEnv(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditUpEnv(env)) {
     exit(1);
@@ -102,9 +104,8 @@ getEditUpEnv(const vector<string>& args)
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditResetEnv(const vector<string>& args)
+getEditResetEnv(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string env;
   if (!cstore.getEditResetEnv(env)) {
     exit(1);
@@ -113,17 +114,15 @@ getEditResetEnv(const vector<string>& args)
 }
 
 static void
-editLevelAtRoot(const vector<string>& args)
+editLevelAtRoot(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.editLevelAtRoot() ? 0 : 1);
 }
 
 /* outputs an environment string to be "eval"ed */
 static void
-getCompletionEnv(const vector<string>& args)
+getCompletionEnv(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string env;
   if (!cstore.getCompletionEnv(args, env)) {
     exit(1);
@@ -133,72 +132,64 @@ getCompletionEnv(const vector<string>& args)
 
 /* outputs a string */
 static void
-getEditLevelStr(const vector<string>& args)
+getEditLevelStr(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> lvec;
   cstore.getEditLevel(lvec);
   print_vec(lvec, " ", "");
 }
 
 static void
-markSessionUnsaved(const vector<string>& args)
+markSessionUnsaved(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.markSessionUnsaved()) {
     exit(1);
   }
 }
 
 static void
-unmarkSessionUnsaved(const vector<string>& args)
+unmarkSessionUnsaved(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.unmarkSessionUnsaved()) {
     exit(1);
   }
 }
 
 static void
-sessionUnsaved(const vector<string>& args)
+sessionUnsaved(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.sessionUnsaved()) {
     exit(1);
   }
 }
 
 static void
-sessionChanged(const vector<string>& args)
+sessionChanged(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.sessionChanged()) {
     exit(1);
   }
 }
 
 static void
-teardownSession(const vector<string>& args)
+teardownSession(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.teardownSession()) {
     exit(1);
   }
 }
 
 static void
-setupSession(const vector<string>& args)
+setupSession(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.setupSession()) {
     exit(1);
   }
 }
 
 static void
-inSession(const vector<string>& args)
+inSession(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.inSession()) {
     exit(1);
   }
@@ -206,25 +197,22 @@ inSession(const vector<string>& args)
 
 /* same as exists() in Perl API */
 static void
-exists(const vector<string>& args)
+exists(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.cfgPathExists(args, false) ? 0 : 1);
 }
 
 /* same as existsOrig() in Perl API */
 static void
-existsActive(const vector<string>& args)
+existsActive(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
 /* same as isEffective() in Perl API */
 static void
-existsEffective(const vector<string>& args)
+existsEffective(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.cfgPathEffective(args) ? 0 : 1);
 }
 
@@ -241,9 +229,8 @@ existsEffective(const vector<string>& args)
  *   eval "nodes=($(cli-shell-api listNodes interfaces))"
  */
 static void
-listNodes(const vector<string>& args)
+listNodes(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> cnodes;
   cstore.cfgPathGetChildNodes(args, cnodes, false);
   print_vec(cnodes, " ", "'");
@@ -255,9 +242,8 @@ listNodes(const vector<string>& args)
  * "eval"ed into an array of nodes. see listNodes above.
  */
 static void
-listActiveNodes(const vector<string>& args)
+listActiveNodes(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> cnodes;
   cstore.cfgPathGetChildNodes(args, cnodes, true);
   print_vec(cnodes, " ", "'");
@@ -269,9 +255,8 @@ listActiveNodes(const vector<string>& args)
  * "eval"ed into an array of nodes. see listNodes above.
  */
 static void
-listEffectiveNodes(const vector<string>& args)
+listEffectiveNodes(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> cnodes;
   cstore.cfgPathGetEffectiveChildNodes(args, cnodes);
   print_vec(cnodes, " ", "'");
@@ -279,9 +264,8 @@ listEffectiveNodes(const vector<string>& args)
 
 /* same as returnValue() in Perl API. outputs a string. */
 static void
-returnValue(const vector<string>& args)
+returnValue(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string val;
   if (!cstore.cfgPathGetValue(args, val, false)) {
     exit(1);
@@ -291,9 +275,8 @@ returnValue(const vector<string>& args)
 
 /* same as returnOrigValue() in Perl API. outputs a string. */
 static void
-returnActiveValue(const vector<string>& args)
+returnActiveValue(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string val;
   if (!cstore.cfgPathGetValue(args, val, true)) {
     exit(1);
@@ -303,9 +286,8 @@ returnActiveValue(const vector<string>& args)
 
 /* same as returnEffectiveValue() in Perl API. outputs a string. */
 static void
-returnEffectiveValue(const vector<string>& args)
+returnEffectiveValue(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   string val;
   if (!cstore.cfgPathGetEffectiveValue(args, val)) {
     exit(1);
@@ -334,9 +316,8 @@ returnEffectiveValue(const vector<string>& args)
  * failure would result in an empty array after the eval.
  */
 static void
-returnValues(const vector<string>& args)
+returnValues(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> vvec;
   if (!cstore.cfgPathGetValues(args, vvec, false)) {
     exit(1);
@@ -350,9 +331,8 @@ returnValues(const vector<string>& args)
  * "eval"ed into an array of values. see returnValues above.
  */
 static void
-returnActiveValues(const vector<string>& args)
+returnActiveValues(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> vvec;
   if (!cstore.cfgPathGetValues(args, vvec, true)) {
     exit(1);
@@ -366,9 +346,8 @@ returnActiveValues(const vector<string>& args)
  * "eval"ed into an array of values. see returnValues above.
  */
 static void
-returnEffectiveValues(const vector<string>& args)
+returnEffectiveValues(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> vvec;
   if (!cstore.cfgPathGetEffectiveValues(args, vvec)) {
     exit(1);
@@ -380,9 +359,8 @@ returnEffectiveValues(const vector<string>& args)
  * the validity of any "tag values" along the path.
  */
 static void
-validateTmplPath(const vector<string>& args)
+validateTmplPath(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.validateTmplPath(args, false) ? 0 : 1);
 }
 
@@ -390,16 +368,14 @@ validateTmplPath(const vector<string>& args)
  * validity of any "tag values" along the path.
  */
 static void
-validateTmplValPath(const vector<string>& args)
+validateTmplValPath(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   exit(cstore.validateTmplPath(args, true) ? 0 : 1);
 }
 
 static void
-showCfg(const vector<string>& args)
+showCfg(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   vector<string> nargs(args);
   bool active_only = (!cstore.inSession() || op_show_active_only);
   bool working_only = (cstore.inSession() && op_show_working_only);
@@ -421,66 +397,66 @@ showCfg(const vector<string>& args)
 }
 
 static void
-loadFile(const vector<string>& args)
+loadFile(Cstore& cstore, const vector<string>& args)
 {
-  UnionfsCstore cstore(true);
   if (!cstore.loadFile(args[0].c_str())) {
     // loadFile failed
     exit(1);
   }
 }
 
-#define OP(name, exact, exact_err, min, min_err) \
-  { #name, exact, exact_err, min, min_err, &name }
+#define OP(name, exact, exact_err, min, min_err, use_edit) \
+  { #name, exact, exact_err, min, min_err, use_edit, &name }
 
 static int op_idx = -1;
 static OpT ops[] = {
-  OP(getSessionEnv, 1, "Must specify session ID", -1, NULL),
-  OP(getEditEnv, -1, NULL, 1, "Must specify config path"),
-  OP(getEditUpEnv, 0, "No argument expected", -1, NULL),
-  OP(getEditResetEnv, 0, "No argument expected", -1, NULL),
-  OP(editLevelAtRoot, 0, "No argument expected", -1, NULL),
+  OP(getSessionEnv, 1, "Must specify session ID", -1, NULL, true),
+  OP(getEditEnv, -1, NULL, 1, "Must specify config path", true),
+  OP(getEditUpEnv, 0, "No argument expected", -1, NULL, true),
+  OP(getEditResetEnv, 0, "No argument expected", -1, NULL, true),
+  OP(editLevelAtRoot, 0, "No argument expected", -1, NULL, true),
   OP(getCompletionEnv, -1, NULL,
-     2, "Must specify command and at least one component"),
-  OP(getEditLevelStr, 0, "No argument expected", -1, NULL),
+     2, "Must specify command and at least one component", true),
+  OP(getEditLevelStr, 0, "No argument expected", -1, NULL, true),
 
-  OP(markSessionUnsaved, 0, "No argument expected", -1, NULL),
-  OP(unmarkSessionUnsaved, 0, "No argument expected", -1, NULL),
-  OP(sessionUnsaved, 0, "No argument expected", -1, NULL),
-  OP(sessionChanged, 0, "No argument expected", -1, NULL),
+  OP(markSessionUnsaved, 0, "No argument expected", -1, NULL, false),
+  OP(unmarkSessionUnsaved, 0, "No argument expected", -1, NULL, false),
+  OP(sessionUnsaved, 0, "No argument expected", -1, NULL, false),
+  OP(sessionChanged, 0, "No argument expected", -1, NULL, false),
 
-  OP(teardownSession, 0, "No argument expected", -1, NULL),
-  OP(setupSession, 0, "No argument expected", -1, NULL),
-  OP(inSession, 0, "No argument expected", -1, NULL),
+  OP(teardownSession, 0, "No argument expected", -1, NULL, false),
+  OP(setupSession, 0, "No argument expected", -1, NULL, false),
+  OP(inSession, 0, "No argument expected", -1, NULL, false),
 
-  OP(exists, -1, NULL, 1, "Must specify config path"),
-  OP(existsActive, -1, NULL, 1, "Must specify config path"),
-  OP(existsEffective, -1, NULL, 1, "Must specify config path"),
+  OP(exists, -1, NULL, 1, "Must specify config path", false),
+  OP(existsActive, -1, NULL, 1, "Must specify config path", false),
+  OP(existsEffective, -1, NULL, 1, "Must specify config path", false),
 
-  OP(listNodes, -1, NULL, -1, NULL),
-  OP(listActiveNodes, -1, NULL, -1, NULL),
-  OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path"),
+  OP(listNodes, -1, NULL, -1, NULL, false),
+  OP(listActiveNodes, -1, NULL, -1, NULL, false),
+  OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path", false),
 
-  OP(returnValue, -1, NULL, 1, "Must specify config path"),
-  OP(returnActiveValue, -1, NULL, 1, "Must specify config path"),
-  OP(returnEffectiveValue, -1, NULL, 1, "Must specify config path"),
+  OP(returnValue, -1, NULL, 1, "Must specify config path", false),
+  OP(returnActiveValue, -1, NULL, 1, "Must specify config path", false),
+  OP(returnEffectiveValue, -1, NULL, 1, "Must specify config path", false),
 
-  OP(returnValues, -1, NULL, 1, "Must specify config path"),
-  OP(returnActiveValues, -1, NULL, 1, "Must specify config path"),
-  OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path"),
+  OP(returnValues, -1, NULL, 1, "Must specify config path", false),
+  OP(returnActiveValues, -1, NULL, 1, "Must specify config path", false),
+  OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path", false),
 
-  OP(validateTmplPath, -1, NULL, 1, "Must specify config path"),
-  OP(validateTmplValPath, -1, NULL, 1, "Must specify config path"),
+  OP(validateTmplPath, -1, NULL, 1, "Must specify config path", false),
+  OP(validateTmplValPath, -1, NULL, 1, "Must specify config path", false),
 
-  OP(showCfg, -1, NULL, -1, NULL),
-  OP(loadFile, 1, "Must specify config file", -1, NULL),
+  OP(showCfg, -1, NULL, -1, NULL, true),
+  OP(loadFile, 1, "Must specify config file", -1, NULL, false),
 
-  {NULL, -1, NULL, -1, NULL, NULL}
+  {NULL, -1, NULL, -1, NULL, NULL, false}
 };
 #define OP_exact_args  ops[op_idx].op_exact_args
 #define OP_min_args    ops[op_idx].op_min_args
 #define OP_exact_error ops[op_idx].op_exact_error
 #define OP_min_error   ops[op_idx].op_min_error
+#define OP_use_edit    ops[op_idx].op_use_edit
 #define OP_func        ops[op_idx].op_func
 
 struct option options[] = {
@@ -534,7 +510,9 @@ main(int argc, char **argv)
   }
 
   // call the op function
-  OP_func(args);
+  Cstore *cstore = Cstore::createCstore(OP_use_edit);
+  OP_func(*cstore, args);
+  delete cstore;
   exit(0);
 }
 

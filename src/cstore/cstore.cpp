@@ -30,6 +30,7 @@
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
+#include <cstore/unionfs/cstore-unionfs.hpp>
 #include <cstore/cstore-varref.hpp>
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
@@ -92,6 +93,22 @@ Cstore::Cstore(string& env)
   string decl = "declare -x ";
   env = (decl + C_ENV_EDIT_LEVEL + "=/; ");
   env += (decl + C_ENV_TMPL_LEVEL + "=/;");
+}
+
+
+////// factory functions
+// for "current session" (see UnionfsCstore constructor for details)
+Cstore *
+Cstore::createCstore(bool use_edit_level)
+{
+  return (new UnionfsCstore(use_edit_level));
+}
+
+// for "specific session" (see UnionfsCstore constructor for details)
+Cstore *
+Cstore::createCstore(const string& session_id, string& env)
+{
+  return (new UnionfsCstore(session_id, env));
 }
 
 
