@@ -44,6 +44,8 @@ static const char* ActionNames[top_act] = {
   "end"       //7
 };
 
+#define LOCK_FILE "/opt/vyatta/config/.lock"
+
 GNode*
 get_transactions(GNode*, boolean priority);
 
@@ -130,7 +132,8 @@ usage(void)
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
   printf("\t-b\t\tbreak on each priority node (debug mode)\n");
   printf("\t-r\t\tdisable run hook script on finishing commit\n");
-  printf("\t-x\t\t\disable new print feature\n");
+  printf("\t-x\t\tdisable new print feature\n");
+  printf("\t-l\t\tforce removal of commit lock\n");
   printf("\t-h\t\thelp\n");
 }
 
@@ -154,7 +157,7 @@ main(int argc, char** argv)
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "xdpthsecoafbrC:")) != -1) {
+  while ((ch = getopt(argc, argv, "xdpthsecoafbrlC:")) != -1) {
     switch (ch) {
     case 'x':
       g_old_print_output = TRUE;
@@ -199,6 +202,9 @@ main(int argc, char** argv)
     case 'C':
       commit_comment = strdup(optarg);
       break;
+    case 'l':
+      unlink(LOCK_FILE);
+      break;
     default:
       usage();
       exit(0);
@@ -221,6 +227,12 @@ main(int argc, char** argv)
     printf("commit2: starting up\n");
     syslog(LOG_DEBUG,"commit2: starting up");
   }
+
+  if (get_config_lock() != 0) {
+    fprintf(out_stream,"Configuration system temporarily locked due to another commit in progress\n");
+    exit(1);
+  }
+
 
   //get local session data plus configuration data
   GNode *config_data = common_get_local_session_data();
