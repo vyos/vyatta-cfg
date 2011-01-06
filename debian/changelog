@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.73+mendocino5) unstable; urgency=low
+
+  * re-enable concurrent configuration commit locking.
+  * and fix for bug 6638
+
+ -- Michael Larson <mike@vyatta.com>  Thu, 06 Jan 2011 14:00:36 -0800
+
 vyatta-cfg (0.18.73+mendocino4) unstable; urgency=low
 
   * fix for bug 6641
