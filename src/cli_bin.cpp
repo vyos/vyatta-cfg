@@ -15,13 +15,14 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 #include <string>
 #include <libgen.h>
 
 #include <cli_cstore.h>
-#include <cstore/unionfs/cstore-unionfs.hpp>
+#include <cstore/cstore.hpp>
 
 static int op_idx = -1;
 static const char *op_bin_name[] = {
@@ -218,14 +219,15 @@ main(int argc, char **argv)
   }
 
   // actual CLI operations use the edit levels from environment, so pass true.
-  UnionfsCstore cstore(true);
+  Cstore *cstore = Cstore::createCstore(true);
   vector<string> path_comps;
   for (int i = 1; i < argc; i++) {
     path_comps.push_back(argv[i]);
   }
 
   // call the op function
-  OpFunc[op_idx](cstore, path_comps);
+  OpFunc[op_idx](*cstore, path_comps);
+  delete cstore;
   exit(0);
 }
 
