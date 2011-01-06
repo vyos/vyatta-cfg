@@ -461,7 +461,10 @@ get_config_lock()
     } else if (fd != -1) {
       close(fd);
     }
-    release_config_lock();
+    //code below will cause a concurrent commit to release lock on failure, and
+    //therefore, allow the concurrent to proceed the second time.
+    //lock can be forced via commit flag instead.
+    //    release_config_lock();
   }
   return ret;
 }
