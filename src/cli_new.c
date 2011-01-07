@@ -330,7 +330,7 @@ void di(vtw_sorted *srtp)
 #define LOCK_FILE "/opt/vyatta/config/.lock"
 #define COMMIT_CMD "/opt/vyatta/sbin/my_commit"
 
-static void
+void
 release_config_lock()
 {
   unlink(LOCK_FILE);
