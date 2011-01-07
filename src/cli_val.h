@@ -127,6 +127,7 @@ void mark_paths(vtw_mark *markp);
 void restore_paths(vtw_mark *markp);
 
 extern int get_config_lock(void);
+extern void release_config_lock(void);
 
 #define    VTWERR_BADPATH  -2 
 #define    VTWERR_OK     0

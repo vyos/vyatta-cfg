@@ -44,8 +44,6 @@ static const char* ActionNames[top_act] = {
   "end"       //7
 };
 
-#define LOCK_FILE "/opt/vyatta/config/.lock"
-
 GNode*
 get_transactions(GNode*, boolean priority);
 
@@ -203,7 +201,7 @@ main(int argc, char** argv)
       commit_comment = strdup(optarg);
       break;
     case 'l':
-      unlink(LOCK_FILE);
+      release_config_lock();
       break;
     default:
       usage();
