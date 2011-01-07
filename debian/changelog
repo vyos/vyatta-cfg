@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.73+mendocino6) unstable; urgency=low
+
+  [ Michael Larson ]
+  * use the old interface rather than call unlink directly.
+
+  [ An-Cheng Huang ]
+  * improve load error message
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 07 Jan 2011 11:04:09 -0800
+
 vyatta-cfg (0.18.73+mendocino5) unstable; urgency=low
 
   * re-enable concurrent configuration commit locking.
