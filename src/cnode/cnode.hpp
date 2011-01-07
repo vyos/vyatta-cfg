@@ -26,7 +26,7 @@ namespace cnode {
 class CfgNode {
 public:
   CfgNode(vector<string>& path_comps, char *name, char *val, char *comment,
-          int deact, Cstore *cstore);
+          int deact, Cstore *cstore, bool tag_if_invalid = false);
   CfgNode(Cstore& cstore, std::vector<string>& path_comps,
           bool active = false, bool recursive = true);
   ~CfgNode() {};
