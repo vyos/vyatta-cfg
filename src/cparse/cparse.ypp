@@ -77,7 +77,9 @@ add_node()
     CfgNode *mapped_node = cur_node;
     if (cur_node->isTag() && cur_node->isValue()) {
       // tag value => need to add the "tag node" on top
-      CfgNode *p = new CfgNode(pcomps, nname, NULL, NULL, ndeact, cstore);
+      // (need to force "tag" if the node is invalid => tag_if_invalid)
+      CfgNode *p = new CfgNode(pcomps, nname, NULL, NULL, ndeact, cstore,
+                               true);
       p->addChildNode(cur_node);
       mapped_node = p;
     }

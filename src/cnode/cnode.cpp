@@ -28,7 +28,8 @@ using namespace cnode;
 
 ////// constructors/destructors
 CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
-                 char *comment, int deact, Cstore *cstore)
+                 char *comment, int deact, Cstore *cstore,
+                 bool tag_if_invalid)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
     _is_invalid(false), _is_empty(true), _exists(true)
@@ -63,16 +64,6 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
        */
       _is_default = false;
       _is_deactivated = deact;
-      if (name) {
-        _name = name;
-      }
-      if (val) {
-        if (_is_multi) {
-          _values.push_back(val);
-        } else {
-          _value = val;
-        }
-      }
 
       vector<string> tcnodes;
       cstore->tmplGetChildNodes(path_comps, tcnodes);
@@ -88,17 +79,36 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
     } else {
       // not a valid node
       _is_invalid = true;
+      if (tag_if_invalid) {
+        /* this is only used when the parser is creating a "tag node". force
+         * the node to be tag since we don't have template for invalid node.
+         */
+        _is_tag = true;
+      }
+      if (val) {
+        /* if parser got value for the invalid node, always treat it as
+         * "tag value" for simplicity.
+         */
+        _is_tag = true;
+        _is_value = true;
+      }
       break;
     }
 
     break;
   }
 
-  // restore path_comps
+  // restore path_comps. also set value/name for both valid and invalid nodes.
   if (val) {
+    if (_is_multi) {
+      _values.push_back(val);
+    } else {
+      _value = val;
+    }
     path_comps.pop_back();
   }
   if (name && name[0]) {
+    _name = name;
     path_comps.pop_back();
   }
 }
