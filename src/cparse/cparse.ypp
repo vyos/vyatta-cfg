@@ -190,11 +190,20 @@ cparse::parse_file(FILE *fin, Cstore& cs)
   cparse_debug = 1;
 #endif // ENABLE_PARSER_TRACE
 
+  // initial state
   cparse_set_in(fin);
   cstore = &cs;
-
-  // root node
+  ndeact = 0;
+  ncomment = NULL;
+  nname = NULL;
+  nval = NULL;
+  node_map.clear();
+  pcomps.clear();
+  pcomp_is_value.clear();
+  cur_path.clear();
+  cur_node = NULL;
   cur_parent = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+
   if (cparse_parse() != 0) {
     // parsing failed
     return NULL;
