@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino8) unstable; urgency=low
+
+  * reset initial parser state
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 10 Jan 2011 11:42:09 -0800
+
 vyatta-cfg (0.18.73+mendocino7) unstable; urgency=low
 
   * tweak parser for top-level comment
