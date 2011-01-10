@@ -9,6 +9,14 @@
 #include "cparse.hpp"
 #include "cparse_def.h"
 
+/* to enable tracing, define ENABLE_PARSER_TRACE. may also want to invoke
+ * bison with "-v" (by changing Makefile.am).
+ */
+#undef ENABLE_PARSER_TRACE
+#ifdef ENABLE_PARSER_TRACE
+#define YYDEBUG 1
+#endif // ENABLE_PARSER_TRACE
+
 using namespace std;
 using namespace cnode;
 
@@ -129,18 +137,11 @@ go_up()
 
 %%
 
-input:      forest
-          | forest comment
+input:    forest comment
 ;
 
 forest:     /* empty */
-          | forest {
-              if (!cur_parent) {
-                // root node
-                cur_parent = new CfgNode(pcomps, nname, nval, ncomment,
-                                         ndeact, cstore);
-              }
-            } tree
+          | forest tree
 ;
 
 tree:       node {
@@ -175,8 +176,8 @@ nodec:      NODE {
             }
 ;
 
-comment:    COMMENT
-          | comment COMMENT
+comment:    /* empty */
+          | COMMENT comment
 ;
 
 %%
@@ -184,8 +185,16 @@ comment:    COMMENT
 CfgNode *
 cparse::parse_file(FILE *fin, Cstore& cs)
 {
+  // for debug (see prologue)
+#ifdef ENABLE_PARSER_TRACE
+  cparse_debug = 1;
+#endif // ENABLE_PARSER_TRACE
+
   cparse_set_in(fin);
   cstore = &cs;
+
+  // root node
+  cur_parent = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
   if (cparse_parse() != 0) {
     // parsing failed
     return NULL;
