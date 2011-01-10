@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino7) unstable; urgency=low
+
+  * tweak parser for top-level comment
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 10 Jan 2011 09:54:13 -0800
+
 vyatta-cfg (0.18.73+mendocino6) unstable; urgency=low
 
   [ Michael Larson ]
