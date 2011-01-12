@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.73+mendocino9) unstable; urgency=low
+
+  * Fix 6671: commit-confirm checks if there is any configuraion change
+    after confirm is requested
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 11 Jan 2011 16:18:06 -0800
+
 vyatta-cfg (0.18.73+mendocino8) unstable; urgency=low
 
   * reset initial parser state
