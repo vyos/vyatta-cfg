@@ -1,3 +1,30 @@
+vyatta-cfg (0.18.75) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * workaround for bug 5388
+
+  [ Stephen Hemminger ]
+  * Fix completion of IPv6 address
+
+  [ An-Cheng Huang ]
+  * fix for bug 6641
+  * improve load error message
+
+  [ Michael Larson ]
+  * re-enable concurrent configuration commit locking.
+  * and fix for bug 6638
+  * use the old interface rather than call unlink directly.
+
+  [ An-Cheng Huang ]
+  * tweak parser for top-level comment
+  * reset initial parser state
+
+  [ Stig Thormodsrud ]
+  * Fix 6671: commit-confirm checks if there is any configuraion change
+    after confirm is requested
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 11 Jan 2011 16:39:51 -0800
+
 vyatta-cfg (0.18.74) unstable; urgency=low
 
   * new branch
