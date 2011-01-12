@@ -101,6 +101,10 @@ show ()
 
 commit ()
 {
+  if ! vyatta_cli_shell_api sessionChanged; then
+    echo "No configuration changes to commit"
+    return 1;
+  fi
   local comment="commit"
   local next=0
   local -a args=()
@@ -128,6 +132,10 @@ commit ()
 
 commit-confirm ()
 {
+  if ! vyatta_cli_shell_api sessionChanged; then
+    echo "No configuration changes to commit"
+    return 1;
+  fi
   local -a args=()
   local first=1
   local minutes=10
