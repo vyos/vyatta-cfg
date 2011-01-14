@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino10) unstable; urgency=low
+
+  * remove compiler warnings
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 13 Jan 2011 17:29:54 -0800
+
 vyatta-cfg (0.18.73+mendocino9) unstable; urgency=low
 
   * Fix 6671: commit-confirm checks if there is any configuraion change
