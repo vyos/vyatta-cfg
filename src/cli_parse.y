@@ -4,8 +4,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-
-#define __USE_ISOC99
 #include <limits.h>
 
 #include "cli_val.h"
