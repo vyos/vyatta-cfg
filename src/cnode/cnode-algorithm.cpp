@@ -212,6 +212,9 @@ _diff_print_indent(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   }
 }
 
+/* this is used by "context diff" to print the context in "edit notation"
+ * like in JUNOS "show | compare".
+ */
 static void
 _diff_print_context(vector<string>& cur_path)
 {
@@ -222,6 +225,18 @@ _diff_print_context(vector<string>& cur_path)
   printf("]\n");
 }
 
+/* print the comment (if any) at the specified node, including "change
+ * prefix" (if any).
+ *
+ * since a node's comment is printed before the node itself, this will
+ * print the "context" first if doing context diff.
+ *
+ *   cur_path: the current context (for context diff).
+ *   context_diff: whether we're doing context diff.
+ *
+ * return whether anything is printed. this is only used for context diff
+ * (caller does different things according to return value).
+ */
 static bool
 _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
                     vector<string>& cur_path, bool context_diff)
@@ -260,9 +275,15 @@ _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     // no comment
     return false;
   }
+  /* print comment if
+   *   * not doing context diff
+   *   OR
+   *   * doing context diff and there is actually a difference
+   */
   if (!context_diff || (pfx_diff != PFX_DIFF_NONE.c_str()
                         && pfx_diff != PFX_DIFF_NULL.c_str())) {
     if (context_diff) {
+      // print context first
       _diff_print_context(cur_path);
     }
     _diff_print_indent(cfg1, cfg2, level, pfx_diff);
@@ -299,6 +320,11 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
   bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, context_diff);
   if (cprint) {
+    /* when doing context diff, normally we only show the node if there is a
+     * difference. however, if something was printed for comment, the node
+     * should be printed even if there is no difference. so set context_diff
+     * to false to force the node to be displayed.
+     */
     context_diff = false;
   }
   if (cfg->isMulti()) {
@@ -306,9 +332,13 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     if (force_pfx_diff) {
       // simple case: just use the same diff prefix for all values
       if (!cprint && context_diff) {
+        /* if nothing was printed for comment and we're doing context diff,
+         * then context hasn't been displayed yet. so print it first.
+         */
         _diff_print_context(cur_path);
       }
       if (!context_diff || force_pfx_diff != PFX_DIFF_NULL.c_str()) {
+        // not context diff OR there is a difference => print the node
         const vector<string>& vvec = cfg->getValues();
         for (size_t i = 0; i < vvec.size(); i++) {
           _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
@@ -323,11 +353,19 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
       vector<const char *> pfxs;
       bool changed = _cmp_multi_values(cfg1, cfg2, values, pfxs);
       if (!context_diff || changed) {
+        // not context diff OR there is a difference => print the node
         for (size_t i = 0; i < values.size(); i++) {
           if (context_diff && pfxs[i] == PFX_DIFF_NONE.c_str()) {
+            // not printing unchanged values if doing context diff
             continue;
           }
           if (!cprint && context_diff) {
+            /* if nothing was printed for comment and we're doing context
+             * diff, then context hasn't been displayed yet. so print it
+             * first. note that we only want to see the context once, so
+             * set cprint to true so that later iterations won't print it
+             * again.
+             */
             _diff_print_context(cur_path);
             cprint = true;
           }
@@ -354,7 +392,11 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
       bool changed = (force_pfx_diff != PFX_DIFF_NONE.c_str()
                       && force_pfx_diff != PFX_DIFF_NULL.c_str());
       if (!context_diff || changed) {
+        // not context diff OR there is a difference => print the node
         if (!cprint && context_diff) {
+          /* if nothing was printed for comment and we're doing context diff,
+           * then context hasn't been displayed yet. so print it first.
+           */
           _diff_print_context(cur_path);
         }
         _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
@@ -401,10 +443,39 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   if (print_this) {
     bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, orig_cdiff);
     if (orig_cdiff && pfx_diff != PFX_DIFF_NONE.c_str()) {
+      /* note:
+       *   orig_cdiff is the original value of context_diff.
+       *   pfx_diff is set above.
+       * so the condition here means
+       *   (1) when this function is called, we are doing a context diff
+       *   AND
+       *   (2) pfx_diff is either PFX_DIFF_ADD or PFX_DIFF_DEL, i.e., one
+       *       and only one of cfg1 and cfg2 is NULL.
+       *
+       *       note that pfx_diff cannot be PFX_DIFF_NULL since
+       *       (cfg1 == cfg2) cannot be true if context_diff is true (see
+       *       caller's logic).
+       *
+       * since one and only one of cfg1 and cfg2 is NULL, it means that the
+       * whole subtree rooted at the current node is "added" or "deleted".
+       * therefore, set context_diff to false for the recursion into this
+       * subtree so that it will be displayed normally.
+       */
       context_diff = false;
     }
     if (cprint || !orig_cdiff || pfx_diff != PFX_DIFF_NONE.c_str()) {
+      /* print this node if
+       *   (1) something was printed for comment, in which case the node
+       *       should be printed regardless of whether there is a difference.
+       *   OR
+       *   (2) not doing context diff.
+       *   OR
+       *   (3) there is a difference.
+       */
       if (!cprint && orig_cdiff) {
+        /* if nothing was printed for comment and we're doing context diff,
+         * then context hasn't been displayed yet. so print it first.
+         */
         _diff_print_context(cur_path);
       }
       _diff_print_indent(cfg1, cfg2, level, pfx_diff);
@@ -415,7 +486,22 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
         // at intermediate node
         printf("%s", name.c_str());
       }
-      if (cprint && pfx_diff == PFX_DIFF_NONE.c_str()) {
+      if (cprint && orig_cdiff && pfx_diff == PFX_DIFF_NONE.c_str()) {
+        /* the condition means:
+         *   (1) something was printed for comment.
+         *   AND
+         *   (2) doing context diff.
+         *   AND
+         *   (3) there is no difference for the node itself.
+         *
+         * this means we are only printing the node for the comment. so just
+         * print "{ ... }" to represent the subtree like JUNOS
+         * "show | compare". any difference in the subtree will be handled
+         * later by the recursion into it.
+         *
+         * in this case also set is_leaf_typeless to true to prevent a
+         * dangling "}\n" from being printed at the end of this function.
+         */
         printf(" { ... }\n");
         is_leaf_typeless = true;
       } else {
@@ -443,6 +529,10 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
       cur_path.pop_back();
     }
     if (!orig_cdiff || pfx_diff != PFX_DIFF_NONE.c_str()) {
+      /* not context diff OR there is a difference => print closing '}'
+       * if necessary. also note the exception above where is_leaf_typeless
+       * is set to true to prevent this.
+       */
       if (!is_leaf_typeless) {
         _diff_print_indent(cfg1, cfg2, level, pfx_diff);
         printf("}\n");
@@ -484,9 +574,15 @@ _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
   if (context_diff) {
     if (cfg1 == cfg2) {
-      // nothing to do for context diff
+      /* nothing to do for context diff so stop the recursion. this also
+       * means that during the recursion cfg1 and cfg2 must be different
+       * if doing context diff.
+       */
       return;
     }
+    /* when doing context diff, the display indentation level always starts
+     * at 0.
+     */
     level = 0;
   }
 
