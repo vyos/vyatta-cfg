@@ -22,6 +22,7 @@
 namespace cnode {
 
 void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
+                   vector<string>& cur_path,
                    bool show_def = false, bool hide_secret = false,
                    bool context_diff = false);
 void show_cfg(const CfgNode& cfg, bool show_def = false,

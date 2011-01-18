@@ -391,7 +391,9 @@ showCfg(Cstore& cstore, const vector<string>& args)
       // just show the working config (no diff)
       cnode::show_cfg(wroot, op_show_show_defaults, op_show_hide_secrets);
     } else {
-      cnode::show_cfg_diff(aroot, wroot, op_show_show_defaults,
+      vector<string> cur_path;
+      cstore.getEditLevel(cur_path);
+      cnode::show_cfg_diff(aroot, wroot, cur_path, op_show_show_defaults,
                            op_show_hide_secrets, op_show_context_diff);
     }
   }

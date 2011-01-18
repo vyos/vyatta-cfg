@@ -820,7 +820,8 @@ _print_cmds_list(const char *op, vector<vector<string> >& list)
 
 ////// algorithms
 void
-cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
+cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
+                     vector<string>& cur_path, bool show_def,
                      bool hide_secret, bool context_diff)
 {
   if (cfg1.isInvalid() || cfg2.isInvalid()) {
@@ -832,14 +833,14 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
     printf("Configuration under specified path is empty\n");
     return;
   }
-  vector<string> cur_path;
   _show_diff(&cfg1, &cfg2, -1, cur_path, show_def, hide_secret, context_diff);
 }
 
 void
 cnode::show_cfg(const CfgNode& cfg, bool show_def, bool hide_secret)
 {
-  show_cfg_diff(cfg, cfg, show_def, hide_secret);
+  vector<string> cur_path;
+  show_cfg_diff(cfg, cfg, cur_path, show_def, hide_secret);
 }
 
 void
