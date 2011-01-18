@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.76) unstable; urgency=low
+
+  * remove compiler warnings
+  * initial implementation of context diff
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 18 Jan 2011 13:36:29 -0800
+
 vyatta-cfg (0.18.75) unstable; urgency=low
 
   [ An-Cheng Huang ]
