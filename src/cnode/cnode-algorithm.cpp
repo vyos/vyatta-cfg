@@ -36,8 +36,9 @@ static const string PFX_DIFF_NULL = "";
 
 ////// static (internal) functions
 static void
-_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level, bool show_def,
-           bool hide_secret);
+_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
+           vector<string>& cur_path, bool show_def,
+           bool hide_secret, bool context_diff);
 
 static void
 _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
@@ -212,7 +213,18 @@ _diff_print_indent(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 }
 
 static void
-_diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level)
+_diff_print_context(vector<string>& cur_path)
+{
+  printf("[edit");
+  for (size_t i = 0; i < cur_path.size(); i++) {
+    printf(" %s", cur_path[i].c_str());
+  }
+  printf("]\n");
+}
+
+static bool
+_diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
+                    vector<string>& cur_path, bool context_diff)
 {
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   string comment = "";
@@ -246,15 +258,25 @@ _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level)
   }
   if (comment == "") {
     // no comment
-    return;
+    return false;
   }
-  _diff_print_indent(cfg1, cfg2, level, pfx_diff);
-  printf("/* %s */\n", comment.c_str());
+  if (!context_diff || (pfx_diff != PFX_DIFF_NONE.c_str()
+                        && pfx_diff != PFX_DIFF_NULL.c_str())) {
+    if (context_diff) {
+      _diff_print_context(cur_path);
+    }
+    _diff_print_indent(cfg1, cfg2, level, pfx_diff);
+    printf("/* %s */\n", comment.c_str());
+    return true;
+  } else {
+    return false;
+  }
 }
 
 static bool
 _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                          bool show_def, bool hide_secret)
+                          vector<string>& cur_path, bool show_def,
+                          bool hide_secret, bool context_diff)
 {
   if ((cfg1 && !cfg1->isLeaf()) || (cfg2 && !cfg2->isLeaf())) {
     // not a leaf node
@@ -275,28 +297,45 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     }
   }
 
-  _diff_print_comment(cfg1, cfg2, level);
+  bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, context_diff);
+  if (cprint) {
+    context_diff = false;
+  }
   if (cfg->isMulti()) {
     // multi-value node
     if (force_pfx_diff) {
       // simple case: just use the same diff prefix for all values
-      const vector<string>& vvec = cfg->getValues();
-      for (size_t i = 0; i < vvec.size(); i++) {
-        _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
-        printf("%s ", cfg->getName().c_str());
-        _print_value_str(cfg->getName(), vvec[i].c_str(), hide_secret);
-        printf("\n");
+      if (!cprint && context_diff) {
+        _diff_print_context(cur_path);
+      }
+      if (!context_diff || force_pfx_diff != PFX_DIFF_NULL.c_str()) {
+        const vector<string>& vvec = cfg->getValues();
+        for (size_t i = 0; i < vvec.size(); i++) {
+          _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
+          printf("%s ", cfg->getName().c_str());
+          _print_value_str(cfg->getName(), vvec[i].c_str(), hide_secret);
+          printf("\n");
+        }
       }
     } else {
       // need to actually do a diff.
       vector<string> values;
       vector<const char *> pfxs;
-      _cmp_multi_values(cfg1, cfg2, values, pfxs);
-      for (size_t i = 0; i < values.size(); i++) {
-        _diff_print_indent(cfg1, cfg2, level, pfxs[i]);
-        printf("%s ", cfg->getName().c_str());
-        _print_value_str(cfg->getName(), values[i].c_str(), hide_secret);
-        printf("\n");
+      bool changed = _cmp_multi_values(cfg1, cfg2, values, pfxs);
+      if (!context_diff || changed) {
+        for (size_t i = 0; i < values.size(); i++) {
+          if (context_diff && pfxs[i] == PFX_DIFF_NONE.c_str()) {
+            continue;
+          }
+          if (!cprint && context_diff) {
+            _diff_print_context(cur_path);
+            cprint = true;
+          }
+          _diff_print_indent(cfg1, cfg2, level, pfxs[i]);
+          printf("%s ", cfg->getName().c_str());
+          _print_value_str(cfg->getName(), values[i].c_str(), hide_secret);
+          printf("\n");
+        }
       }
     }
   } else {
@@ -312,10 +351,17 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
           force_pfx_diff = PFX_DIFF_UPD.c_str();
         }
       }
-      _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
-      printf("%s ", cfg->getName().c_str());
-      _print_value_str(cfg->getName(), val.c_str(), hide_secret);
-      printf("\n");
+      bool changed = (force_pfx_diff != PFX_DIFF_NONE.c_str()
+                      && force_pfx_diff != PFX_DIFF_NULL.c_str());
+      if (!context_diff || changed) {
+        if (!cprint && context_diff) {
+          _diff_print_context(cur_path);
+        }
+        _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
+        printf("%s ", cfg->getName().c_str());
+        _print_value_str(cfg->getName(), val.c_str(), hide_secret);
+        printf("\n");
+      }
     }
   }
 
@@ -324,8 +370,10 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void 
 _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                 bool show_def, bool hide_secret)
+                 vector<string>& cur_path, bool show_def,
+                 bool hide_secret, bool context_diff)
 {
+  bool orig_cdiff = context_diff;
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   if (!cfg1) {
     pfx_diff = PFX_DIFF_ADD.c_str();
@@ -349,37 +397,64 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
    *   (3) has a "name".
    */
   bool print_this = (not_tag_node && level >= 0 && name.size() > 0);
+  int next_level = level + 1;
   if (print_this) {
-    _diff_print_comment(cfg1, cfg2, level);
-    _diff_print_indent(cfg1, cfg2, level, pfx_diff);
-    if (is_value) {
-      // at tag value
-      printf("%s %s", name.c_str(), value.c_str());
-    } else {
-      // at intermediate node
-      printf("%s", name.c_str());
+    bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, orig_cdiff);
+    if (orig_cdiff && pfx_diff != PFX_DIFF_NONE.c_str()) {
+      context_diff = false;
     }
-    printf("%s\n", (is_leaf_typeless ? "" : " {"));
+    if (cprint || !orig_cdiff || pfx_diff != PFX_DIFF_NONE.c_str()) {
+      if (!cprint && orig_cdiff) {
+        _diff_print_context(cur_path);
+      }
+      _diff_print_indent(cfg1, cfg2, level, pfx_diff);
+      if (is_value) {
+        // at tag value
+        printf("%s %s", name.c_str(), value.c_str());
+      } else {
+        // at intermediate node
+        printf("%s", name.c_str());
+      }
+      if (cprint && pfx_diff == PFX_DIFF_NONE.c_str()) {
+        printf(" { ... }\n");
+        is_leaf_typeless = true;
+      } else {
+        printf("%s\n", (is_leaf_typeless ? "" : " {"));
+      }
+    }
+
+    cur_path.push_back(name);
+    if (is_value) {
+      cur_path.push_back(value);
+    }
+  } else {
+    next_level = (level >= 0 ? level : 0);
   }
 
   for (size_t i = 0; i < rcnodes1.size(); i++) {
-    int next_level = level + 1;
-    if (!print_this) {
-      next_level = (level >= 0 ? level : 0);
-    }
-    _show_diff(rcnodes1[i], rcnodes2[i], next_level, show_def, hide_secret);
+    _show_diff(rcnodes1[i], rcnodes2[i], next_level, cur_path,
+               show_def, hide_secret, context_diff);
   }
 
   // finish printing "this" node if necessary
-  if (print_this && !is_leaf_typeless) {
-    _diff_print_indent(cfg1, cfg2, level, pfx_diff);
-    printf("}\n");
+  if (print_this) {
+    cur_path.pop_back();
+    if (is_value) {
+      cur_path.pop_back();
+    }
+    if (!orig_cdiff || pfx_diff != PFX_DIFF_NONE.c_str()) {
+      if (!is_leaf_typeless) {
+        _diff_print_indent(cfg1, cfg2, level, pfx_diff);
+        printf("}\n");
+      }
+    }
   }
 }
 
 static void
-_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level, bool show_def,
-           bool hide_secret)
+_show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
+           vector<string>& cur_path, bool show_def,
+           bool hide_secret, bool context_diff)
 {
   // if doesn't exist, treat as NULL
   if (cfg1 && !cfg1->exists()) {
@@ -407,13 +482,23 @@ _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level, bool show_def,
     exit(1);
   }
 
+  if (context_diff) {
+    if (cfg1 == cfg2) {
+      // nothing to do for context diff
+      return;
+    }
+    level = 0;
+  }
+
   if (_diff_check_and_show_leaf(cfg1, cfg2, (level >= 0 ? level : 0),
-                                show_def, hide_secret)) {
+                                cur_path, show_def, hide_secret,
+                                context_diff)) {
     // leaf node has been shown. done.
     return;
   } else {
     // intermediate node, tag node, or tag value
-    _diff_show_other(cfg1, cfg2, level, show_def, hide_secret);
+    _diff_show_other(cfg1, cfg2, level, cur_path, show_def, hide_secret,
+                     context_diff);
   }
 }
 
@@ -640,7 +725,7 @@ _print_cmds_list(const char *op, vector<vector<string> >& list)
 ////// algorithms
 void
 cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
-                     bool hide_secret)
+                     bool hide_secret, bool context_diff)
 {
   if (cfg1.isInvalid() || cfg2.isInvalid()) {
     printf("Specified configuration path is not valid\n");
@@ -651,7 +736,8 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
     printf("Configuration under specified path is empty\n");
     return;
   }
-  _show_diff(&cfg1, &cfg2, -1, show_def, hide_secret);
+  vector<string> cur_path;
+  _show_diff(&cfg1, &cfg2, -1, cur_path, show_def, hide_secret, context_diff);
 }
 
 void

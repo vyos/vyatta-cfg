@@ -56,6 +56,7 @@ int op_show_active_only = 0;
 int op_show_show_defaults = 0;
 int op_show_hide_secrets = 0;
 int op_show_working_only = 0;
+int op_show_context_diff = 0;
 
 typedef void (*OpFuncT)(Cstore& cstore, const vector<string>& args);
 
@@ -391,7 +392,7 @@ showCfg(Cstore& cstore, const vector<string>& args)
       cnode::show_cfg(wroot, op_show_show_defaults, op_show_hide_secrets);
     } else {
       cnode::show_cfg_diff(aroot, wroot, op_show_show_defaults,
-                           op_show_hide_secrets);
+                           op_show_hide_secrets, op_show_context_diff);
     }
   }
 }
@@ -464,6 +465,7 @@ struct option options[] = {
   {"show-show-defaults", no_argument, &op_show_show_defaults, 1},
   {"show-hide-secrets", no_argument, &op_show_hide_secrets, 1},
   {"show-working-only", no_argument, &op_show_working_only, 1},
+  {"show-context-diff", no_argument, &op_show_context_diff, 1},
   {NULL, 0, NULL, 0}
 };
 

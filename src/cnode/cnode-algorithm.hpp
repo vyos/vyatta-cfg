@@ -21,9 +21,11 @@
 
 namespace cnode {
 
-void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2, bool show_def,
-                   bool hide_secret);
-void show_cfg(const CfgNode& cfg, bool show_def, bool hide_secret);
+void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
+                   bool show_def = false, bool hide_secret = false,
+                   bool context_diff = false);
+void show_cfg(const CfgNode& cfg, bool show_def = false,
+              bool hide_secret = false);
 
 void show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2);
 void show_cmds(const CfgNode& cfg);
