@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino11) unstable; urgency=low
+
+  * fix for bug 6690
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 17 Jan 2011 19:30:39 -0800
+
 vyatta-cfg (0.18.73+mendocino10) unstable; urgency=low
 
   * remove compiler warnings
