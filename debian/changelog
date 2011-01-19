@@ -1,3 +1,11 @@
+vyatta-cfg (0.18.77) unstable; urgency=low
+
+  * add comments for context diff code
+  * have caller handle edit level for context diff
+  * show single context for consecutive nodes at the same level.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 18 Jan 2011 18:48:12 -0800
+
 vyatta-cfg (0.18.76) unstable; urgency=low
 
   * remove compiler warnings
