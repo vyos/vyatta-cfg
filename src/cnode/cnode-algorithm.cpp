@@ -37,8 +37,8 @@ static const string PFX_DIFF_NULL = "";
 ////// static (internal) functions
 static void
 _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-           vector<string>& cur_path, bool show_def,
-           bool hide_secret, bool context_diff);
+           vector<string>& cur_path, vector<string>& last_ctx,
+           bool show_def, bool hide_secret, bool context_diff);
 
 static void
 _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
@@ -216,8 +216,13 @@ _diff_print_indent(const CfgNode *cfg1, const CfgNode *cfg2, int level,
  * like in JUNOS "show | compare".
  */
 static void
-_diff_print_context(vector<string>& cur_path)
+_diff_print_context(vector<string>& cur_path, vector<string>& last_ctx)
 {
+  if (last_ctx == cur_path) {
+    // don't repeat the context if it's still the same as the last one
+    return;
+  }
+  last_ctx = cur_path;
   printf("[edit");
   for (size_t i = 0; i < cur_path.size(); i++) {
     printf(" %s", cur_path[i].c_str());
@@ -239,7 +244,8 @@ _diff_print_context(vector<string>& cur_path)
  */
 static bool
 _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                    vector<string>& cur_path, bool context_diff)
+                    vector<string>& cur_path, vector<string>& last_ctx,
+                    bool context_diff)
 {
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   string comment = "";
@@ -284,7 +290,7 @@ _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
                         && pfx_diff != PFX_DIFF_NULL.c_str())) {
     if (context_diff) {
       // print context first
-      _diff_print_context(cur_path);
+      _diff_print_context(cur_path, last_ctx);
     }
     _diff_print_indent(cfg1, cfg2, level, pfx_diff);
     printf("/* %s */\n", comment.c_str());
@@ -296,8 +302,8 @@ _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static bool
 _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                          vector<string>& cur_path, bool show_def,
-                          bool hide_secret, bool context_diff)
+                          vector<string>& cur_path, vector<string>& last_ctx,
+                          bool show_def, bool hide_secret, bool context_diff)
 {
   if ((cfg1 && !cfg1->isLeaf()) || (cfg2 && !cfg2->isLeaf())) {
     // not a leaf node
@@ -318,7 +324,8 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     }
   }
 
-  bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, context_diff);
+  bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, last_ctx,
+                                    context_diff);
   if (cprint) {
     /* when doing context diff, normally we only show the node if there is a
      * difference. however, if something was printed for comment, the node
@@ -335,7 +342,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
         /* if nothing was printed for comment and we're doing context diff,
          * then context hasn't been displayed yet. so print it first.
          */
-        _diff_print_context(cur_path);
+        _diff_print_context(cur_path, last_ctx);
       }
       if (!context_diff || force_pfx_diff != PFX_DIFF_NULL.c_str()) {
         // not context diff OR there is a difference => print the node
@@ -366,7 +373,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
              * set cprint to true so that later iterations won't print it
              * again.
              */
-            _diff_print_context(cur_path);
+            _diff_print_context(cur_path, last_ctx);
             cprint = true;
           }
           _diff_print_indent(cfg1, cfg2, level, pfxs[i]);
@@ -397,7 +404,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
           /* if nothing was printed for comment and we're doing context diff,
            * then context hasn't been displayed yet. so print it first.
            */
-          _diff_print_context(cur_path);
+          _diff_print_context(cur_path, last_ctx);
         }
         _diff_print_indent(cfg1, cfg2, level, force_pfx_diff);
         printf("%s ", cfg->getName().c_str());
@@ -412,8 +419,8 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void 
 _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                 vector<string>& cur_path, bool show_def,
-                 bool hide_secret, bool context_diff)
+                 vector<string>& cur_path, vector<string>& last_ctx,
+                 bool show_def, bool hide_secret, bool context_diff)
 {
   bool orig_cdiff = context_diff;
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
@@ -441,7 +448,8 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   bool print_this = (not_tag_node && level >= 0 && name.size() > 0);
   int next_level = level + 1;
   if (print_this) {
-    bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, orig_cdiff);
+    bool cprint = _diff_print_comment(cfg1, cfg2, level, cur_path, last_ctx,
+                                      orig_cdiff);
     if (orig_cdiff && pfx_diff != PFX_DIFF_NONE.c_str()) {
       /* note:
        *   orig_cdiff is the original value of context_diff.
@@ -476,7 +484,7 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
         /* if nothing was printed for comment and we're doing context diff,
          * then context hasn't been displayed yet. so print it first.
          */
-        _diff_print_context(cur_path);
+        _diff_print_context(cur_path, last_ctx);
       }
       _diff_print_indent(cfg1, cfg2, level, pfx_diff);
       if (is_value) {
@@ -518,7 +526,7 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   }
 
   for (size_t i = 0; i < rcnodes1.size(); i++) {
-    _show_diff(rcnodes1[i], rcnodes2[i], next_level, cur_path,
+    _show_diff(rcnodes1[i], rcnodes2[i], next_level, cur_path, last_ctx,
                show_def, hide_secret, context_diff);
   }
 
@@ -543,8 +551,8 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void
 _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-           vector<string>& cur_path, bool show_def,
-           bool hide_secret, bool context_diff)
+           vector<string>& cur_path, vector<string>& last_ctx,
+           bool show_def, bool hide_secret, bool context_diff)
 {
   // if doesn't exist, treat as NULL
   if (cfg1 && !cfg1->exists()) {
@@ -587,14 +595,14 @@ _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   }
 
   if (_diff_check_and_show_leaf(cfg1, cfg2, (level >= 0 ? level : 0),
-                                cur_path, show_def, hide_secret,
+                                cur_path, last_ctx, show_def, hide_secret,
                                 context_diff)) {
     // leaf node has been shown. done.
     return;
   } else {
     // intermediate node, tag node, or tag value
-    _diff_show_other(cfg1, cfg2, level, cur_path, show_def, hide_secret,
-                     context_diff);
+    _diff_show_other(cfg1, cfg2, level, cur_path, last_ctx, show_def,
+                     hide_secret, context_diff);
   }
 }
 
@@ -833,7 +841,10 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
     printf("Configuration under specified path is empty\n");
     return;
   }
-  _show_diff(&cfg1, &cfg2, -1, cur_path, show_def, hide_secret, context_diff);
+  // use an invalid value for initial last_ctx
+  vector<string> last_ctx(1, "");
+  _show_diff(&cfg1, &cfg2, -1, cur_path, last_ctx, show_def, hide_secret,
+             context_diff);
 }
 
 void
