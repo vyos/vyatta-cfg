@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.78) unstable; urgency=low
+
+  * export config output algorithms through shell API
+  * add comments for showConfig
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 20 Jan 2011 11:29:49 -0800
+
 vyatta-cfg (0.18.77) unstable; urgency=low
 
   * add comments for context diff code
