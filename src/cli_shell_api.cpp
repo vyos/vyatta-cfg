@@ -57,6 +57,9 @@ int op_show_show_defaults = 0;
 int op_show_hide_secrets = 0;
 int op_show_working_only = 0;
 int op_show_context_diff = 0;
+int op_show_commands = 0;
+char *op_show_cfg1 = NULL;
+char *op_show_cfg2 = NULL;
 
 typedef void (*OpFuncT)(Cstore& cstore, const vector<string>& args);
 
@@ -400,6 +403,28 @@ showCfg(Cstore& cstore, const vector<string>& args)
 }
 
 static void
+showConfig(Cstore& cstore, const vector<string>& args)
+{
+  string cfg1 = cnode::ACTIVE_CFG;
+  string cfg2 = cnode::WORKING_CFG;
+
+  if (op_show_active_only) {
+    cfg2 = cnode::ACTIVE_CFG;
+  } else if (op_show_working_only) {
+    cfg1 = cnode::WORKING_CFG;
+  } else if (op_show_cfg1 && op_show_cfg2) {
+    cfg1 = op_show_cfg1;
+    cfg2 = op_show_cfg2;
+  } else {
+    // default
+  }
+
+  cnode::showConfig(cfg1, cfg2, args, op_show_show_defaults,
+                    op_show_hide_secrets, op_show_context_diff,
+                    op_show_commands);
+}
+
+static void
 loadFile(Cstore& cstore, const vector<string>& args)
 {
   if (!cstore.loadFile(args[0].c_str())) {
@@ -451,6 +476,7 @@ static OpT ops[] = {
   OP(validateTmplValPath, -1, NULL, 1, "Must specify config path", false),
 
   OP(showCfg, -1, NULL, -1, NULL, true),
+  OP(showConfig, -1, NULL, -1, NULL, true),
   OP(loadFile, 1, "Must specify config file", -1, NULL, false),
 
   {NULL, -1, NULL, -1, NULL, NULL, false}
@@ -462,12 +488,20 @@ static OpT ops[] = {
 #define OP_use_edit    ops[op_idx].op_use_edit
 #define OP_func        ops[op_idx].op_func
 
+enum {
+  SHOW_CFG1 = 1,
+  SHOW_CFG2
+};
+
 struct option options[] = {
   {"show-active-only", no_argument, &op_show_active_only, 1},
   {"show-show-defaults", no_argument, &op_show_show_defaults, 1},
   {"show-hide-secrets", no_argument, &op_show_hide_secrets, 1},
   {"show-working-only", no_argument, &op_show_working_only, 1},
   {"show-context-diff", no_argument, &op_show_context_diff, 1},
+  {"show-commands", no_argument, &op_show_commands, 1},
+  {"show-cfg1", required_argument, NULL, SHOW_CFG1},
+  {"show-cfg2", required_argument, NULL, SHOW_CFG2},
   {NULL, 0, NULL, 0}
 };
 
@@ -477,7 +511,16 @@ main(int argc, char **argv)
   // handle options first
   int c = 0;
   while ((c = getopt_long(argc, argv, "", options, NULL)) != -1) {
-    // nothing for now
+    switch (c) {
+      case SHOW_CFG1:
+        op_show_cfg1 = strdup(optarg);
+        break;
+      case SHOW_CFG2:
+        op_show_cfg2 = strdup(optarg);
+        break;
+      default:
+        break;
+    }
   }
   int nargs = argc - optind - 1;
   char *oname = argv[optind];

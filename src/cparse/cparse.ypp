@@ -215,3 +215,13 @@ cparse::parse_file(FILE *fin, Cstore& cs)
   return cur_parent;
 }
 
+CfgNode *
+cparse::parse_file(const char *fname, Cstore& cs)
+{
+  FILE *fin = fopen(fname, "r");
+  if (!fin) {
+    return NULL;
+  }
+  return parse_file(fin, cs);
+}
+

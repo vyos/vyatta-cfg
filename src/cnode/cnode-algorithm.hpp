@@ -38,6 +38,14 @@ void get_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2,
 void get_cmds(const CfgNode& cfg, vector<vector<string> >& set_list,
               vector<vector<string> >& com_list);
 
+extern const string ACTIVE_CFG;
+extern const string WORKING_CFG;
+
+void showConfig(const string& cfg1, const string& cfg2,
+                const vector<string>& path, bool show_def = false,
+                bool hide_secret = false, bool context_diff = false,
+                bool show_cmds = false);
+
 } // namespace cnode
 
 #endif /* _CNODE_ALGORITHM_HPP_ */

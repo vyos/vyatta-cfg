@@ -17,9 +17,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <tr1/memory>
 
 #include <cstore/cstore.hpp>
 #include <cnode/cnode.hpp>
+#include <cparse/cparse.hpp>
 #include <cnode/cnode-algorithm.hpp>
 
 using namespace std;
@@ -33,6 +35,8 @@ static const string PFX_DIFF_UPD = ">"; // changed
 static const string PFX_DIFF_NONE = " ";
 static const string PFX_DIFF_NULL = "";
 
+const string cnode::ACTIVE_CFG = "@ACTIVE";
+const string cnode::WORKING_CFG = "@WORKING";
 
 ////// static (internal) functions
 static void
@@ -891,5 +895,60 @@ cnode::get_cmds(const CfgNode& cfg, vector<vector<string> >& set_list,
   vector<string> cur_path;
   vector<vector<string> > del_list;
   _get_cmds_diff(&cfg, &cfg, cur_path, del_list, set_list, com_list);
+}
+
+void
+cnode::showConfig(const string& cfg1, const string& cfg2,
+                  const vector<string>& path, bool show_def, bool hide_secret,
+                  bool context_diff, bool show_cmds)
+{
+  tr1::shared_ptr<CfgNode> aroot, wroot, croot1, croot2;
+  tr1::shared_ptr<Cstore> cstore;
+  vector<string> rpath(path);
+  vector<string> cur_path;
+
+  if ((cfg1 == ACTIVE_CFG || cfg1 == WORKING_CFG)
+      && (cfg2 == ACTIVE_CFG || cfg2 == WORKING_CFG)) {
+    // active/working config only => use edit level and path
+    cstore.reset(Cstore::createCstore(true));
+    cstore->getEditLevel(cur_path);
+  } else {
+    // at least one config file => don't use edit level and path
+    cstore.reset(Cstore::createCstore(false));
+    rpath.clear();
+  }
+  if (cfg1 == ACTIVE_CFG || cfg2 == ACTIVE_CFG) {
+    aroot.reset(new CfgNode(*cstore, rpath, true, true));
+  }
+  if (cfg1 == WORKING_CFG || cfg2 == WORKING_CFG) {
+    // note: if there is no config session, this will abort
+    wroot.reset(new CfgNode(*cstore, rpath, false, true));
+  }
+
+  if (cfg1 == ACTIVE_CFG) {
+    croot1 = aroot;
+  } else if (cfg1 == WORKING_CFG) {
+    croot1 = wroot;
+  } else {
+    croot1.reset(cparse::parse_file(cfg1.c_str(), *cstore));
+  }
+  if (cfg2 == ACTIVE_CFG) {
+    croot2 = aroot;
+  } else if (cfg2 == WORKING_CFG) {
+    croot2 = wroot;
+  } else {
+    croot2.reset(cparse::parse_file(cfg2.c_str(), *cstore));
+  }
+  if (!croot1.get() || !croot2.get()) {
+    printf("Cannot parse specified config file(s)\n");
+    return;
+  }
+
+  if (show_cmds) {
+    show_cmds_diff(*croot1, *croot2);
+  } else {
+    show_cfg_diff(*croot1, *croot2, cur_path, show_def, hide_secret,
+                  context_diff);
+  }
 }
 
