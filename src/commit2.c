@@ -128,7 +128,7 @@ usage(void)
   printf("\t-c\t\tdump node coverage and execution times\n");
   printf("\t-o\t\tdisable partial commit\n");
   printf("\t-f\t\tfull iteration over configuration on commit check\n");
-  printf("\t-b\t\tbreak on each priority node (debug mode)\n");
+  printf("\t-b [priority]\tbreak at priority node (debug mode)\n");
   printf("\t-r\t\tdisable run hook script on finishing commit\n");
   printf("\t-x\t\tdisable new print feature\n");
   printf("\t-l\t\tforce commit through removal of commit lock\n");
@@ -148,6 +148,7 @@ main(int argc, char** argv)
   boolean disable_partial_commit = FALSE;
   boolean full_commit_check = FALSE;
   boolean break_priority = FALSE;
+  int     break_priority_node = -1;
   boolean disable_hook = FALSE;
   char   *commit_comment  = NULL;  
 
@@ -155,7 +156,7 @@ main(int argc, char** argv)
   g_type_init();
 
   //grab inputs
-  while ((ch = getopt(argc, argv, "xdpthsecoafbrlC:")) != -1) {
+  while ((ch = getopt(argc, argv, "xdpthsecoafb:rlC:")) != -1) {
     switch (ch) {
     case 'x':
       g_old_print_output = TRUE;
@@ -192,6 +193,7 @@ main(int argc, char** argv)
       full_commit_check = TRUE;
       break;
     case 'b':
+      break_priority_node = strtoul(optarg,NULL,10);
       break_priority = TRUE;
       break;
     case 'r':
@@ -300,19 +302,23 @@ main(int argc, char** argv)
     }
 
     if (break_priority) {
-      g_dump_trans = TRUE;
-      g_node_traverse(trans_child_node,
-		      G_PRE_ORDER,
-		      G_TRAVERSE_ALL,
-		      -1,
-		      (GNodeTraverseFunc)dump_func,
-		      (gpointer)NULL);
-      g_dump_trans = FALSE;
-      fprintf(out_stream,"Press any key to commit...\n");
-      
-      // Wait for single character 
-      char input = getchar(); 
-      input = input; //to fix stupid compilier warning
+      gpointer gp = ((GNode*)trans_child_node)->data;
+      unsigned long p = ((struct VyattaNode*)gp)->_config._priority;
+      if (p >= break_priority_node) {
+	g_dump_trans = TRUE;
+	g_node_traverse(trans_child_node,
+			G_PRE_ORDER,
+			G_TRAVERSE_ALL,
+			-1,
+			(GNodeTraverseFunc)dump_func,
+			(gpointer)NULL);
+	g_dump_trans = FALSE;
+	fprintf(out_stream,"Press any key to commit...\n");
+	
+	// Wait for single character 
+	char input = getchar(); 
+	input = input; //to fix stupid compilier warning
+      }
     }
 
     //complete() now requires a undisturbed copy of the trans_child_node tree
