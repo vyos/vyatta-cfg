@@ -402,6 +402,35 @@ showCfg(Cstore& cstore, const vector<string>& args)
   }
 }
 
+/* new "show" API providing superset of functionality of showCfg above.
+ * available command-line options (all are optional):
+ *   --show-cfg1 <cfg1> --show-cfg2 <cfg2>
+ *       specify the two configs to be diffed (must specify both)
+ *       <cfg1>: "@ACTIVE", "@WORKING", or config file name
+ *       <cfg2>: "@ACTIVE", "@WORKING", or config file name
+ *
+ *       if not specified, default is cfg1="@ACTIVE" and cfg2="@WORKING",
+ *       i.e., same as "traditional show"
+ *   --show-active-only
+ *       only show active config (i.e., cfg1="@ACTIVE" and cfg2="@ACTIVE")
+ *   --show-working-only
+ *       only show working config (i.e., cfg1="@WORKING" and cfg2="@WORKING")
+ *   --show-show-defaults
+ *       display "default" values
+ *   --show-hide-secrets
+ *       hide "secret" values when displaying
+ *   --show-context-diff
+ *       show "context diff" between two configs
+ *   --show-commands
+ *       show output in "commands"
+ *
+ * note that when neither cfg1 nor cfg2 specifies a config file, the "args"
+ * argument specifies the root path for the show output, and the "edit level"
+ * in the environment is used.
+ *
+ * on the other hand, if either cfg1 or cfg2 specifies a config file, then
+ * both "args" and "edit level" are ignored.
+ */
 static void
 showConfig(Cstore& cstore, const vector<string>& args)
 {
