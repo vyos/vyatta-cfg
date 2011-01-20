@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.79) unstable; urgency=low
+
+  * added a parameter to the break on priority group option:
+
+ -- Michael Larson <mike@vyatta.com>  Thu, 20 Jan 2011 15:43:43 -0800
+
 vyatta-cfg (0.18.78) unstable; urgency=low
 
   * export config output algorithms through shell API
