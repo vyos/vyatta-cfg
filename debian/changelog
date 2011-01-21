@@ -1,3 +1,14 @@
+vyatta-cfg (0.18.80) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * fix for bug 6690
+
+  [ Stig Thormodsrud ]
+  * Fix 6669: help strings for confirm and commit-confirm are not very
+    clear
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 20 Jan 2011 18:16:46 -0800
+
 vyatta-cfg (0.18.79) unstable; urgency=low
 
   * added a parameter to the break on priority group option:
