@@ -736,10 +736,10 @@ vyatta_config_complete ()
                            "set" \
                            "show" )
     _get_help_text_helps=( \
-      "Confirm prior commit" \
+      "Confirm prior commit-confirm" \
       "Add comment to this configuration element" \
       "Commit the current set of changes" \
-      "Commit the current set of changes with confirm" \
+      "Commit the current set of changes with 'confirm' required" \
       "Compare configuration revisions" \
       "Copy a configuration element" \
       "Delete a configuration element" \
