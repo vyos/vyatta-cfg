@@ -33,3 +33,6 @@ for bin in my_cli_bin my_cli_shell_api my_commit; do
   setcap cap_sys_admin=pe $sbindir/$bin
 done
 
+# handle renamed file (not automatically deleted since it was "conffile")
+rm -f /etc/bash_completion.d/20vyatta-cfg
+
