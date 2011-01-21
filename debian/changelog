@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino13) unstable; urgency=low
+
+  * correctly handle renamed file
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 20 Jan 2011 18:21:12 -0800
+
 vyatta-cfg (0.18.73+mendocino12) unstable; urgency=low
 
   * Fix 6669: help strings for confirm and commit-confirm are not very
