@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.73+mendocino12) unstable; urgency=low
+
+  * Fix 6669: help strings for confirm and commit-confirm are not very
+    clear
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 20 Jan 2011 16:54:37 -0800
+
 vyatta-cfg (0.18.73+mendocino11) unstable; urgency=low
 
   * fix for bug 6690
