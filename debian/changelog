@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino14) unstable; urgency=low
+
+  * Fix 6727: should have a friendlier message on rollback error.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 24 Jan 2011 16:03:46 -0800
+
 vyatta-cfg (0.18.73+mendocino13) unstable; urgency=low
 
   * correctly handle renamed file
