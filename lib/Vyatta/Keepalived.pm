@@ -30,6 +30,7 @@ our @EXPORT = qw(get_conf_file get_state_script get_state_file
                  start_daemon restart_daemon stop_daemon
                  vrrp_get_config list_vrrp_intf list_vrrp_group
                  list_vrrp_sync_group list_all_vrrp_sync_grps
+                 list_vrrp_sync_group_members
                  vrrp_get_primary_addr);
 use base qw(Exporter);
 
@@ -409,6 +410,22 @@ sub list_all_vrrp_sync_grps {
     }
   }
   return @sync_grps;
+}
+
+sub list_vrrp_sync_group_members {
+    my ($sync_group) = @_;
+    my @members = ();
+    my @vrrp_intfs = list_vrrp_intf();
+    foreach my $vrrp_intf (@vrrp_intfs) {
+    my @vrrp_groups = list_vrrp_group($vrrp_intf);
+    foreach my $vrrp_group (@vrrp_groups) {
+      my $sync_grp = list_vrrp_sync_group($vrrp_intf, $vrrp_group);
+      if (defined $sync_grp) {
+          push @members, 'vyatta-' . $vrrp_intf. '-' . $vrrp_group;
+      }
+    }
+  }
+  return @members;
 }
 
 1;
