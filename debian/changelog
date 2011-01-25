@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.73+mendocino15) unstable; urgency=low
+
+  * Fix 6501: "clear vrrp master interface <interface> group
+    <group]id>" command doesnt work with sync groups
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 24 Jan 2011 19:57:46 -0800
+
 vyatta-cfg (0.18.73+mendocino14) unstable; urgency=low
 
   * Fix 6727: should have a friendlier message on rollback error.
