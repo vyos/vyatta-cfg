@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.82) unstable; urgency=low
+
+  * Fix 6501: "clear vrrp master interface <interface> group
+    <group]id>" command doesnt work with sync groups
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 25 Jan 2011 11:15:43 -0800
+
 vyatta-cfg (0.18.81) unstable; urgency=low
 
   [ An-Cheng Huang ]
