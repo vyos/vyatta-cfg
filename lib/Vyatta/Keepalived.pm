@@ -413,14 +413,14 @@ sub list_all_vrrp_sync_grps {
 }
 
 sub list_vrrp_sync_group_members {
-    my ($sync_group) = @_;
+    my ($sync_grp_match) = @_;
     my @members = ();
     my @vrrp_intfs = list_vrrp_intf();
     foreach my $vrrp_intf (@vrrp_intfs) {
     my @vrrp_groups = list_vrrp_group($vrrp_intf);
     foreach my $vrrp_group (@vrrp_groups) {
       my $sync_grp = list_vrrp_sync_group($vrrp_intf, $vrrp_group);
-      if (defined $sync_grp) {
+      if (defined $sync_grp and $sync_grp eq $sync_grp_match) {
           push @members, 'vyatta-' . $vrrp_intf. '-' . $vrrp_group;
       }
     }
