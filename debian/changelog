@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.81) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * correctly handle renamed file
+
+  [ Stig Thormodsrud ]
+  * Fix 6727: should have a friendlier message on rollback error.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Mon, 24 Jan 2011 16:04:54 -0800
+
 vyatta-cfg (0.18.80) unstable; urgency=low
 
   [ An-Cheng Huang ]
