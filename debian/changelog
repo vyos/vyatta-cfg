@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino16) unstable; urgency=low
+
+  * Fix list_vrrp_sync_group_members() to just include requested group.
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Tue, 25 Jan 2011 14:36:22 -0800
+
 vyatta-cfg (0.18.73+mendocino15) unstable; urgency=low
 
   * Fix 6501: "clear vrrp master interface <interface> group
