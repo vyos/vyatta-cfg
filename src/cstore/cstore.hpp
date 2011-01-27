@@ -327,7 +327,6 @@ private:
   virtual void push_tmpl_path_tag() = 0;
   virtual string pop_tmpl_path() = 0;
   virtual void push_cfg_path(const string& path_comp) = 0;
-  virtual void push_cfg_path_val() = 0;
   virtual string pop_cfg_path() = 0;
   virtual void append_cfg_path(const vector<string>& path_comps) = 0;
   virtual void reset_paths() = 0;

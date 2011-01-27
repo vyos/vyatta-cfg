@@ -95,16 +95,20 @@ private:
     push_path(tmpl_path, new_comp);
   };
   void push_tmpl_path_tag() {
-    push_tmpl_path(C_TAG_NAME);
+    /* not using push_path => not "escaped".
+     * NOTE: this is the only interface that can push tmpl_path "unescaped".
+     *       this means the pop_tmpl_path() function potentially may return
+     *       incorrect value if used in combination with this function.
+     *       however, since current C_TAG_NAME doesn't contain any escape
+     *       sequences, this cannot happen for now.
+     */
+    tmpl_path /= C_TAG_NAME;
   };
   string pop_tmpl_path() {
     return pop_path(tmpl_path);
   };
   void push_cfg_path(const string& new_comp) {
     push_path(mutable_cfg_path, new_comp);
-  };
-  void push_cfg_path_val() {
-    push_cfg_path(C_VAL_NAME);
   };
   string pop_cfg_path() {
     return pop_path(mutable_cfg_path);

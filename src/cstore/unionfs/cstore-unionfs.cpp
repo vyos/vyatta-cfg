@@ -199,7 +199,11 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
     if ((val = getenv(C_ENV_EDIT_LEVEL.c_str()))) {
       mutable_cfg_path = val;
     }
-    if ((val = getenv(C_ENV_TMPL_LEVEL.c_str()))) {
+    if ((val = getenv(C_ENV_TMPL_LEVEL.c_str())) && val[0] && val[1]) {
+      /* no need to append root (i.e., "/"). level (if exists) always
+       * starts with '/', so only append it if it is at least two chars
+       * (i.e., it is not "/").
+       */
       tmpl_path /= val;
     }
   }
@@ -247,7 +251,8 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
   if ((val = getenv(C_ENV_EDIT_LEVEL.c_str()))) {
     mutable_cfg_path = val;
   }
-  if ((val = getenv(C_ENV_TMPL_LEVEL.c_str()))) {
+  if ((val = getenv(C_ENV_TMPL_LEVEL.c_str())) && val[0] && val[1]) {
+    // see comment in the other constructor
     tmpl_path /= val;
   }
 
@@ -416,10 +421,9 @@ UnionfsCstore::tmpl_node_exists()
 bool
 UnionfsCstore::tmpl_parse(vtw_def& def)
 {
-  push_tmpl_path(C_DEF_NAME);
-  bool ret = (b_fs_exists(tmpl_path) && b_fs_is_regular(tmpl_path)
-              && parse_def(&def, tmpl_path.file_string().c_str(), 0) == 0);
-  pop_tmpl_path();
+  b_fs::path tp = tmpl_path / C_DEF_NAME;
+  bool ret = (b_fs_exists(tp) && b_fs_is_regular(tp)
+              && parse_def(&def, tp.file_string().c_str(), 0) == 0);
   return ret;
 }
 
@@ -500,73 +504,66 @@ UnionfsCstore::get_all_child_node_names_impl(vector<string>& cnodes,
 bool
 UnionfsCstore::read_value_vec(vector<string>& vvec, bool active_cfg)
 {
-  push_cfg_path_val();
   b_fs::path vpath = (active_cfg ? get_active_path() : get_work_path());
-  bool ret = false;
-  do {
-    string ostr;
-    if (!read_whole_file(vpath, ostr)) {
-      break;
-    }
+  vpath /= C_VAL_NAME;
 
-    /* XXX original implementation used to remove a trailing '\n' after
-     *     a read. it was only necessary because it was adding a '\n' when
-     *     writing the file. don't remove anything now since we shouldn't
-     *     be writing it any more.
-     */
-    // separate values using newline as delimiter
-    size_t start_idx = 0, idx = 0;
-    for (; idx < ostr.size(); idx++) {
-      if (ostr[idx] == '\n') {
-        // got a value
-        vvec.push_back(ostr.substr(start_idx, (idx - start_idx)));
-        start_idx = idx + 1;
-      }
-    }
-    if (start_idx < ostr.size()) {
+  string ostr;
+  if (!read_whole_file(vpath, ostr)) {
+    return false;
+  }
+
+  /* XXX original implementation used to remove a trailing '\n' after
+   *     a read. it was only necessary because it was adding a '\n' when
+   *     writing the file. don't remove anything now since we shouldn't
+   *     be writing it any more.
+   */
+  // separate values using newline as delimiter
+  size_t start_idx = 0, idx = 0;
+  for (; idx < ostr.size(); idx++) {
+    if (ostr[idx] == '\n') {
+      // got a value
       vvec.push_back(ostr.substr(start_idx, (idx - start_idx)));
-    } else {
-      // last char is a newline => another empty value
-      vvec.push_back("");
+      start_idx = idx + 1;
     }
-    ret = true;
-  } while (0);
-  pop_cfg_path();
-  return ret;
+  }
+  if (start_idx < ostr.size()) {
+    vvec.push_back(ostr.substr(start_idx, (idx - start_idx)));
+  } else {
+    // last char is a newline => another empty value
+    vvec.push_back("");
+  }
+  return true;
 }
 
 bool
 UnionfsCstore::write_value_vec(const vector<string>& vvec, bool active_cfg)
 {
-  push_cfg_path_val();
-  bool ret = false;
   b_fs::path wp = (active_cfg ? get_active_path() : get_work_path());
-  do {
-    if (b_fs_exists(wp) && !b_fs_is_regular(wp)) {
-      // not a file
-      break;
-    }
+  wp /= C_VAL_NAME;
 
-    string ostr = "";
-    for (size_t i = 0; i < vvec.size(); i++) {
-      if (i > 0) {
-        // subsequent values require delimiter
-        ostr += "\n";
-      }
-      ostr += vvec[i];
-    }
-
-    if (!write_file(wp.file_string().c_str(), ostr)) {
-      break;
-    }
-    ret = true;
-  } while (0);
-  pop_cfg_path();
-  if (!ret) {
-    output_internal("failed to write node value [%s]\n",
+  if (b_fs_exists(wp) && !b_fs_is_regular(wp)) {
+    // not a file
+    output_internal("failed to write node value (file) [%s]\n",
                     wp.file_string().c_str());
+    return false;
   }
-  return ret;
+
+  string ostr = "";
+  for (size_t i = 0; i < vvec.size(); i++) {
+    if (i > 0) {
+      // subsequent values require delimiter
+      ostr += "\n";
+    }
+    ostr += vvec[i];
+  }
+
+  if (!write_file(wp.file_string().c_str(), ostr)) {
+    output_internal("failed to write node value (write) [%s]\n",
+                    wp.file_string().c_str());
+    return false;
+  }
+
+  return true;
 }
 
 bool
