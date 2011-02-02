@@ -2181,8 +2181,9 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
     if (tmpl_node_exists()) {
       // case (1). last component is "node".
       if (!tmpl_parse(def)) {
-        exit_internal("failed to parse tmpl [%s]\n",
-                      tmpl_path_to_str().c_str());
+        output_internal("failed to parse tmpl [%s]\n",
+                        tmpl_path_to_str().c_str());
+        break;
       }
       def.is_value = 0;
       ret = true;
@@ -2374,7 +2375,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
       for (size_t i = 0; i < ppath.size(); i++) {
         output_internal("  [%s]\n", ppath[i].c_str());
       }
-      exit_internal("failed to get tmpl during set. not validate first?\n");
+      output_internal("failed to get tmpl during set. not validate first?\n");
+      ret = false;
+      path_exists = false;
+      break;
     }
 
     // nop if this level already in working (including deactivated)
