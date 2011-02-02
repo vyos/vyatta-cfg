@@ -700,7 +700,7 @@ sub compareValueLists {
 
 sub outputError {
     my ($location,$msg) = @_;
-    print STDERR "_errloc_:[" . join(" ",@{$location}) . "]\n";
+    print STDERR "_errloc_:[ " . join(" ",@{$location}) . " ]\n";
     print STDERR $msg . "\n\n";
 }
 
