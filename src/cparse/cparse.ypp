@@ -151,7 +151,7 @@ tree:       node {
               add_node();
             } LEFTB {
               go_down();
-            } forest RIGHTB {
+            } forest comment RIGHTB {
               go_up();
             }
 ;
@@ -169,10 +169,10 @@ nodec:      NODE {
               nname = $1.str;
               ndeact = $1.deactivated;
             }
-          | COMMENT NODE {
+          | COMMENT comment NODE {
               ncomment = $1.str;
-              nname = $2.str;
-              ndeact = $2.deactivated;
+              nname = $3.str;
+              ndeact = $3.deactivated;
             }
 ;
 
