@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.73+mendocino18) unstable; urgency=low
+
+  * fix for bug 6791
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 09 Feb 2011 09:47:24 -0800
+
 vyatta-cfg (0.18.73+mendocino17) unstable; urgency=low
 
   * disable template abort
