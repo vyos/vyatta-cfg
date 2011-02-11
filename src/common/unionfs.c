@@ -132,13 +132,13 @@ This should allow a combined data/config tree
 char*
 get_config_path(GNode *node)
 {
-  char *buf;
-  buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
-  buf[0] = '/';
-  buf[1] = '\0';
   if (node == NULL) {
     return NULL;
   }
+
+  char buf[MAX_LENGTH_DIR_PATH];
+  buf[0] = '/';
+  buf[1] = '\0';
 
   GNode *n = node;
   while (G_NODE_IS_ROOT(n) != TRUE) {
@@ -167,7 +167,10 @@ get_config_path(GNode *node)
     }
     n = n->parent;
   }
-  return buf;
+
+  char *buf2 = malloc(strlen(buf)+1);
+  strcpy(buf2,buf);
+  return buf2;
 }
 
 /**
@@ -216,8 +219,13 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
     vn->_data._operation = op;
     vn->_data._disable_op = K_NO_DISABLE_OP;
     vn->_config._priority = LOWEST_PRIORITY;
-    vn->_data._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
-    sprintf(vn->_data._path,"%s",rel_data_path);
+    if (rel_data_path != NULL) {
+      vn->_data._path = (char*)malloc(strlen(rel_data_path)+1);
+      strcpy(vn->_data._path,rel_data_path);
+    }
+    else {
+      vn->_data._path = NULL;
+    }
     final_node = TRUE;
   }
   /*
@@ -266,10 +274,15 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 
     vn->_config._def = def;
     vn->_config._path = config_path;
-    char *tmp = malloc(sizeof(char)*MAX_LENGTH_DIR_PATH);
-    strcpy(tmp,rel_data_path);
+    char tmp[MAX_LENGTH_DIR_PATH];
+    tmp[0] = '\0';
+    if (rel_data_path != NULL && strlen(rel_data_path) > 0) {
+      strcpy(tmp,rel_data_path);
+    }
     strcat(tmp,"/");
-    vn->_data._path = tmp;
+
+    vn->_data._path = (char*)malloc(strlen(tmp)+1);
+    strcpy(vn->_data._path,tmp);
 
     //will stamp an embedded node as a value node
     if (G_NODE_IS_ROOT(node) == FALSE) {
@@ -402,7 +415,8 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 	}
       }
 
-      char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+      //      char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+      char *data_buf = malloc(strlen(dirp->d_name)+5);
       if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
 	struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
 	if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
@@ -530,7 +544,7 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
 	if (lstat(tmp_new_data_path,&s) != 0) {
 	  //create new node and insert...
 	  struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
-	  char *data_buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+	  char *data_buf = malloc(strlen(dirp_wo->d_name)+1);
 	  strcpy(data_buf,dirp_wo->d_name); 
 	  vn->_data._name = data_buf;
 	  vn->_data._value = FALSE;
@@ -957,12 +971,12 @@ copy_vyatta_node(struct VyattaNode* vn)
   struct VyattaNode *new_vn = calloc(1,sizeof(struct VyattaNode));
 
   if (vn->_data._name != NULL) {
-    new_vn->_data._name = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+    new_vn->_data._name = malloc(strlen(vn->_data._name)+1);
     strcpy(new_vn->_data._name,vn->_data._name);
   }
   new_vn->_data._value = vn->_data._value;
   if (vn->_data._path != NULL) {
-    new_vn->_data._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+    new_vn->_data._path = malloc(strlen(vn->_data._path)+1);
     strcpy(new_vn->_data._path,vn->_data._path);
   }
   new_vn->_data._operation = vn->_data._operation;
@@ -972,11 +986,11 @@ copy_vyatta_node(struct VyattaNode* vn)
   new_vn->_config._priority_extended = vn->_config._priority_extended;
   //  new_vn->_config._def = new_vn->_config._def; //cpy this?
   if (vn->_config._default != NULL) {
-    new_vn->_config._default = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+    new_vn->_config._default = malloc(strlen(vn->_config._default)+1);
     strcpy(new_vn->_config._default,vn->_config._default);
   }
   if (vn->_config._path != NULL) {
-    new_vn->_config._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+    new_vn->_config._path = malloc(strlen(vn->_config._path)+1);
     strcpy(new_vn->_config._path,vn->_config._path);
   }
   return new_vn;
@@ -1048,7 +1062,7 @@ get_term_data_values(GNode *node)
     data = (struct ValueData*)calloc(1, sizeof(struct ValueData));
     if ((tok_str_active == NULL || tok_str_active[0] == NULL) &&
 	(tok_str_new == NULL || tok_str_new[0] == NULL)) {
-      cp = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+      cp = malloc(sizeof(char));
       cp[0] = '\0';
       data->_state = ((struct VyattaNode*)node->parent->data)->_data._operation;
       g_datalist_set_data(&datalist, cp, data);
@@ -1112,27 +1126,35 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   }
   else {
     new_vn = vn;
-    strcat(new_vn->_data._path,"/value:");
+    char buf[MAX_LENGTH_DIR_PATH];
+    strcpy(buf,new_vn->_data._path);
+    
+    //    new_vn->_data._path = (char*)realloc(new_vn->_data._path,sizeof(new_vn->_data._path)+8);
+    strcat(buf,"/value:");
     if (vn_parent->_config._def.multi == FALSE) {
       char *tmp = (char*)g_quark_to_string(key_id); 
       char *slash = strchr(tmp,'/');
       if (slash == NULL) {
-	strcat(new_vn->_data._path,tmp);
+	strcat(buf,tmp);
       }
       else {
 	do { 	//escape '/' to %2F
-	  strncat(new_vn->_data._path,tmp,slash - tmp);
-	  strncat(new_vn->_data._path,"%2F",3);
+	  strncat(buf,tmp,slash - tmp);
+	  strncat(buf,"%2F",3);
 	  ++slash;
 	  tmp = slash;
 	} while ((slash = strchr(slash,'/')) != NULL);
-	strcat(new_vn->_data._path,tmp);
+	strcat(buf,tmp);
       }
     }
+    new_vn->_data._path = (char*)realloc(new_vn->_data._path,strlen(buf)+1);
+    strcpy(new_vn->_data._path,buf);
   }
   new_vn->_data._value = TRUE;
-  strcpy(new_vn->_data._name,(char*)g_quark_to_string(key_id));
-  new_vn->_config._path = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+  char *ttmp = (char*)g_quark_to_string(key_id);
+  new_vn->_data._name = realloc(new_vn->_data._name,strlen(ttmp)+1);
+  strcpy(new_vn->_data._name,ttmp);
+  new_vn->_config._path = malloc(strlen(vn_parent->_config._path)+10);
   sprintf(new_vn->_config._path,"%s/node.tag",vn_parent->_config._path);
 
     //let's set this nodes disable_op to its parent's value.
@@ -1306,6 +1328,7 @@ delete_func(GNode *node, gpointer data)
   //NEED TO PREVENT THE COMMAND BELOW FROM DELETING WHITEOUT FILES....
 
   if (IS_NOOP(((struct VyattaNode*)(node->data))->_data._operation)) {
+    free(command);
     return FALSE; //see if we can skip this node here
   }
 

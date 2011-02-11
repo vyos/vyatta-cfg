@@ -391,8 +391,8 @@ main(int argc, char** argv)
 
   set_in_commit(FALSE);
 
-  cleanup(config_data);
-  cleanup(trans_child_node);
+  //  cleanup(config_data);
+  //  cleanup(trans_child_node);
 
   if (g_debug) {
     printf("DONE\n");
@@ -459,7 +459,7 @@ execute_hook(const char* dir, const char* comment)
     if (strcmp(dirp->d_name, ".") != 0 && 
 	strcmp(dirp->d_name, "..") != 0) {
       
-      char *dirname = (char*)malloc(4096);
+      char *dirname = (char*)malloc(strlen(dirp->d_name)+1);
       strcpy(dirname,dirp->d_name);
       g_ptr_array_add (gparray, (gpointer) dirname);
     }
@@ -684,6 +684,7 @@ process_func(GNode *node, gpointer data)
 	else {
 	  char *p = process_script_path(d->_path);
 	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
+	  free(p);
 	}
 	//	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
 
@@ -718,6 +719,7 @@ process_func(GNode *node, gpointer data)
 	if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
 	  char *val = (char*)clind_unescape(d->_name);
 	  strcat(buf,val);
+	  free(val);
 	}
 	fprintf(out_stream,"%s\n",buf);
 	status = 1;
@@ -785,15 +787,19 @@ process_script_path(char* in)
     } while ((slash = strchr(slash,'/')) != NULL);
   }
   char *p = clind_unescape(path_buf);
-  char *ret = malloc(4096);
-  strcpy(ret,p); //copy back
+
+  char tmp2[MAX_LENGTH_DIR_PATH*sizeof(char)];
+
+  strcpy(tmp2,p); //copy back
   free(p);
   if (strncmp(ptr,"value:",6) == 0) {
     if (strlen(ptr)-6 > 0) {
-      strncat(ret,ptr+6,strlen(ptr)-6);
-      strcat(ret," ");
+      strncat(tmp2,ptr+6,strlen(ptr)-6);
+      strcat(tmp2," ");
     }
   }
+  char *ret = malloc(strlen(tmp2)+1);
+  strcpy(ret,tmp2);
   return ret;
 }
 
@@ -1486,14 +1492,18 @@ validate_func(GNode *node, gpointer data)
   //since this visits all working nodes, let's maintain a set of nodes to commit
   GSList *coll = (GSList*)result->_data;
   if (d->_path != NULL) {
-    char *buf = malloc(MAX_LENGTH_DIR_PATH*sizeof(char));
+
+    char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
     if (IS_DELETE(d->_operation)) {
       sprintf(buf,"- %s",d->_path);
       if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
 	char *val = (char*)clind_unescape(d->_name);
 	strcat(buf,val);
+	free(val);
       }
-      coll = g_slist_append(coll,buf);
+      char *tmp = malloc(strlen(buf)+1);
+      strcpy(tmp,buf);
+      coll = g_slist_append(coll,tmp);
       result->_data = (void*)coll;
     }
     else if (IS_SET_OR_CREATE(d->_operation)) {
@@ -1501,8 +1511,12 @@ validate_func(GNode *node, gpointer data)
       if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
 	char *val = (char*)clind_unescape(d->_name);
 	strcat(buf,val);
+	free(val);
       }
-      coll = g_slist_append(coll,buf);
+ 
+      char *tmp = malloc(strlen(buf)+1);
+      strcpy(tmp,buf);
+      coll = g_slist_append(coll,tmp);
       result->_data = (void*)coll;
     }
   }
@@ -1542,6 +1556,7 @@ validate_func(GNode *node, gpointer data)
       printf("commit2::process_func(): @ value: %s\n",(char*)val);
       syslog(LOG_DEBUG,"commit2::process_func(): @ value: %s",(char*)val);
     }
+
     set_at_string(val); //embedded multinode value
   }
   else {
@@ -1579,6 +1594,7 @@ validate_func(GNode *node, gpointer data)
     else {
       char *p = process_script_path(d->_path);
       status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
+      free(p);
     }
     unsetenv(ENV_DATA_PATH);
   }
@@ -1595,6 +1611,7 @@ validate_func(GNode *node, gpointer data)
     if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
       char *val = (char*)clind_unescape(d->_name);
       strcat(buf,val);
+      free(val);
     }
     fprintf(out_stream,"%s\n",buf);
     status = 1;
