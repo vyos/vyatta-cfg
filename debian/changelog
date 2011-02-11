@@ -1,3 +1,22 @@
+vyatta-cfg (0.18.84) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * rework/simplify path handling
+  * exclude change from merge
+
+  [ Michael Larson ]
+  * cosmetic fix to make error output to match format of other error
+    output statements.
+
+  [ An-Cheng Huang ]
+  * fix for bug 6791
+
+  [ Michael Larson ]
+  * Improve memory allocation (and freeing), so commit will support a
+    configuration booting with 6000 vpn tunnels (w/ 2 gigs ram).
+
+ -- Michael Larson <mike@vyatta.com>  Thu, 10 Feb 2011 21:12:17 -0800
+
 vyatta-cfg (0.18.83) unstable; urgency=low
 
   * Fix list_vrrp_sync_group_members() to just include requested group.
