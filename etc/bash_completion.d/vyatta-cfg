@@ -52,7 +52,7 @@ vyatta_cli_shell_api ()
     shift
   fi
   local outstr
-  if ! outstr=$(${vyatta_sbindir}/my_cli_shell_api "$@"); then
+  if ! outstr=$(${vyatta_sbindir}/my_cli_shell_api -- "$@"); then
     # display the error output (if any) and then fail
     if [ -n "$outstr" ]; then
       echo "$outstr"
@@ -88,15 +88,17 @@ done
 
 show ()
 {
+  local -a opts=()
   local -a args=()
   for arg in "$@"; do
     if [ "$arg" == "-all" ]; then
-      args+=('--show-show-defaults')
+      opts+=('--show-show-defaults')
     else
       args+=("$arg")
     fi
   done
-  cli-shell-api showCfg "${args[@]}" | eval "${VYATTA_PAGER:-cat}"
+  cli-shell-api "${opts[@]}" -- showCfg "${args[@]}" \
+    | eval "${VYATTA_PAGER:-cat}"
 }
 
 commit ()
