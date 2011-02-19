@@ -23,8 +23,8 @@
 #include <cli_cstore.h>
 #include <cnode/cnode.hpp>
 
-using namespace std;
 using namespace cnode;
+
 
 ////// constructors/destructors
 CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,

@@ -27,6 +27,8 @@
 #include <cnode/cnode-algorithm.hpp>
 #include <cparse/cparse.hpp>
 
+using namespace cstore;
+
 /* This program provides an API for shell scripts (e.g., snippets in
  * templates, standalone scripts, etc.) to access the CLI cstore library.
  * It is installed in "/opt/vyatta/sbin", but a symlink "/bin/cli-shell-api"

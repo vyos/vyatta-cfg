@@ -22,7 +22,7 @@
 #include <cli_cstore.h>
 #include <cstore/cstore-varref.hpp>
 
-using namespace std;
+using namespace cstore;
 
 ////// constructors/destructors
 Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)

@@ -9,6 +9,8 @@
 #include "cparse.hpp"
 #include "cparse_def.h"
 
+using namespace cparse;
+
 /* to enable tracing, define ENABLE_PARSER_TRACE. may also want to invoke
  * bison with "-v" (by changing Makefile.am).
  */
@@ -16,9 +18,6 @@
 #ifdef ENABLE_PARSER_TRACE
 #define YYDEBUG 1
 #endif // ENABLE_PARSER_TRACE
-
-using namespace std;
-using namespace cnode;
 
 // stuff from lex
 extern "C" {
@@ -42,7 +41,7 @@ static char *nval = NULL;
 
 // XXX optimize: use unordered_map with non-vector
 static map<vector<string>, CfgNode *> node_map;
-static Cstore *cstore = NULL;
+static Cstore *cstore_ = NULL;
 static CfgNode *cur_node = NULL;
 static CfgNode *cur_parent = NULL;
 static vector<CfgNode *> cur_path;
@@ -66,7 +65,7 @@ add_node()
         cur_node = onode;
       } else if (onode->isTag()) {
         // a new value for a "tag node"
-        cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+        cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore_);
         onode->addChildNode(cur_node);
       } else {
         /* a new value for a single-value node => invalid?
@@ -81,12 +80,12 @@ add_node()
     }
   } else {
     // new node
-    cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+    cur_node = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore_);
     CfgNode *mapped_node = cur_node;
     if (cur_node->isTag() && cur_node->isValue()) {
       // tag value => need to add the "tag node" on top
       // (need to force "tag" if the node is invalid => tag_if_invalid)
-      CfgNode *p = new CfgNode(pcomps, nname, NULL, NULL, ndeact, cstore,
+      CfgNode *p = new CfgNode(pcomps, nname, NULL, NULL, ndeact, cstore_,
                                true);
       p->addChildNode(cur_node);
       mapped_node = p;
@@ -192,7 +191,7 @@ cparse::parse_file(FILE *fin, Cstore& cs)
 
   // initial state
   cparse_set_in(fin);
-  cstore = &cs;
+  cstore_ = &cs;
   ndeact = 0;
   ncomment = NULL;
   nname = NULL;
@@ -202,7 +201,7 @@ cparse::parse_file(FILE *fin, Cstore& cs)
   pcomp_is_value.clear();
   cur_path.clear();
   cur_node = NULL;
-  cur_parent = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore);
+  cur_parent = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore_);
 
   if (cparse_parse() != 0) {
     // parsing failed

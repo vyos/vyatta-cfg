@@ -24,6 +24,8 @@
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 
+using namespace cstore;
+
 static int op_idx = -1;
 static const char *op_bin_name[] = {
   "my_set",

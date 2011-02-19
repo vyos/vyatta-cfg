@@ -29,6 +29,8 @@
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 
+namespace cstore { // begin namespace cstore
+
 namespace b_fs = boost::filesystem;
 
 class UnionfsCstore : public Cstore {
@@ -230,6 +232,8 @@ private:
     try { return b_fs::is_regular(path); } catch (...) { return false; }
   };
 };
+
+} // end namespace cstore
 
 #endif /* _CSTORE_UNIONFS_H_ */
 

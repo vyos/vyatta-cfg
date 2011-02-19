@@ -36,6 +36,7 @@
 #include <cnode/cnode-algorithm.hpp>
 #include <cparse/cparse.hpp>
 
+using namespace cstore;
 
 ////// constants
 //// node status

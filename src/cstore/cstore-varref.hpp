@@ -22,7 +22,7 @@
 
 #include <cstore/cstore.hpp>
 
-using namespace std;
+namespace cstore { // begin namespace cstore
 
 class Cstore::VarRef {
 public:
@@ -43,6 +43,8 @@ private:
   void process_ref(const vector<string>& ref_comps,
                    const vector<string>& cur_path_comps, vtw_type_e def_type);
 };
+
+} // end namespace cstore
 
 #endif /* _CSTORE_VARREF_H_ */
 

@@ -24,7 +24,6 @@
 #include <cparse/cparse.hpp>
 #include <cnode/cnode-algorithm.hpp>
 
-using namespace std;
 using namespace cnode;
 
 

@@ -22,6 +22,8 @@
 #include <cstore/cstore.hpp>
 #include <cstore/cstore-c.h>
 
+using namespace cstore;
+
 static void
 _get_str_vec(vector<string>& vec, const char *strs[], int num_strs)
 {

@@ -28,6 +28,8 @@
 
 #include <cstore/cstore.hpp>
 
+using namespace cstore;
+
 typedef SV STRVEC;
 typedef SV STRSTRMAP;
 

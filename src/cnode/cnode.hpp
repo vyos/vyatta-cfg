@@ -23,6 +23,8 @@
 
 namespace cnode {
 
+using namespace cstore;
+
 class CfgNode {
 public:
   CfgNode(vector<string>& path_comps, char *name, char *val, char *comment,

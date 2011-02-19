@@ -26,6 +26,7 @@
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
+using namespace cstore;
 
 ////// constants
 // environment vars defining root dirs

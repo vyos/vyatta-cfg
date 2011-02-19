@@ -45,6 +45,8 @@ extern "C" void* Perl_get_context(void)
 #define SAVE_PATHS save_paths(&__func__)
 #define RESTORE_PATHS restore_paths(&__func__)
 
+namespace cstore { // begin namespace cstore
+
 using namespace std;
 
 class Cstore {
@@ -494,6 +496,8 @@ private:
   static void voutput_internal(const char *fmt, va_list alist);
   static void vexit_internal(const char *fmt, va_list alist);
 };
+
+} // end namespace cstore
 
 #endif /* _CSTORE_H_ */
 
