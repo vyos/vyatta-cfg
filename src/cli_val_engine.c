@@ -70,13 +70,6 @@ static boolean is_deactivated(const char *path, int in_active);
  *********************/
 
 /**
- * Special file names: 
- */
-#define VALUE_FILE ("node.val")
-#define NODE_TAG ("node.tag")
-#define NODE_DEF ("node.def")
-
-/**
  * "Command" definition (element of a variable path): 
  */
 
@@ -172,7 +165,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
     if(cfg_path_string && cfg_end) {
 
-      if(strcmp(cfg_end,VALUE_FILE)==0) {
+      if(strcmp(cfg_end,VAL_NAME)==0) {
 
 	/* Value reference: */
         value_ref = 1;
@@ -226,10 +219,10 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
       } else if(return_value_file_name) {
 
 	ret=(char**)realloc(ret,sizeof(char*)*1);
-	ret[0]=(char*)malloc(strlen(cfg_path_string)+1+strlen(VALUE_FILE)+1);
+	ret[0]=(char*)malloc(strlen(cfg_path_string)+1+strlen(VAL_NAME)+1);
 	strcpy(ret[0],cfg_path_string);
 	strcpy(ret[0]+strlen(ret[0]),"/");
-	strcpy(ret[0]+strlen(ret[0]),VALUE_FILE);
+	strcpy(ret[0]+strlen(ret[0]),VAL_NAME);
 	*ret_size=1;
 	
       } else {
@@ -254,7 +247,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
       }
 	
       if(ret) {  
-	if(tmpl_end && (strcmp(tmpl_end,NODE_TAG)==0)) {
+	if(tmpl_end && (strcmp(tmpl_end,TAG_NAME)==0)) {
           /* since it's a tag, it should be treated as a value */
           value_ref = 1;
 	  clind_path_pop(tmpl_path_clone);
@@ -267,7 +260,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 	  
 	vtw_def def;
 	struct stat    statbuf;
-	int fn_node_def_size=strlen(tmpl_path_string)+1+strlen(NODE_DEF)+1;
+	int fn_node_def_size=strlen(tmpl_path_string)+1+strlen(DEF_NAME)+1;
 	char* fn_node_def=(char*)malloc(fn_node_def_size);
 
 	fn_node_def[0]=0;
@@ -281,7 +274,7 @@ static char** clind_get_current_value(clind_path_ref cfg_path,
 
 	strcpy(fn_node_def+strlen(fn_node_def),tmpl_path_string);
 	strcpy(fn_node_def+strlen(fn_node_def),"/");
-	strcpy(fn_node_def+strlen(fn_node_def),NODE_DEF);
+	strcpy(fn_node_def+strlen(fn_node_def),DEF_NAME);
 
 	if ((lstat(fn_node_def, &statbuf) == 0)&&
 	    (is_deactivated(fn_node_def, in_active) == FALSE)&&
@@ -351,7 +344,7 @@ static int is_multi_node(clind_path_ref tmpl_path) {
 
     const char* t_end = clind_path_last_string(tmpl_path);
 
-    if(t_end && (strcmp(t_end,NODE_TAG)==0)) {
+    if(t_end && (strcmp(t_end,TAG_NAME)==0)) {
       ret=1;
     }
   }
@@ -370,7 +363,7 @@ static int is_node_def(clind_path_ref tmpl_path) {
 
     const char* t_end = clind_path_last_string(tmpl_path);
 
-    if(t_end && (strcmp(t_end,NODE_DEF)==0)) {
+    if(t_end && (strcmp(t_end,DEF_NAME)==0)) {
       ret=1;
     }
   }
@@ -501,14 +494,14 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
 	cfg_path = clind_path_clone(cfg_path);
 	ret[0]=cfg_path;
 
-	if(t_end && (strcmp(t_end,NODE_TAG)==0)) {
+	if(t_end && (strcmp(t_end,TAG_NAME)==0)) {
 	  /* do nothing, we are there already */
-	} else if(t_path_string && clind_file_exists(t_path_string,NODE_TAG)) {
-	  clind_path_push(tmpl_path,NODE_TAG);
-	} else if(c_end && (strcmp(c_end,VALUE_FILE)==0)) {
+	} else if(t_path_string && clind_file_exists(t_path_string,TAG_NAME)) {
+	  clind_path_push(tmpl_path,TAG_NAME);
+	} else if(c_end && (strcmp(c_end,VAL_NAME)==0)) {
 	  /* do nothing, we are there already */
 	} else {
-	  clind_path_push(cfg_path,VALUE_FILE);
+	  clind_path_push(cfg_path,VAL_NAME);
 	}
       }
 
@@ -553,21 +546,21 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
 
 	  const char* c_end = clind_path_last_string(cfg_path);
 
-	  if(c_end && (strcmp(c_end,VALUE_FILE)==0)) {
+	  if(c_end && (strcmp(c_end,VAL_NAME)==0)) {
 
 	    *result_len=1;
 	    ret=(clind_path_ref*)(malloc(*result_len * sizeof(clind_path_ref)));
 	    cfg_path = clind_path_clone(cfg_path);
 	    ret[0]=cfg_path;
 
-	  } else if(clind_file_exists(cfg_path_string,VALUE_FILE)) {
+	  } else if(clind_file_exists(cfg_path_string,VAL_NAME)) {
 
 	    *result_len=1;
 	    ret=(clind_path_ref*)(malloc(*result_len * sizeof(clind_path_ref)));
 	    cfg_path = clind_path_clone(cfg_path);
 	    ret[0]=cfg_path;
 
-	    clind_path_push(cfg_path,VALUE_FILE);
+	    clind_path_push(cfg_path,VAL_NAME);
 
 	  } else {
 	  
@@ -594,7 +587,7 @@ static clind_path_ref* clind_config_engine_apply_command(clind_path_ref cfg_path
 		}
 	      } while(1);
 	      
-	      clind_path_push(tmpl_path,NODE_TAG);
+	      clind_path_push(tmpl_path,TAG_NAME);
 	    
 	      closedir(dir);
 	    }

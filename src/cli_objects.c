@@ -26,12 +26,9 @@ static boolean in_delete_action=FALSE;
 static valstruct cli_value;
 static boolean in_commit=FALSE; /* TRUE if in commit program*/
 static boolean in_exec=FALSE; /* TRUE if in exec */
-static boolean _is_echo=FALSE;
-static boolean _is_silent_msg=FALSE;
 static first_seg f_seg_a;
 static first_seg f_seg_c;
 static first_seg f_seg_m;
-static int in_cond_tik=0;
 
 /******************** Accessors: ************************/
 
@@ -86,22 +83,6 @@ void set_in_exec(boolean b) {
   in_exec=b;
 }
 
-boolean is_echo(void) {
-  return _is_echo;
-}
-
-void set_echo(boolean b) {
-  _is_echo=b;
-}
-
-boolean is_silent_msg(void) {
-  return _is_silent_msg;
-}
-
-void set_silent_msg(boolean b) {
-  _is_silent_msg=b;
-}
-
 valstruct* get_cli_value_ptr(void) {
   return &cli_value;
 }
@@ -116,18 +97,6 @@ first_seg* get_f_seg_c_ptr(void) {
 
 first_seg* get_f_seg_m_ptr(void) {
   return &f_seg_m;
-}
-
-int is_in_cond_tik(void) {
-  return in_cond_tik;
-}
-
-void set_in_cond_tik(int ict) {
-  in_cond_tik=ict;
-}
-
-void dec_in_cond_tik(void) {
-  --in_cond_tik;
 }
 
 const char* get_tdirp(void) {
@@ -178,8 +147,9 @@ const char* get_tmpp(void) {
   return tmpp;
 }
 
-char* get_elevp(void) {
-
+static char *
+get_elevp(void)
+{
   static char elevp_buffer[2049];
   static char* elevp=NULL;
 
@@ -196,8 +166,9 @@ char* get_elevp(void) {
   return elevp;
 }
 
-char* get_tlevp(void) {
-
+static char *
+get_tlevp(void)
+{
   static char tlevp_buffer[2049];
   static char* tlevp=NULL;
 
@@ -215,67 +186,6 @@ char* get_tlevp(void) {
 }
 
 /************************* Init ***************************/
-
-void init_edit()
-{
-  int elevlen = 0;
-  int tlevlen = 0;
-
-  init_paths(TRUE);
-  if (!get_elevp())
-    bye("Not in configuration mode");
-  if (!get_tlevp())
-    bye("INTERNAL: environment var |%s|  is not set",ENV_TEMPLATE_LEVEL);
-  elevlen = strlen(get_elevp());
-  tlevlen = strlen(get_tlevp());
-  if (elevlen > 0 && get_elevp()[elevlen - 1]=='/') {
-    /* cut off terminateing slash */
-    --elevlen;
-    get_elevp()[elevlen] = 0;
-  }
-  if (elevlen) {
-    char *slashp;
-    char * scanp;
-    if (*get_elevp()!='/')
-	INTERNAL;
-    scanp = get_elevp() + 1;
-    while (TRUE) {
-      slashp = strchr(scanp, '/');
-      if (slashp)
-	*slashp = 0;
-      push_path_no_escape(&m_path, scanp);
-      if (slashp) {
-	*slashp = '/';
-	scanp = slashp+1;
-      }else
-	break;
-    }
-  }
-  switch_path(MPATH);
-  if (tlevlen > 0 && get_tlevp()[tlevlen - 1]=='/') {
-    /* cut off terminateing slash */
-    --tlevlen;
-    get_tlevp()[tlevlen] = 0;
-  }
-  if (tlevlen) {
-    char *slashp;
-    char * scanp;
-    if (*get_tlevp()!='/')
-	INTERNAL;
-    scanp = get_tlevp() + 1;
-    while (TRUE) {
-      slashp = strchr(scanp, '/');
-      if (slashp)
-	*slashp = 0;
-      push_path(&t_path, scanp);
-      if (slashp) {
-	*slashp = '/';
-	scanp = slashp+1;
-      }else
-	break;
-    }
-  }
-}
 
 void init_paths(boolean for_commit)
 {

@@ -54,8 +54,6 @@ clind_path_ref clind_path_clone(const clind_path_ref path);
 
 int clind_path_get_size(clind_path_ref path);
 const char* clind_path_get_path_string(clind_path_ref path);
-void clind_path_debug_print(clind_path_ref path);
-int clind_path_is_absolute(clind_path_ref path);
 
 int clind_path_pop(clind_path_ref path);
 char* clind_path_pop_string(clind_path_ref path);
@@ -63,10 +61,7 @@ const char* clind_path_last_string(clind_path_ref path);
 void clind_path_push(clind_path_ref path,const char* dir);
 
 int clind_path_shift(clind_path_ref path);
-char* clind_path_shift_string(clind_path_ref path);
 const char* clind_path_get_string(clind_path_ref path,int index);
-const char* clind_path_first_string(clind_path_ref path);
-void clind_path_unshift(clind_path_ref path,const char* dir);
 
 int clind_file_exists(const char* dir,const char* file);
 

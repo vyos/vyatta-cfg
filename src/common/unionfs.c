@@ -378,13 +378,13 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
     }
     if (strcmp(dirp->d_name, ".") != 0 && 
 	strcmp(dirp->d_name, "..") != 0 &&
-	strcmp(dirp->d_name, MODIFIED_FILE) != 0 &&
+	strcmp(dirp->d_name, MOD_NAME) != 0 &&
 	strcmp(dirp->d_name, UNSAVED_FILE) != 0 &&
 	strcmp(dirp->d_name, DEF_FILE) != 0 &&
 	strcmp(dirp->d_name, DISABLE_FILE) != 0 &&
 	strcmp(dirp->d_name, WHITEOUT_FILE) != 0 &&
 	strcmp(dirp->d_name, WHITEOUT_DISABLE_FILE) != 0 &&
-	strcmp(dirp->d_name, VALUE_FILE) != 0) {
+	strcmp(dirp->d_name, VAL_NAME) != 0) {
       processed = TRUE;
 
       NODE_ACTIVATE deactivated = K_NO_DISABLE_OP;
@@ -601,7 +601,7 @@ boolean
 value_exists(char *path)
 {
   char buf[MAX_LENGTH_DIR_PATH];
-  sprintf(buf, "%s/%s",path,VALUE_FILE);
+  sprintf(buf, "%s/%s",path,VAL_NAME);
   struct stat stat_buf;
   return !stat(buf,&stat_buf);
 }
@@ -781,8 +781,6 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy, 
   static const char format1point1[]="mv -f %s/* -t %s"; /*mdirp, tmpp*/
   static const char format1point5[]="rm -fr '%s'/*"; /*tmpp*/
   
-  set_echo(TRUE);
-
   char mbuf[MAX_LENGTH_DIR_PATH];
   sprintf(mbuf,"%s%s",get_mdirp(),path);
   char cbuf[MAX_LENGTH_DIR_PATH];
@@ -909,8 +907,6 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   sprintf(mbuf,"%s",get_mdirp());
   char abuf[MAX_LENGTH_DIR_PATH];
   sprintf(abuf,"%s",get_adirp());
-
-  set_echo(TRUE);
 
   if (test_mode == FALSE) {
     sys_umount_session();

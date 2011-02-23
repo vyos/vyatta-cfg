@@ -43,7 +43,6 @@ void *var_ref_handle = NULL;
 
 /* Local vars: */
 static vtw_node *vtw_free_nodes; /* linked via left */
-static char val_name[] = VAL_NAME;
 static int cond1[TOP_COND] ={5, 0,-1,-1, 0, 1, 0, 0};
 static int cond2[TOP_COND] ={5, 0, 1,-1,-1, 1, 1, 0};
 static char const *cond_formats[DOMAIN_TYPE] = 
@@ -81,10 +80,11 @@ static valstruct validate_value_val;  /* value being validated
 
 /* Local function declarations: */
 
+static void touch(void);
 static int check_comp(vtw_node *cur);
 static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean format, const char* func,int line);
 #define check_syn(cur,msg_buf,format) check_syn_func((cur),(msg_buf),(format),__FUNCTION__,__LINE__)
-void copy_path(vtw_path *to, vtw_path *from);
+static void copy_path(vtw_path *to, vtw_path *from);
 static int eval_va(valstruct *res, vtw_node *node);
 static int expand_string(char *p);
 static void free_node(vtw_node *node);
@@ -93,28 +93,19 @@ static void free_reuse_list(void);
 void free_path(vtw_path *path);
 static void free_string(char *str);
 static vtw_node * get_node(void);
-void subtract_values(char **lhs, const char *rhs);
-
-
 static void scan_ipv6(char *val, unsigned int *parts);
-
 static int set_reference_environment(const char* var_reference,
 				     clind_path_ref *n_cfg_path,
 				     clind_path_ref *n_tmpl_path,
 				     clind_path_ref *n_cmd_path,
 				     int active);
+
 /*************************************************
      GLOBAL FUNCTIONS
 ***************************************************/
 
 const char *cli_operation_name = NULL;
 
-/* it is executed as "eval `my_set` in order to be able to 
-   modify BASH env
-   therefore, all error will be reported as
-   printf("echo \"bla-bla-bla%s\";", sptr)
-   note very important ';' as the end of the format
-*/
 void bye(const char *msg, ...)
 {
   va_list ap;
@@ -123,33 +114,11 @@ void bye(const char *msg, ...)
               (cli_operation_name) ? cli_operation_name : "Operation");
 
   va_start(ap, msg);
-  if (is_echo())
-    printf("echo \"");
   vprintf(msg, ap);
-  printf(is_echo()? "\";":"\n");
+  printf("\n");
   va_end(ap);
 
   exit(1);
-}
-
-/* msg:
-   print message, preceeded by "echo " if global
-   flag echo set.  This flag is used by program
-   which are executed as eval `command` in order to
-   modify BASH env
-*/
-void print_msg(const char *msg, ...)
-{
-  va_list ap;
-
-  if (is_silent_msg())
-    return;
-  va_start(ap, msg);
-  if (is_echo())
-    printf("echo \"");
-  vprintf(msg, ap);
-  printf(is_echo()? "\";":"\n");
-  va_end(ap);
 }
 
 int mkdir_p(const char *path)
@@ -180,7 +149,8 @@ int mkdir_p(const char *path)
   return ret;
 }
 
-void touch_dir(const char *dp) 
+static void
+touch_dir(const char *dp)
 {
   struct stat    statbuf;
 
@@ -310,21 +280,6 @@ get_shell_command_output(const char *cmd, char *buf, unsigned int buf_size)
     ret = -1;
   }
   return ret;
-}
-
-void dt(vtw_sorted *srtp)
-{
-  int i;
-  for (i=0; i<srtp->num; ++i)
-    printf("%d %s\n", i, (char *)(srtp->ptrs[i]));
-}
-
-
-void di(vtw_sorted *srtp)
-{
-  int i;
-  for (i=0; i<srtp->num; ++i)
-    printf("%u %u\n", i, *(unsigned int *)(srtp->ptrs[i]));
 }
 
 #define LOCK_FILE "/opt/vyatta/config/.lock"
@@ -467,229 +422,6 @@ get_config_lock()
     //    release_config_lock();
   }
   return ret;
-}
-
-void internal_error(int line, const char *file)
-{
-  printf("\n\nInternal Error at line %d in %s\n", line, file);
-  exit (-1);
-}
-
-/*************************************************
- vtw_sort: 
-   create sorted structure for the value,
-   allocates ptrs and parts in this structure
-*/
-void vtw_sort(valstruct *valp, vtw_sorted *sortp)
-{
-  int i;
-  const char * format;
-  unsigned int *parts;
-  vtw_type_e type = valp->val_type;
-  char *cp;
-
-  sortp->num = valp->cnt?valp->cnt : 1; 
-#ifdef CLI_DEBUG
-  printf("vtw_sort type=%d num=%d\n", type, sortp->num); 
-  for (i = 0; i < sortp->num; i++) {
-    printf("  [%s]\n", (valp->cnt) ? valp->vals[i] : valp->val);
-  }
-#endif
-  sortp->ptrs =  my_malloc(sortp->num * sizeof(void *), "sort_ptrs");
-  sortp->partnum = (type < DOMAIN_TYPE) ? cond_format_lens[type] : 0;
-  if (sortp->partnum) {
-    sortp->parts = my_malloc(sortp->partnum * sortp->num * sizeof(void *), 
-			     "sort_parts");
-  }else{
-    sortp->parts = NULL;
-  }
-  switch (type){
-  case IPV6_TYPE:
-  case IPV6NET_TYPE:
-    for (i = 0; i < sortp->num; ++i) {
-      parts = sortp->parts + i * sortp->partnum;
-      scan_ipv6(valp->cnt?valp->vals[i]:valp->val, parts);
-      sortp->ptrs[i] = parts;
-    }
-    break;
-  case IPV4_TYPE:
-  case IPV4NET_TYPE:
-  case MACADDR_TYPE:
-  case INT_TYPE:
-    format = cond_formats[valp->val_type];
-    for (i = 0; i < sortp->num; ++i) {
-      cp = valp->cnt?valp->vals[i]:valp->val;
-      parts = sortp->parts + i * sortp->partnum;
-      switch (sortp->partnum) {
-      case 1: 
-	(void) sscanf(cp, format, parts);
-	break;
-      case 2: 
-	(void) sscanf(cp, format, parts, parts+1);
-	break;
-      case 3: 
-	(void) sscanf(cp, format, parts, parts+1, parts+2);
-	break;
-      case 4: 
-	(void) sscanf(cp, format, parts, parts+1, parts+2,
-		      parts+3);
-	break;
-      case 5: 
-	(void) sscanf(cp, format, parts, parts+1, parts+2,
-		      parts+3, parts+4);
-	break;
-      case 6: 
-	(void) sscanf(cp, format, parts, parts+1, parts+2,
-		      parts+3, parts+4, parts+5);
-	break;
-      }
-      sortp->ptrs[i] = parts;
-    }
-    break;
-  case TEXT_TYPE:
-  case BOOL_TYPE:
-    for (i = 0; i < sortp->num; ++i) {
-      sortp->ptrs[i] = valp->cnt?valp->vals[i]:valp->val;
-    }
-    break;
-  default:
-    bye("Unknown value in switch on line %d\n", __LINE__);
-  }
-  if (sortp->num < 2) 
-    return;
-#ifdef CLI_DEBUG
-  if (sortp->parts) {
-    int i, j;
-    printf("sortp parts:\n");
-    for (i = 0; i < sortp->num; i++) {
-      printf("  ");
-      unsigned int *parts = (unsigned int *) sortp->ptrs[i];
-      for (j = 0; j < sortp->partnum; j++) {
-        printf("%u ", parts[j]);
-      }
-      printf("\n");
-    }
-  }
-#endif
-  /* the following sort throws away the input ordering. */
-  /* NOT doing this for now */
-#if 0
-  /* now do a heap sort */
-  /* build heap */
-  /* from left to right, we start with the heap of only one (first) element*/
-  for (i = 2; i <= sortp->num; ++i)
-  {
-    cur  = i;
-    do {
-      curp = sortp->ptrs[cur - 1];
-      par  = cur >> 1;
-      parp = sortp->ptrs[par - 1];
-      if (sortp->partnum){
-	for(partnum = 0; partnum < sortp->partnum; ++partnum) {
-	  if (*((unsigned int *)curp + partnum)>
-	      *((unsigned int *)parp + partnum)){
-		  res = 1;
-		  break;
-	  }
-	  if (*((unsigned int *)curp + partnum)<
-	      *((unsigned int *)parp + partnum)){
-		  res = -1;
-		  break;
-	  }
-	  res = 0;
-	}
-      }else{
-	res = strcmp((char *)curp, (char *) parp);
-      }
-      if (res <= 0) 
-	break;
-      /* swap them */
-      sortp->ptrs[cur - 1] = parp;
-      sortp->ptrs[par - 1] = curp;
-      
-    } while ((cur = par) != 1);
-  }
-  /* convert heap into sorted array */
-  unsorted = sortp->num; /* sortp->num must be >= 2 */
-  while (TRUE) {
-    void *tp;
-    /* root to the sorted part */
-    tp = sortp->ptrs[0];
-    sortp->ptrs[0] = sortp->ptrs[--unsorted];
-    sortp->ptrs[unsorted] = tp;
-    if (unsorted == 1) 
-      break;
-    /* push down the new root */
-    par = 1;
-    while(TRUE) {
-      left = par << 1; /* left child */
-      if (left > unsorted) 
-	break; /* no children */
-      else {
-	if (left == unsorted) {
-	  /* only left child */
-	  child  = left;
-	} else {
-	  /* both children */
-	  right  = left+1;
-	  leftp = sortp->ptrs[left - 1];
-	  rightp = sortp->ptrs[right - 1];
-	  /* find larger child */
-	  if (sortp->partnum){
-	    for(partnum = 0; partnum < sortp->partnum; ++partnum) {
-	      if (*((unsigned int *)leftp + partnum) > 
-		  *((unsigned int *)rightp + partnum)) {
-		res = 1;
-		break;
-	      }
-	      if (*((unsigned int *)leftp + partnum) < 
-		  *((unsigned int *)rightp + partnum)) {
-		res = -1;
-		break;
-	      }
-	      res = 0;
-	    }
-	  }else{
-	    res = strcmp((char *)leftp, (char *) rightp);
-	  }
-	  if (res >= 0) {
-	    child  = left; /* left is larger or same*/
-	  } else {
-	    child  = right;
-	  }
-	}
-	/* compare parent and larger child */
-	parp = sortp->ptrs[par - 1];
-	childp  = sortp->ptrs[child - 1];
-	if (sortp->partnum){
-	  for(partnum = 0; partnum < sortp->partnum; ++partnum) {
-	    if (*((unsigned int *)parp + partnum) >
-		*((unsigned int *)childp + partnum)){
-	      res = 1;
-	      break;
-	    }
-	    if (*((unsigned int *)parp + partnum) <
-		*((unsigned int *)childp + partnum)){
-	      res = -1;
-	      break;
-	    }
-	    res = 0;
-	  }
-	}else{
-	  res = strcmp((char *)parp, (char *) childp);
-	}
-	if (res >= 0) {
-	  /* done with percolating down, parent larger than child */
-	  break;
-	}
-	/* child greater, exchage and continue */
-	sortp->ptrs[par - 1] = childp;
-	sortp->ptrs[child - 1] = parp;
-	par = child;
-      }
-    }
-  }
-#endif
 }
 
 /* returns FALSE if execution returns non-null,
@@ -844,10 +576,8 @@ int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstr
 	  (void)expand_string(def->def_type_help);
 	  sprintf(err_buf, "%s\n", exe_string);
 	} else {
-	  print_msg("Wrong type of value in %s, "
-		    "need %s\n", 
-		    m_path.path_buf + m_path.print_offset, 
-		    type_buf); 
+	  printf("Wrong type of value in %s, need %s\n",
+                 m_path.path_buf + m_path.print_offset, type_buf);
 
 	  token = yy_cli_val_lex();
 
@@ -866,10 +596,8 @@ int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstr
 	(void)expand_string(def->def_type_help);
 	sprintf(err_buf, "%s\n", exe_string);
       } else {
-	print_msg("Wrong type of value in %s, "
-		  "need %s\n", 
-		  m_path.path_buf + m_path.print_offset,
-		  type_buf);
+	printf("Wrong type of value in %s, need %s\n",
+               m_path.path_buf + m_path.print_offset, type_buf);
 
 	token = yy_cli_val_lex();
 
@@ -890,7 +618,7 @@ int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstr
       if (def->multi)
 	add_val(valp, get_cli_value_ptr());
       else {
-	print_msg("Unexpected multivalue in %s\n", m_path.path);
+	printf("Unexpected multivalue in %s\n", m_path.path);
 	free_val(get_cli_value_ptr());
       }
     }
@@ -903,8 +631,7 @@ int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstr
       token = yy_cli_val_lex();
 
       sprintf(err_buf, "\"%s\" is not a valid value\n", value);
-      print_msg("Badly formed value in %s\n", 
-		m_path.path + m_path.print_offset);
+      printf("Badly formed value in %s\n", m_path.path + m_path.print_offset);
       if (token == VALUE) {
 	my_free(get_cli_value_ptr()->val);
       }
@@ -975,7 +702,8 @@ int char2val_text(vtw_def *def, char *value, valstruct **valpp)
     compare two values per cond
     returns result of comparison
 ****************************************************/
-boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond) 
+static boolean
+val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 {
   unsigned int left_parts[9], right_parts[9];
   vtw_type_e val_type;
@@ -1073,7 +801,6 @@ boolean val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	     (res == cond2[cond]));
 
       if (ret && cond == IN_COND) {
-	set_in_cond_tik(rcur); /* for delete */
 	/* one success is enough for right cycle 
 	   in case of IN_COND, continue left cycle */
 	break;
@@ -1429,7 +1156,8 @@ static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean form
     copy path
     if destination path owns memory, free it
 **************************************************/
-void copy_path(vtw_path *to, vtw_path *from)
+static void
+copy_path(vtw_path *to, vtw_path *from)
 {
   if (to->path_buf)
     my_free(to->path_buf);
@@ -1744,19 +1472,6 @@ static int expand_string(char *stringp)
 }
 
 /*****************************************************
-  free_sorted:
-    free all memory allocated to sorted
-*****************************************************/
-void free_sorted(vtw_sorted *sortp)
-{
-  if(sortp->ptrs)
-    my_free(sortp->ptrs);
-  if (sortp->parts)
-    my_free(sortp->parts);
-}
-
-
-/*****************************************************
   free_def:
     free all memory allocated to def
 *****************************************************/
@@ -1893,7 +1608,7 @@ int get_value(char **valpp, vtw_path *pathp)
     
     /* find value */
     *valpp = 0;
-    push_path(pathp, val_name);
+    push_path(pathp, VAL_NAME);
 
     if (lstat(pathp->path, &statbuf) < 0) {
       err = "no value file in [%s]\n";
@@ -1935,29 +1650,6 @@ pop:
     goto pop;
 }
 
-int get_value_to_at_string(vtw_path *pathp) {
-
-  char* at=NULL;
-  int status = get_value(&at,pathp);
-
-  if(status==0) {
-    set_at_string(at);
-  } else {
-    set_at_string(NULL);
-  }
-
-  return status;
-}  
-
-/*****************************************************
- out_of_memeory
- print out of memory message and exit 
-*****************************************************/
-void out_of_memory()
-{
-  bye("\n\t!!! OUT OF MEMORY !!!\n");
-}
-
 /*************************************************
   init_path:
     init path, exit if not able (out_of_memory)
@@ -1989,7 +1681,7 @@ void init_path(vtw_path *path, const char *root)
 void pop_path(vtw_path *path)
 {
     if (--path->path_lev < 1) {
-      INTERNAL;
+      bye("INTERNAL: line %d in %s\n", __LINE__, __FILE__);
     }
     path->path_len = path->path_ends[path->path_lev - 1];
     path->path_buf[path->path_len] = 0;
@@ -2231,93 +1923,6 @@ boolean validate_value(vtw_def *def, char *cp)
   return ret;
 }
 
-void subtract_values(char **lhs, const char *rhs)
-{
-  size_t length = 0, lhs_cnt = 0, rhs_cnt = 0, i;
-  const char *line = NULL;
-  char *rhs_copy = NULL, *res = NULL;
-  const char **head = NULL, **ptr = NULL;
-  const char **new_head = NULL, **new_ptr = NULL;
-
-  if (lhs == NULL || *lhs == NULL || **lhs == '\0' || rhs == NULL || *rhs == '\0')
-    return;
-
-  /* calculate number of rhs entries */
-  rhs_copy = strdup(rhs);
-  line = strtok(rhs_copy, "\n\r");
-  while (line != NULL && *line != '\0') {
-    rhs_cnt++;
-    line = strtok(NULL, "\n\r");
-  }
-
-  /* strtok destroys the string. dup again. */
-  free(rhs_copy);
-  rhs_copy = strdup(rhs);
-
-  /* allocate enough space for all old entries (to be subtracted) */
-  length = rhs_cnt * sizeof(char *);
-  head = ptr = my_malloc(length, "subtract_values list1");
-  memset(head, 0, length);
-
-  /* parse the entries and put them in head[] */
-  line = strtok(rhs_copy, "\n\r");
-  while (line != NULL && *line != '\0') {
-    *ptr = line;
-    ptr++;
-    line = strtok(NULL, "\n\r");
-  }
-
-  /* calculate number of lhs entries */
-  {
-    char *lhs_copy = strdup(*lhs);
-    line = strtok(lhs_copy, "\n\r");
-    while (line != NULL && *line != '\0') {
-      lhs_cnt++;
-      line = strtok(NULL, "\n\r");
-    }
-    free(lhs_copy);
-  }
-
-  /* allocate enough space for all new entries */
-  length = lhs_cnt * sizeof(char *);
-  new_head = new_ptr = my_malloc(length, "subtract_values list2");
-  memset(new_head, 0, length);
-
-  /* reset length and lhs_cnt. they are now used for the "new" array (i.e.,
-   * after subtraction). */
-  length = 0;
-  lhs_cnt = 0;
-  line = strtok(*lhs, "\n\r");
-  while (line != NULL && *line != '\0') {
-    for (i = 0; i < rhs_cnt; i++) {
-      if (strncmp(line, head[i], strlen(line)) == 0)
-        break;
-    }
-    if (i >= rhs_cnt) {
-      *new_ptr = line;
-      length += strlen(line) + 1;
-      new_ptr++;
-      lhs_cnt++;
-    }
-    line = strtok(NULL, "\n\r");
-  }
-
-  res = (char *) my_malloc(length + 1, "subtract_values result");
-  *res = '\0';
-  for (i = 0; i < lhs_cnt; i++) {
-     strcat(res, new_head[i]);
-     strcat(res, "\n");
-  }
-  
-  my_free(head);
-  my_free(new_head);
-  if (rhs_copy != NULL)
-    my_free(rhs_copy);
-  my_free(*lhs);
-
-  *lhs = res;
-}
-
 int cli_val_read(char *buf, int max_size)
 {
   int len;
@@ -2333,28 +1938,9 @@ int cli_val_read(char *buf, int max_size)
   }
   return len;
 }
-void done(void)
-{
-  free_reuse_list();
-  free_path(&t_path);
-  free_path(&m_path);
-  if (exe_string)
-    my_free(exe_string);
-}
-void mark_paths(vtw_mark *markp)
-{
-  markp->m_lev = m_path.path_lev;
-  markp->t_lev = t_path.path_lev;
-}
-void restore_paths(vtw_mark *markp)
-{
-  while(markp->m_lev < m_path.path_lev)
-    pop_path(&m_path);
-  while(markp->t_lev < t_path.path_lev)
-    pop_path(&t_path);
-}
 
-void touch_file(const char *filename)
+static void
+touch_file(const char *filename)
 {
   int fd = creat(filename, 0666);
   if (fd < 0)
@@ -2368,7 +1954,8 @@ void touch_file(const char *filename)
     close(fd);
 }
 
-void touch(void) 
+static void
+touch(void)
 {
   char filename[strlen(get_mdirp()) + 20];
   sprintf(filename, "%s/%s", get_mdirp(), MOD_NAME);
@@ -2389,20 +1976,6 @@ const char *type_to_name(vtw_type_e type) {
   default: return("unknown");
   }
 }
-
-#ifdef CLI_DEBUG
-void dump_log(int argc, char **argv)
-{
-  int i;
-
-  printf("Command:");
-  for (i = 0; i < argc; ++i) {
-	  putchar(' ');
-	  puts(argv[i]);
-  }
-  putchar('\n');
-}
-#endif
 
 /********************* New Dir ****************************/
 
@@ -2682,58 +2255,3 @@ system_out(const char *cmd, const char *prepend_msg, boolean format)
   }
 }
 
-/**********************************************************/
-
-
-boolean
-is_deactivated(const clind_path_ref *path) 
-{
-  if (path == NULL) {
-    return FALSE;
-  }
-  
-  const char* path_string = clind_path_get_path_string(*path);
-  
-  char buf[1024]; //ALSO USED AS LIMIT IN UNIONFS path length
-  strcpy(buf,path_string);
-
-  //first we'll check the current directory
-  char file[1024];
-  sprintf(file,"%s/.disable",buf);
-  struct stat s;
-  if (lstat(file,&s) == 0) {
-    return TRUE;
-  }
-
-  long min_len = strlen("/opt/vyatta/config/tmp/new_config_");
-
-  //now walk back up tree looking for disable flag.....
-  while (TRUE) {
-    int index = strlen(buf)-1;
-    if (index < min_len) {
-      return FALSE;
-    }
-    if (buf[index] == '/') {
-      while (TRUE) {
-	if (buf[--index] != '/') {
-	  buf[index] = '\0';
-	  break;
-	}
-      }
-    }
-
-    char *ptr = rindex(buf,'/');
-    if (ptr != NULL) {
-      *ptr = '\0';
-    }
-    
-    char file[1024];
-    sprintf(file,"%s/.disable",buf);
-    struct stat s;
-    if (lstat(file,&s) == 0) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-}

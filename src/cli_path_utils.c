@@ -215,14 +215,6 @@ const char* clind_path_get_path_string(clind_path_ref path) {
   return "";
 }
 
-int clind_path_is_absolute(clind_path_ref path) {
-  if(path) {
-    clind_path_impl* obj = (clind_path_impl*)path;
-    return obj->absolute;
-  }
-  return 0;
-}
-
 void clind_path_push(clind_path_ref path,const char* dir) {
 
   if(path && dir && *dir) {
@@ -316,38 +308,6 @@ const char* clind_path_last_string(clind_path_ref path) {
   return ret;
 }
 
-void clind_path_unshift(clind_path_ref path,const char* dir) {
-
-  if(path && dir && *dir) {
-
-    clind_path_impl* obj = (clind_path_impl*)path;
-
-    int absolute=(*dir=='/');
-
-    while(*dir && *dir=='/') dir++;
-
-    if(obj->path_len<=0) {
-
-      clind_path_push(path,dir);
-
-    } else {
-
-      obj->path_len++;
-
-      obj->path=(clind_dir_name*)realloc(obj->path,
-					 sizeof(clind_dir_name)*(obj->path_len));
-      memmove((char*)(obj->path)+sizeof(clind_dir_name),(char*)(obj->path),
-	      sizeof(clind_dir_name)*(obj->path_len-1));
-      obj->path[0]=strdup(dir);
-
-    }
-
-    obj->absolute=absolute;
-
-    clind_reset_path_string(obj);
-  }
-}
-
 const char* clind_path_get_string(clind_path_ref path,int index) {
 
   const char* ret=NULL;
@@ -362,12 +322,9 @@ const char* clind_path_get_string(clind_path_ref path,int index) {
   return ret;
 }
 
-const char* clind_path_first_string(clind_path_ref path) {
-  return clind_path_get_string(path,0);
-}
-
-char* clind_path_shift_string(clind_path_ref path) {
-
+static char *
+clind_path_shift_string(clind_path_ref path)
+{
   char* ret=NULL;
 
   if(path) {
@@ -410,35 +367,6 @@ int clind_path_shift(clind_path_ref path) {
   }
 
   return ret;
-}
-
-void clind_path_debug_print(clind_path_ref path) {
-
-  if(path) {
-
-    int i=0;
-    clind_path_impl* obj = (clind_path_impl*)path;
-
-    if(obj->path_string) {
-      printf("obj->path_string=%s, obj->path_len=%d,obj->absolute=%d\n",
-	     obj->path_string,obj->path_len,obj->absolute);
-    } else {
-      printf("obj->path_string=NULL, obj->path_len=%d,obj->absolute=%d\n",
-	     obj->path_len,obj->absolute);
-    }
-
-    if(obj->path) {
-      for(i=0;i<obj->path_len;i++) {
-	if(obj->path[i]) {
-	  printf("  obj->path[%d]=%s\n",i,obj->path[i]);
-	} else {
-	  printf("  obj->path[%d]=NULL\n",i);
-	}
-      }
-    } else {
-      printf("  obj->path=NULL\n");
-    }
-  }
 }
 
 int clind_file_exists(const char* dir,const char* file) {

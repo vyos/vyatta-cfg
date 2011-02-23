@@ -4,8 +4,6 @@
 
 #include <cli_cstore.h>
 
-#define BITWISE 0 /* no partial commit */
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -36,11 +34,6 @@ typedef enum {
 /* IN_COND is like EQ for singular compare, but OR for multivalue right operand */
 
 typedef struct {
-  int  t_lev;
-  int  m_lev;
-}vtw_mark;
-
-typedef struct {
   const char *f_segp;
   int   f_seglen;
   int   f_segoff;
@@ -62,16 +55,8 @@ typedef struct {
   int   print_offset;  /* for additional optional output information */
 } vtw_path;  /* vyatta tree walk */
 
-typedef struct {
-  int   num;
-  int   partnum;
-  void **ptrs;
-  unsigned int  *parts;
-}vtw_sorted;
-
 extern int char2val(vtw_def *def, char *value, valstruct *valp);
 extern int get_value(char **valpp, vtw_path *pathp);
-extern int get_value_to_at_string(vtw_path *pathp);
 extern vtw_node * make_node(vtw_oper_e oper, vtw_node *left, 
 			    vtw_node *right);
 extern vtw_node *make_str_node(char *str);
@@ -80,14 +65,11 @@ extern vtw_node *make_str_node0(char *str, vtw_oper_e op);
 extern void append(vtw_list *l, vtw_node *n, int aux);
 
 extern int yy_cli_val_lex(void);
-extern void cli_val_start(char *s);
-extern void cli_val_done(void);
 extern void init_path(vtw_path *path, const char *root);
 extern void pop_path(vtw_path *path);
 extern void push_path(vtw_path *path, const char *segm);
 extern void push_path_no_escape(vtw_path *path, char *segm);
 extern void free_def(vtw_def *defp);
-extern void free_sorted(vtw_sorted *sortp);
 
 extern vtw_path m_path, t_path;
 
@@ -98,33 +80,13 @@ extern void add_val(valstruct *first, valstruct *second);
 extern int cli_val_read(char *buf, int max_size);
 extern vtw_node *make_val_node(valstruct *val);
 extern valstruct str2val(char *cp);
-extern void dump_tree(vtw_node *node, int lev);
-extern void dump_def(vtw_def *defp);
-extern boolean val_cmp(const valstruct *left, const valstruct *right,
-		       vtw_cond_e cond);
-extern void out_of_memory(void)  __attribute__((noreturn));
-extern void subtract_values(char **lhs, const char *rhs);
-extern void internal_error(int line, const char *file)
-  __attribute__((noreturn));
-extern void done(void);
-extern void del_value(vtw_def *defp, char *cp);
-extern void print_msg(const char *msg, ...)
-  __attribute__((format(printf, 1, 2)));
 extern void switch_path(first_seg *seg);
-extern void vtw_sort(valstruct *valp, vtw_sorted *sortp);
 extern void free_val(valstruct *val);
-extern void touch(void);
 extern int mkdir_p(const char *path);
 
 extern boolean execute_list(vtw_node *cur, vtw_def *def, const char *outbuf,boolean format);
-extern void touch_dir(const char *dp);
-extern void touch_file(const char *name);
 
-extern void copy_path(vtw_path *to, vtw_path *from);
 extern void free_path(vtw_path *path);
-
-void mark_paths(vtw_mark *markp);
-void restore_paths(vtw_mark *markp);
 
 extern int get_config_lock(void);
 extern void release_config_lock(void);
@@ -136,8 +98,6 @@ extern void release_config_lock(void);
 #define    VAL_NAME "node.val"
 #define    MOD_NAME ".modified"
 #define    OPQ_NAME ".wh.__dir_opaque"
-
-#define INTERNAL  internal_error(__LINE__, __FILE__)
 
 /*** output ***/
 #define LOGFILE_STDOUT "/tmp/cfg-stdout.log"
@@ -156,9 +116,7 @@ extern FILE *err_stream;
 #undef CLI_DEBUG
 #ifdef CLI_DEBUG
 #define DPRINT(fmt, arg...)	printf(fmt, #arg)
-extern void dump_log(int argc, char **argv);
 #else
 #define DPRINT(fmt, arg...)	while (0) { printf(fmt, ##arg); }
-#define dump_log(argc, argv)
 #endif
 #endif
