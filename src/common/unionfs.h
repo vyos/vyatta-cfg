@@ -7,6 +7,10 @@
 #include "../cli_val.h"
 #include "../cli_objects.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define UNSAVED_FILE ".unsaved"
 #define DISABLE_FILE ".disable"
 #define DEF_FILE "def"
@@ -32,5 +36,8 @@ struct ValueData
   NODE_OPERATION _state;
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__UNIONFS_HH__

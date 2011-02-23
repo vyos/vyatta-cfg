@@ -303,7 +303,7 @@ main(int argc, char** argv)
 
     if (break_priority) {
       gpointer gp = ((GNode*)trans_child_node)->data;
-      unsigned long p = ((struct VyattaNode*)gp)->_config._priority;
+      long p = (long) ((struct VyattaNode*)gp)->_config._priority;
       if (p >= break_priority_node) {
 	g_dump_trans = TRUE;
 	g_node_traverse(trans_child_node,
@@ -500,7 +500,7 @@ execute_hook_compare_func(gconstpointer a, gconstpointer b, gpointer data)
 gboolean
 execute_hook_func(GNode *node, gpointer data)
 {
-  char *comment = ((struct ExecuteHookData*)data)->_comment;
+  const char *comment = ((struct ExecuteHookData*)data)->_comment;
   char *dir = ((struct ExecuteHookData*)data)->_dir;
   char *name = (char*)node;
 
@@ -798,7 +798,7 @@ process_script_path(char* in)
       strcat(tmp2," ");
     }
   }
-  char *ret = malloc(strlen(tmp2)+1);
+  char *ret = (char *) malloc(strlen(tmp2)+1);
   strcpy(ret,tmp2);
   return ret;
 }
@@ -826,7 +826,7 @@ complete(GSList *node_coll, boolean test_mode)
       }
     }
     //on transactional nodes only, note to avoid calling this if a headless root
-    common_commit_copy_to_live_config(l->data, FALSE, test_mode);
+    common_commit_copy_to_live_config((GNode *) l->data, FALSE, test_mode);
   }
   return TRUE;
 }
@@ -973,11 +973,32 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   }
 
   //change action state of node according to enclosing behavior
-  if ((G_NODE_IS_ROOT(node) == FALSE) &&
-      (((struct VyattaNode*)gp)->_data._disable_op != K_NO_DISABLE_OP)  || //added to support enclosing behavior of activated/deactivated n
-      ((IS_SET_OR_CREATE(op))  || 
-       (IS_DELETE(op))) && 
-      (IS_NOOP(((struct VyattaNode*)(node->parent->data))->_data._operation))) {
+  /* XXX this is ugly. originally the condition for the if is the following:
+   *       (c1 && c2 || (c3 || c4) && c5)
+   *
+   *     this causes compiler warning for mixing && and || without (). the
+   *     previous warning removal attempt changed the condition to the
+   *     following:
+   *       ((c1 && c2) || (c3 || (c4 && c5)))
+   *
+   *     which was incorrect (c3 and c4 should be at the same "level") and
+   *     therefore was reverted.
+   *
+   *     now changing the condition to the following to avoid compiler
+   *     warning:
+   *       ((c1 && c2) || ((c3 || c4) && c5))
+   *
+   *     note that since the current goal is simply cleanup, no attempt is
+   *     made to understand the logic here, and the change is purely based
+   *     on operator precendence to maintain the original logic.
+   */
+  if (((/* c1 */ G_NODE_IS_ROOT(node) == FALSE)
+       && (/* c2 */ ((struct VyattaNode*)gp)->_data._disable_op
+                    != K_NO_DISABLE_OP))
+              //added to support enclosing behavior of activated/deactivated
+      || (((/* c3 */ IS_SET_OR_CREATE(op)) || (/* c4 */ IS_DELETE(op)))
+          && (/* c5 */ IS_NOOP(((struct VyattaNode*)
+                                (node->parent->data))->_data._operation)))) {
     //first check if there is enclosing behavior
     boolean enclosing = FALSE;
     GNode *n = node;
@@ -1003,7 +1024,16 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
 	//DON'T set active when only in disable state...
 	//	if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
 	if (((struct VyattaNode*)(n->data))->_data._operation == K_NO_OP) {
-	  ((struct VyattaNode*)(n->data))->_data._operation |= K_ACTIVE_OP;
+          /* XXX this is ugly. _operation is intended to be a bitmap, in which
+           *     case it doesn't make sense to make it an enum type (should
+           *     just be, e.g., int). this causes g++ to (rightly) complain.
+           *     work around it for now to avoid impacting other code since
+           *     the current goal is simply cleanup.
+           */
+          int op = ((struct VyattaNode*)(n->data))->_data._operation;
+          op |= K_ACTIVE_OP;
+          ((struct VyattaNode*)(n->data))->_data._operation
+            = (NODE_OPERATION) op;
 	}
 	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
 	  break;
@@ -1179,7 +1209,7 @@ dump_func(GNode *node, gpointer data)
 
     gpointer gp = ((GNode*)node)->data;
     if (((struct VyattaNode*)gp)->_data._name != NULL) {
-      int i;
+      unsigned int i;
 
       char disable_op[2];
       if (((struct VyattaNode*)gp)->_data._disable_op == (K_ACTIVE_DISABLE_OP | K_LOCAL_DISABLE_OP)) {
@@ -1311,7 +1341,8 @@ process_priority_node(GNode *priority_node)
   //now perform processing on what's left outside of the enclosing begin/end statements
   int i;
   for (i = 0; i < g_num_actions; ++i) {
-    int order;
+    // now _this_ should be enum instead
+    GTraverseType order;
     if (delete_act != ActionOrder[i]) {
       order = G_PRE_ORDER;
     }
@@ -1369,7 +1400,8 @@ enclosing_process_func(GNode *node, gpointer data)
 
     int i;
     for (i = 0; i < g_num_actions; ++i) {
-      int order;
+      // again should be enum
+      GTraverseType order;
       if (delete_act != ActionOrder[i]) {
 	order = G_PRE_ORDER;
       }
@@ -1501,7 +1533,7 @@ validate_func(GNode *node, gpointer data)
 	strcat(buf,val);
 	free(val);
       }
-      char *tmp = malloc(strlen(buf)+1);
+      char *tmp = (char *) malloc(strlen(buf)+1);
       strcpy(tmp,buf);
       coll = g_slist_append(coll,tmp);
       result->_data = (void*)coll;
@@ -1514,7 +1546,7 @@ validate_func(GNode *node, gpointer data)
 	free(val);
       }
  
-      char *tmp = malloc(strlen(buf)+1);
+      char *tmp = (char *) malloc(strlen(buf)+1);
       strcpy(tmp,buf);
       coll = g_slist_append(coll,tmp);
       result->_data = (void*)coll;

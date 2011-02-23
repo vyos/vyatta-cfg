@@ -105,6 +105,7 @@ extern void release_config_lock(void);
 
 extern int out_fd;
 extern FILE *err_stream;
+int restore_output(void);
 
 /* debug hooks? */
 #define my_malloc(size, name)		malloc(size)

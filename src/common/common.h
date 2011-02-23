@@ -4,6 +4,9 @@
 #include "defs.h"
 #include "unionfs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 boolean
 execute(char *cmd);
@@ -49,5 +52,9 @@ common_commit_copy_to_live_config(GNode *root_node, boolean suppress_piecewise_c
  **/
 void
 common_commit_clean_temp_config(GNode *root_node, boolean test_mode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__COMMON_H__
