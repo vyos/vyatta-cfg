@@ -4,6 +4,10 @@
 
 #include <cli_cstore.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -120,4 +124,9 @@ int restore_output(void);
 #else
 #define DPRINT(fmt, arg...)	while (0) { printf(fmt, ##arg); }
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

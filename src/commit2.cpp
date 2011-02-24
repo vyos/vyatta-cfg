@@ -19,7 +19,7 @@ boolean g_old_print_output = FALSE;
 
 #define g_num_actions 5
 
-extern void g_type_init();
+extern "C" void g_type_init();
 
 const int ActionOrder[g_num_actions] = {
   //  4, //syntax

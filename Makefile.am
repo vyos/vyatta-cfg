@@ -11,6 +11,7 @@ enumdir = $(datadir)/enumeration
 
 AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
 AM_CXXFLAGS = -I src -Wall -Werror
+AM_CXXFLAGS += -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
@@ -76,7 +77,7 @@ sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
 
 src_priority_SOURCES = src/priority.c
-src_my_commit_SOURCES = src/commit2.c
+src_my_commit_SOURCES = src/commit2.cpp
 src_exe_action_SOURCES = src/exe_action.c
 src_dump_SOURCES = src/dump_session.c
 src_check_tmpl_SOURCES = src/check_tmpl.c

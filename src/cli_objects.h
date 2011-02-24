@@ -3,6 +3,10 @@
 
 #include "cli_val.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* names of VYATTA env vars */
 #define ENV_EDIT_LEVEL "VYATTA_EDIT_LEVEL"
 #define ENV_TEMPLATE_LEVEL "VYATTA_TEMPLATE_LEVEL"
@@ -42,5 +46,9 @@ const char* get_mdirp(void);
 const char* get_tmpp(void);
 
 void init_paths(boolean for_commit);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CLI_OBJ_H */

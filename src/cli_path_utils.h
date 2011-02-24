@@ -35,6 +35,10 @@
 #if !defined(__CLI_PATH_UTILS__)
 #define __CLI_PATH_UTILS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************
  * Type definitions
  *
@@ -67,5 +71,9 @@ int clind_file_exists(const char* dir,const char* file);
 
 char *clind_unescape(const char *name);
 char* clind_quote(const char* s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CLI_PATH_UTILS__ */
