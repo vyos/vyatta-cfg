@@ -1,3 +1,12 @@
+vyatta-cfg (0.18.87) unstable; urgency=low
+
+  * clean up dead code etc. etc. etc.
+  * remove compiler warnings
+  * compile commit with g++
+  * add config template abstraction
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 28 Feb 2011 18:25:39 -0800
+
 vyatta-cfg (0.18.86) unstable; urgency=low
 
   * namespace reorg
