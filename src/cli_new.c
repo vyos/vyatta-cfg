@@ -502,15 +502,16 @@ valstruct str2val(char *cp)
 /****************************************************
        STATIC FUNCTIONS
 ****************************************************/
-int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstruct **valp, char *buf);
-int char2val_text(vtw_def *def, char *value, valstruct **valp);
+int char2val_notext(const vtw_def *def, int my_type, int my_type2,
+                    char *value, valstruct **valp, char *buf);
+int char2val_text(const vtw_def *def, char *value, valstruct **valp);
 
 /**************************************************
   char2val:
     convert string into valstruct verifying the type
     according to def
 ****************************************************/
-int char2val(vtw_def *def, char *value, valstruct *valp)
+int char2val(const vtw_def *def, char *value, valstruct *valp)
 {
   int my_type = def->def_type;
   int my_type2 = def->def_type2;
@@ -549,7 +550,8 @@ int char2val(vtw_def *def, char *value, valstruct *valp)
 
 //non-text type processing block
 
-int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstruct **valpp, char *err_buf)
+int char2val_notext(const vtw_def *def, int my_type, int my_type2,
+                    char *value, valstruct **valpp, char *err_buf)
 {
   valstruct *valp = *valpp;
   int token;
@@ -641,7 +643,7 @@ int char2val_notext(vtw_def *def, int my_type, int my_type2, char *value, valstr
   return 0;
 }
 
-int char2val_text(vtw_def *def, char *value, valstruct **valpp)
+int char2val_text(const vtw_def *def, char *value, valstruct **valpp)
 {
   valstruct *valp = *valpp;
   char *endp, *cp;
@@ -1867,7 +1869,7 @@ void switch_path(first_seg *segp)
     validates value against type and syntax 
    return TRUE if OK, FALSE otherwise
 **************************************************/
-boolean validate_value(vtw_def *def, char *cp)
+boolean validate_value(const vtw_def *def, char *cp)
 {
   int        status;
   boolean    ret=TRUE;

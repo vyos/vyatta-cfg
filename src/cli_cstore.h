@@ -133,7 +133,7 @@ const valstruct *get_syntax_self_in_valstruct(vtw_node *vnode);
 int get_shell_command_output(const char *cmd, char *buf,
                              unsigned int buf_size);
 int parse_def(vtw_def *defp, const char *path, boolean type_only);
-boolean validate_value(vtw_def *def, char *value);
+boolean validate_value(const vtw_def *def, char *value);
 const char *type_to_name(vtw_type_e type);
 int initialize_output(const char *op);
 void bye(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));

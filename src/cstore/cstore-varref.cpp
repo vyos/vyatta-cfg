@@ -93,15 +93,15 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
   string cr_comp= rcomps.front();
   rcomps.erase(rcomps.begin());
 
-  vtw_def def;
-  bool got_tmpl = _cstore->get_parsed_tmpl(pcomps, false, def);
+  auto_ptr<Ctemplate> def(_cstore->parseTmpl(pcomps, false));
+  bool got_tmpl = (def.get() != 0);
   bool handle_leaf = false;
   if (cr_comp == "@") {
     if (!got_tmpl) {
       // invalid path
       return;
     }
-    if (def.def_type == ERROR_TYPE) {
+    if (def->isTypeless()) {
       // no value for typeless node
       return;
     }
@@ -112,17 +112,17 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
          * $VAR(@), so use the "at string".
          */
         pcomps.push_back(_at_string);
-        process_ref(rcomps, pcomps, def.def_type);
+        process_ref(rcomps, pcomps, def->getType(1));
         return;
       }
     }
     if (pcomps.size() < _orig_path_comps.size()) {
       // within the original path. @ translates to the path comp.
       pcomps.push_back(_orig_path_comps[pcomps.size()]);
-      process_ref(rcomps, pcomps, def.def_type);
+      process_ref(rcomps, pcomps, def->getType(1));
       return;
     }
-    if (def.is_value || def.tag) {
+    if (def->isValue() || def->isTag()) {
       // invalid ref
       return;
     }
@@ -136,11 +136,12 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       return;
     }
     pcomps.pop_back();
-    if (!_cstore->get_parsed_tmpl(pcomps, false, def)) {
+    def.reset(_cstore->parseTmpl(pcomps, false));
+    if (!def.get()) {
       // invalid tmpl path
       return;
     }
-    if (def.is_value && def.tag) {
+    if (def->isTagValue()) {
       // at "tag value", need to pop one more.
       if (pcomps.size() == 0) {
         // invalid path
@@ -154,21 +155,21 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       // invalid path
       return;
     }
-    if (def.def_type == ERROR_TYPE) {
+    if (def->isTypeless()) {
       // no value for typeless node
       return;
     }
-    if (def.is_value) {
+    if (def->isValue()) {
       // invalid ref
       return;
     }
-    if (def.tag) {
+    if (def->isTag()) {
       // tag node
       vector<string> cnodes;
       _cstore->cfgPathGetChildNodes(pcomps, cnodes, _active);
       for (size_t i = 0; i < cnodes.size(); i++) {
         pcomps.push_back(cnodes[i]);
-        process_ref(rcomps, pcomps, def.def_type);
+        process_ref(rcomps, pcomps, def->getType(1));
         pcomps.pop_back();
       }
     } else {
@@ -177,7 +178,7 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
     }
   } else {
     // just text. go down 1 level.
-    if (got_tmpl && def.tag && !def.is_value) {
+    if (got_tmpl && def->isTagNode()) {
       // at "tag node". need to go down 1 more level.
       if (pcomps.size() >= _orig_path_comps.size()) {
         // already under the original node. invalid ref.
@@ -191,7 +192,7 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
   }
 
   if (handle_leaf) {
-    if (def.multi) {
+    if (def->isMulti()) {
       // multi-value node
       vector<string> vals;
       if (!_cstore->cfgPathGetValues(pcomps, vals, _active)) {
@@ -215,7 +216,8 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
         return;
       }
       pcomps.push_back(val);
-      _paths.push_back(pair<vector<string>, vtw_type_e>(pcomps, def.def_type));
+      _paths.push_back(pair<vector<string>, vtw_type_e>(pcomps,
+                                                        def->getType(1)));
       // at leaf. stop recursion.
     }
   }

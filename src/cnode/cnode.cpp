@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <memory>
 
 #include <cli_cstore.h>
 #include <cnode/cnode.hpp>
@@ -49,15 +50,15 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
       break;
     }
 
-    vtw_def def;
-    if (cstore->validateTmplPath(path_comps, false, def)) {
+    auto_ptr<Ctemplate> def(cstore->parseTmpl(path_comps, false));
+    if (def.get()) {
       // got the def
-      _is_tag = def.tag;
-      _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);
+      _is_tag = def->isTag();
+      _is_leaf = (!_is_tag && !def->isTypeless());
 
       // match constructor from cstore (leaf node never _is_value)
-      _is_value = (def.is_value && !_is_leaf);
-      _is_multi = def.multi;
+      _is_value = (def->isValue() && !_is_leaf);
+      _is_multi = def->isMulti();
 
       /* XXX given the current definition of "default", the concept of
        * "default" doesn't really apply to config files.
@@ -123,8 +124,8 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
    * "root", treat it as an intermediate node.
    */
   if (path_comps.size() > 0) {
-    vtw_def def;
-    if (cstore.validateTmplPath(path_comps, false, def)) {
+    auto_ptr<Ctemplate> def(cstore.parseTmpl(path_comps, false));
+    if (def.get()) {
       // got the def
       if (!cstore.cfgPathExists(path_comps, active)) {
         // path doesn't exist
@@ -132,10 +133,10 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
         return;
       }
 
-      _is_value = def.is_value;
-      _is_tag = def.tag;
-      _is_leaf = (!def.tag && def.def_type != ERROR_TYPE);
-      _is_multi = def.multi;
+      _is_value = def->isValue();
+      _is_tag = def->isTag();
+      _is_leaf = (!_is_tag && !def->isTypeless());
+      _is_multi = def->isMulti();
       _is_default = cstore.cfgPathDefault(path_comps, active);
       _is_deactivated = cstore.cfgPathDeactivated(path_comps, active);
       cstore.cfgPathGetComment(path_comps, _comment, active);

@@ -26,9 +26,6 @@ void *cstore_init(void);
 void cstore_free(void *handle);
 int cstore_validate_tmpl_path(void *handle, const char *path_comps[],
                               int num_comps, int validate_tags);
-int cstore_validate_tmpl_path_d(void *handle, const char *path_comps[],
-                                int num_comps, int validate_tags,
-                                vtw_def *def);
 int cstore_cfg_path_exists(void *handle, const char *path_comps[],
                            int num_comps);
 int cstore_cfg_path_deactivated(void *handle, const char *path_comps[],

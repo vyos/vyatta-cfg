@@ -57,6 +57,8 @@ vinclude_HEADERS = src/cli_cstore.h
 vcincdir = $(vincludedir)/cstore
 vcinc_HEADERS = src/cstore/cstore-c.h
 vcinc_HEADERS += src/cstore/cstore.hpp
+vcinc_HEADERS += src/cstore/cstore-varref.hpp
+vcinc_HEADERS += src/cstore/ctemplate.hpp
 
 vcuincdir = $(vcincdir)/unionfs
 vcuinc_HEADERS = src/cstore/unionfs/cstore-unionfs.hpp

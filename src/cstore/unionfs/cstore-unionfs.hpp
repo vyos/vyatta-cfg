@@ -150,7 +150,7 @@ private:
 
   // these operate on current tmpl path
   bool tmpl_node_exists();
-  bool tmpl_parse(vtw_def& def);
+  Ctemplate *tmpl_parse();
 
   // these operate on current work path
   bool add_node();
@@ -184,10 +184,10 @@ private:
   bool marked_display_default(bool active_cfg);
 
   // observers during commit operation
-  bool marked_committed(const vtw_def& def, bool is_set);
+  bool marked_committed(const Ctemplate *def, bool is_set);
 
   // these operate on both current tmpl and work paths
-  bool validate_val_impl(vtw_def *def, char *value);
+  bool validate_val_impl(const Ctemplate *def, char *value);
 
   // observers for "edit/tmpl levels" (for "edit"-related operations).
   // note that these should be moved to base class in the future.

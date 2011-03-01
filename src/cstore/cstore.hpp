@@ -22,6 +22,7 @@
 #include <tr1/unordered_map>
 
 #include <cli_cstore.h>
+#include <cstore/ctemplate.hpp>
 
 /* declare perl internal functions. just need these two so don't include
  * all the perl headers.
@@ -100,8 +101,7 @@ public:
   //// functions implemented in this base class
   // these operate on template path
   bool validateTmplPath(const vector<string>& path_comps, bool validate_vals);
-  bool validateTmplPath(const vector<string>& path_comps, bool validate_vals,
-                        vtw_def& def);
+  Ctemplate *parseTmpl(const vector<string>& path_comps, bool validate_vals);
   bool getParsedTmpl(const vector<string>& path_comps,
                      MapT<string, string>& tmap, bool allow_val = true);
   void tmplGetChildNodes(const vector<string>& path_comps,
@@ -130,8 +130,7 @@ public:
   bool validateSetPath(const vector<string>& path_comps);
   bool setCfgPath(const vector<string>& path_comps);
   // delete
-  bool validateDeletePath(const vector<string>& path_comps, vtw_def& def);
-  bool deleteCfgPath(const vector<string>& path_comps, const vtw_def& def);
+  bool deleteCfgPath(const vector<string>& path_comps);
   // activate (actually "unmark deactivated" since it is 2-state, not 3)
   bool validateActivatePath(const vector<string>& path_comps);
   bool unmarkCfgPathDeactivated(const vector<string>& path_comps);
@@ -145,8 +144,7 @@ public:
   bool validateCopyArgs(const vector<string>& args);
   bool copyCfgPath(const vector<string>& args);
   // comment
-  bool validateCommentArgs(const vector<string>& args, vtw_def& def);
-  bool commentCfgPath(const vector<string>& args, const vtw_def& def);
+  bool commentCfgPath(const vector<string>& args);
   // discard
   bool discardChanges();
   // move
@@ -340,7 +338,7 @@ private:
 
   // these operate on current tmpl path
   virtual bool tmpl_node_exists() = 0;
-  virtual bool tmpl_parse(vtw_def& def) = 0;
+  virtual Ctemplate *tmpl_parse() = 0;
 
   // these operate on current work path (or active with "active_cfg")
   virtual bool remove_node() = 0;
@@ -374,10 +372,10 @@ private:
   virtual bool marked_display_default(bool active_cfg) = 0;
 
   // observers during commit operation
-  virtual bool marked_committed(const vtw_def& def, bool is_set) = 0;
+  virtual bool marked_committed(const Ctemplate *def, bool is_set) = 0;
 
   // these operate on both current tmpl and work paths
-  virtual bool validate_val_impl(vtw_def *def, char *value) = 0;
+  virtual bool validate_val_impl(const Ctemplate *def, char *value) = 0;
 
   // observers for "edit/tmpl levels" (for "edit"-related operations)
   /* note that these should be handled in the base class since they
@@ -435,15 +433,15 @@ private:
 
   // these require full path
   // (note: get_parsed_tmpl also uses current tmpl path)
-  bool get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
-                       vtw_def& def, string& error);
-  bool get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
-                       vtw_def& def) {
+  Ctemplate *get_parsed_tmpl(const vector<string>& path_comps,
+                             bool validate_vals, string& error);
+  Ctemplate *get_parsed_tmpl(const vector<string>& path_comps,
+                             bool validate_vals) {
     string dummy;
-    return get_parsed_tmpl(path_comps, validate_vals, def, dummy);
+    return get_parsed_tmpl(path_comps, validate_vals, dummy);
   };
-  bool validate_act_deact(const vector<string>& path_comps, const string& op,
-                          vtw_def& def);
+  Ctemplate *validate_act_deact(const vector<string>& path_comps,
+                                const string& op);
   bool validate_rename_copy(const vector<string>& args, const string& op);
   bool conv_move_args_for_rename(const vector<string>& args,
                                  vector<string>& edit_path_comps,
@@ -465,8 +463,8 @@ private:
     vector<string> vvec(1, value);
     return write_value_vec(vvec, active_cfg);
   };
-  bool add_tag(const vtw_def& def);
-  bool add_value_to_multi(const vtw_def& def, const string& value);
+  bool add_tag(unsigned int tlimit);
+  bool add_value_to_multi(unsigned int mlimit, const string& value);
   bool add_child_node(const string& name) {
     push_cfg_path(name);
     bool ret = add_node();
@@ -480,7 +478,7 @@ private:
   bool cfg_value_exists(const string& value, bool active_cfg);
 
   // these operate on both current tmpl and work paths
-  bool validate_val(const vtw_def *def, const string& value);
+  bool validate_val(const Ctemplate *def, const string& value);
   bool create_default_children();
   void get_edit_env(string& env);
 

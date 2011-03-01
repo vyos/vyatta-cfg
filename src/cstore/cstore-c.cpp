@@ -60,19 +60,6 @@ cstore_validate_tmpl_path(void *handle, const char *path_comps[],
 }
 
 int
-cstore_validate_tmpl_path_d(void *handle, const char *path_comps[],
-                            int num_comps, int validate_tags, vtw_def *def)
-{
-  if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
-    Cstore *cs = (Cstore *) handle;
-    return (cs->validateTmplPath(vs, validate_tags, *def) ? 1 : 0);
-  }
-  return 0;
-}
-
-int
 cstore_cfg_path_exists(void *handle, const char *path_comps[], int num_comps)
 {
   if (handle) {

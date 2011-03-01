@@ -93,11 +93,7 @@ doSet(Cstore& cstore, const vector<string>& path_comps)
 static void
 doDelete(Cstore& cstore, const vector<string>& path_comps)
 {
-  vtw_def def;
-  if (!cstore.validateDeletePath(path_comps, def)) {
-    bye("invalid delete path");
-  }
-  if (!cstore.deleteCfgPath(path_comps, def)) {
+  if (!cstore.deleteCfgPath(path_comps)) {
     bye("delete failed\n");
   }
 }
@@ -149,11 +145,7 @@ doCopy(Cstore& cstore, const vector<string>& path_comps)
 static void
 doComment(Cstore& cstore, const vector<string>& path_comps)
 {
-  vtw_def def;
-  if (!cstore.validateCommentArgs(path_comps, def)) {
-    bye("invalid comment args\n");
-  }
-  if (!cstore.commentCfgPath(path_comps, def)) {
+  if (!cstore.commentCfgPath(path_comps)) {
     bye("comment cfg path failed\n");
   }
 }

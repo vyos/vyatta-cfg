@@ -415,17 +415,21 @@ UnionfsCstore::tmpl_node_exists()
   return (b_fs_exists(tmpl_path) && b_fs_is_directory(tmpl_path));
 }
 
-/* parse template at current tmpl_path.
- *   def: for storing parsed template.
- * return true if successful. otherwise return false.
+/* parse template at current tmpl_path and return an allocated Ctemplate
+ * pointer if successful. otherwise return 0.
  */
-bool
-UnionfsCstore::tmpl_parse(vtw_def& def)
+Ctemplate *
+UnionfsCstore::tmpl_parse()
 {
+  tr1::shared_ptr<vtw_def> def(new vtw_def);
+  vtw_def *_def = def.get();
   b_fs::path tp = tmpl_path / C_DEF_NAME;
-  bool ret = (b_fs_exists(tp) && b_fs_is_regular(tp)
-              && parse_def(&def, tp.file_string().c_str(), 0) == 0);
-  return ret;
+  if (_def && b_fs_exists(tp) && b_fs_is_regular(tp)
+      && parse_def(_def, tp.file_string().c_str(), 0) == 0) {
+    // succes
+    return (new Ctemplate(def));
+  }
+  return 0;
 }
 
 bool
@@ -905,11 +909,11 @@ UnionfsCstore::cfg_node_changed()
  *           be only one operation on the path).
  */
 bool
-UnionfsCstore::marked_committed(const vtw_def& def, bool is_set)
+UnionfsCstore::marked_committed(const Ctemplate *def, bool is_set)
 {
   b_fs::path cpath = mutable_cfg_path;
   string com_str = cpath.file_string() + "/";
-  if (def.is_value && !def.tag) {
+  if (def->isLeafValue()) {
     // path includes leaf value. construct the right string.
     string val = _unescape_path_name(cpath.filename());
     cpath = cpath.parent_path();
@@ -917,7 +921,7 @@ UnionfsCstore::marked_committed(const vtw_def& def, bool is_set)
      *     single-value nodes but not for multi-value nodes for some
      *     reason. the following match current behavior.
      */
-    if (!def.multi) {
+    if (!def->isMulti()) {
       val = _escape_path_name(val);
     }
     com_str = cpath.file_string() + "/value:" + val;
@@ -927,7 +931,7 @@ UnionfsCstore::marked_committed(const vtw_def& def, bool is_set)
 }
 
 bool
-UnionfsCstore::validate_val_impl(vtw_def *def, char *value)
+UnionfsCstore::validate_val_impl(const Ctemplate *def, char *value)
 {
   /* XXX filesystem paths/accesses are completely embedded in var ref lib.
    *     for now, treat the lib as a unionfs-specific implementation.
@@ -936,7 +940,7 @@ UnionfsCstore::validate_val_impl(vtw_def *def, char *value)
    * processing. this is a global var in cli_new.c.
    */
   var_ref_handle = (void *) this;
-  bool ret = validate_value(def, value);
+  bool ret = validate_value(def->getDef(), value);
   var_ref_handle = NULL;
   return ret;
 }

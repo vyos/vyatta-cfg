@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <sstream>
+#include <memory>
 
 // for debian's version comparison algorithm
 #define APT_COMPATIBILITY 986
@@ -121,22 +122,19 @@ Cstore::createCstore(const string& session_id, string& env)
 bool
 Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals)
 {
-  vtw_def def;
   // if we can get parsed tmpl, path is valid
-  return get_parsed_tmpl(path_comps, validate_vals, def);
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, validate_vals));
+  return (def.get() != 0);
 }
 
-/* same as above but return parsed template.
- *   def: (output) parsed template.
+/* same as above but return parsed template. return 0 if invalid/failed.
  * note: if last path component is "value" (i.e., def.is_value), parsed
  * template is actually at "full path - 1". see get_parsed_tmpl() for details.
  */
-bool
-Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals,
-                         vtw_def& def)
+Ctemplate *
+Cstore::parseTmpl(const vector<string>& path_comps, bool validate_vals)
 {
-  // if we can get parsed tmpl, path is valid
-  return get_parsed_tmpl(path_comps, validate_vals, def);
+  return get_parsed_tmpl(path_comps, validate_vals);
 }
 
 /* get parsed template of specified path as a string-string map
@@ -147,7 +145,6 @@ bool
 Cstore::getParsedTmpl(const vector<string>& path_comps,
                       Cstore::MapT<string, string>& tmap, bool allow_val)
 {
-  vtw_def def;
   /* currently this function is used outside actual CLI operations, mainly
    * from the perl API. since value validation is from the original CLI
    * implementation, it doesn't seem to behave correctly in such cases,
@@ -155,54 +152,55 @@ Cstore::getParsedTmpl(const vector<string>& path_comps,
    *
    * anyway, not validating values in the following call.
    */
-  if (!get_parsed_tmpl(path_comps, false, def)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  if (!def.get()) {
     return false;
   }
-  if (!allow_val && def.is_value) {
+  if (!allow_val && def->isValue()) {
     /* note: !allow_val means specified path must terminate at an actual
      *       "node", not a "value". so this fails since path ends in value.
      *       this emulates the original perl API behavior.
      */
     return false;
   }
-  if (def.is_value) {
+  if (def->isValue()) {
     tmap["is_value"] = "1";
   }
   // make the map
-  if (def.def_type != ERROR_TYPE) {
-    tmap["type"] = type_to_name(def.def_type);
+  if (!def->isTypeless(1)) {
+    tmap["type"] = def->getTypeName(1);
   }
-  if (def.def_type2 != ERROR_TYPE) {
-    tmap["type2"] = type_to_name(def.def_type2);
+  if (!def->isTypeless(2)) {
+    tmap["type2"] = def->getTypeName(2);
   }
-  if (def.def_node_help) {
-    tmap["help"] = def.def_node_help;
+  if (def->getNodeHelp()) {
+    tmap["help"] = def->getNodeHelp();
   }
-  if (def.multi) {
+  if (def->isMulti()) {
     tmap["multi"] = "1";
-    if (def.def_multi > 0) {
+    if (def->getMultiLimit() > 0) {
       ostringstream s;
-      s << def.def_multi;
+      s << def->getMultiLimit();
       tmap["limit"] = s.str();
     }
-  } else if (def.tag) {
+  } else if (def->isTag()) {
     tmap["tag"] = "1";
-    if (def.def_tag > 0) {
+    if (def->getTagLimit() > 0) {
       ostringstream s;
-      s << def.def_tag;
+      s << def->getTagLimit();
       tmap["limit"] = s.str();
     }
-  } else if (def.def_default) {
-    tmap["default"] = def.def_default;
+  } else if (def->getDefault()) {
+    tmap["default"] = def->getDefault();
   }
-  if (def.def_enumeration) {
-    tmap["enum"] = def.def_enumeration;
+  if (def->getEnumeration()) {
+    tmap["enum"] = def->getEnumeration();
   }
-  if (def.def_allowed) {
-    tmap["allowed"] = def.def_allowed;
+  if (def->getAllowed()) {
+    tmap["allowed"] = def->getAllowed();
   }
-  if (def.def_val_help) {
-    tmap["val_help"] = def.def_val_help;
+  if (def->getValHelp()) {
+    tmap["val_help"] = def->getValHelp();
   }
   return true;
 }
@@ -223,19 +221,23 @@ Cstore::tmplGetChildNodes(const vector<string>& path_comps,
 }
 
 /* delete specified "logical path" from "working config".
- *   def: parsed template corresponding to logical path path_comps.
  * return true if successful. otherwise return false.
- * note: assume specified path has been validated
- *       (i.e., validateDeletePath()).
  */
 bool
-Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
+Cstore::deleteCfgPath(const vector<string>& path_comps)
 {
   ASSERT_IN_SESSION;
 
+  string terr;
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  if (!def.get()) {
+    output_user("%s\n", terr.c_str());
+    return false;
+  }
+
   if (!cfg_path_exists(path_comps, false, true)) {
     output_user("Nothing to delete (the specified %s does not exist)\n",
-                (!def.is_value || def.tag) ? "node" : "value");
+                (!def->isValue() || def->isTag()) ? "node" : "value");
     // treat as success
     return true;
   }
@@ -247,11 +249,11 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
    *   2. no default value
    *      => remove config path
    */
-  if (def.def_default) {
+  if (def->getDefault()) {
     // case 1. construct path for value file.
     SAVE_PATHS;
     append_cfg_path(path_comps);
-    if (def.is_value) {
+    if (def->isValue()) {
       // last comp is "value". need to go up 1 level.
       pop_cfg_path();
     }
@@ -261,7 +263,7 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
      * also deactivated. note that unmark_deactivated() succeeds if it's
      * not marked deactivated. also mark "changed".
      */
-    bool ret = (write_value(def.def_default) && mark_display_default()
+    bool ret = (write_value(def->getDefault()) && mark_display_default()
                 && unmark_deactivated() && mark_changed_with_ancestors());
     if (!ret) {
       output_user("Failed to set default value during delete\n");
@@ -287,15 +289,15 @@ Cstore::deleteCfgPath(const vector<string>& path_comps, const vtw_def& def)
   bool ret = false;
   SAVE_PATHS;
   append_cfg_path(path_comps);
-  if (!def.is_value) {
+  if (!def->isValue()) {
     // sub-case (2)
     ret = remove_node();
   } else {
     // last comp is value
-    if (def.tag) {
+    if (def->isTag()) {
       // sub-case (1c)
       ret = remove_tag();
-    } else if (def.multi) {
+    } else if (def->isMulti()) {
       // sub-case (1b)
       pop_cfg_path();
       ret = remove_value_from_multi(path_comps[path_comps.size() - 1]);
@@ -325,17 +327,17 @@ Cstore::validateSetPath(const vector<string>& path_comps)
   ASSERT_IN_SESSION;
 
   // if we can get parsed tmpl, path is valid
-  vtw_def def;
   string terr;
-  if (!get_parsed_tmpl(path_comps, true, def, terr)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, true, terr));
+  if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
 
   bool ret = true;
   SAVE_PATHS;
-  if (!def.is_value) {
-    if (def.def_type != ERROR_TYPE) {
+  if (!def->isValue()) {
+    if (!def->isTypeless()) {
       /* disallow setting value node without value
        * note: different from old behavior, which only disallow setting a
        *       single-value node without value. now all value nodes
@@ -353,29 +355,13 @@ Cstore::validateSetPath(const vector<string>& path_comps)
        */
       append_cfg_path(path_comps);
       append_tmpl_path(path_comps);
-      if (!validate_val(&def, "")) {
+      if (!validate_val(def.get(), "")) {
         ret = false;
       }
     }
   }
   RESTORE_PATHS;
   return ret;
-}
-
-/* check if specified "logical path" is valid for "delete" operation
- * return true if valid. otherwise return false.
- */
-bool
-Cstore::validateDeletePath(const vector<string>& path_comps, vtw_def& def)
-{
-  ASSERT_IN_SESSION;
-
-  string terr;
-  if (!get_parsed_tmpl(path_comps, false, def, terr)) {
-    output_user("%s\n", terr.c_str());
-    return false;
-  }
-  return true;
 }
 
 /* check if specified "logical path" is valid for "activate" operation
@@ -386,8 +372,8 @@ Cstore::validateActivatePath(const vector<string>& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  vtw_def def;
-  if (!validate_act_deact(path_comps, "activate", def)) {
+  auto_ptr<Ctemplate> def(validate_act_deact(path_comps, "activate"));
+  if (!def.get()) {
     return false;
   }
   if (!cfgPathMarkedDeactivated(path_comps)) {
@@ -396,7 +382,7 @@ Cstore::validateActivatePath(const vector<string>& path_comps)
     return false;
   }
   bool ret = true;
-  if (def.is_value && def.tag && def.def_tag > 0) {
+  if (def->isTagValue() && def->getTagLimit() > 0) {
     // we are activating a tag, and there is a limit on number of tags.
     vector<string> cnodes;
     SAVE_PATHS;
@@ -404,10 +390,10 @@ Cstore::validateActivatePath(const vector<string>& path_comps)
     string t = pop_cfg_path();
     // get child nodes, excluding deactivated ones.
     get_all_child_node_names(cnodes, false, false);
-    if (def.def_tag <= cnodes.size()) {
+    if (def->getTagLimit() <= cnodes.size()) {
       // limit exceeded
       output_user("Cannot activate \"%s\": number of values exceeds limit "
-                  "(%d allowed)\n", t.c_str(), def.def_tag);
+                  "(%d allowed)\n", t.c_str(), def->getTagLimit());
       ret = false;
     }
     RESTORE_PATHS;
@@ -423,8 +409,8 @@ Cstore::validateDeactivatePath(const vector<string>& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  vtw_def def;
-  return validate_act_deact(path_comps, "deactivate", def);
+  auto_ptr<Ctemplate> def(validate_act_deact(path_comps, "deactivate"));
+  return (def.get() != 0);
 }
 
 /* check if specified "logical path" is valid for "edit" operation.
@@ -437,9 +423,9 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
 {
   ASSERT_IN_SESSION;
 
-  vtw_def def;
   string terr;
-  if (!get_parsed_tmpl(path_comps, false, def, terr)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
@@ -448,8 +434,7 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
    *   OR
    *   (2) "typeless node"
    */
-  if (!(def.is_value && def.tag)
-      && !(!def.is_value && def.def_type == ERROR_TYPE)) {
+  if (!def->isTagValue() && !def->isTypeless()) {
     // neither "tag value" nor "typeless node"
     output_user("The \"edit\" command cannot be issued "
                 "at the specified level\n");
@@ -502,19 +487,16 @@ Cstore::getEditUpEnv(string& env)
     return false;
   }
 
-  /* get_parsed_tmpl() does not allow empty path, so use one component
-   * from current paths.
-   */
-  vtw_def def;
   string terr;
   vector<string> path_comps;
-  if (!get_parsed_tmpl(path_comps, false, def, terr)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  if (!def.get()) {
     // this should not happen since it's using existing levels
     output_user("%s\n", terr.c_str());
     return false;
   }
   SAVE_PATHS;
-  if (def.is_value && def.tag) {
+  if (def->isTagValue()) {
     // edit level is at "tag value". go up 1 extra level.
     pop_cfg_path();
     pop_tmpl_path();
@@ -574,9 +556,13 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
   bool ret = false;
   SAVE_PATHS;
   do {
-    vtw_def def;
+    bool is_typeless = true;
+    bool is_leaf_value = false;
+    bool is_value = false;
+    auto_ptr<Ctemplate> def;
     if (pcomps.size() > 0) {
-      if (!get_parsed_tmpl(pcomps, false, def)) {
+      def.reset(get_parsed_tmpl(pcomps, false));
+      if (!def.get()) {
         // invalid path
         break;
       }
@@ -586,16 +572,20 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
       }
       append_cfg_path(pcomps);
       append_tmpl_path(pcomps);
+      is_typeless = def->isTypeless();
+      is_leaf_value = def->isLeafValue();
+      is_value = def->isValue();
     } else {
-      // we are at root. simulate a typeless node.
-      def.def_type = ERROR_TYPE;
-      def.tag = def.multi = def.is_value = 0;
+      /* we are at root. default values simulate a typeless node so nop.
+       * note that in this case def is "empty", so must ensure that it's
+       * not used.
+       */
     }
 
     /* at this point, cfg and tmpl paths are constructed up to the comp
      * before last_comp, and def is parsed.
      */
-    if (def.is_value && !def.tag) {
+    if (is_leaf_value) {
       // invalid path (this means the comp before last_comp is a leaf value)
       break;
     }
@@ -605,7 +595,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
     string comp_help;
     vector<pair<string, string> > help_pairs;
     bool last_comp_val = true;
-    if (def.def_type == ERROR_TYPE || def.is_value) {
+    if (is_typeless || is_value) {
       /* path so far is at a typeless node OR a tag value (tag already
        * checked above):
        *   completions: from tmpl children.
@@ -615,6 +605,9 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
        *
        * note: for such completions, we filter non-existent nodes if
        *       necessary.
+       *
+       * also, the "root" node case above will reach this block, so
+       * must not use def in this block.
        */
       vector<string> ufvec;
       if (exists_only) {
@@ -638,9 +631,9 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
       for (size_t i = 0; i < comp_vals.size(); i++) {
         pair<string, string> hpair(comp_vals[i], "");
         push_tmpl_path(hpair.first);
-        vtw_def cdef;
-        if (tmpl_parse(cdef) && cdef.def_node_help) {
-          hpair.second = cdef.def_node_help;
+        auto_ptr<Ctemplate> cdef(tmpl_parse());
+        if (cdef.get() && cdef->getNodeHelp()) {
+          hpair.second = cdef->getNodeHelp();
         } else {
           hpair.second = "<No help text available>";
         }
@@ -653,9 +646,11 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
       /* path so far is at a "value node".
        * note: follow the original implementation and don't filter
        *       non-existent values for such completions
+       *
+       * also, cannot be "root" node if we reach here, so def can be used.
        */
       // first, handle completions.
-      if (def.tag) {
+      if (def->isTag()) {
         // it's a "tag node". get completions from tag values.
         get_all_child_node_names(comp_vals, false, true);
       } else {
@@ -667,7 +662,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
        *   "enumeration"
        *   "$VAR(@) in ..."
        */
-      if (def.def_enumeration || def.def_allowed) {
+      if (def->getEnumeration() || def->getAllowed()) {
         /* do "enumeration" or "allowed".
          * note: emulate original implementation and set up COMP_WORDS and
          *       COMP_CWORD environment variables. these are needed by some
@@ -682,10 +677,10 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
           cmd_str += (" '" + comps[i] + "'");
         }
         cmd_str += "); ";
-        if (def.def_enumeration) {
-          cmd_str += (C_ENUM_SCRIPT_DIR + "/" + def.def_enumeration);
+        if (def->getEnumeration()) {
+          cmd_str += (C_ENUM_SCRIPT_DIR + "/" + def->getEnumeration());
         } else {
-          string astr = def.def_allowed;
+          string astr = def->getAllowed();
           shell_escape_squotes(astr);
           cmd_str += "_cstore_internal_allowed () { eval '";
           cmd_str += astr;
@@ -711,10 +706,10 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
          * shell into an array of values.
          */
         free(buf);
-      } else if (def.actions[syntax_act].vtw_list_head) {
+      } else if (def->getActions(syntax_act)->vtw_list_head) {
         // look for "self ref in values" from syntax
         const valstruct *vals = get_syntax_self_in_valstruct(
-                                  def.actions[syntax_act].vtw_list_head);
+                                  def->getActions(syntax_act)->vtw_list_head);
         if (vals) {
           if (vals->cnt == 0 && vals->val) {
             comp_vals.push_back(vals->val);
@@ -729,23 +724,23 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
       }
 
       // now handle help.
-      if (def.def_comp_help) {
+      if (def->getCompHelp()) {
         // "comp_help" exists.
-        comp_help = def.def_comp_help;
+        comp_help = def->getCompHelp();
         shell_escape_squotes(comp_help);
       }
-      if (def.def_val_help) {
+      if (def->getValHelp()) {
         // has val_help. first separate individual lines.
         size_t start = 0, i = 0;
         vector<string> vhelps;
-        for (i = 0; def.def_val_help[i]; i++) {
-          if (def.def_val_help[i] == '\n') {
-            vhelps.push_back(string(&(def.def_val_help[start]), i - start));
+        for (i = 0; (def->getValHelp())[i]; i++) {
+          if ((def->getValHelp())[i] == '\n') {
+            vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
             start = i + 1;
           }
         }
         if (start < i) {
-          vhelps.push_back(string(&(def.def_val_help[start]), i - start));
+          vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
         }
 
         // process each line
@@ -753,15 +748,15 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
           size_t sc;
           if ((sc = vhelps[i].find(';')) == vhelps[i].npos) {
             // no ';'
-            if (i == 0 && def.def_type != ERROR_TYPE) {
+            if (i == 0 && !def->isTypeless(1)) {
               // first val_help. pair with "type".
               help_pairs.push_back(pair<string, string>(
-                                     type_to_name(def.def_type), vhelps[i]));
+                                     def->getTypeName(1), vhelps[i]));
             }
-            if (i == 1 && def.def_type2 != ERROR_TYPE) {
-              // second val_help. pair with "type2".
+            if (i == 1 && !def->isTypeless(2)) {
+              // second val_help. pair with second "type".
               help_pairs.push_back(pair<string, string>(
-                                     type_to_name(def.def_type2), vhelps[i]));
+                                     def->getTypeName(2), vhelps[i]));
             }
           } else {
             // ';' at index sc
@@ -770,12 +765,16 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
                                    vhelps[i].substr(sc + 1)));
           }
         }
-      } else if (def.def_type && def.def_node_help) {
+      } else if (!def->isTypeless(1) && def->getNodeHelp()) {
         // simple case. just use "type" and "help"
-        help_pairs.push_back(pair<string, string>(type_to_name(def.def_type),
-                                                  def.def_node_help));
+        help_pairs.push_back(pair<string, string>(def->getTypeName(1),
+                                                  def->getNodeHelp()));
       }
     }
+
+    /* from this point on cannot use def (since the "root" node case
+     * can reach here).
+     */
 
     // this var is the array of possible completions
     env = (C_ENV_SHAPI_COMP_VALS + "=(");
@@ -896,61 +895,6 @@ Cstore::validateMoveArgs(const vector<string>& args)
   return ret;
 }
 
-/* check if specified "arguments" is valid for "comment" operation
- * return true if valid. otherwise return false.
- */
-bool
-Cstore::validateCommentArgs(const vector<string>& args, vtw_def& def)
-{
-  ASSERT_IN_SESSION;
-
-  /* separate path from comment.
-   * follow the original implementation: the last arg is the comment, and
-   * everything else is part of the path.
-   */
-  vector<string> path_comps(args);
-  string comment = args.back();
-  path_comps.pop_back();
-
-  // check the path
-  string terr;
-  if (!get_parsed_tmpl(path_comps, false, def, terr)) {
-    output_user("%s\n", terr.c_str());
-    return false;
-  }
-  // here we want to include deactivated nodes
-  if (!cfg_path_exists(path_comps, false, true)) {
-    output_user("The specified config node does not exist\n");
-    return false;
-  }
-  if (def.is_value && !def.tag) {
-    /* XXX differ from the original implementation, which allows commenting
-     *     on a "value" BUT silently "promote" the comment to the parent
-     *     "node". this will probably create confusion for the user.
-     *
-     *     just disallow such cases here.
-     */
-    output_user("Cannot comment on config values\n");
-    return false;
-  }
-  if (def.tag && !def.is_value) {
-    /* XXX follow original implementation and disallow comment on a
-     *     "tag node". this is because "show" does not display such
-     *     comments (see bug 5794).
-     */
-    output_user("Cannot add comment at this level\n");
-    return false;
-  }
-  if (comment.find_first_of('*') != string::npos) {
-    // don't allow '*'. this is due to config files using C-style /**/
-    // comments. this probably belongs to lower-level, but we are enforcing
-    // it here.
-    output_user("Cannot use the '*' character in a comment\n");
-    return false;
-  }
-  return true;
-}
-
 /* perform rename in "working config" according to specified args.
  * return true if successful. otherwise return false.
  * note: assume args are already validated (i.e., validateRenameArgs()).
@@ -1000,14 +944,55 @@ Cstore::copyCfgPath(const vector<string>& args)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::commentCfgPath(const vector<string>& args, const vtw_def& def)
+Cstore::commentCfgPath(const vector<string>& args)
 {
   ASSERT_IN_SESSION;
 
-  // separate path from comment
+  /* separate path from comment.
+   * follow the original implementation: the last arg is the comment, and
+   * everything else is part of the path.
+   */
   vector<string> path_comps(args);
   string comment = args.back();
   path_comps.pop_back();
+
+  // check the path
+  string terr;
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  if (!def.get()) {
+    output_user("%s\n", terr.c_str());
+    return false;
+  }
+  // here we want to include deactivated nodes
+  if (!cfg_path_exists(path_comps, false, true)) {
+    output_user("The specified config node does not exist\n");
+    return false;
+  }
+  if (def->isLeafValue()) {
+    /* XXX differ from the original implementation, which allows commenting
+     *     on a "value" BUT silently "promote" the comment to the parent
+     *     "node". this will probably create confusion for the user.
+     *
+     *     just disallow such cases here.
+     */
+    output_user("Cannot comment on config values\n");
+    return false;
+  }
+  if (def->isTagNode()) {
+    /* XXX follow original implementation and disallow comment on a
+     *     "tag node". this is because "show" does not display such
+     *     comments (see bug 5794).
+     */
+    output_user("Cannot add comment at this level\n");
+    return false;
+  }
+  if (comment.find_first_of('*') != string::npos) {
+    // don't allow '*'. this is due to config files using C-style /**/
+    // comments. this probably belongs to lower-level, but we are enforcing
+    // it here.
+    output_user("Cannot use the '*' character in a comment\n");
+    return false;
+  }
 
   SAVE_PATHS;
   append_cfg_path(path_comps);
@@ -1344,8 +1329,8 @@ Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
     ASSERT_IN_SESSION;
   }
 
-  vtw_def def;
-  if (!get_parsed_tmpl(path_comps, false, def)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  if (!def.get()) {
     // invalid node
     return false;
   }
@@ -1355,7 +1340,7 @@ Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
    *       original API will return a single string that includes all values.
    *       this new function will return failure in such cases.
    */
-  if (def.is_value || def.multi || def.tag || def.def_type == ERROR_TYPE) {
+  if (!def->isSingleLeafNode()) {
     // specified path is not a single-value node
     return false;
   }
@@ -1405,8 +1390,8 @@ Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
     ASSERT_IN_SESSION;
   }
 
-  vtw_def def;
-  if (!get_parsed_tmpl(path_comps, false, def)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  if (!def.get()) {
     // invalid node
     return false;
   }
@@ -1416,7 +1401,7 @@ Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
    *       original API will return the node's value. this new function
    *       will return failure in such cases.
    */
-  if (def.is_value || !def.multi || def.tag || def.def_type == ERROR_TYPE) {
+  if (!def->isMultiLeafNode()) {
     // specified path is not a multi-value node
     return false;
   }
@@ -1551,8 +1536,8 @@ Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
 bool
 Cstore::cfgPathEffective(const vector<string>& path_comps)
 {
-  vtw_def def;
-  if (!validateTmplPath(path_comps, false, def)) {
+  auto_ptr<Ctemplate> def(parseTmpl(path_comps, false));
+  if (!def.get()) {
     // invalid path
     return false;
   }
@@ -1573,10 +1558,10 @@ Cstore::cfgPathEffective(const vector<string>& path_comps)
   append_cfg_path(path_comps);
   if (!in_active && in_work) {
     // check if case (2)
-    ret = marked_committed(def, true);
+    ret = marked_committed(def.get(), true);
   } else if (in_active && !in_work) {
     // check if case (3)
-    ret = !marked_committed(def, false);
+    ret = !marked_committed(def.get(), false);
   }
   RESTORE_PATHS;
 
@@ -1765,15 +1750,12 @@ Cstore::setVarRef(const string& ref_str, const string& value, bool to_active)
   bool ret = false;
   if (vref.getSetPath(pcomps)) {
     reset_paths();
-    vtw_def def;
-    if (get_parsed_tmpl(pcomps, false, def)) {
-      if (!def.is_value && !def.tag && !def.multi
-          && def.def_type != ERROR_TYPE) {
-        // currently only support single-value node
-        append_cfg_path(pcomps);
-        if (write_value(value, to_active)) {
-          ret = true;
-        }
+    auto_ptr<Ctemplate> def(get_parsed_tmpl(pcomps, false));
+    if (def.get() && def->isSingleLeafNode()) {
+      // currently only support single-value node
+      append_cfg_path(pcomps);
+      if (write_value(value, to_active)) {
+        ret = true;
       }
     }
   }
@@ -1859,9 +1841,7 @@ Cstore::loadFile(const char *filename)
 
   // "apply" the changes to the working config
   for (size_t i = 0; i < del_list.size(); i++) {
-    vtw_def def;
-    if (!validateDeletePath(del_list[i], def)
-        || !deleteCfgPath(del_list[i], def)) {
+    if (!deleteCfgPath(del_list[i])) {
       print_str_vec("Delete [", "] failed\n", del_list[i], "'");
     }
   }
@@ -1871,9 +1851,7 @@ Cstore::loadFile(const char *filename)
     }
   }
   for (size_t i = 0; i < com_list.size(); i++) {
-    vtw_def def;
-    if (!validateCommentArgs(com_list[i], def)
-        || !commentCfgPath(com_list[i], def)) {
+    if (!commentCfgPath(com_list[i])) {
       print_str_vec("Comment [", "] failed\n", com_list[i], "'");
     }
   }
@@ -2043,23 +2021,23 @@ Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
  * then template at the path is parsed.
  *   path_comps: vector of path components.
  *   validate_vals: whether to validate all "values" along specified path.
- *   def: (output) parsed template.
  *   error: (output) error message if failed.
- * return false if invalid template path. otherwise return true.
+ * return parsed template if successful. otherwise return 0.
  * note:
- *   also, if last path component is value (i.e., def.is_value), the template
+ *   also, if last path component is value (i.e., isValue()), the template
  *   parsed is actually at "full path - 1".
  */
-bool
+Ctemplate *
 Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
-                        vtw_def& def, string& error)
+                        string& error)
 {
+  Ctemplate *rtmpl = 0;
   // default error message
   error = "The specified configuration node is not valid";
 
   if (tmpl_path_at_root() && path_comps.size() == 0) {
     // empty path not valid
-    return false;
+    return rtmpl;
   }
 
   /* note: this function may be invoked recursively (depth 1) when
@@ -2088,7 +2066,6 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
       }
     }
   }
-  bool ret = false;
   do {
     /* cases for template path:
      * (1) valid path ending in "actual node", i.e., typeless node, tag node,
@@ -2125,7 +2102,7 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
            *       pop it.
            */
           pop_tmpl_path();
-          if (!validate_val(NULL, (*pcomps)[i])) {
+          if (!validate_val(0, (*pcomps)[i])) {
             // invalid value
             error = "Value validation failed";
             valid = false;
@@ -2154,19 +2131,20 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
      * we haven't done anything yet.
      */
     if (pcomps->size() > 1) {
-      if (tmpl_parse(def)) {
-        if (def.tag || def.multi || def.def_type != ERROR_TYPE) {
+      auto_ptr<Ctemplate> ttmpl(tmpl_parse());
+      if (ttmpl.get()) {
+        if (ttmpl->isTag() || ttmpl->isMulti() || !ttmpl->isTypeless()) {
           // case (2). last component is "value".
           if (validate_vals) {
             // validate value
-            if (!validate_val(&def, (*pcomps)[pcomps->size() - 1])) {
+            if (!validate_val(ttmpl.get(), (*pcomps)[pcomps->size() - 1])) {
               // invalid value
               error = "Value validation failed";
               break;
             }
           }
-          def.is_value = 1;
-          ret = true;
+          rtmpl = ttmpl.release();
+          rtmpl->setIsValue(true);
           break;
         }
       }
@@ -2181,12 +2159,11 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
     // no need to push cfg path (only needed for validate_val())
     if (tmpl_node_exists()) {
       // case (1). last component is "node".
-      if (!tmpl_parse(def)) {
+      if (!(rtmpl = tmpl_parse())) {
         exit_internal("failed to parse tmpl [%s]\n",
                       tmpl_path_to_str().c_str());
       }
-      def.is_value = 0;
-      ret = true;
+      rtmpl->setIsValue(false);
       break;
     }
     // case (3) (fall through)
@@ -2196,21 +2173,21 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
   } else {
     restore_paths(not_validating);
   }
-  return ret;
+  return rtmpl;
 }
 
 /* check if specified "logical path" is valid for "activate" or
  * "deactivate" operation.
- * return true if valid. otherwise return false.
+ * return parsed template if valid. otherwise return 0.
  */
-bool
-Cstore::validate_act_deact(const vector<string>& path_comps, const string& op,
-                           vtw_def& def)
+Ctemplate *
+Cstore::validate_act_deact(const vector<string>& path_comps, const string& op)
 {
   string terr;
-  if (!get_parsed_tmpl(path_comps, false, def, terr)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  if (!def.get()) {
     output_user("%s\n", terr.c_str());
-    return false;
+    return 0;
   }
   {
     /* XXX this is a temporary workaround for bug 5708, which should be
@@ -2218,24 +2195,25 @@ Cstore::validate_act_deact(const vector<string>& path_comps, const string& op,
      *     resolved (see bug for more details). once those are resolved,
      *     this workaround should be removed and the bug fixed properly.
      */
-    if (!def.tag && def.def_type != ERROR_TYPE) {
+    if (!def->isTag() && !def->isTypeless()) {
       output_user("Cannot %s a leaf configuration node\n", op.c_str());
-      return false;
+      return 0;
     }
   }
-  if (def.is_value && !def.tag) {
+  if (def->isLeafValue()) {
     /* last component is a value of a single- or multi-value node (i.e.,
      * a leaf value) => not allowed
      */
     output_user("Cannot %s a leaf configuration value\n", op.c_str());
-    return false;
+    return 0;
   }
   if (!cfg_path_exists(path_comps, false, true)) {
     output_user("Nothing to %s (the specified %s does not exist)\n",
-                op.c_str(), (!def.is_value || def.tag) ? "node" : "value");
-    return false;
+                op.c_str(),
+                (!def->isValue() || def->isTag()) ? "node" : "value");
+    return 0;
   }
-  return true;
+  return def.release();
 }
 
 /* check if specified args is valid for "rename" or "copy" operation.
@@ -2262,13 +2240,13 @@ Cstore::validate_rename_copy(const vector<string>& args, const string& op)
   vector<string> ppath;
   ppath.push_back(otagnode);
   ppath.push_back(otagval);
-  vtw_def def;
   string terr;
-  if (!get_parsed_tmpl(ppath, false, def, terr)) {
+  auto_ptr<Ctemplate> def(get_parsed_tmpl(ppath, false, terr));
+  if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
-  if (!def.is_value || !def.tag) {
+  if (!def->isTagValue()) {
     // can only rename "tagnode tagvalue"
     output_user("Cannot %s under \"%s\"\n", op.c_str(), otagnode.c_str());
     return false;
@@ -2287,7 +2265,8 @@ Cstore::validate_rename_copy(const vector<string>& args, const string& op)
                 ntagnode.c_str(), ntagval.c_str());
     return false;
   }
-  if (!get_parsed_tmpl(ppath, true, def, terr)) {
+  def.reset(get_parsed_tmpl(ppath, true, terr));
+  if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
@@ -2359,7 +2338,7 @@ bool
 Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
 {
   vector<string> ppath;
-  vtw_def def;
+  auto_ptr<Ctemplate> def;
   bool ret = true;
   bool path_exists = true;
   // do the set from the top down
@@ -2369,7 +2348,8 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     ppath.push_back(path_comps[i]);
 
     // get template at this level
-    if (!get_parsed_tmpl(ppath, false, def)) {
+    def.reset(get_parsed_tmpl(ppath, false));
+    if (!def.get()) {
       output_internal("paths[%s,%s]\n", cfg_path_to_str().c_str(),
                       tmpl_path_to_str().c_str());
       for (size_t i = 0; i < ppath.size(); i++) {
@@ -2388,16 +2368,16 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     append_cfg_path(ppath);
     append_tmpl_path(ppath);
 
-    if (!def.is_value) {
+    if (!def->isValue()) {
       // this level is a "node"
       if (!add_node() || !create_default_children()) {
         ret = false;
         break;
       }
-    } else if (def.tag) {
+    } else if (def->isTag()) {
       // this level is a "tag value".
       // add the tag, taking the max tag limit into consideration.
-      if (!add_tag(def) || !create_default_children()) {
+      if (!add_tag(def->getTagLimit()) || !create_default_children()) {
         ret = false;
         break;
       }
@@ -2405,10 +2385,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
       // this level is a "value" of a single-/multi-value node.
       // go up 1 level to get the node.
       pop_cfg_path();
-      if (def.multi) {
+      if (def->isMulti()) {
         // value of multi-value node.
         // add the value, taking the max multi limit into consideration.
-        if (!add_value_to_multi(def, ppath.back())) {
+        if (!add_value_to_multi(def->getMultiLimit(), ppath.back())) {
           ret = false;
           break;
         }
@@ -2428,7 +2408,7 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
   }
   RESTORE_PATHS; // if "break" was hit
 
-  if (ret && def.is_value && def.def_default) {
+  if (ret && def->isValue() && def->getDefault()) {
     /* a node with default has been explicitly set. needs to be marked
      * as non-default for display purposes.
      *
@@ -2681,15 +2661,15 @@ Cstore::cfg_value_exists(const string& value, bool active_cfg)
  *       not the value.
  */
 bool
-Cstore::validate_val(const vtw_def *def, const string& value)
+Cstore::validate_val(const Ctemplate *def, const string& value)
 {
-  vtw_def ndef;
+  auto_ptr<Ctemplate> ndef;
   if (!def) {
-    if (!tmpl_parse(ndef)) {
+    ndef.reset(tmpl_parse());
+    if (!(def = ndef.get())) {
       exit_internal("failed to parse tmpl [%s]\n", tmpl_path_to_str().c_str());
     }
-    def = &ndef;
-    if (def->def_type == ERROR_TYPE) {
+    if (def->isTypeless()) {
       // not a value node
       exit_internal("validating non-value node [%s]\n",
                     tmpl_path_to_str().c_str());
@@ -2701,7 +2681,7 @@ Cstore::validate_val(const vtw_def *def, const string& value)
   char *vbuf = (char *) malloc(vlen + 1);
   strncpy(vbuf, value.c_str(), vlen + 1);
   vbuf[vlen] = 0;
-  bool ret = validate_val_impl((vtw_def *) def, vbuf);
+  bool ret = validate_val_impl(def, vbuf);
   free(vbuf);
   return ret;
 }
@@ -2712,7 +2692,7 @@ Cstore::validate_val(const vtw_def *def, const string& value)
  *       already exists.
  */
 bool
-Cstore::add_tag(const vtw_def& def)
+Cstore::add_tag(unsigned int tlimit)
 {
   string t = pop_cfg_path();
   vector<string> cnodes;
@@ -2720,23 +2700,18 @@ Cstore::add_tag(const vtw_def& def)
   get_all_child_node_names(cnodes, false, false);
   bool ret = false;
   do {
-    if (def.def_tag > 0 && def.def_tag <= cnodes.size()) {
+    if (tlimit > 0 && tlimit <= cnodes.size()) {
       // limit exceeded
       output_user("Cannot set node \"%s\": number of values exceeds limit"
-                  "(%d allowed)\n", t.c_str(), def.def_tag);
+                  "(%d allowed)\n", t.c_str(), tlimit);
       break;
     }
-    /* XXX the following is the original logic, which is wrong since def_tag
-     * is unsigned.
+    /* XXX the original implementation contains special case where the
+     *     previous tag should be replaced. this is probably unnecessary since
+     *     "rename" can be used for tag node anyway. also the implementation
+     *     used -1 as the limit for the special case, which can't work since
+     *     the limit is unsigned. ignore the special case for now.
      */
-    if (def.def_tag < 0 && cnodes.size() == 1) {
-      /* XXX special case in the original implementation where the previous
-       *     tag should be replaced. this is probably unnecessary since
-       *     "rename" can be used for tag node anyway.
-       */
-      ret = rename_child_node(cnodes[0], t);
-      break;
-    }
     // neither of the above. just add the tag.
     ret = add_child_node(t);
   } while (0);
@@ -2750,7 +2725,7 @@ Cstore::add_tag(const vtw_def& def)
  *       not configured for the node.
  */
 bool
-Cstore::add_value_to_multi(const vtw_def& def, const string& value)
+Cstore::add_value_to_multi(unsigned int mlimit, const string& value)
 {
   // get current values
   vector<string> vvec;
@@ -2770,10 +2745,10 @@ Cstore::add_value_to_multi(const vtw_def& def, const string& value)
    *
    *       for now just apply the limit for anything >= 1.
    */
-  if (def.def_multi >= 1 && vvec.size() >= def.def_multi) {
+  if (mlimit >= 1 && vvec.size() >= mlimit) {
     // limit exceeded
     output_user("Cannot set value \"%s\": number of values exceeded "
-                "(%d allowed)\n", value.c_str(), def.def_multi);
+                "(%d allowed)\n", value.c_str(), mlimit);
     return false;
   }
 
@@ -2817,12 +2792,12 @@ Cstore::create_default_children()
   bool ret = true;
   for (size_t i = 0; i < tcnodes.size(); i++) {
     push_tmpl_path(tcnodes[i]);
-    vtw_def def;
-    if (tmpl_node_exists() && tmpl_parse(def)) {
-      if (def.def_default) {
+    if (tmpl_node_exists()) {
+      auto_ptr<Ctemplate> def(tmpl_parse());
+      if (def.get() && def->getDefault()) {
         // has default value. set it.
         push_cfg_path(tcnodes[i]);
-        if (!add_node() || !write_value(def.def_default)
+        if (!add_node() || !write_value(def->getDefault())
             || !mark_display_default()) {
           ret = false;
         }

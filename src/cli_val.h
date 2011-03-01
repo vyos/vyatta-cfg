@@ -59,7 +59,7 @@ typedef struct {
   int   print_offset;  /* for additional optional output information */
 } vtw_path;  /* vyatta tree walk */
 
-extern int char2val(vtw_def *def, char *value, valstruct *valp);
+extern int char2val(const vtw_def *def, char *value, valstruct *valp);
 extern int get_value(char **valpp, vtw_path *pathp);
 extern vtw_node * make_node(vtw_oper_e oper, vtw_node *left, 
 			    vtw_node *right);
