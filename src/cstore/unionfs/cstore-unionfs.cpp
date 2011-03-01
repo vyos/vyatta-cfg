@@ -415,18 +415,33 @@ UnionfsCstore::tmpl_node_exists()
   return (b_fs_exists(tmpl_path) && b_fs_is_directory(tmpl_path));
 }
 
+typedef Cstore::MapT<string, tr1::shared_ptr<vtw_def> > ParsedTmplCacheT;
+static ParsedTmplCacheT _parsed_tmpl_cache;
+
 /* parse template at current tmpl_path and return an allocated Ctemplate
  * pointer if successful. otherwise return 0.
  */
 Ctemplate *
 UnionfsCstore::tmpl_parse()
 {
+  b_fs::path tp = tmpl_path / C_DEF_NAME;
+  if (!b_fs_exists(tp) || !b_fs_is_regular(tp)) {
+    // invalid
+    return 0;
+  }
+
+  ParsedTmplCacheT::iterator p = _parsed_tmpl_cache.find(tp.file_string());
+  if (p != _parsed_tmpl_cache.end()) {
+    // found in cache
+    return (new Ctemplate(p->second));
+  }
+
+  // new template => parse
   tr1::shared_ptr<vtw_def> def(new vtw_def);
   vtw_def *_def = def.get();
-  b_fs::path tp = tmpl_path / C_DEF_NAME;
-  if (_def && b_fs_exists(tp) && b_fs_is_regular(tp)
-      && parse_def(_def, tp.file_string().c_str(), 0) == 0) {
-    // succes
+  if (_def && parse_def(_def, tp.file_string().c_str(), 0) == 0) {
+    // succes => cache and return
+    _parsed_tmpl_cache[tp.file_string()] = def;
     return (new Ctemplate(def));
   }
   return 0;
