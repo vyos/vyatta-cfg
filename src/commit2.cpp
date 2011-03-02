@@ -88,7 +88,7 @@ validate_func(GNode *node, gpointer data);
 
 static boolean
 validate_configuration(GNode *root_node, boolean mode,
-		       GSList **nodes_visited_coll);
+                       GSList **nodes_visited_coll);
 
 static void
 update_change_file(FILE *fp, GSList *coll);
@@ -258,14 +258,14 @@ main(int argc, char** argv)
     }
     //iterate over config_data and dump...
     g_node_traverse(trans_coll,
-		    G_PRE_ORDER,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)dump_func,
-		    (gpointer)NULL);
+                    G_PRE_ORDER,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)dump_func,
+                    (gpointer)NULL);
     if (g_dump_trans == TRUE) {
-	exit(0);
-      }
+      exit(0);
+    }
   }
 
   set_in_commit(TRUE);
@@ -292,12 +292,12 @@ main(int argc, char** argv)
     boolean success = FALSE;
     if (g_debug == TRUE) {
       if (trans_child_node != NULL && trans_child_node->data != NULL && ((struct VyattaNode*)(trans_child_node->data))->_data._name != NULL) {
-	printf("commit2: Starting new transaction processing pass on root: %s\n", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
-	syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root: %s", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
+        printf("commit2: Starting new transaction processing pass on root: %s\n", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
+        syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root: %s", ((struct VyattaNode*)(trans_child_node->data))->_data._name);
       }
       else {
-	printf("commit2: Starting new transaction processing pass on root:\n");
-	syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root:");
+        printf("commit2: Starting new transaction processing pass on root:\n");
+        syslog(LOG_DEBUG,"commit2: Starting new transaction processing pass on root:");
       }
     }
 
@@ -305,19 +305,19 @@ main(int argc, char** argv)
       gpointer gp = ((GNode*)trans_child_node)->data;
       long p = (long) ((struct VyattaNode*)gp)->_config._priority;
       if (p >= break_priority_node) {
-	g_dump_trans = TRUE;
-	g_node_traverse(trans_child_node,
-			G_PRE_ORDER,
-			G_TRAVERSE_ALL,
-			-1,
-			(GNodeTraverseFunc)dump_func,
-			(gpointer)NULL);
-	g_dump_trans = FALSE;
-	fprintf(out_stream,"Press any key to commit...\n");
-	
-	// Wait for single character 
-	char input = getchar(); 
-	input = input; //to fix stupid compilier warning
+        g_dump_trans = TRUE;
+        g_node_traverse(trans_child_node,
+                        G_PRE_ORDER,
+                        G_TRAVERSE_ALL,
+                        -1,
+                        (GNodeTraverseFunc)dump_func,
+                        (gpointer)NULL);
+        g_dump_trans = FALSE;
+        fprintf(out_stream,"Press any key to commit...\n");
+        
+        // Wait for single character 
+        char input = getchar(); 
+        input = input; //to fix stupid compilier warning
       }
     }
 
@@ -335,13 +335,13 @@ main(int argc, char** argv)
       //this below copies the node directory from the local to active location
       //if this is true root skip
       if (trans_child_node != NULL && trans_child_node->data != NULL && strcmp(((struct VyattaNode*)(trans_child_node->data))->_data._path,"/") == 0) {
-	//no op, need better way to define true root
+        //no op, need better way to define true root
       }
       else {
-	if (disable_partial_commit == FALSE && g_dump_actions == FALSE) {
-	  //	  complete(comp_cp_node, test_mode);
-	  completed_root_node_coll = g_slist_append(completed_root_node_coll,comp_cp_node);
-	}
+        if (disable_partial_commit == FALSE && g_dump_actions == FALSE) {
+          //          complete(comp_cp_node, test_mode);
+          completed_root_node_coll = g_slist_append(completed_root_node_coll,comp_cp_node);
+        }
       }
     }
 
@@ -352,8 +352,8 @@ main(int argc, char** argv)
     if (success == FALSE) {
       errors |= 1;
       if (g_debug == TRUE) {
-	printf("commit2: Failed in processing node\n");
-	syslog(LOG_DEBUG,"commit2: Failed in processing node\n");
+        printf("commit2: Failed in processing node\n");
+        syslog(LOG_DEBUG,"commit2: Failed in processing node\n");
       }
     }
     else {
@@ -457,7 +457,7 @@ execute_hook(const char* dir, const char* comment)
   struct dirent *dirp = NULL;
   while ((dirp = readdir(dp)) != NULL) {
     if (strcmp(dirp->d_name, ".") != 0 && 
-	strcmp(dirp->d_name, "..") != 0) {
+        strcmp(dirp->d_name, "..") != 0) {
       
       char *dirname = (char*)malloc(strlen(dirp->d_name)+1);
       strcpy(dirname,dirp->d_name);
@@ -552,33 +552,33 @@ process_func(GNode *node, gpointer data)
     
     if (g_debug) {
       if (d->_name != NULL) {
-	printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d\n",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
+        printf("commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d\n",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
+        syslog(LOG_DEBUG,"commit2::process_func(), calling process on : %s for action %d, type: %d, operation: %d, path: %s, disable state: %d",d->_name,result->_action,c->_def.def_type, op, d->_path,d->_disable_op);
       }
       else {
-	printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d\n",result->_action, op, d->_path,d->_disable_op);
-	syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d",result->_action, op, d->_path, d->_disable_op);
+        printf("commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d\n",result->_action, op, d->_path,d->_disable_op);
+        syslog(LOG_DEBUG,"commit2::process_func(), calling process on : [n/a] for action %d, operation: %d, path: %s, disable state: %d",result->_action, op, d->_path, d->_disable_op);
       }
     }
 
     //FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE
     if (d->_disable_op != K_NO_DISABLE_OP) {
       if (IS_DELETE(op) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-	return FALSE; //if this was actively disabled and is being deleted do nothing.
+        return FALSE; //if this was actively disabled and is being deleted do nothing.
       }
       else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-	//no state change: deactivated
-	return FALSE; //skip operation on node
+        //no state change: deactivated
+        return FALSE; //skip operation on node
       }
       else if (!(d->_disable_op & K_LOCAL_DISABLE_OP) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-	//node will be activated on commit
-	//LET'S SPOOF the operation... convert it to CREATE
-	op = K_CREATE_OP;
+        //node will be activated on commit
+        //LET'S SPOOF the operation... convert it to CREATE
+        op = K_CREATE_OP;
       }
       else if ((d->_disable_op & K_LOCAL_DISABLE_OP) && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-	//node will be deactivated on commit	
-	//LET'S SPOOF the operation... convert it to DELETE
-	op = K_DEL_OP;
+        //node will be deactivated on commit        
+        //LET'S SPOOF the operation... convert it to DELETE
+        op = K_DEL_OP;
       }
     }
     /*
@@ -591,62 +591,62 @@ process_func(GNode *node, gpointer data)
       if a node is DELETE, is a DELETE ACTION or a END ACTION, or a BEGIN ACTION
      */
     if ((IS_SET(op) && !IS_ACTIVE(op) && (result->_action != delete_act && result->_action != create_act)) ||
-	(IS_CREATE(op) && !IS_ACTIVE(op) && (result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
-	(IS_ACTIVE(op) && ((result->_action == begin_act) || (result->_action == end_act))) ||
-	(IS_DELETE(op) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
+        (IS_CREATE(op) && !IS_ACTIVE(op) && (result->_action == begin_act || result->_action == end_act || result->_action == create_act || (result->_action == update_act && !c->_def.actions[create_act].vtw_list_head))) ||
+        (IS_ACTIVE(op) && ((result->_action == begin_act) || (result->_action == end_act))) ||
+        (IS_DELETE(op) && ((result->_action == delete_act) || (result->_action == begin_act) || (result->_action == end_act)) )) {
       //NEED TO ADD IF CREATE, THEN CREATE OR UPDATE
       //IF SET THEN UPDATE
 
       //let's skip the case where this is active and it's a delete--shouldn't be done, but needs to be include in the rule set above
       if (IS_DELETE(op) && IS_ACTIVE(op) && result->_action == delete_act && d->_disable_op == K_NO_DISABLE_OP) { //only apply this when no disable operation is set
-	return FALSE;
+        return FALSE;
       }
 
       //let's skip any multi-node that does not have have a value (an empty multi-node)
       if (c->_multi && node->children == NULL) {
-	return FALSE;
+        return FALSE;
       }
 
       //look at parent for multi tag
       if (d->_value && d->_name) {
-	char *val = d->_name;
-	if (c->_def.tag) { //need to handle the embedded multinode as a special case--should be fixed!
-	  val = (char*)clind_unescape(d->_name);
-	}
-	if (g_debug) {
-	  printf("commit2::process_func(): @ value: %s\n",(char*)val);
-	  syslog(LOG_DEBUG,"commit2::process_func(): @ value: %s",(char*)val);
-	}
-	set_at_string(val); //embedded multinode value
+        char *val = d->_name;
+        if (c->_def.tag) { //need to handle the embedded multinode as a special case--should be fixed!
+          val = (char*)clind_unescape(d->_name);
+        }
+        if (g_debug) {
+          printf("commit2::process_func(): @ value: %s\n",(char*)val);
+          syslog(LOG_DEBUG,"commit2::process_func(): @ value: %s",(char*)val);
+        }
+        set_at_string(val); //embedded multinode value
       }
       else {
-	if (g_debug) {
-	  printf("commit2::process_func(): boolean value is: %d\n",d->_value);
-	  syslog(LOG_DEBUG,"commit2::process_func(): boolean value is: %d",d->_value);
-	  if (node->parent != NULL && ((struct VyattaNode*)(node->parent->data))->_data._name != NULL) {
-	    printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
-	    syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
-	  }
-	  printf("commit2::process_func(): @ value: [NULL]\n");
-	  syslog(LOG_DEBUG,"commit2::process_func(): @ value: [NULL]\n");
-	}
+        if (g_debug) {
+          printf("commit2::process_func(): boolean value is: %d\n",d->_value);
+          syslog(LOG_DEBUG,"commit2::process_func(): boolean value is: %d",d->_value);
+          if (node->parent != NULL && ((struct VyattaNode*)(node->parent->data))->_data._name != NULL) {
+            printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+            syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+          }
+          printf("commit2::process_func(): @ value: [NULL]\n");
+          syslog(LOG_DEBUG,"commit2::process_func(): @ value: [NULL]\n");
+        }
       }
       
       common_set_context(c->_path,d->_path);
       if (g_debug) {
-	printf("Executing %s on this node\n", ActionNames[result->_action]);
-	syslog(LOG_DEBUG,"Executing %s on this node\n", ActionNames[result->_action]);
+        printf("Executing %s on this node\n", ActionNames[result->_action]);
+        syslog(LOG_DEBUG,"Executing %s on this node\n", ActionNames[result->_action]);
       }
 
       if (g_coverage) {
-	struct timeval t;
-	gettimeofday(&t,NULL);
-	fprintf(out_stream,"[START] %lu:%lu, %s@%s",(unsigned long)t.tv_sec,(unsigned long)t.tv_usec,ActionNames[result->_action],d->_path);
+        struct timeval t;
+        gettimeofday(&t,NULL);
+        fprintf(out_stream,"[START] %lu:%lu, %s@%s",(unsigned long)t.tv_sec,(unsigned long)t.tv_usec,ActionNames[result->_action],d->_path);
       }
 
 
       if (result->_action == delete_act) {
-	set_in_delete_action(TRUE);
+        set_in_delete_action(TRUE);
       }
 
       //set location env
@@ -654,78 +654,78 @@ process_func(GNode *node, gpointer data)
 
 
       if (a->_first && a->_last) {
-	setenv(ENV_SIBLING_POSITION,"FIRSTLAST",1);
+        setenv(ENV_SIBLING_POSITION,"FIRSTLAST",1);
       }
       else if (a->_first) {
-	setenv(ENV_SIBLING_POSITION,"FIRST",1);
+        setenv(ENV_SIBLING_POSITION,"FIRST",1);
       }
       else if (a->_last) {
-	setenv(ENV_SIBLING_POSITION,"LAST",1);
+        setenv(ENV_SIBLING_POSITION,"LAST",1);
       }
 
       //do not set for promoted actions
       if (!IS_ACTIVE(op)) {
-	if (IS_DELETE(op)) {
-	    setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
-	}
-	else {
-	  setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
-	}
+        if (IS_DELETE(op)) {
+            setenv(ENV_ACTION_NAME,ENV_ACTION_DELETE,1);
+        }
+        else {
+          setenv(ENV_ACTION_NAME,ENV_ACTION_SET,1);
+        }
       }
       else {
-	  setenv(ENV_ACTION_NAME,ENV_ACTION_ACTIVE,1);
+          setenv(ENV_ACTION_NAME,ENV_ACTION_ACTIVE,1);
       }
 
       if (g_dump_actions == FALSE) {
-	//need to add g_print_error_location_all, and processed location
-	if (g_old_print_output == TRUE) {
-	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
-	}
-	else {
-	  char *p = process_script_path(d->_path);
-	  status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
-	  free(p);
-	}
-	//	status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
+        //need to add g_print_error_location_all, and processed location
+        if (g_old_print_output == TRUE) {
+          status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
+        }
+        else {
+          char *p = process_script_path(d->_path);
+          status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,p,g_print_error_location_all);
+          free(p);
+        }
+        //        status = execute_list(c->_def.actions[result->_action].vtw_list_head,&c->_def,NULL,g_print_error_location_all);
 
-	/*
-	if (strlen(outbuf) > 0) {
+        /*
+        if (strlen(outbuf) > 0) {
           if (strstr(outbuf,"_errloc_:[") != NULL) {
-	    if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-	      fprintf(out_stream,"%s\n",outbuf+strlen("_errloc_:"));
+            if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+              fprintf(out_stream,"%s\n",outbuf+strlen("_errloc_:"));
             }
             else {
-	      fprintf(out_stream,"%s\n",outbuf);
+              fprintf(out_stream,"%s\n",outbuf);
             }
-	  }
-	  else {
-	    //currently set to format option for GUI client.
-	    if (p != NULL) {
-	      if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-		fprintf(out_stream,"[%s]\n%s\n",p,outbuf);
-	      }
-	      else {
-		fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+          }
+          else {
+            //currently set to format option for GUI client.
+            if (p != NULL) {
+              if (g_print_error_location_all == FALSE) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
+                fprintf(out_stream,"[%s]\n%s\n",p,outbuf);
               }
-	    }
-	  }
-	}
-	*/
+              else {
+                fprintf(out_stream,"_errloc_:[%s]\n%s\n",p,outbuf);
+              }
+            }
+          }
+        }
+        */
 
       }
       else {
-	char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
-	sprintf(buf,"%s\t:\t%s",ActionNames[result->_action],d->_path);
-	if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
-	  char *val = (char*)clind_unescape(d->_name);
-	  strcat(buf,val);
-	  free(val);
-	}
-	fprintf(out_stream,"%s\n",buf);
-	status = 1;
+        char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
+        sprintf(buf,"%s\t:\t%s",ActionNames[result->_action],d->_path);
+        if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
+          char *val = (char*)clind_unescape(d->_name);
+          strcat(buf,val);
+          free(val);
+        }
+        fprintf(out_stream,"%s\n",buf);
+        status = 1;
       }
       if (result->_action == delete_act) {
-	set_in_delete_action(FALSE);
+        set_in_delete_action(FALSE);
       }
 
       unsetenv(ENV_ACTION_NAME);
@@ -733,22 +733,22 @@ process_func(GNode *node, gpointer data)
       unsetenv(ENV_DATA_PATH);
 
       if (g_coverage) {
-	struct timeval t;
-	gettimeofday(&t,NULL);
-	fprintf(out_stream,"[END] %lu:%lu\n",t.tv_sec,t.tv_usec);
+        struct timeval t;
+        gettimeofday(&t,NULL);
+        fprintf(out_stream,"[END] %lu:%lu\n",t.tv_sec,t.tv_usec);
       }
 
       if (!status) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-	syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
-	if (g_display_error_node) {
-	  fprintf(out_stream,"%s@_errloc_:[%s]\n",ActionNames[result->_action],d->_path);
-	}
-	result->_err_code = 1;
-	if (g_debug) {
-	  printf("commit2::process_func(): FAILURE: status: %d\n",status);
-	  syslog(LOG_DEBUG,"commit2::process_func(): FAILURE: status: %d",status);
-	}
-	return TRUE; //WILL STOP AT THIS POINT
+        syslog(LOG_ERR,"commit error for %s:[%s]\n",ActionNames[result->_action],d->_path);
+        if (g_display_error_node) {
+          fprintf(out_stream,"%s@_errloc_:[%s]\n",ActionNames[result->_action],d->_path);
+        }
+        result->_err_code = 1;
+        if (g_debug) {
+          printf("commit2::process_func(): FAILURE: status: %d\n",status);
+          syslog(LOG_DEBUG,"commit2::process_func(): FAILURE: status: %d",status);
+        }
+        return TRUE; //WILL STOP AT THIS POINT
       }
     }
   }
@@ -817,12 +817,12 @@ complete(GSList *node_coll, boolean test_mode)
     gpointer gp = ((GNode*)l->data)->data;
     if (g_debug) {
       if (((struct VyattaNode*)gp)->_data._name != NULL) {
-	printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
-	syslog(LOG_DEBUG,"commit2::complete():name: %s, path: %s",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+        printf("commit2::complete():name: %s, path: %s\n",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
+        syslog(LOG_DEBUG,"commit2::complete():name: %s, path: %s",((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_data._path);
       }
       else {
-	printf("commit2::complete()\n");
-	syslog(LOG_DEBUG,"commit2::complete()");
+        printf("commit2::complete()\n");
+        syslog(LOG_DEBUG,"commit2::complete()");
       }
     }
     //on transactional nodes only, note to avoid calling this if a headless root
@@ -878,43 +878,43 @@ sort_func_priority_extended(GNode *node, gpointer data)
       //walk up chain until priority is found.
       GNode *n = node;
       while (TRUE) {
-	n = n->parent;
-	if (n == NULL) {
-	  break;
-	}
-	gpointer nd = ((GNode*)n)->data;
-	if (((struct VyattaNode*)nd)->_config._priority != LOWEST_PRIORITY) {
-	  //means we are done--found anchor in parent
-	  g_node_unlink(node);
-	  if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
-	    g_node_insert_before(root_node,n,new_node);
-	  }
-	  else {
-	    g_node_insert_after(root_node,n,new_node);
-	  }
-	  break;
-	}
-	/*
-	  else if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) {
-	  //need to find references in other node tree....
+        n = n->parent;
+        if (n == NULL) {
+          break;
+        }
+        gpointer nd = ((GNode*)n)->data;
+        if (((struct VyattaNode*)nd)->_config._priority != LOWEST_PRIORITY) {
+          //means we are done--found anchor in parent
+          g_node_unlink(node);
+          if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
+            g_node_insert_before(root_node,n,new_node);
+          }
+          else {
+            g_node_insert_after(root_node,n,new_node);
+          }
+          break;
+        }
+        /*
+          else if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) {
+          //need to find references in other node tree....
 
-	  //PARSE OUT EXTENDED REFERENCES...
-	  for (int i = 0; i < ct; ++i) {
-	    //get dependency...what to do with dependencies on dependencies... might get big. recursion buddy....
-	    if (find_reference_anchor(orig_config, ((struct VyattaNode*)gp)->_config._priority_extended, cur_pri) != 0) {
-	      cur_pri = LOWEST_PRIORITY;
-	    }
-	  }
-	  break;
-	}
-	  */
+          //PARSE OUT EXTENDED REFERENCES...
+          for (int i = 0; i < ct; ++i) {
+            //get dependency...what to do with dependencies on dependencies... might get big. recursion buddy....
+            if (find_reference_anchor(orig_config, ((struct VyattaNode*)gp)->_config._priority_extended, cur_pri) != 0) {
+              cur_pri = LOWEST_PRIORITY;
+            }
+          }
+          break;
+        }
+          */
       }
     }
     else {
       /*
       //multiple dependencies should be placed outside the earliest (delete) or latest (create) reference
       if (find_reference_anchor(orig_config, ((struct VyattaNode*)gp)->_config._priority_extended, cur_pri) != 0) {
-	cur_pri = LOWEST_PRIORITY;
+        cur_pri = LOWEST_PRIORITY;
       }
       */
     }
@@ -923,7 +923,7 @@ sort_func_priority_extended(GNode *node, gpointer data)
     while (sibling != NULL && cur_pri > ((struct VyattaNode*)(sibling->data))->_config._priority * 10) {
       sibling = sibling->next;
       if (sibling == NULL || ((struct VyattaNode*)gp)->_config._priority < ((struct VyattaNode*)(sibling->data))->_config._priority) {
-	break;
+        break;
       }
     }
     
@@ -1006,11 +1006,11 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       n = n->parent;
       vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
       if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
-	enclosing = TRUE;
-	break;
+        enclosing = TRUE;
+        break;
       }
       if (G_NODE_IS_ROOT(n) == TRUE) {
-	break;
+        break;
       }
     }
 
@@ -1018,12 +1018,12 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
     if (enclosing == TRUE) {
       GNode *n = node;
       while (TRUE) {
-	n = n->parent;
-	vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
-	//	((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
-	//DON'T set active when only in disable state...
-	//	if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
-	if (((struct VyattaNode*)(n->data))->_data._operation == K_NO_OP) {
+        n = n->parent;
+        vtw_def def = ((struct VyattaNode*)(n->data))->_config._def;
+        //        ((struct VyattaNode*)(n->data))->_data._operation = ((struct VyattaNode*)gp)->_data._operation;
+        //DON'T set active when only in disable state...
+        //        if (((struct VyattaNode*)(n->data))->_data._disable_op == K_NO_DISABLE_OP) {
+        if (((struct VyattaNode*)(n->data))->_data._operation == K_NO_OP) {
           /* XXX this is ugly. _operation is intended to be a bitmap, in which
            *     case it doesn't make sense to make it an enum type (should
            *     just be, e.g., int). this causes g++ to (rightly) complain.
@@ -1034,13 +1034,13 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
           op |= K_ACTIVE_OP;
           ((struct VyattaNode*)(n->data))->_data._operation
             = (NODE_OPERATION) op;
-	}
-	if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
-	  break;
-	}
-	if (G_NODE_IS_ROOT(n) == TRUE) {
-	  break;
-	}
+        }
+        if (def.actions[end_act].vtw_list_head || def.actions[begin_act].vtw_list_head) {
+          break;
+        }
+        if (G_NODE_IS_ROOT(n) == TRUE) {
+          break;
+        }
       }
     }
   }
@@ -1055,19 +1055,19 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
       //now iterate through siblings of root_node and compare priority
       
       while (sibling != NULL && ((struct VyattaNode*)gp)->_config._priority > ((struct VyattaNode*)(sibling->data))->_config._priority) {
-	sibling = sibling->next;
-	if (sibling == NULL || ((struct VyattaNode*)gp)->_config._priority < ((struct VyattaNode*)(sibling->data))->_config._priority) {
-	  break;
-	}
+        sibling = sibling->next;
+        if (sibling == NULL || ((struct VyattaNode*)gp)->_config._priority < ((struct VyattaNode*)(sibling->data))->_config._priority) {
+          break;
+        }
       }
 
       if (g_debug) {
-	int pri = LOWEST_PRIORITY;
-	if (sibling != NULL) {
-	  pri = ((struct VyattaNode*)(sibling->data))->_config._priority;
-	}
-	printf("commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
-	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
+        int pri = LOWEST_PRIORITY;
+        if (sibling != NULL) {
+          pri = ((struct VyattaNode*)(sibling->data))->_config._priority;
+        }
+        printf("commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
+        syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction, priority: %d BEFORE %d\n", ((struct VyattaNode*)gp)->_data._name, ((struct VyattaNode*)gp)->_config._priority, pri);
       }
       g_node_insert_before(root_node,sibling,new_node);
     }
@@ -1075,8 +1075,8 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   else {
     if (g_node_depth(node) == 2) {
       if (g_debug) {
-	printf("commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
-	syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
+        printf("commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
+        syslog(LOG_DEBUG,"commit2::sort_func(): inserting %s into transaction\n", ((struct VyattaNode*)gp)->_data._name);
       }
       GNode *new_node = g_node_copy(node);
       g_node_insert(root_node,-1,new_node); //make a flat structure for now
@@ -1108,11 +1108,11 @@ get_transactions(GNode *config, boolean priority_mode)
   GNode *trans_root = g_node_new(gp);
   if (priority_mode) {
     g_node_traverse(config,
-		    G_POST_ORDER,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)sort_func_priority,
-		    (gpointer)trans_root);
+                    G_POST_ORDER,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)sort_func_priority,
+                    (gpointer)trans_root);
 
     //only do this if the root isn't empty
     if (g_node_n_children(config) != 0) {
@@ -1121,19 +1121,19 @@ get_transactions(GNode *config, boolean priority_mode)
 
     //now need pass to handle extended priority system
     g_node_traverse(trans_root,
-		    G_POST_ORDER,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)sort_func_priority_extended,
-		    (gpointer)trans_root);
+                    G_POST_ORDER,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)sort_func_priority_extended,
+                    (gpointer)trans_root);
   }
   else {
     g_node_traverse(config,
-		    G_IN_ORDER,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)sort_func_simple,
-		    (gpointer)trans_root);
+                    G_IN_ORDER,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)sort_func_simple,
+                    (gpointer)trans_root);
   }
   return trans_root;
 }
@@ -1177,11 +1177,11 @@ cleanup(GNode *root_node)
   }
 
   g_node_traverse(root_node,
-		  G_IN_ORDER,
-		  G_TRAVERSE_ALL,
-		  -1,
-		  (GNodeTraverseFunc)cleanup_func,
-		  (gpointer)NULL);
+                  G_IN_ORDER,
+                  G_TRAVERSE_ALL,
+                  -1,
+                  (GNodeTraverseFunc)cleanup_func,
+                  (gpointer)NULL);
 
   g_node_destroy(root_node);
 }
@@ -1213,85 +1213,85 @@ dump_func(GNode *node, gpointer data)
 
       char disable_op[2];
       if (((struct VyattaNode*)gp)->_data._disable_op == (K_ACTIVE_DISABLE_OP | K_LOCAL_DISABLE_OP)) {
-	disable_op[0] = '!';
+        disable_op[0] = '!';
       }
       else if (((struct VyattaNode*)gp)->_data._disable_op == K_ACTIVE_DISABLE_OP) {
-	disable_op[0] = 'A';
+        disable_op[0] = 'A';
       }
       else if (((struct VyattaNode*)gp)->_data._disable_op == K_LOCAL_DISABLE_OP) {
-	disable_op[0] = 'D';
+        disable_op[0] = 'D';
       }
       else {
-	disable_op[0] = ' ';
+        disable_op[0] = ' ';
       }
       disable_op[1] = '\0';
 
       if (IS_ACTIVE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"%s*",disable_op);
+        fprintf(out,"%s*",disable_op);
       }
       else if (IS_DELETE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"%s-",disable_op);
+        fprintf(out,"%s-",disable_op);
       }
       else if (IS_CREATE(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"%s+",disable_op);
+        fprintf(out,"%s+",disable_op);
       }
       else if (IS_SET(((struct VyattaNode*)gp)->_data._operation)) {
-	fprintf(out,"%s>",disable_op);
+        fprintf(out,"%s>",disable_op);
       }
       else {
-	fprintf(out,"%s ",disable_op);
+        fprintf(out,"%s ",disable_op);
       }
 
       for (i = 0; i < depth; ++i) {
-	fprintf(out,"  ");
+        fprintf(out,"  ");
       }
       if (((struct VyattaNode*)gp)->_config._def.def_type2 != ERROR_TYPE) {
-	fprintf(out,"%s (t: %d-%d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2);
+        fprintf(out,"%s (t: %d-%d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type,((struct VyattaNode*)gp)->_config._def.def_type2);
       }
       else {
-	fprintf(out,"%s (t: %d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type);
+        fprintf(out,"%s (t: %d, ", ((struct VyattaNode*)gp)->_data._name,((struct VyattaNode*)gp)->_config._def.def_type);
       }
       if (((struct VyattaNode*)gp)->_config._priority_extended != NULL) {
-	fprintf(out, "p: %s)",((struct VyattaNode*)gp)->_config._priority_extended);
+        fprintf(out, "p: %s)",((struct VyattaNode*)gp)->_config._priority_extended);
       }
       else {
-	fprintf(out, "p: %d)",((struct VyattaNode*)gp)->_config._priority);
+        fprintf(out, "p: %d)",((struct VyattaNode*)gp)->_config._priority);
       }
 
       if (((struct VyattaNode*)gp)->_data._value == TRUE) {
-	fprintf(out," [VALUE]");
+        fprintf(out," [VALUE]");
       }
       if (((struct VyattaNode*)gp)->_config._multi == TRUE) {
-	fprintf(out," [MULTI(%d)]",((struct VyattaNode*)gp)->_config._limit);
+        fprintf(out," [MULTI(%d)]",((struct VyattaNode*)gp)->_config._limit);
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
-	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
-	fprintf(out," [SYNTAX]");
+          ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
+        fprintf(out," [SYNTAX]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[create_act].vtw_list_head) {
-	fprintf(out," [CREATE]");
+        fprintf(out," [CREATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[activate_act].vtw_list_head) {
-	fprintf(out," [ACTIVATE]");
+        fprintf(out," [ACTIVATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[update_act].vtw_list_head) {
-	fprintf(out," [UPDATE]");
+        fprintf(out," [UPDATE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[delete_act].vtw_list_head) {
-	fprintf(out," [DELETE]");
+        fprintf(out," [DELETE]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head &&
-	  ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
-	fprintf(out," [COMMIT]");
+          ((struct VyattaNode*)gp)->_config._def.actions[syntax_act].vtw_list_head->vtw_node_aux == 1) {
+        fprintf(out," [COMMIT]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[begin_act].vtw_list_head) {
-	fprintf(out," [BEGIN]");
+        fprintf(out," [BEGIN]");
       }
       if (((struct VyattaNode*)gp)->_config._def.actions[end_act].vtw_list_head) {
-	fprintf(out," [END]");
+        fprintf(out," [END]");
       }
       if (((struct VyattaNode*)gp)->_config._help != NULL) {
-	//	fprintf(out,"[help: %s]",((struct VyattaNode*)gp)->_config._help);
+        //        fprintf(out,"[help: %s]",((struct VyattaNode*)gp)->_config._help);
       }
       fprintf(out,"\n");
     }
@@ -1328,11 +1328,11 @@ process_priority_node(GNode *priority_node)
   if (priority_node_is_enclosing_node == FALSE) {
     //traverse priority node from children up
     g_node_traverse((GNode*)priority_node,
-		    G_POST_ORDER,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)enclosing_process_func,
-		    (gpointer)&result);
+                    G_POST_ORDER,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)enclosing_process_func,
+                    (gpointer)&result);
     
     if (result._err_code != 0) {
       return FALSE;
@@ -1352,16 +1352,16 @@ process_priority_node(GNode *priority_node)
     
     result._action = ActionOrder[i];
     g_node_traverse((GNode*)priority_node,
-		    order,
-		    G_TRAVERSE_ALL,
-		    -1,
-		    (GNodeTraverseFunc)process_func,
-		    (gpointer)&result);
+                    order,
+                    G_TRAVERSE_ALL,
+                    -1,
+                    (GNodeTraverseFunc)process_func,
+                    (gpointer)&result);
 
     if (result._err_code != 0) {
       if (g_debug) {
-	printf("commit2::process_priority_node(): failure on processing pass: %d\n", i);
-	syslog(LOG_DEBUG,"commit2::process_priority_node(): failure on processing pass: %d\n", i);
+        printf("commit2::process_priority_node(): failure on processing pass: %d\n", i);
+        syslog(LOG_DEBUG,"commit2::process_priority_node(): failure on processing pass: %d\n", i);
       }
       return FALSE;
     }
@@ -1403,26 +1403,26 @@ enclosing_process_func(GNode *node, gpointer data)
       // again should be enum
       GTraverseType order;
       if (delete_act != ActionOrder[i]) {
-	order = G_PRE_ORDER;
+        order = G_PRE_ORDER;
       }
       else {
-	order = G_POST_ORDER;
+        order = G_POST_ORDER;
       }
 
       result->_action = ActionOrder[i];
       g_node_traverse((GNode*)node,
-		      order,
-		      G_TRAVERSE_ALL,
-		      -1,
-		      (GNodeTraverseFunc)process_func,
-		      (gpointer)result);
+                      order,
+                      G_TRAVERSE_ALL,
+                      -1,
+                      (GNodeTraverseFunc)process_func,
+                      (gpointer)result);
     
       if (result->_err_code != 0) { //EXECUTE_LIST RETURNS FALSE ON FAILURE....
-	if (g_debug) {
-	  printf("commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
-	  syslog(LOG_DEBUG,"commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
-	}
-	return TRUE; //WILL STOP AT THIS POINT
+        if (g_debug) {
+          printf("commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
+          syslog(LOG_DEBUG,"commit2::enclosing_process_func(): FAILURE: status: %d\n",result->_err_code);
+        }
+        return TRUE; //WILL STOP AT THIS POINT
       }
     }
   }
@@ -1436,7 +1436,7 @@ enclosing_process_func(GNode *node, gpointer data)
  **/
 static boolean
 validate_configuration(GNode *root_node, boolean mode,
-		       GSList **nodes_visited_coll) 
+                       GSList **nodes_visited_coll) 
 {
   if (root_node == NULL) {
     return FALSE;
@@ -1450,11 +1450,11 @@ validate_configuration(GNode *root_node, boolean mode,
   //handles both syntax and commit
   result._action = syntax_act;
   g_node_traverse((GNode*)root_node,
-		  G_PRE_ORDER,
-		  G_TRAVERSE_ALL,
-		  -1,
-		  (GNodeTraverseFunc)validate_func,
-		  (gpointer)&result);
+                  G_PRE_ORDER,
+                  G_TRAVERSE_ALL,
+                  -1,
+                  (GNodeTraverseFunc)validate_func,
+                  (gpointer)&result);
   
   if (result._err_code != 0) {
     if (g_debug) {
@@ -1499,7 +1499,7 @@ validate_func(GNode *node, gpointer data)
   while (sib != NULL) {
     if (IS_DELETE(((struct VyattaNode*)(sib->data))->_data._operation)) {
       if (n_first_op == NULL) {
-	n_first_op = sib;
+        n_first_op = sib;
       }
       n_last_op = sib;
     }
@@ -1510,7 +1510,7 @@ validate_func(GNode *node, gpointer data)
   while (sib != NULL) {
     if (IS_SET_OR_CREATE(((struct VyattaNode*)(sib->data))->_data._operation)) {
       if (n_first_op == NULL) {
-	n_first_op = sib;
+        n_first_op = sib;
       }
       n_last_op = sib;
     }
@@ -1529,9 +1529,9 @@ validate_func(GNode *node, gpointer data)
     if (IS_DELETE(d->_operation)) {
       sprintf(buf,"- %s",d->_path);
       if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
-	char *val = (char*)clind_unescape(d->_name);
-	strcat(buf,val);
-	free(val);
+        char *val = (char*)clind_unescape(d->_name);
+        strcat(buf,val);
+        free(val);
       }
       char *tmp = (char *) malloc(strlen(buf)+1);
       strcpy(tmp,buf);
@@ -1541,9 +1541,9 @@ validate_func(GNode *node, gpointer data)
     else if (IS_SET_OR_CREATE(d->_operation)) {
       sprintf(buf,"+ %s",d->_path);
       if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
-	char *val = (char*)clind_unescape(d->_name);
-	strcat(buf,val);
-	free(val);
+        char *val = (char*)clind_unescape(d->_name);
+        strcat(buf,val);
+        free(val);
       }
  
       char *tmp = (char *) malloc(strlen(buf)+1);
@@ -1596,8 +1596,8 @@ validate_func(GNode *node, gpointer data)
       printf("commit2::process_func(): boolean value is: %d\n",d->_value);
       syslog(LOG_DEBUG,"commit2::process_func(): boolean value is: %d",d->_value);
       if (node->parent != NULL && ((struct VyattaNode*)(node->parent->data))->_data._name != NULL) {
-	printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
-	syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+        printf("commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
+        syslog(LOG_DEBUG,"commit2::process_func(): parent has a name and it is: %s\n",((struct VyattaNode*)(node->parent->data))->_data._name);
       }
       printf("commit2::process_func(): @ value: [NULL]\n");
       syslog(LOG_DEBUG,"commit2::process_func(): @ value: [NULL]\n");
@@ -1634,10 +1634,10 @@ validate_func(GNode *node, gpointer data)
     char buf[MAX_LENGTH_DIR_PATH*sizeof(char)];
     if (c->_def.actions[syntax_act].vtw_list_head) {
       if (c->_def.actions[syntax_act].vtw_list_head->vtw_node_aux == 0) {
-	sprintf(buf,"syntax\t:\t%s",d->_path);
+        sprintf(buf,"syntax\t:\t%s",d->_path);
       }
       else {
-	sprintf(buf,"commit\t:\t%s",d->_path);
+        sprintf(buf,"commit\t:\t%s",d->_path);
       }
     }
     if (c->_def.multi) { //need to handle the embedded multinode as a special case--should be fixed!
@@ -1660,12 +1660,12 @@ validate_func(GNode *node, gpointer data)
     char *p = process_script_path(d->_path);
     if (p != NULL) {
       if (strlen(outbuf) > 0) {
-	if (g_print_error_location_all == TRUE) {
-	  fprintf(out_stream,"_errloc_:[%s]\n  %s\n",p,outbuf);
-	}
-	else {
-	  fprintf(out_stream,"[%s] \n  %s\n",p,outbuf);
-	}
+        if (g_print_error_location_all == TRUE) {
+          fprintf(out_stream,"_errloc_:[%s]\n  %s\n",p,outbuf);
+        }
+        else {
+          fprintf(out_stream,"[%s] \n  %s\n",p,outbuf);
+        }
       }
     }
     */
