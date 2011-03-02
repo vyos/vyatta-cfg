@@ -143,10 +143,12 @@ _cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
   Cstore::sortNodes(cnodes);
 
   for (size_t i = 0; i < cnodes.size(); i++) {
-    bool in1 = (nmap1.find(cnodes[i]) != nmap1.end());
-    bool in2 = (nmap2.find(cnodes[i]) != nmap2.end());
-    CfgNode *c1 = (in1 ? nmap1[cnodes[i]] : NULL);
-    CfgNode *c2 = (in2 ? nmap2[cnodes[i]] : NULL);
+    Cstore::MapT<string, CfgNode *>::iterator p1 = nmap1.find(cnodes[i]);
+    Cstore::MapT<string, CfgNode *>::iterator p2 = nmap2.find(cnodes[i]);
+    bool in1 = (p1 != nmap1.end());
+    bool in2 = (p2 != nmap2.end());
+    CfgNode *c1 = (in1 ? p1->second : NULL);
+    CfgNode *c2 = (in2 ? p2->second : NULL);
     rcnodes1.push_back(c1);
     rcnodes2.push_back(c2);
   }

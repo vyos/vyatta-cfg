@@ -1980,10 +1980,12 @@ Cstore::sort_func_deb_version(string a, string b)
 void
 Cstore::sort_nodes(vector<string>& nvec, unsigned int sort_alg)
 {
-  if (_sort_func_map.find(sort_alg) == _sort_func_map.end()) {
+  Cstore::MapT<unsigned int, Cstore::SortFuncT>::iterator p
+    = _sort_func_map.find(sort_alg);
+  if (p == _sort_func_map.end()) {
     return;
   }
-  sort(nvec.begin(), nvec.end(), _sort_func_map[sort_alg]);
+  sort(nvec.begin(), nvec.end(), p->second);
 }
 
 /* try to append the logical path to template path.

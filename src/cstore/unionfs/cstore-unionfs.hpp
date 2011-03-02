@@ -136,7 +136,7 @@ private:
     if (it == saved_paths.end()) {
       exit_internal("restore_paths: handle not found\n");
     }
-    pair<b_fs::path, b_fs::path> p = saved_paths[handle];
+    pair<b_fs::path, b_fs::path> p = it->second;
     mutable_cfg_path = p.first;
     tmpl_path = p.second;
   };

@@ -82,7 +82,7 @@ _escape_char(char c)
 {
   Cstore::MapT<char, string>::iterator p = _fs_escape_chars.find(c);
   if (p != _fs_escape_chars.end()) {
-    return _fs_escape_chars[c];
+    return p->second;
   } else {
     return string(1, c);
   }
@@ -97,7 +97,7 @@ _escape_path_name(const string& path)
     = _escape_path_name_cache.find(path);
   if (p != _escape_path_name_cache.end()) {
     // found escaped string in cache. just return it.
-    return _escape_path_name_cache[path];
+    return p->second;
   }
 
   // special case for empty string
@@ -120,7 +120,7 @@ _unescape_path_name(const string& path)
     = _unescape_path_name_cache.find(path);
   if (p != _unescape_path_name_cache.end()) {
     // found unescaped string in cache. just return it.
-    return _unescape_path_name_cache[path];
+    return p->second;
   }
 
   // assume all escape patterns are 3-char
@@ -133,7 +133,7 @@ _unescape_path_name(const string& path)
     string s = path.substr(i, 3);
     Cstore::MapT<string, char>::iterator p = _fs_unescape_chars.find(s);
     if (p != _fs_unescape_chars.end()) {
-      char c = _fs_unescape_chars[s];
+      char c = p->second;
       if (path.size() == 3 && c == -1) {
         // special case for empty string
         npath = "";

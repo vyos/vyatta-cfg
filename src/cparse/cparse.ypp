@@ -53,8 +53,9 @@ add_node()
 {
   pcomps.push_back(nname);
   CfgNode *onode = NULL;
-  if (node_map.find(pcomps) != node_map.end()) {
-    onode = node_map[pcomps];
+  map<vector<string>, CfgNode *>::iterator it = node_map.find(pcomps);
+  if (it != node_map.end()) {
+    onode = it->second;
   }
   pcomps.pop_back();
   if (onode) {
