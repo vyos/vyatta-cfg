@@ -40,12 +40,6 @@ typedef enum {
   K_DEL_OP = 0x10
 } NODE_OPERATION;
 
-typedef enum {
-  K_NO_DISABLE_OP = 0X00,
-  K_LOCAL_DISABLE_OP = 0x02, //MEANS DISABLE FLAG IS SET IN LOCAL CONFIGURATION
-  K_ACTIVE_DISABLE_OP = 0x04 //MEANS DISABLE FLAG IS SET IN ACTIVE CONFIGURATION
-} NODE_ACTIVATE;
-
 #define IS_SET(op)    (op & K_SET_OP)
 #define IS_ACTIVE(op) (op & K_ACTIVE_OP)
 #define IS_CREATE(op) (op & K_CREATE_OP)
@@ -83,7 +77,6 @@ struct Data
   boolean         _value;  //is this a value?
   char*           _path;
   NODE_OPERATION  _operation; //no-op, set, or delete
-  NODE_ACTIVATE   _disable_op; //is this node currently deactivated?
 };
 
 /*

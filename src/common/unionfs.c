@@ -209,7 +209,6 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
     vn->_data._name = cp;
     vn->_data._value = FALSE;//TRUE; //data value
     vn->_data._operation = op;
-    vn->_data._disable_op = K_NO_DISABLE_OP;
     vn->_config._priority = LOWEST_PRIORITY;
     if (rel_data_path != NULL) {
       vn->_data._path = (char*)malloc(strlen(rel_data_path)+1);
@@ -383,45 +382,9 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
         strcmp(dirp->d_name, MOD_NAME) != 0 &&
         strcmp(dirp->d_name, UNSAVED_FILE) != 0 &&
         strcmp(dirp->d_name, DEF_FILE) != 0 &&
-        strcmp(dirp->d_name, DISABLE_FILE) != 0 &&
         strcmp(dirp->d_name, WHITEOUT_FILE) != 0 &&
-        strcmp(dirp->d_name, WHITEOUT_DISABLE_FILE) != 0 &&
         strcmp(dirp->d_name, VAL_NAME) != 0) {
       processed = TRUE;
-
-      NODE_ACTIVATE deactivated = K_NO_DISABLE_OP;
-      if (G_NODE_IS_ROOT(node) == FALSE
-          && ((struct VyattaNode*)node->data)->_data._disable_op
-             != K_NO_DISABLE_OP) {
-        deactivated = ((struct VyattaNode*)node->data)->_data._disable_op;
-      }
-      else {         //do a lstat check in the local dir
-        struct stat s;
-
-        char namebuf[MAX_LENGTH_HELP_STR];
-        if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
-          strcpy(namebuf,dirp->d_name+4); //SKIP THE .WH.
-        }
-        else {
-          strcpy(namebuf,dirp->d_name);
-        }
-
-
-        char buf[MAX_LENGTH_HELP_STR];
-        sprintf(buf, "%s/%s/%s/%s", get_mdirp(), rel_data_path, namebuf,
-                DISABLE_FILE);
-        if (lstat(buf,&s) == 0) {
-          /* need to check existence of file in active configuration here
-           * as well!
-           */
-          deactivated |= K_LOCAL_DISABLE_OP;
-        }
-        sprintf(buf, "%s/%s/%s/%s", get_adirp(), rel_data_path, namebuf,
-                DISABLE_FILE);
-        if (lstat(buf,&s) == 0) {
-          deactivated |= K_ACTIVE_DISABLE_OP;
-        }
-      }
 
       char *data_buf = malloc(strlen(dirp->d_name)+5);
       if (strncmp(dirp->d_name,DELETED_NODE,4) == 0) {
@@ -439,7 +402,6 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
         vn->_data._name = data_buf;
         vn->_data._value = FALSE;
         vn->_config._priority = LOWEST_PRIORITY;
-        vn->_data._disable_op = deactivated;
         
         char new_data_path[MAX_LENGTH_DIR_PATH];
         sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -451,45 +413,13 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
          * configuration to mark nested delete nodes
          */
         retrieve_data(new_data_path,new_node,get_adirp(),K_DEL_OP);
-      }
-      else if (deactivated != K_NO_DISABLE_OP) {
-        //NEED TO RECURSE DOWN THE ACTIVE PATH THEN.
-        struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
-
-        strcpy(data_buf,dirp->d_name); 
-        if (op == K_DEL_OP) {
-          vn->_data._operation = K_DEL_OP;
-        }
-        else {
-          vn->_data._operation = K_NO_OP;
-        }
-        
-        //create new node and insert...
-        vn->_data._name = data_buf;
-        vn->_data._value = FALSE;
-        vn->_config._priority = LOWEST_PRIORITY;
-        vn->_data._disable_op = deactivated;
-        
-        char new_data_path[MAX_LENGTH_DIR_PATH];
-        sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
-        
-        GNode *new_node = g_node_new(vn);
-        new_node = insert_sibling_in_order(node,new_node);
-
-        /* will need to enter a special recursion against the active
-         * configuration to mark nested delete nodes
-         */
-        retrieve_data(new_data_path, new_node, get_adirp(),
-                      vn->_data._operation);
-      }
-      else {
+      } else {
         strcpy(data_buf,dirp->d_name);
         //create new node and insert...
         struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
         vn->_data._name = data_buf;
         vn->_data._value = FALSE;
         vn->_config._priority = LOWEST_PRIORITY;
-        vn->_data._disable_op = deactivated;
 
         char new_data_path[MAX_LENGTH_DIR_PATH];
         sprintf(new_data_path,"%s/%s",rel_data_path,data_buf);
@@ -511,7 +441,7 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
         }
         GNode *new_node = g_node_new(vn);
         new_node = insert_sibling_in_order(node,new_node);
-        if (op == K_DEL_OP || vn->_data._disable_op != K_NO_DISABLE_OP) {
+        if (op == K_DEL_OP) {
           retrieve_data(new_data_path, new_node, get_adirp(),
                         vn->_data._operation);
         }
@@ -565,7 +495,6 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
           vn->_data._value = FALSE;
           vn->_data._operation = K_DEL_OP;
           vn->_config._priority = LOWEST_PRIORITY;
-          vn->_data._disable_op = K_NO_DISABLE_OP;
           
           GNode *new_node = g_node_new(vn);
           new_node = insert_sibling_in_order(node,new_node);
@@ -594,7 +523,6 @@ common_get_local_session_data()
   struct VyattaNode *vn = calloc(1,sizeof(struct VyattaNode));
   vn->_data._name = NULL; //root node has null
   vn->_data._operation = K_NO_OP;
-  vn->_data._disable_op = K_NO_DISABLE_OP;
   vn->_config._priority = LOWEST_PRIORITY;
 
   //create first node
@@ -974,7 +902,6 @@ copy_vyatta_node(struct VyattaNode* vn)
     strcpy(new_vn->_data._path,vn->_data._path);
   }
   new_vn->_data._operation = vn->_data._operation;
-  new_vn->_data._disable_op = vn->_data._disable_op;
   new_vn->_config._multi = vn->_config._multi;
   new_vn->_config._priority = vn->_config._priority;
   new_vn->_config._priority_extended = vn->_config._priority_extended;
@@ -1143,9 +1070,6 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
   strcpy(new_vn->_data._name,ttmp);
   new_vn->_config._path = malloc(strlen(vn_parent->_config._path)+10);
   sprintf(new_vn->_config._path,"%s/node.tag",vn_parent->_config._path);
-
-  // let's set this nodes disable_op to its parent's value.
-  new_vn->_data._disable_op = vn_parent->_data._disable_op;
 
   new_vn->_data._operation = ((struct ValueData*)data)->_state;
   new_vn->_config._def = vn_parent->_config._def;

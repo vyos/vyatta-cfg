@@ -527,31 +527,10 @@ process_func(GNode *node, gpointer data)
   if (c->_def.actions  && 
       c->_def.actions[result->_action].vtw_list_head){
     d_dplog("commit2::process_func(), calling process on : %s for action "
-            "%d, type: %d, operation: %d, path: %s, disable state: %d",
+            "%d, type: %d, operation: %d, path: %s",
             (d->_name ? d->_name : "[n/a]"), result->_action,
-            (d->_name ? c->_def.def_type : -1), op, d->_path, d->_disable_op);
+            (d->_name ? c->_def.def_type : -1), op, d->_path);
 
-    //FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE
-    if (d->_disable_op != K_NO_DISABLE_OP) {
-      if (IS_DELETE(op) && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-        //if this was actively disabled and is being deleted do nothing.
-        return FALSE;
-      } else if ((d->_disable_op & K_LOCAL_DISABLE_OP)
-                 && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-        //no state change: deactivated
-        return FALSE; //skip operation on node
-      } else if (!(d->_disable_op & K_LOCAL_DISABLE_OP)
-                 && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-        //node will be activated on commit
-        //LET'S SPOOF the operation... convert it to CREATE
-        op = K_CREATE_OP;
-      } else if ((d->_disable_op & K_LOCAL_DISABLE_OP)
-                 && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-        //node will be deactivated on commit        
-        //LET'S SPOOF the operation... convert it to DELETE
-        op = K_DEL_OP;
-      }
-    }
     /* Needs to be cleaned up a bit such that this convoluted if clause
      * is easier to read.
      * (XXX original comment no longer correct and therefore is removed.)
@@ -578,9 +557,7 @@ process_func(GNode *node, gpointer data)
        * delete--shouldn't be done, but needs to be include in the rule
        * set above
        */
-      if (IS_DELETE(op) && IS_ACTIVE(op) && result->_action == delete_act
-          && d->_disable_op == K_NO_DISABLE_OP) {
-        //only apply this when no disable operation is set
+      if (IS_DELETE(op) && IS_ACTIVE(op) && result->_action == delete_act) {
         return FALSE;
       }
 
@@ -857,22 +834,6 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
   d_dplog("commit2::sort_func(): %s, node count: %d",
           (d->_name ?  d->_name : "[n/a]"), g_node_n_children(root_node));
 
-  // FIRST LET'S COMPUTE THE DEACTIVATE->ACTIVATE OVERRIDE
-  NODE_OPERATION op = d->_operation;
-  if (d->_disable_op != K_NO_DISABLE_OP) {
-    if (!(d->_disable_op & K_LOCAL_DISABLE_OP)
-        && (d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-      //node will be activated on commit
-      //LET'S SPOOF the operation... convert it to CREATE
-      op = K_CREATE_OP;
-    } else if ((d->_disable_op & K_LOCAL_DISABLE_OP)
-               && !(d->_disable_op & K_ACTIVE_DISABLE_OP)) {
-      //node will be deactivated on commit
-      //LET'S SPOOF the operation... convert it to DELETE
-      op = K_DEL_OP;
-    }
-  }
-
   //change action state of node according to enclosing behavior
   /* XXX this is ugly. originally the condition for the if is the following:
    *       (c1 && c2 || (c3 || c4) && c5)
@@ -892,13 +853,24 @@ sort_func(GNode *node, gpointer data, boolean priority_mode)
    *     note that since the current goal is simply cleanup, no attempt is
    *     made to understand the logic here, and the change is purely based
    *     on operator precendence to maintain the original logic.
+   *
+   * XXX now removing deactivate-handling code, which involves c2.
+   *
+   *     note that c2 is (d->_disable_op != K_NO_DISABLE_OP), which means
+   *     the node is "deactivated" (in working or active config or both).
+   *     this in turn means that the (c1 && c2) part of the logic can only
+   *     be true if the node is deactivated.
+   *
+   *     however, since activate/deactivate has not actually been exposed,
+   *     this means that in actual usage the (c1 && c2) part is never true.
+   *     therefore, we can simply remove the whole part, and the logic
+   *     becomes:
+   *       ((c3 || c4) && c5)
    */
-  if (((/* c1 */ G_NODE_IS_ROOT(node) == FALSE)
-       && (/* c2 */ d->_disable_op != K_NO_DISABLE_OP))
-              //added to support enclosing behavior of activated/deactivated
-      || (((/* c3 */ IS_SET_OR_CREATE(op)) || (/* c4 */ IS_DELETE(op)))
-          && (/* c5 */ IS_NOOP(((struct VyattaNode*)
-                                (node->parent->data))->_data._operation)))) {
+  NODE_OPERATION op = d->_operation;
+  if (((/* c3 */ IS_SET_OR_CREATE(op)) || (/* c4 */ IS_DELETE(op)))
+      && (/* c5 */ IS_NOOP(((struct VyattaNode*)
+                             (node->parent->data))->_data._operation))) {
     //first check if there is enclosing behavior
     boolean enclosing = FALSE;
     GNode *n = node;
@@ -1101,30 +1073,17 @@ dump_func(GNode *node, gpointer data)
     struct Config *gcfg = &(gp->_config);
     if (gdata->_name != NULL) {
       unsigned int i;
-
-      char disable_op[2] = { 0, 0 };
-      NODE_ACTIVATE dop = gdata->_disable_op;
-      if (dop == (K_ACTIVE_DISABLE_OP | K_LOCAL_DISABLE_OP)) {
-        disable_op[0] = '!';
-      } else if (dop == K_ACTIVE_DISABLE_OP) {
-        disable_op[0] = 'A';
-      } else if (dop == K_LOCAL_DISABLE_OP) {
-        disable_op[0] = 'D';
-      } else {
-        disable_op[0] = ' ';
-      }
-
       NODE_OPERATION op = gdata->_operation;
       if (IS_ACTIVE(op)) {
-        fprintf(out,"%s*",disable_op);
+        fprintf(out, "*");
       } else if (IS_DELETE(op)) {
-        fprintf(out,"%s-",disable_op);
+        fprintf(out, "-");
       } else if (IS_CREATE(op)) {
-        fprintf(out,"%s+",disable_op);
+        fprintf(out, "+");
       } else if (IS_SET(op)) {
-        fprintf(out,"%s>",disable_op);
+        fprintf(out, ">");
       } else {
-        fprintf(out,"%s ",disable_op);
+        fprintf(out, " ");
       }
 
       for (i = 0; i < depth; ++i) {
@@ -1440,15 +1399,6 @@ validate_func(GNode *node, gpointer data)
     return FALSE;
   }
   
-  //don't perform validation checks on disabled nodes
-  if (d->_disable_op == K_LOCAL_DISABLE_OP
-      || d->_disable_op == (K_LOCAL_DISABLE_OP | K_ACTIVE_DISABLE_OP)) { 
-      /* SHOULD only hit the case where the node is locally disabled
-       * or globally disabled and not in a transition to active state
-       */
-      return FALSE;
-  }
-
   if (IS_DELETE(d->_operation) && !IS_ACTIVE(d->_operation)) {
     return FALSE; //will not perform validation checks on deleted nodes
   }
