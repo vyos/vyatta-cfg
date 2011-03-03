@@ -8,9 +8,6 @@
 extern "C" {
 #endif
 
-boolean
-execute(char *cmd);
-
 /**
  *
  **/
@@ -36,7 +33,8 @@ void
 common_set_context(char *cpath, char *dpath);
 
 /**
- * sets system parent context for operation (i.e. hack for unionfs implementation)
+ * sets system parent context for operation (i.e. hack for unionfs
+ * implementation)
  **/
 void
 common_set_parent_context(char *cpath, char *dpath);
