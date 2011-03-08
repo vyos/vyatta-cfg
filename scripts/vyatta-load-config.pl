@@ -52,7 +52,7 @@ my $url_tmp_file = $bootpath . "/config.boot.$$";
 # Note current loading is limited to first new
 # multinode.
 #
-sub usage() {
+sub usage {
     print "Usage: $0 --merge=<root>\n";
     exit 0;
 }
