@@ -32,6 +32,7 @@
 namespace cstore { // begin namespace cstore
 
 namespace b_fs = boost::filesystem;
+namespace b_s = boost::system;
 
 class UnionfsCstore : public Cstore {
 public:
@@ -222,15 +223,14 @@ private:
   void recursive_copy_dir(const b_fs::path& src, const b_fs::path& dst);
 
   // boost fs operations wrappers
-  bool b_fs_exists(const b_fs::path& path) {
-    try { return b_fs::exists(path); } catch (...) { return false; }
+  bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {
+    b_s::error_code ec;
+    fs = b_fs::detail::status_api(path, ec);
+    return (!ec);
   };
-  bool b_fs_is_directory(const b_fs::path& path) {
-    try { return b_fs::is_directory(path); } catch (...) { return false; }
-  };
-  bool b_fs_is_regular(const b_fs::path& path) {
-    try { return b_fs::is_regular(path); } catch (...) { return false; }
-  };
+  bool path_exists(const char *path);
+  bool path_is_directory(const char *path);
+  bool path_is_regular(const char *path);
 };
 
 } // end namespace cstore
