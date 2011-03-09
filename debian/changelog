@@ -1,3 +1,20 @@
+vyatta-cfg (0.18.88) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * add caching for parsed config templates
+  * tweak map iterator usage
+  * change indentation in commit code
+  * clean up commit dead code etc. etc. etc.
+  * remove deactivate-handling code from commit
+
+  [ Stephen Hemminger ]
+  * Remove accidental usage of perl prototype in usage
+
+  [ An-Cheng Huang ]
+  * switch query functions to use lower-level API directly.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 09 Mar 2011 13:47:02 -0800
+
 vyatta-cfg (0.18.87) unstable; urgency=low
 
   * clean up dead code etc. etc. etc.
