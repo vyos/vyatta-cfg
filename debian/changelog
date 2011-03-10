@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.89) unstable; urgency=low
+
+  * support for fix to bug 6081. return hash of ipv4net, ipv6net
+    networks assigned to interfaces
+
+ -- Michael Larson <mike@vyatta.com>  Thu, 10 Mar 2011 10:51:55 -0800
+
 vyatta-cfg (0.18.88) unstable; urgency=low
 
   [ An-Cheng Huang ]
