@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
 		 isIpAddress is_ip_v4_or_v6 interface_description
-		 is_local_address is_primary_address);
+		 is_local_address is_primary_address get_ipnet_intf_hash);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString);
@@ -41,6 +41,8 @@ use Socket6;
 #
 # returns a hash of ipaddrs => interface
 #
+# only works for ipv4
+#
 sub get_ipaddr_intf_hash {
   my %config_ipaddrs = ();
   my @lines = `ip addr show | grep 'inet '`;
@@ -52,6 +54,35 @@ sub get_ipaddr_intf_hash {
   }
   return \%config_ipaddrs;
 }
+
+#
+# returns a hash of ipnet => interface
+#
+# works for both ipv4 and ipv6
+#
+sub get_ipnet_intf_hash {
+    my @args = qw(ip addr show);
+    my @addresses;
+    my %config_ipaddrs = ();
+
+    open my $ipcmd, '-|'
+      or exec @args
+      or die "ip addr command failed: $!";
+
+    my $iface = "";
+    while (<$ipcmd>) {
+        my ( $proto, $addr ) = split;
+        if ( $proto =~ /.*:$/ && $addr =~ /.*:$/) {
+            $iface = $addr;
+            chop($iface);
+        }
+        next unless ( $proto =~ /inet/ );
+	$config_ipaddrs{$addr} = $iface;
+    }
+    close $ipcmd;
+    return \%config_ipaddrs;
+}
+
 
 # Check whether an address is the primary address on some interface
 sub is_primary_address {
