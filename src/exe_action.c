@@ -23,21 +23,6 @@ usage()
   printf("-h\t\thelp\n");
 }
 
-
-/**
- *
- **/
-const char* get_tmpp(void) {
-
-  const char* tmpp=getenv(ENV_T_DIR);
-
-  if(!tmpp)
-    tmpp="";
-
-  return tmpp;
-}
-
-
 /**
  *
  *
