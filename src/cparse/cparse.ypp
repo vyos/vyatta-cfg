@@ -1,7 +1,6 @@
 %{
 #include <cstdio>
 #include <vector>
-#include <map>
 #include <string>
 
 #include <cstore/cstore.hpp>
@@ -39,25 +38,25 @@ static char *ncomment = NULL;
 static char *nname = NULL;
 static char *nval = NULL;
 
-// XXX optimize: use unordered_map with non-vector
-static map<vector<string>, CfgNode *> node_map;
+typedef Cstore::MapT<Cpath, CfgNode *, CpathHash> NmapT;
+static NmapT node_map;
 static Cstore *cstore_ = NULL;
 static CfgNode *cur_node = NULL;
 static CfgNode *cur_parent = NULL;
 static vector<CfgNode *> cur_path;
-static vector<string> pcomps;
+static Cpath pcomps;
 static vector<bool> pcomp_is_value;
 
 static void
 add_node()
 {
-  pcomps.push_back(nname);
+  pcomps.push(nname);
   CfgNode *onode = NULL;
-  map<vector<string>, CfgNode *>::iterator it = node_map.find(pcomps);
+  NmapT::iterator it = node_map.find(pcomps);
   if (it != node_map.end()) {
     onode = it->second;
   }
-  pcomps.pop_back();
+  pcomps.pop();
   if (onode) {
     if (nval) {
       if (onode->isMulti()) {
@@ -92,9 +91,9 @@ add_node()
       mapped_node = p;
     }
     cur_parent->addChildNode(mapped_node);
-    pcomps.push_back(nname);
+    pcomps.push(nname);
     node_map[pcomps] = mapped_node;
-    pcomps.pop_back();
+    pcomps.pop();
   }
 }
 
@@ -104,10 +103,10 @@ go_down()
   cur_path.push_back(cur_parent);
   cur_parent = cur_node;
 
-  pcomps.push_back(nname);
+  pcomps.push(nname);
   pcomp_is_value.push_back(false);
   if (nval) {
-    pcomps.push_back(nval);
+    pcomps.push(nval);
     pcomp_is_value.push_back(true);
   }
 }
@@ -119,10 +118,10 @@ go_up()
   cur_path.pop_back();
 
   if (pcomp_is_value.back()) {
-    pcomps.pop_back();
+    pcomps.pop();
     pcomp_is_value.pop_back();
   }
-  pcomps.pop_back();
+  pcomps.pop();
   pcomp_is_value.pop_back();
 }
 

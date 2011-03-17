@@ -28,8 +28,10 @@
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
+#include <cstore/unionfs/fspath.hpp>
 
 namespace cstore { // begin namespace cstore
+namespace unionfs { // begin namespace unionfs
 
 namespace b_fs = boost::filesystem;
 namespace b_s = boost::system;
@@ -80,21 +82,19 @@ private:
   static const size_t C_UNIONFS_MAX_FILE_SIZE = 262144;
 
   // root dirs (constant)
-  b_fs::path work_root;   // working root (union)
-  b_fs::path active_root; // active root (readonly part of union)
-  b_fs::path change_root; // change root (r/w part of union)
-  b_fs::path tmp_root;   // temp root
-  b_fs::path tmpl_root;   // template root
+  FsPath work_root;   // working root (union)
+  FsPath active_root; // active root (readonly part of union)
+  FsPath change_root; // change root (r/w part of union)
+  FsPath tmp_root;   // temp root
+  FsPath tmpl_root;   // template root
 
   // path buffers
-  b_fs::path mutable_cfg_path;  // mutable part of config path
-  b_fs::path tmpl_path;         // whole template path
-  Cstore::MapT<const void *, pair<b_fs::path, b_fs::path> > saved_paths;
-    // saved mutable part of cfg path and whole template path
+  FsPath mutable_cfg_path;  // mutable part of config path
+  FsPath tmpl_path;         // whole template path
 
   ////// virtual functions defined in base class
   // begin path modifiers
-  void push_tmpl_path(const string& new_comp) {
+  void push_tmpl_path(const char *new_comp) {
     push_path(tmpl_path, new_comp);
   };
   void push_tmpl_path_tag() {
@@ -105,18 +105,24 @@ private:
      *       however, since current C_TAG_NAME doesn't contain any escape
      *       sequences, this cannot happen for now.
      */
-    tmpl_path /= C_TAG_NAME;
+    tmpl_path.push(C_TAG_NAME);
   };
-  string pop_tmpl_path() {
-    return pop_path(tmpl_path);
+  void pop_tmpl_path() {
+    pop_path(tmpl_path);
   };
-  void push_cfg_path(const string& new_comp) {
+  void pop_tmpl_path(string& last) {
+    pop_path(tmpl_path, last);
+  };
+  void push_cfg_path(const char *new_comp) {
     push_path(mutable_cfg_path, new_comp);
   };
-  string pop_cfg_path() {
-    return pop_path(mutable_cfg_path);
+  void pop_cfg_path() {
+    pop_path(mutable_cfg_path);
   };
-  void append_cfg_path(const vector<string>& path_comps) {
+  void pop_cfg_path(string& last) {
+    pop_path(mutable_cfg_path, last);
+  };
+  void append_cfg_path(const Cpath& path_comps) {
     for (size_t i = 0; i < path_comps.size(); i++) {
       push_cfg_path(path_comps[i]);
     }
@@ -125,27 +131,31 @@ private:
     tmpl_path = tmpl_root;
     mutable_cfg_path = "";
   };
-  void save_paths(const void *handle = NULL) {
-    pair<b_fs::path, b_fs::path> p;
-    p.first = mutable_cfg_path;
-    p.second = tmpl_path;
-    saved_paths[handle] = p;
+
+  class UnionfsSavePaths : public SavePaths {
+  public:
+    UnionfsSavePaths(UnionfsCstore *cs)
+      : cstore(cs), cpath(cs->mutable_cfg_path), tpath(cs->tmpl_path) {};
+
+    ~UnionfsSavePaths() {
+      cstore->mutable_cfg_path = cpath;
+      cstore->tmpl_path = tpath;
+    };
+
+  private:
+    UnionfsCstore *cstore;
+    FsPath cpath;
+    FsPath tpath;
   };
-  void restore_paths(const void *handle = NULL) {
-    Cstore::MapT<const void *, pair<b_fs::path, b_fs::path> >::iterator it
-      = saved_paths.find(handle);
-    if (it == saved_paths.end()) {
-      exit_internal("restore_paths: handle not found\n");
-    }
-    pair<b_fs::path, b_fs::path> p = it->second;
-    mutable_cfg_path = p.first;
-    tmpl_path = p.second;
+  auto_ptr<SavePaths> create_save_paths() {
+    return auto_ptr<SavePaths>(new UnionfsSavePaths(this));
   };
+
   bool cfg_path_at_root() {
     return (!mutable_cfg_path.has_parent_path());
   };
   bool tmpl_path_at_root() {
-    return (tmpl_path.file_string() == tmpl_root.file_string());
+    return (tmpl_path == tmpl_root);
   };
   // end path modifiers
 
@@ -161,8 +171,8 @@ private:
     get_all_child_dir_names(tmpl_path, cnodes);
   };
   bool write_value_vec(const vector<string>& vvec, bool active_cfg);
-  bool rename_child_node(const string& oname, const string& nname);
-  bool copy_child_node(const string& oname, const string& nname);
+  bool rename_child_node(const char *oname, const char *nname);
+  bool copy_child_node(const char *oname, const char *nname);
   bool mark_display_default();
   bool unmark_display_default();
   bool mark_deactivated();
@@ -185,10 +195,10 @@ private:
   bool marked_display_default(bool active_cfg);
 
   // observers during commit operation
-  bool marked_committed(const Ctemplate *def, bool is_set);
+  bool marked_committed(const tr1::shared_ptr<Ctemplate>& def, bool is_set);
 
   // these operate on both current tmpl and work paths
-  bool validate_val_impl(const Ctemplate *def, char *value);
+  bool validate_val_impl(const tr1::shared_ptr<Ctemplate>& def, char *value);
 
   // observers for "edit/tmpl levels" (for "edit"-related operations).
   // note that these should be moved to base class in the future.
@@ -198,7 +208,7 @@ private:
   string get_tmpl_level_path() {
     return tmpl_path_to_str();
   };
-  void get_edit_level(vector<string>& path_comps);
+  void get_edit_level(Cpath& path_comps);
   bool edit_level_at_root() {
     return cfg_path_at_root();
   };
@@ -208,19 +218,20 @@ private:
   string tmpl_path_to_str();
 
   ////// private functions
-  b_fs::path get_work_path() { return (work_root / mutable_cfg_path); };
-  b_fs::path get_active_path() { return (active_root / mutable_cfg_path); };
-  b_fs::path get_change_path() { return (change_root / mutable_cfg_path); };
-  void push_path(b_fs::path& old_path, const string& new_comp);
-  string pop_path(b_fs::path& path);
-  void get_all_child_dir_names(b_fs::path root, vector<string>& nodes);
-  bool write_file(const string& file, const string& data);
-  bool create_file(const string& file) {
+  FsPath get_work_path() { return (work_root / mutable_cfg_path); };
+  FsPath get_active_path() { return (active_root / mutable_cfg_path); };
+  FsPath get_change_path() { return (change_root / mutable_cfg_path); };
+  void push_path(FsPath& old_path, const char *new_comp);
+  void pop_path(FsPath& path);
+  void pop_path(FsPath& path, string& last);
+  void get_all_child_dir_names(const FsPath& root, vector<string>& nodes);
+  bool write_file(const FsPath& file, const string& data);
+  bool create_file(const FsPath& file) {
     return write_file(file, "");
   };
-  bool read_whole_file(const b_fs::path& file, string& data);
+  bool read_whole_file(const FsPath& file, string& data);
   bool committed_marker_exists(const string& marker);
-  void recursive_copy_dir(const b_fs::path& src, const b_fs::path& dst);
+  void recursive_copy_dir(const FsPath& src, const FsPath& dst);
 
   // boost fs operations wrappers
   bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {
@@ -229,10 +240,20 @@ private:
     return (!ec);
   };
   bool path_exists(const char *path);
+  bool path_exists(const FsPath& path) {
+    return path_exists(path.path_cstr());
+  };
   bool path_is_directory(const char *path);
+  bool path_is_directory(const FsPath& path) {
+    return path_is_directory(path.path_cstr());
+  };
   bool path_is_regular(const char *path);
+  bool path_is_regular(const FsPath& path) {
+    return path_is_regular(path.path_cstr());
+  };
 };
 
+} // end namespace unionfs
 } // end namespace cstore
 
 #endif /* _CSTORE_UNIONFS_H_ */

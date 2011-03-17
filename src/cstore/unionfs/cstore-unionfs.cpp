@@ -26,7 +26,8 @@
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 
-using namespace cstore;
+namespace cstore { // begin namespace cstore
+namespace unionfs { // begin namespace unionfs
 
 ////// constants
 // environment vars defining root dirs
@@ -205,7 +206,8 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
        * starts with '/', so only append it if it is at least two chars
        * (i.e., it is not "/").
        */
-      tmpl_path /= val;
+      FsPath tlvl(val);
+      tmpl_path /= tlvl;
     }
   }
   _init_fs_escape_chars();
@@ -239,11 +241,11 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
 
   string declr = " declare -x -r "; // readonly vars
   env += " umask 002; {";
-  env += (declr + C_ENV_ACTIVE_ROOT + "=" + active_root.file_string());
-  env += (declr + C_ENV_CHANGE_ROOT + "=" + change_root.file_string() + ";");
-  env += (declr + C_ENV_WORK_ROOT + "=" + work_root.file_string() + ";");
-  env += (declr + C_ENV_TMP_ROOT + "=" + tmp_root.file_string() + ";");
-  env += (declr + C_ENV_TMPL_ROOT + "=" + tmpl_root.file_string() + ";");
+  env += (declr + C_ENV_ACTIVE_ROOT + "=" + active_root.path_cstr());
+  env += (declr + C_ENV_CHANGE_ROOT + "=" + change_root.path_cstr() + ";");
+  env += (declr + C_ENV_WORK_ROOT + "=" + work_root.path_cstr() + ";");
+  env += (declr + C_ENV_TMP_ROOT + "=" + tmp_root.path_cstr() + ";");
+  env += (declr + C_ENV_TMPL_ROOT + "=" + tmpl_root.path_cstr() + ";");
   env += " } >&/dev/null || true";
 
   // set up path strings using level vars
@@ -254,7 +256,8 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
   }
   if ((val = getenv(C_ENV_TMPL_LEVEL.c_str())) && val[0] && val[1]) {
     // see comment in the other constructor
-    tmpl_path /= val;
+    FsPath tlvl(val);
+    tmpl_path /= tlvl;
   }
 
   _init_fs_escape_chars();
@@ -269,14 +272,14 @@ UnionfsCstore::~UnionfsCstore()
 bool
 UnionfsCstore::markSessionUnsaved()
 {
-  b_fs::path marker = work_root / C_MARKER_UNSAVED;
-  if (path_exists(marker.file_string().c_str())) {
+  FsPath marker = work_root;
+  marker.push(C_MARKER_UNSAVED);
+  if (path_exists(marker)) {
     // already marked. treat as success.
     return true;
   }
-  if (!create_file(marker.file_string())) {
-    output_internal("failed to mark unsaved [%s]\n",
-                    marker.file_string().c_str());
+  if (!create_file(marker)) {
+    output_internal("failed to mark unsaved [%s]\n", marker.path_cstr());
     return false;
   }
   return true;
@@ -285,16 +288,16 @@ UnionfsCstore::markSessionUnsaved()
 bool
 UnionfsCstore::unmarkSessionUnsaved()
 {
-  b_fs::path marker = work_root / C_MARKER_UNSAVED;
-  if (!path_exists(marker.file_string().c_str())) {
+  FsPath marker = work_root;
+  marker.push(C_MARKER_UNSAVED);
+  if (!path_exists(marker)) {
     // not marked. treat as success.
     return true;
   }
   try {
-    b_fs::remove(marker);
+    b_fs::remove(marker.path_cstr());
   } catch (...) {
-    output_internal("failed to unmark unsaved [%s]\n",
-                    marker.file_string().c_str());
+    output_internal("failed to unmark unsaved [%s]\n", marker.path_cstr());
     return false;
   }
   return true;
@@ -303,15 +306,17 @@ UnionfsCstore::unmarkSessionUnsaved()
 bool
 UnionfsCstore::sessionUnsaved()
 {
-  b_fs::path marker = work_root / C_MARKER_UNSAVED;
-  return path_exists(marker.file_string().c_str());
+  FsPath marker = work_root;
+  marker.push(C_MARKER_UNSAVED);
+  return path_exists(marker);
 }
 
 bool
 UnionfsCstore::sessionChanged()
 {
-  b_fs::path marker = work_root / C_MARKER_CHANGED;
-  return path_exists(marker.file_string().c_str());
+  FsPath marker = work_root;
+  marker.push(C_MARKER_CHANGED);
+  return path_exists(marker);
 }
 
 /* set up the session associated with this object.
@@ -321,15 +326,15 @@ UnionfsCstore::sessionChanged()
 bool
 UnionfsCstore::setupSession()
 {
-  if (!path_exists(work_root.file_string().c_str())) {
+  if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
-      b_fs::create_directories(work_root);
-      b_fs::create_directories(change_root);
-      b_fs::create_directories(tmp_root);
-      if (!path_exists(active_root.file_string().c_str())) {
+      b_fs::create_directories(work_root.path_cstr());
+      b_fs::create_directories(change_root.path_cstr());
+      b_fs::create_directories(tmp_root.path_cstr());
+      if (!path_exists(active_root)) {
         // this should only be needed on boot
-        b_fs::create_directories(active_root);
+        b_fs::create_directories(active_root.path_cstr());
       }
     } catch (...) {
       output_internal("setup session failed to create session directories\n");
@@ -337,17 +342,20 @@ UnionfsCstore::setupSession()
     }
 
     // union mount
-    string mopts = ("dirs=" + change_root.file_string() + "=rw:"
-                    + active_root.file_string() + "=ro");
-    if (mount("unionfs", work_root.file_string().c_str(), "unionfs", 0,
+    string mopts = "dirs=";
+    mopts += change_root.path_cstr();
+    mopts += "=rw:";
+    mopts += active_root.path_cstr();
+    mopts += "=ro";
+    if (mount("unionfs", work_root.path_cstr(), "unionfs", 0,
               mopts.c_str()) != 0) {
       output_internal("setup session mount failed [%s][%s]\n",
-                      strerror(errno), work_root.file_string().c_str());
+                      strerror(errno), work_root.path_cstr());
       return false;
     }
-  } else if (!path_is_directory(work_root.file_string().c_str())) {
+  } else if (!path_is_directory(work_root)) {
     output_internal("setup session not dir [%s]\n",
-                    work_root.file_string().c_str());
+                    work_root.path_cstr());
     return false;
   }
   return true;
@@ -361,10 +369,9 @@ bool
 UnionfsCstore::teardownSession()
 {
   // check if session exists
-  string wstr = work_root.file_string();
+  string wstr = work_root.path_cstr();
   if (wstr.empty() || wstr.find(C_DEF_WORK_PREFIX) != 0
-      || !path_exists(work_root.file_string().c_str())
-      || !path_is_directory(work_root.file_string().c_str())) {
+      || !path_exists(work_root) || !path_is_directory(work_root)) {
     // no session
     output_internal("teardown invalid session [%s]\n", wstr.c_str());
     return false;
@@ -380,9 +387,9 @@ UnionfsCstore::teardownSession()
   // remove session directories
   bool ret = false;
   try {
-    if (b_fs::remove_all(work_root) != 0
-        && b_fs::remove_all(change_root) != 0
-        && b_fs::remove_all(tmp_root) != 0) {
+    if (b_fs::remove_all(work_root.path_cstr()) != 0
+        && b_fs::remove_all(change_root.path_cstr()) != 0
+        && b_fs::remove_all(tmp_root.path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -400,10 +407,9 @@ UnionfsCstore::teardownSession()
 bool
 UnionfsCstore::inSession()
 {
-  string wstr = work_root.file_string();
+  string wstr = work_root.path_cstr();
   return (!wstr.empty() && wstr.find(C_DEF_WORK_PREFIX) == 0
-          && path_exists(work_root.file_string().c_str())
-          && path_is_directory(work_root.file_string().c_str()));
+          && path_exists(work_root) && path_is_directory(work_root));
 }
 
 
@@ -414,11 +420,11 @@ UnionfsCstore::inSession()
 bool
 UnionfsCstore::tmpl_node_exists()
 {
-  return (path_exists(tmpl_path.file_string().c_str())
-          && path_is_directory(tmpl_path.file_string().c_str()));
+  return (path_exists(tmpl_path) && path_is_directory(tmpl_path));
 }
 
-typedef Cstore::MapT<string, tr1::shared_ptr<vtw_def> > ParsedTmplCacheT;
+typedef Cstore::MapT<FsPath, tr1::shared_ptr<vtw_def>, FsPathHash>
+  ParsedTmplCacheT;
 static ParsedTmplCacheT _parsed_tmpl_cache;
 
 /* parse template at current tmpl_path and return an allocated Ctemplate
@@ -427,14 +433,14 @@ static ParsedTmplCacheT _parsed_tmpl_cache;
 Ctemplate *
 UnionfsCstore::tmpl_parse()
 {
-  b_fs::path tp = tmpl_path / C_DEF_NAME;
-  if (!path_exists(tp.file_string().c_str())
-      || !path_is_regular(tp.file_string().c_str())) {
+  FsPath tp = tmpl_path;
+  tp.push(C_DEF_NAME);
+  if (!path_exists(tp) || !path_is_regular(tp)) {
     // invalid
     return 0;
   }
 
-  ParsedTmplCacheT::iterator p = _parsed_tmpl_cache.find(tp.file_string());
+  ParsedTmplCacheT::iterator p = _parsed_tmpl_cache.find(tp);
   if (p != _parsed_tmpl_cache.end()) {
     // found in cache
     return (new Ctemplate(p->second));
@@ -443,9 +449,9 @@ UnionfsCstore::tmpl_parse()
   // new template => parse
   tr1::shared_ptr<vtw_def> def(new vtw_def);
   vtw_def *_def = def.get();
-  if (_def && parse_def(_def, tp.file_string().c_str(), 0) == 0) {
+  if (_def && parse_def(_def, tp.path_cstr(), 0) == 0) {
     // succes => cache and return
-    _parsed_tmpl_cache[tp.file_string()] = def;
+    _parsed_tmpl_cache[tp] = def;
     return (new Ctemplate(def));
   }
   return 0;
@@ -454,9 +460,8 @@ UnionfsCstore::tmpl_parse()
 bool
 UnionfsCstore::cfg_node_exists(bool active_cfg)
 {
-  b_fs::path p = (active_cfg ? get_active_path() : get_work_path());
-  return (path_exists(p.file_string().c_str())
-          && path_is_directory(p.file_string().c_str()));
+  FsPath p = (active_cfg ? get_active_path() : get_work_path());
+  return (path_exists(p) && path_is_directory(p));
 }
 
 bool
@@ -464,7 +469,7 @@ UnionfsCstore::add_node()
 {
   bool ret = true;
   try {
-    if (!b_fs::create_directory(get_work_path())) {
+    if (!b_fs::create_directory(get_work_path().path_cstr())) {
       // already exists. shouldn't call this function.
       ret = false;
     }
@@ -473,7 +478,7 @@ UnionfsCstore::add_node()
   }
   if (!ret) {
     output_internal("failed to add node [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
   }
   return ret;
 }
@@ -481,15 +486,15 @@ UnionfsCstore::add_node()
 bool
 UnionfsCstore::remove_node()
 {
-  if (!path_exists(get_work_path().file_string().c_str())
-      || !path_is_directory(get_work_path().file_string().c_str())) {
+  if (!path_exists(get_work_path())
+      || !path_is_directory(get_work_path())) {
     output_internal("remove non-existent node [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   bool ret = false;
   try {
-    if (b_fs::remove_all(get_work_path()) != 0) {
+    if (b_fs::remove_all(get_work_path().path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -497,7 +502,7 @@ UnionfsCstore::remove_node()
   }
   if (!ret) {
     output_internal("failed to remove node [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
   }
   return ret;
 }
@@ -506,7 +511,7 @@ void
 UnionfsCstore::get_all_child_node_names_impl(vector<string>& cnodes,
                                              bool active_cfg)
 {
-  b_fs::path p = (active_cfg ? get_active_path() : get_work_path());
+  FsPath p = (active_cfg ? get_active_path() : get_work_path());
   get_all_child_dir_names(p, cnodes);
 
   /* XXX special cases to emulate original perl API behavior.
@@ -530,8 +535,8 @@ UnionfsCstore::get_all_child_node_names_impl(vector<string>& cnodes,
 bool
 UnionfsCstore::read_value_vec(vector<string>& vvec, bool active_cfg)
 {
-  b_fs::path vpath = (active_cfg ? get_active_path() : get_work_path());
-  vpath /= C_VAL_NAME;
+  FsPath vpath = (active_cfg ? get_active_path() : get_work_path());
+  vpath.push(C_VAL_NAME);
 
   string ostr;
   if (!read_whole_file(vpath, ostr)) {
@@ -564,14 +569,13 @@ UnionfsCstore::read_value_vec(vector<string>& vvec, bool active_cfg)
 bool
 UnionfsCstore::write_value_vec(const vector<string>& vvec, bool active_cfg)
 {
-  b_fs::path wp = (active_cfg ? get_active_path() : get_work_path());
-  wp /= C_VAL_NAME;
+  FsPath wp = (active_cfg ? get_active_path() : get_work_path());
+  wp.push(C_VAL_NAME);
 
-  if (path_exists(wp.file_string().c_str())
-      && !path_is_regular(wp.file_string().c_str())) {
+  if (path_exists(wp) && !path_is_regular(wp)) {
     // not a file
     output_internal("failed to write node value (file) [%s]\n",
-                    wp.file_string().c_str());
+                    wp.path_cstr());
     return false;
   }
 
@@ -584,9 +588,9 @@ UnionfsCstore::write_value_vec(const vector<string>& vvec, bool active_cfg)
     ostr += vvec[i];
   }
 
-  if (!write_file(wp.file_string().c_str(), ostr)) {
+  if (!write_file(wp, ostr)) {
     output_internal("failed to write node value (write) [%s]\n",
-                    wp.file_string().c_str());
+                    wp.path_cstr());
     return false;
   }
 
@@ -594,16 +598,16 @@ UnionfsCstore::write_value_vec(const vector<string>& vvec, bool active_cfg)
 }
 
 bool
-UnionfsCstore::rename_child_node(const string& oname, const string& nname)
+UnionfsCstore::rename_child_node(const char *oname, const char *nname)
 {
-  b_fs::path opath = get_work_path() / oname;
-  b_fs::path npath = get_work_path() / nname;
-  if (!path_exists(opath.file_string().c_str())
-      || !path_is_directory(opath.file_string().c_str())
-      || path_exists(npath.file_string().c_str())) {
+  FsPath opath = get_work_path();
+  opath.push(oname);
+  FsPath npath = get_work_path();
+  npath.push(nname);
+  if (!path_exists(opath) || !path_is_directory(opath)
+      || path_exists(npath)) {
     output_internal("cannot rename node [%s,%s,%s]\n",
-                    get_work_path().file_string().c_str(),
-                    oname.c_str(), nname.c_str());
+                    get_work_path().path_cstr(), oname, nname);
     return false;
   }
   bool ret = true;
@@ -614,39 +618,37 @@ UnionfsCstore::rename_child_node(const string& oname, const string& nname)
      * do it the hard way.
      */
     recursive_copy_dir(opath, npath);
-    if (b_fs::remove_all(opath) == 0) {
+    if (b_fs::remove_all(opath.path_cstr()) == 0) {
       ret = false;
     }
   } catch (...) {
     ret = false;
   }
   if (!ret) {
-    output_internal("failed to rename node [%s,%s]\n",
-                    opath.file_string().c_str(),
-                    npath.file_string().c_str());
+    output_internal("failed to rename node [%s,%s]\n", opath.path_cstr(),
+                    npath.path_cstr());
   }
   return ret;
 }
 
 bool
-UnionfsCstore::copy_child_node(const string& oname, const string& nname)
+UnionfsCstore::copy_child_node(const char *oname, const char *nname)
 {
-  b_fs::path opath = get_work_path() / oname;
-  b_fs::path npath = get_work_path() / nname;
-  if (!path_exists(opath.file_string().c_str())
-      || !path_is_directory(opath.file_string().c_str())
-      || path_exists(npath.file_string().c_str())) {
+  FsPath opath = get_work_path();
+  opath.push(oname);
+  FsPath npath = get_work_path();
+  npath.push(nname);
+  if (!path_exists(opath) || !path_is_directory(opath)
+      || path_exists(npath)) {
     output_internal("cannot copy node [%s,%s,%s]\n",
-                    get_work_path().file_string().c_str(),
-                    oname.c_str(), nname.c_str());
+                    get_work_path().path_cstr(), oname, nname);
     return false;
   }
   try {
     recursive_copy_dir(opath, npath);
   } catch (...) {
     output_internal("failed to copy node [%s,%s,%s]\n",
-                    get_work_path().file_string().c_str(),
-                    oname.c_str(), nname.c_str());
+                    get_work_path().path_cstr(), oname, nname);
     return false;
   }
   return true;
@@ -655,14 +657,15 @@ UnionfsCstore::copy_child_node(const string& oname, const string& nname)
 bool
 UnionfsCstore::mark_display_default()
 {
-  b_fs::path marker = get_work_path() / C_MARKER_DEF_VALUE;
-  if (path_exists(marker.file_string().c_str())) {
+  FsPath marker = get_work_path();
+  marker.push(C_MARKER_DEF_VALUE);
+  if (path_exists(marker)) {
     // already marked. treat as success.
     return true;
   }
-  if (!create_file(marker.file_string())) {
+  if (!create_file(marker)) {
     output_internal("failed to mark default [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   return true;
@@ -671,16 +674,17 @@ UnionfsCstore::mark_display_default()
 bool
 UnionfsCstore::unmark_display_default()
 {
-  b_fs::path marker = get_work_path() / C_MARKER_DEF_VALUE;
-  if (!path_exists(marker.file_string().c_str())) {
+  FsPath marker = get_work_path();
+  marker.push(C_MARKER_DEF_VALUE);
+  if (!path_exists(marker)) {
     // not marked. treat as success.
     return true;
   }
   try {
-    b_fs::remove(marker);
+    b_fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark default [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   return true;
@@ -689,30 +693,31 @@ UnionfsCstore::unmark_display_default()
 bool
 UnionfsCstore::marked_display_default(bool active_cfg)
 {
-  b_fs::path marker = (active_cfg ? get_active_path() : get_work_path())
-                      / C_MARKER_DEF_VALUE;
-  return path_exists(marker.file_string().c_str());
+  FsPath marker = (active_cfg ? get_active_path() : get_work_path());
+  marker.push(C_MARKER_DEF_VALUE);
+  return path_exists(marker);
 }
 
 bool
 UnionfsCstore::marked_deactivated(bool active_cfg)
 {
-  b_fs::path p = (active_cfg ? get_active_path() : get_work_path());
-  b_fs::path marker = p / C_MARKER_DEACTIVATE;
-  return path_exists(marker.file_string().c_str());
+  FsPath marker = (active_cfg ? get_active_path() : get_work_path());
+  marker.push(C_MARKER_DEACTIVATE);
+  return path_exists(marker);
 }
 
 bool
 UnionfsCstore::mark_deactivated()
 {
-  b_fs::path marker = get_work_path() / C_MARKER_DEACTIVATE;
-  if (path_exists(marker.file_string().c_str())) {
+  FsPath marker = get_work_path();
+  marker.push(C_MARKER_DEACTIVATE);
+  if (path_exists(marker)) {
     // already marked. treat as success.
     return true;
   }
-  if (!create_file(marker.file_string())) {
+  if (!create_file(marker)) {
     output_internal("failed to mark deactivated [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   return true;
@@ -721,16 +726,17 @@ UnionfsCstore::mark_deactivated()
 bool
 UnionfsCstore::unmark_deactivated()
 {
-  b_fs::path marker = get_work_path() / C_MARKER_DEACTIVATE;
-  if (!path_exists(marker.file_string().c_str())) {
+  FsPath marker = get_work_path();
+  marker.push(C_MARKER_DEACTIVATE);
+  if (!path_exists(marker)) {
     // not deactivated. treat as success.
     return true;
   }
   try {
-    b_fs::remove(marker);
+    b_fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark deactivated [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   return true;
@@ -742,20 +748,21 @@ UnionfsCstore::unmark_deactivated_descendants()
   bool ret = false;
   do {
     // sanity check
-    if (!path_is_directory(get_work_path().file_string().c_str())) {
+    if (!path_is_directory(get_work_path())) {
       break;
     }
 
     try {
       vector<b_fs::path> markers;
-      b_fs::recursive_directory_iterator di(get_work_path());
+      b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
       for (; di != b_fs::recursive_directory_iterator(); ++di) {
         if (!path_is_regular(di->path().file_string().c_str())
             || di->path().filename() != C_MARKER_DEACTIVATE) {
           // not marker
           continue;
         }
-        if (di->path().parent_path() == get_work_path()) {
+        const char *ppath = di->path().parent_path().file_string().c_str();
+        if (strcmp(ppath, get_work_path().path_cstr()) == 0) {
           // don't unmark the node itself
           continue;
         }
@@ -771,7 +778,7 @@ UnionfsCstore::unmark_deactivated_descendants()
   } while (0);
   if (!ret) {
     output_internal("failed to unmark deactivated descendants [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
   }
   return ret;
 }
@@ -780,29 +787,27 @@ UnionfsCstore::unmark_deactivated_descendants()
 bool
 UnionfsCstore::mark_changed_with_ancestors()
 {
-  b_fs::path opath = mutable_cfg_path; // use a copy
+  FsPath opath = mutable_cfg_path; // use a copy
   bool done = false;
   while (!done) {
-    b_fs::path marker = work_root;
+    FsPath marker = work_root;
     if (opath.has_parent_path()) {
       marker /= opath;
       pop_path(opath);
     } else {
       done = true;
     }
-    if (!path_exists(marker.file_string().c_str())
-        || !path_is_directory(marker.file_string().c_str())) {
+    if (!path_exists(marker) || !path_is_directory(marker)) {
       // don't do anything if the node is not there
       continue;
     }
-    marker /= C_MARKER_CHANGED;
-    if (path_exists(marker.file_string().c_str())) {
+    marker.push(C_MARKER_CHANGED);
+    if (path_exists(marker)) {
       // reached a node already marked => done
       break;
     }
-    if (!create_file(marker.file_string())) {
-      output_internal("failed to mark changed [%s]\n",
-                      marker.file_string().c_str());
+    if (!create_file(marker)) {
+      output_internal("failed to mark changed [%s]\n", marker.path_cstr());
       return false;
     }
   }
@@ -817,7 +822,7 @@ UnionfsCstore::unmark_changed_with_descendants()
 {
   try {
     vector<b_fs::path> markers;
-    b_fs::recursive_directory_iterator di(get_work_path());
+    b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
     for (; di != b_fs::recursive_directory_iterator(); ++di) {
       if (!path_is_regular(di->path().file_string().c_str())
           || di->path().filename() != C_MARKER_CHANGED) {
@@ -831,7 +836,7 @@ UnionfsCstore::unmark_changed_with_descendants()
     }
   } catch (...) {
     output_internal("failed to unmark changed with descendants [%s]\n",
-                    get_work_path().file_string().c_str());
+                    get_work_path().path_cstr());
     return false;
   }
   return true;
@@ -841,15 +846,15 @@ UnionfsCstore::unmark_changed_with_descendants()
 bool
 UnionfsCstore::remove_comment()
 {
-  b_fs::path cfile = get_work_path() / C_COMMENT_FILE;
-  if (!path_exists(cfile.file_string().c_str())) {
+  FsPath cfile = get_work_path();
+  cfile.push(C_COMMENT_FILE);
+  if (!path_exists(cfile)) {
     return false;
   }
   try {
-    b_fs::remove(cfile);
+    b_fs::remove(cfile.path_cstr());
   } catch (...) {
-    output_internal("failed to remove comment [%s]\n",
-                    cfile.file_string().c_str());
+    output_internal("failed to remove comment [%s]\n", cfile.path_cstr());
     return false;
   }
   return true;
@@ -859,8 +864,9 @@ UnionfsCstore::remove_comment()
 bool
 UnionfsCstore::set_comment(const string& comment)
 {
-  b_fs::path cfile = get_work_path() / C_COMMENT_FILE;
-  return write_file(cfile.file_string(), comment);
+  FsPath cfile = get_work_path();
+  cfile.push(C_COMMENT_FILE);
+  return write_file(cfile, comment);
 }
 
 // discard all changes in working config
@@ -875,7 +881,7 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
   vector<b_fs::path> directories;
   try {
     // iterate through all entries in change root
-    b_fs::directory_iterator di(change_root);
+    b_fs::directory_iterator di(change_root.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
       if (path_is_directory(di->path().file_string().c_str())) {
         directories.push_back(di->path());
@@ -894,8 +900,7 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
       num_removed += b_fs::remove_all(directories[i]);
     }
   } catch (...) {
-    output_internal("discard failed [%s]\n",
-                    change_root.file_string().c_str());
+    output_internal("discard failed [%s]\n", change_root.path_cstr());
     ret = false;
   }
 
@@ -911,8 +916,8 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
 bool
 UnionfsCstore::get_comment(string& comment, bool active_cfg)
 {
-  b_fs::path cfile = (active_cfg ? get_active_path() : get_work_path());
-  cfile /= C_COMMENT_FILE;
+  FsPath cfile = (active_cfg ? get_active_path() : get_work_path());
+  cfile.push(C_COMMENT_FILE);
   return read_whole_file(cfile, comment);
 }
 
@@ -920,8 +925,9 @@ UnionfsCstore::get_comment(string& comment, bool active_cfg)
 bool
 UnionfsCstore::cfg_node_changed()
 {
-  b_fs::path marker = get_work_path() / C_MARKER_CHANGED;
-  return path_exists(marker.file_string().c_str());
+  FsPath marker = get_work_path();
+  marker.push(C_MARKER_CHANGED);
+  return path_exists(marker);
 }
 
 /* XXX currently "committed marking" is done inside commit.
@@ -934,14 +940,17 @@ UnionfsCstore::cfg_node_changed()
  *           be only one operation on the path).
  */
 bool
-UnionfsCstore::marked_committed(const Ctemplate *def, bool is_set)
+UnionfsCstore::marked_committed(const tr1::shared_ptr<Ctemplate>& def,
+                                bool is_set)
 {
-  b_fs::path cpath = mutable_cfg_path;
-  string com_str = cpath.file_string() + "/";
+  FsPath cpath = mutable_cfg_path;
+  string com_str = cpath.path_cstr();
+  com_str += "/";
   if (def->isLeafValue()) {
     // path includes leaf value. construct the right string.
-    string val = _unescape_path_name(cpath.filename());
-    cpath = cpath.parent_path();
+    string val;
+    cpath.pop(val);
+    val = _unescape_path_name(val);
     /* XXX current commit implementation escapes value strings for
      *     single-value nodes but not for multi-value nodes for some
      *     reason. the following match current behavior.
@@ -949,14 +958,17 @@ UnionfsCstore::marked_committed(const Ctemplate *def, bool is_set)
     if (!def->isMulti()) {
       val = _escape_path_name(val);
     }
-    com_str = cpath.file_string() + "/value:" + val;
+    com_str = cpath.path_cstr();
+    com_str += "/value:";
+    com_str += val;
   }
   com_str = (is_set ? "+ " : "- ") + com_str;
   return committed_marker_exists(com_str);
 }
 
 bool
-UnionfsCstore::validate_val_impl(const Ctemplate *def, char *value)
+UnionfsCstore::validate_val_impl(const tr1::shared_ptr<Ctemplate>& def,
+                                 char *value)
 {
   /* XXX filesystem paths/accesses are completely embedded in var ref lib.
    *     for now, treat the lib as a unionfs-specific implementation.
@@ -971,16 +983,23 @@ UnionfsCstore::validate_val_impl(const Ctemplate *def, char *value)
 }
 
 void
-UnionfsCstore::get_edit_level(vector<string>& pcomps) {
-  b_fs::path opath = mutable_cfg_path; // use a copy
+UnionfsCstore::get_edit_level(Cpath& pcomps) {
+  FsPath opath = mutable_cfg_path; // use a copy
+  vector<string> tmp;
   while (opath.has_parent_path()) {
-    pcomps.insert(pcomps.begin(), pop_path(opath));
+    string last;
+    pop_path(opath, last);
+    tmp.push_back(last);
+  }
+  while (tmp.size() > 0) {
+    pcomps.push(tmp.back());
+    tmp.pop_back();
   }
 }
 
 string
 UnionfsCstore::cfg_path_to_str() {
-  string cpath = mutable_cfg_path.file_string();
+  string cpath = mutable_cfg_path.path_cstr();
   if (cpath.length() == 0) {
     cpath = "/";
   }
@@ -990,8 +1009,8 @@ UnionfsCstore::cfg_path_to_str() {
 string
 UnionfsCstore::tmpl_path_to_str() {
   // return only the mutable part
-  string tpath = tmpl_path.file_string();
-  tpath.erase(0, tmpl_root.file_string().length());
+  string tpath = tmpl_path.path_cstr();
+  tpath.erase(0, tmpl_root.length());
   if (tpath.length() == 0) {
     tpath = "/";
   }
@@ -1001,33 +1020,35 @@ UnionfsCstore::tmpl_path_to_str() {
 
 ////// private functions
 void
-UnionfsCstore::push_path(b_fs::path& old_path, const string& new_comp)
+UnionfsCstore::push_path(FsPath& old_path, const char *new_comp)
 {
   string comp = _escape_path_name(new_comp);
-  old_path /= comp;
-}
-
-string
-UnionfsCstore::pop_path(b_fs::path& path)
-{
-  string ret = _unescape_path_name(path.filename());
-  /* note: contrary to documentation, remove_filename() does not remove
-   *       trailing slash.
-   */
-  path = path.parent_path();
-  return ret;
+  old_path.push(comp);
 }
 
 void
-UnionfsCstore::get_all_child_dir_names(b_fs::path root, vector<string>& nodes)
+UnionfsCstore::pop_path(FsPath& path)
 {
-  if (!path_exists(root.file_string().c_str())
-      || !path_is_directory(root.file_string().c_str())) {
+  path.pop();
+}
+
+void
+UnionfsCstore::pop_path(FsPath& path, string& last)
+{
+  path.pop(last);
+  last = _unescape_path_name(last);
+}
+
+void
+UnionfsCstore::get_all_child_dir_names(const FsPath& root,
+                                       vector<string>& nodes)
+{
+  if (!path_exists(root) || !path_is_directory(root)) {
     // not a valid root. nop.
     return;
   }
   try {
-    b_fs::directory_iterator di(root);
+    b_fs::directory_iterator di(root.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
       // must be directory
       if (!path_is_directory(di->path().file_string().c_str())) {
@@ -1047,7 +1068,7 @@ UnionfsCstore::get_all_child_dir_names(b_fs::path root, vector<string>& nodes)
 }
 
 bool
-UnionfsCstore::write_file(const string& file, const string& data)
+UnionfsCstore::write_file(const FsPath& file, const string& data)
 {
   if (data.size() > C_UNIONFS_MAX_FILE_SIZE) {
     output_internal("write_file too large\n");
@@ -1055,13 +1076,14 @@ UnionfsCstore::write_file(const string& file, const string& data)
   }
   try {
     // make sure the path exists
-    b_fs::path fpath(file);
-    b_fs::create_directories(fpath.parent_path());
+    FsPath ppath(file);
+    ppath.pop();
+    b_fs::create_directories(ppath.path_cstr());
 
     // write the file
     ofstream fout;
     fout.exceptions(ofstream::failbit | ofstream::badbit);
-    fout.open(file.c_str(), ios_base::out | ios_base::trunc);
+    fout.open(file.path_cstr(), ios_base::out | ios_base::trunc);
     fout << data;
     fout.close();
   } catch (...) {
@@ -1071,23 +1093,22 @@ UnionfsCstore::write_file(const string& file, const string& data)
 }
 
 bool
-UnionfsCstore::read_whole_file(const b_fs::path& fpath, string& data)
+UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
 {
   /* must exist, be a regular file, and smaller than limit (we're going
    * to read the whole thing).
    */
-  if (!path_exists(fpath.file_string().c_str())
-      || !path_is_regular(fpath.file_string().c_str())) {
+  if (!path_exists(fpath) || !path_is_regular(fpath)) {
     return false;
   }
   try {
-    if (b_fs::file_size(fpath) > C_UNIONFS_MAX_FILE_SIZE) {
+    if (b_fs::file_size(fpath.path_cstr()) > C_UNIONFS_MAX_FILE_SIZE) {
       output_internal("read_whole_file too large\n");
       return false;
     }
 
     stringbuf sbuf;
-    ifstream fin(fpath.file_string().c_str());
+    ifstream fin(fpath.path_cstr());
     fin >> &sbuf;
     fin.close();
     /* note: if file contains just a newline => (eof() && fail())
@@ -1132,22 +1153,21 @@ UnionfsCstore::committed_marker_exists(const string& marker)
  * will throw exception (from b_fs) if fail.
  */
 void
-UnionfsCstore::recursive_copy_dir(const b_fs::path& src, const b_fs::path& dst)
+UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst)
 {
-  string src_str = src.file_string();
-  string dst_str = dst.file_string();
-  b_fs::create_directory(dst);
+  string src_str = src.path_cstr();
+  string dst_str = dst.path_cstr();
+  b_fs::create_directory(dst.path_cstr());
 
-  b_fs::recursive_directory_iterator di(src);
+  b_fs::recursive_directory_iterator di(src_str);
   for (; di != b_fs::recursive_directory_iterator(); ++di) {
-    b_fs::path opath = di->path();
-    string nname = opath.file_string();
+    const char *oname = di->path().file_string().c_str();
+    string nname = oname;
     nname.replace(0, src_str.length(), dst_str);
-    b_fs::path npath = nname;
-    if (path_is_directory(opath.file_string().c_str())) {
-      b_fs::create_directory(npath);
+    if (path_is_directory(oname)) {
+      b_fs::create_directory(nname);
     } else {
-      b_fs::copy_file(opath, npath);
+      b_fs::copy_file(oname, nname);
     }
   }
 }
@@ -1181,4 +1201,7 @@ UnionfsCstore::path_is_regular(const char *path)
   }
   return b_fs::is_regular(result);
 }
+
+} // end namespace unionfs
+} // end namespace cstore
 

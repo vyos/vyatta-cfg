@@ -22,6 +22,7 @@
 #include <tr1/unordered_map>
 
 #include <cli_cstore.h>
+#include <cstore/cpath.hpp>
 #include <cstore/ctemplate.hpp>
 
 /* declare perl internal functions. just need these two so don't include
@@ -40,12 +41,6 @@ extern "C" void* Perl_get_context(void)
                             __func__);
 
 
-/* macros for saving/restoring paths.
- * note: this allows "nested" save/restore invocations but NOT recursive ones.
- */
-#define SAVE_PATHS save_paths(&__func__)
-#define RESTORE_PATHS restore_paths(&__func__)
-
 namespace cstore { // begin namespace cstore
 
 using namespace std;
@@ -61,8 +56,8 @@ public:
   static Cstore *createCstore(const string& session_id, string& env);
 
   // types
-  template<class K, class V>
-    class MapT : public tr1::unordered_map<K, V> {};
+  template<class K, class V, class H = tr1::hash<K> >
+    class MapT : public tr1::unordered_map<K, V, H> {};
 
   // constants
   static const string C_NODE_STATUS_DELETED;
@@ -100,12 +95,12 @@ public:
   ////// the public cstore interface
   //// functions implemented in this base class
   // these operate on template path
-  bool validateTmplPath(const vector<string>& path_comps, bool validate_vals);
-  Ctemplate *parseTmpl(const vector<string>& path_comps, bool validate_vals);
-  bool getParsedTmpl(const vector<string>& path_comps,
-                     MapT<string, string>& tmap, bool allow_val = true);
-  void tmplGetChildNodes(const vector<string>& path_comps,
-                         vector<string>& cnodes);
+  bool validateTmplPath(const Cpath& path_comps, bool validate_vals);
+  tr1::shared_ptr<Ctemplate> parseTmpl(const Cpath& path_comps,
+                                       bool validate_vals);
+  bool getParsedTmpl(const Cpath& path_comps, MapT<string, string>& tmap,
+                     bool allow_val = true);
+  void tmplGetChildNodes(const Cpath& path_comps, vector<string>& cnodes);
 
   /******
    * functions for actual CLI operations:
@@ -127,39 +122,39 @@ public:
    * be used by anything other than the listed operations.
    */
   // set
-  bool validateSetPath(const vector<string>& path_comps);
-  bool setCfgPath(const vector<string>& path_comps);
+  bool validateSetPath(const Cpath& path_comps);
+  bool setCfgPath(const Cpath& path_comps);
   // delete
-  bool deleteCfgPath(const vector<string>& path_comps);
+  bool deleteCfgPath(const Cpath& path_comps);
   // activate (actually "unmark deactivated" since it is 2-state, not 3)
-  bool validateActivatePath(const vector<string>& path_comps);
-  bool unmarkCfgPathDeactivated(const vector<string>& path_comps);
+  bool validateActivatePath(const Cpath& path_comps);
+  bool unmarkCfgPathDeactivated(const Cpath& path_comps);
   // deactivate
-  bool validateDeactivatePath(const vector<string>& path_comps);
-  bool markCfgPathDeactivated(const vector<string>& path_comps);
+  bool validateDeactivatePath(const Cpath& path_comps);
+  bool markCfgPathDeactivated(const Cpath& path_comps);
   // rename
-  bool validateRenameArgs(const vector<string>& args);
-  bool renameCfgPath(const vector<string>& args);
+  bool validateRenameArgs(const Cpath& args);
+  bool renameCfgPath(const Cpath& args);
   // copy
-  bool validateCopyArgs(const vector<string>& args);
-  bool copyCfgPath(const vector<string>& args);
+  bool validateCopyArgs(const Cpath& args);
+  bool copyCfgPath(const Cpath& args);
   // comment
-  bool commentCfgPath(const vector<string>& args);
+  bool commentCfgPath(const Cpath& args);
   // discard
   bool discardChanges();
   // move
-  bool validateMoveArgs(const vector<string>& args);
-  bool moveCfgPath(const vector<string>& args);
+  bool validateMoveArgs(const Cpath& args);
+  bool moveCfgPath(const Cpath& args);
   // edit-related
-  bool getEditEnv(const vector<string>& path_comps, string& env);
+  bool getEditEnv(const Cpath& path_comps, string& env);
   bool getEditUpEnv(string& env);
   bool getEditResetEnv(string& env);
   bool editLevelAtRoot() {
     return edit_level_at_root();
   };
   // completion-related
-  bool getCompletionEnv(const vector<string>& comps, string& env);
-  void getEditLevel(vector<string>& comps) {
+  bool getCompletionEnv(const Cpath& comps, string& env);
+  void getEditLevel(Cpath& comps) {
     get_edit_level(comps);
   };
   // session-related
@@ -171,7 +166,7 @@ public:
   virtual bool teardownSession() = 0;
   virtual bool inSession() = 0;
   // commit
-  bool unmarkCfgPathChanged(const vector<string>& path_comps);
+  bool unmarkCfgPathChanged(const Cpath& path_comps);
   // load
   bool loadFile(const char *filename);
 
@@ -190,34 +185,32 @@ public:
    * config, of course).
    */
   // observers for "working config" (by default) OR "active config"
-  bool cfgPathExists(const vector<string>& path_comps,
-                     bool active_cfg = false);
-  void cfgPathGetChildNodes(const vector<string>& path_comps,
-                            vector<string>& cnodes, bool active_cfg = false);
-  bool cfgPathGetValue(const vector<string>& path_comps, string& value,
+  bool cfgPathExists(const Cpath& path_comps, bool active_cfg = false);
+  void cfgPathGetChildNodes(const Cpath& path_comps, vector<string>& cnodes,
+                            bool active_cfg = false);
+  bool cfgPathGetValue(const Cpath& path_comps, string& value,
                        bool active_cfg = false);
-  bool cfgPathGetValues(const vector<string>& path_comps,
-                        vector<string>& values, bool active_cfg = false);
-  bool cfgPathGetComment(const vector<string>& path_comps, string& comment,
+  bool cfgPathGetValues(const Cpath& path_comps, vector<string>& values,
+                        bool active_cfg = false);
+  bool cfgPathGetComment(const Cpath& path_comps, string& comment,
                          bool active_cfg = false);
-  bool cfgPathDefault(const vector<string>& path_comps,
-                      bool active_cfg = false);
+  bool cfgPathDefault(const Cpath& path_comps, bool active_cfg = false);
 
   /* observers for working AND active configs (at the same time).
    * MUST ONLY be used during config session.
    */
-  bool cfgPathDeleted(const vector<string>& path_comps);
-  bool cfgPathAdded(const vector<string>& path_comps);
-  bool cfgPathChanged(const vector<string>& path_comps);
-  void cfgPathGetDeletedChildNodes(const vector<string>& path_comps,
+  bool cfgPathDeleted(const Cpath& path_comps);
+  bool cfgPathAdded(const Cpath& path_comps);
+  bool cfgPathChanged(const Cpath& path_comps);
+  void cfgPathGetDeletedChildNodes(const Cpath& path_comps,
                                    vector<string>& cnodes);
-  void cfgPathGetDeletedValues(const vector<string>& path_comps,
+  void cfgPathGetDeletedValues(const Cpath& path_comps,
                                vector<string>& dvals);
-  void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
+  void cfgPathGetChildNodesStatus(const Cpath& path_comps,
                                   MapT<string, string>& cmap) {
     get_child_nodes_status(path_comps, cmap, NULL);
   };
-  void cfgPathGetChildNodesStatus(const vector<string>& path_comps,
+  void cfgPathGetChildNodesStatus(const Cpath& path_comps,
                                   MapT<string, string>& cmap,
                                   vector<string>& sorted_keys) {
     get_child_nodes_status(path_comps, cmap, &sorted_keys);
@@ -227,12 +220,11 @@ public:
    * session and outside a config session. more detailed information
    * can be found in the source file.
    */
-  bool cfgPathEffective(const vector<string>& path_comps);
-  void cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
+  bool cfgPathEffective(const Cpath& path_comps);
+  void cfgPathGetEffectiveChildNodes(const Cpath& path_comps,
                                      vector<string>& cnodes);
-  bool cfgPathGetEffectiveValue(const vector<string>& path_comps,
-                                string& value);
-  bool cfgPathGetEffectiveValues(const vector<string>& path_comps,
+  bool cfgPathGetEffectiveValue(const Cpath& path_comps, string& value);
+  bool cfgPathGetEffectiveValues(const Cpath& path_comps,
                                  vector<string>& values);
 
   /******
@@ -253,36 +245,32 @@ public:
    *       passed in when calling them.
    */
   // working or active config
-  bool cfgPathDeactivated(const vector<string>& path_comps,
-                          bool active_cfg = false);
-  bool cfgPathMarkedDeactivated(const vector<string>& path_comps,
+  bool cfgPathDeactivated(const Cpath& path_comps, bool active_cfg = false);
+  bool cfgPathMarkedDeactivated(const Cpath& path_comps,
                                 bool active_cfg = false);
-  bool cfgPathExistsDA(const vector<string>& path_comps,
-                       bool active_cfg = false,
+  bool cfgPathExistsDA(const Cpath& path_comps, bool active_cfg = false,
                        bool include_deactivated = true);
-  void cfgPathGetChildNodesDA(const vector<string>& path_comps,
-                              vector<string>& cnodes,
+  void cfgPathGetChildNodesDA(const Cpath& path_comps, vector<string>& cnodes,
                               bool active_cfg = false,
                               bool include_deactivated = true);
-  bool cfgPathGetValueDA(const vector<string>& path_comps, string& value,
+  bool cfgPathGetValueDA(const Cpath& path_comps, string& value,
                          bool active_cfg = false,
                          bool include_deactivated = true);
-  bool cfgPathGetValuesDA(const vector<string>& path_comps,
-                          vector<string>& values,
+  bool cfgPathGetValuesDA(const Cpath& path_comps, vector<string>& values,
                           bool active_cfg = false,
                           bool include_deactivated = true);
   // working AND active configs
-  void cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
+  void cfgPathGetDeletedChildNodesDA(const Cpath& path_comps,
                                      vector<string>& cnodes,
                                      bool include_deactivated = true);
-  void cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
+  void cfgPathGetDeletedValuesDA(const Cpath& path_comps,
                                  vector<string>& dvals,
                                  bool include_deactivated = true);
-  void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
+  void cfgPathGetChildNodesStatusDA(const Cpath& path_comps,
                                     MapT<string, string>& cmap) {
     get_child_nodes_status_da(path_comps, cmap, NULL);
   };
-  void cfgPathGetChildNodesStatusDA(const vector<string>& path_comps,
+  void cfgPathGetChildNodesStatusDA(const Cpath& path_comps,
                                     MapT<string, string>& cmap,
                                     vector<string>& sorted_keys) {
     get_child_nodes_status_da(path_comps, cmap, &sorted_keys);
@@ -299,10 +287,15 @@ public:
    * the limitations of the original CLI library implementation and MUST NOT
    * be used by anyone other than the original CLI library.
    */
-  char *getVarRef(const string& ref_str, vtw_type_e& type, bool from_active);
-  bool setVarRef(const string& ref_str, const string& value, bool to_active);
+  char *getVarRef(const char *ref_str, vtw_type_e& type, bool from_active);
+  bool setVarRef(const char *ref_str, const char *value, bool to_active);
 
 protected:
+  class SavePaths {
+  public:
+    virtual ~SavePaths() = 0;
+  };
+
   ////// functions for subclasses
   static void output_user(const char *fmt, ...);
   static void output_user_err(const char *fmt, ...);
@@ -323,15 +316,16 @@ private:
    *       the same as before invocation.
    */
   // begin path modifiers
-  virtual void push_tmpl_path(const string& path_comp) = 0;
+  virtual void push_tmpl_path(const char *path_comp) = 0;
   virtual void push_tmpl_path_tag() = 0;
-  virtual string pop_tmpl_path() = 0;
-  virtual void push_cfg_path(const string& path_comp) = 0;
-  virtual string pop_cfg_path() = 0;
-  virtual void append_cfg_path(const vector<string>& path_comps) = 0;
+  virtual void pop_tmpl_path() = 0;
+  virtual void pop_tmpl_path(string& last) = 0;
+  virtual void push_cfg_path(const char *path_comp) = 0;
+  virtual void pop_cfg_path() = 0;
+  virtual void pop_cfg_path(string& last) = 0;
+  virtual void append_cfg_path(const Cpath& path_comps) = 0;
   virtual void reset_paths() = 0;
-  virtual void save_paths(const void *handle = NULL) = 0;
-  virtual void restore_paths(const void *handle = NULL) = 0;
+  virtual auto_ptr<SavePaths> create_save_paths() = 0;
   virtual bool cfg_path_at_root() = 0;
   virtual bool tmpl_path_at_root() = 0;
   // end path modifiers
@@ -348,8 +342,8 @@ private:
   virtual bool write_value_vec(const vector<string>& vvec,
                                bool active_cfg = false) = 0;
   virtual bool add_node() = 0;
-  virtual bool rename_child_node(const string& oname, const string& nname) = 0;
-  virtual bool copy_child_node(const string& oname, const string& nname) = 0;
+  virtual bool rename_child_node(const char *oname, const char *nname) = 0;
+  virtual bool copy_child_node(const char *oname, const char *nname) = 0;
   virtual bool mark_display_default() = 0;
   virtual bool unmark_display_default() = 0;
   virtual bool mark_deactivated() = 0;
@@ -372,10 +366,12 @@ private:
   virtual bool marked_display_default(bool active_cfg) = 0;
 
   // observers during commit operation
-  virtual bool marked_committed(const Ctemplate *def, bool is_set) = 0;
+  virtual bool marked_committed(const tr1::shared_ptr<Ctemplate>& def,
+                                bool is_set) = 0;
 
   // these operate on both current tmpl and work paths
-  virtual bool validate_val_impl(const Ctemplate *def, char *value) = 0;
+  virtual bool validate_val_impl(const tr1::shared_ptr<Ctemplate>& def,
+                                 char *value) = 0;
 
   // observers for "edit/tmpl levels" (for "edit"-related operations)
   /* note that these should be handled in the base class since they
@@ -390,7 +386,7 @@ private:
    */
   virtual string get_edit_level_path() = 0;
   virtual string get_tmpl_level_path() = 0;
-  virtual void get_edit_level(vector<string>& path_comps) = 0;
+  virtual void get_edit_level(Cpath& path_comps) = 0;
   virtual bool edit_level_at_root() = 0;
 
   // these are for testing/debugging
@@ -417,15 +413,17 @@ private:
   }
 
   // begin path modifiers (only these can change path permanently)
-  bool append_tmpl_path(const vector<string>& path_comps, bool& is_tag);
-  bool append_tmpl_path(const vector<string>& path_comps) {
+  bool append_tmpl_path(const Cpath& path_comps, bool& is_tag);
+  bool append_tmpl_path(const Cpath& path_comps) {
     bool dummy;
     return append_tmpl_path(path_comps, dummy);
   };
-  bool append_tmpl_path(const string& path_comp, bool& is_tag) {
-    return append_tmpl_path(vector<string>(1, path_comp), is_tag);
+  bool append_tmpl_path(const char *path_comp, bool& is_tag) {
+    Cpath p;
+    p.push(path_comp);
+    return append_tmpl_path(p, is_tag);
   };
-  bool append_tmpl_path(const string& path_comp) {
+  bool append_tmpl_path(const char *path_comp) {
     bool dummy;
     return append_tmpl_path(path_comp, dummy);
   };
@@ -433,26 +431,26 @@ private:
 
   // these require full path
   // (note: get_parsed_tmpl also uses current tmpl path)
-  Ctemplate *get_parsed_tmpl(const vector<string>& path_comps,
-                             bool validate_vals, string& error);
-  Ctemplate *get_parsed_tmpl(const vector<string>& path_comps,
-                             bool validate_vals) {
+  tr1::shared_ptr<Ctemplate> get_parsed_tmpl(const Cpath& path_comps,
+                                             bool validate_vals,
+                                             string& error);
+  tr1::shared_ptr<Ctemplate> get_parsed_tmpl(const Cpath& path_comps,
+                                             bool validate_vals) {
     string dummy;
     return get_parsed_tmpl(path_comps, validate_vals, dummy);
   };
-  Ctemplate *validate_act_deact(const vector<string>& path_comps,
-                                const string& op);
-  bool validate_rename_copy(const vector<string>& args, const string& op);
-  bool conv_move_args_for_rename(const vector<string>& args,
-                                 vector<string>& edit_path_comps,
-                                 vector<string>& rn_args);
-  bool cfg_path_exists(const vector<string>& path_comps,
-                       bool active_cfg, bool include_deactivated);
-  bool set_cfg_path(const vector<string>& path_comps, bool output);
-  void get_child_nodes_status(const vector<string>& path_comps,
+  tr1::shared_ptr<Ctemplate> validate_act_deact(const Cpath& path_comps,
+                                                const char *op);
+  bool validate_rename_copy(const Cpath& args, const char *op);
+  bool conv_move_args_for_rename(const Cpath& args, Cpath& edit_path_comps,
+                                 Cpath& rn_args);
+  bool cfg_path_exists(const Cpath& path_comps, bool active_cfg,
+                       bool include_deactivated);
+  bool set_cfg_path(const Cpath& path_comps, bool output);
+  void get_child_nodes_status(const Cpath& path_comps,
                               Cstore::MapT<string, string>& cmap,
                               vector<string> *sorted_keys);
-  void get_child_nodes_status_da(const vector<string>& path_comps,
+  void get_child_nodes_status_da(const Cpath& path_comps,
                                  Cstore::MapT<string, string>& cmap,
                                  vector<string> *sorted_keys);
 
@@ -466,7 +464,7 @@ private:
   bool add_tag(unsigned int tlimit);
   bool add_value_to_multi(unsigned int mlimit, const string& value);
   bool add_child_node(const string& name) {
-    push_cfg_path(name);
+    push_cfg_path(name.c_str());
     bool ret = add_node();
     pop_cfg_path();
     return ret;
@@ -478,15 +476,17 @@ private:
   bool cfg_value_exists(const string& value, bool active_cfg);
 
   // these operate on both current tmpl and work paths
-  bool validate_val(const Ctemplate *def, const string& value);
-  bool create_default_children();
+  bool validate_val(const tr1::shared_ptr<Ctemplate>& def, const char *value);
+  bool create_default_children(const Cpath& path_comps); /* this requires
+    * path_comps but DOES operate on current work path.
+    */
   void get_edit_env(string& env);
 
   // util functions
   string get_shell_prompt(const string& level);
   void shell_escape_squotes(string& str);
-  void print_str_vec(const char *pre, const char *post,
-                     const vector<string>& vec, const char *quote);
+  void print_path_vec(const char *pre, const char *post,
+                      const Cpath& pvec, const char *quote);
 
   // output functions
   static void voutput_user(FILE *out, FILE *dout, const char *fmt,

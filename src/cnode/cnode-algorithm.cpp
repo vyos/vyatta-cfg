@@ -40,14 +40,13 @@ const string cnode::WORKING_CFG = "@WORKING";
 ////// static (internal) functions
 static void
 _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-           vector<string>& cur_path, vector<string>& last_ctx,
-           bool show_def, bool hide_secret, bool context_diff);
+           Cpath& cur_path, Cpath& last_ctx, bool show_def,
+           bool hide_secret, bool context_diff);
 
 static void
 _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
-               vector<string>& cur_path, vector<vector<string> >& del_list,
-               vector<vector<string> >& set_list,
-               vector<vector<string> >& com_list);
+               Cpath& cur_path, vector<Cpath>& del_list,
+               vector<Cpath>& set_list, vector<Cpath>& com_list);
 
 /* compare the values of a "multi" node in the two configs. the values and
  * the "prefix" of each value are returned in "values" and "pfxs",
@@ -155,21 +154,21 @@ _cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
 }
 
 static void
-_add_path_to_list(vector<vector<string> >& list, vector<string>& path,
-                  const string *nptr, const string *vptr)
+_add_path_to_list(vector<Cpath>& list, Cpath& path, const string *nptr,
+                  const string *vptr)
 {
   if (nptr) {
-    path.push_back(*nptr);
+    path.push(*nptr);
   }
   if (vptr) {
-    path.push_back(*vptr);
+    path.push(*vptr);
   }
   list.push_back(path);
   if (vptr) {
-    path.pop_back();
+    path.pop();
   }
   if (nptr) {
-    path.pop_back();
+    path.pop();
   }
 }
 
@@ -221,7 +220,7 @@ _diff_print_indent(const CfgNode *cfg1, const CfgNode *cfg2, int level,
  * like in JUNOS "show | compare".
  */
 static void
-_diff_print_context(vector<string>& cur_path, vector<string>& last_ctx)
+_diff_print_context(Cpath& cur_path, Cpath& last_ctx)
 {
   if (last_ctx == cur_path) {
     // don't repeat the context if it's still the same as the last one
@@ -230,7 +229,7 @@ _diff_print_context(vector<string>& cur_path, vector<string>& last_ctx)
   last_ctx = cur_path;
   printf("[edit");
   for (size_t i = 0; i < cur_path.size(); i++) {
-    printf(" %s", cur_path[i].c_str());
+    printf(" %s", cur_path[i]);
   }
   printf("]\n");
 }
@@ -249,8 +248,7 @@ _diff_print_context(vector<string>& cur_path, vector<string>& last_ctx)
  */
 static bool
 _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                    vector<string>& cur_path, vector<string>& last_ctx,
-                    bool context_diff)
+                    Cpath& cur_path, Cpath& last_ctx, bool context_diff)
 {
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
   string comment = "";
@@ -307,8 +305,8 @@ _diff_print_comment(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static bool
 _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                          vector<string>& cur_path, vector<string>& last_ctx,
-                          bool show_def, bool hide_secret, bool context_diff)
+                          Cpath& cur_path, Cpath& last_ctx, bool show_def,
+                          bool hide_secret, bool context_diff)
 {
   if ((cfg1 && !cfg1->isLeaf()) || (cfg2 && !cfg2->isLeaf())) {
     // not a leaf node
@@ -424,8 +422,8 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void 
 _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-                 vector<string>& cur_path, vector<string>& last_ctx,
-                 bool show_def, bool hide_secret, bool context_diff)
+                 Cpath& cur_path, Cpath& last_ctx, bool show_def,
+                 bool hide_secret, bool context_diff)
 {
   bool orig_cdiff = context_diff;
   const char *pfx_diff = PFX_DIFF_NONE.c_str();
@@ -522,9 +520,9 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
       }
     }
 
-    cur_path.push_back(name);
+    cur_path.push(name);
     if (is_value) {
-      cur_path.push_back(value);
+      cur_path.push(value);
     }
   } else {
     next_level = (level >= 0 ? level : 0);
@@ -537,9 +535,9 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
   // finish printing "this" node if necessary
   if (print_this) {
-    cur_path.pop_back();
+    cur_path.pop();
     if (is_value) {
-      cur_path.pop_back();
+      cur_path.pop();
     }
     if (!orig_cdiff || pfx_diff != PFX_DIFF_NONE.c_str()) {
       /* not context diff OR there is a difference => print closing '}'
@@ -556,8 +554,8 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void
 _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
-           vector<string>& cur_path, vector<string>& last_ctx,
-           bool show_def, bool hide_secret, bool context_diff)
+           Cpath& cur_path, Cpath& last_ctx, bool show_def,
+           bool hide_secret, bool context_diff)
 {
   // if doesn't exist, treat as NULL
   if (cfg1 && !cfg1->exists()) {
@@ -613,8 +611,8 @@ _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
 static void
 _get_comment_diff_cmd(const CfgNode *cfg1, const CfgNode *cfg2,
-                      vector<string>& cur_path,
-                      vector<vector<string> >& com_list, const string *val)
+                      Cpath& cur_path, vector<Cpath>& com_list,
+                      const string *val)
 {
   const string *comment = NULL;
   const string *name = NULL;
@@ -652,22 +650,20 @@ _get_comment_diff_cmd(const CfgNode *cfg1, const CfgNode *cfg2,
   }
   if (comment) {
     if (val) {
-      cur_path.push_back(*name);
+      cur_path.push(*name);
       name = val;
     }
     _add_path_to_list(com_list, cur_path, name, comment);
     if (val) {
-      cur_path.pop_back();
+      cur_path.pop();
     }
   }
 }
 
 static bool
 _get_cmds_diff_leaf(const CfgNode *cfg1, const CfgNode *cfg2,
-                    vector<string>& cur_path,
-                    vector<vector<string> >& del_list,
-                    vector<vector<string> >& set_list,
-                    vector<vector<string> >& com_list)
+                    Cpath& cur_path, vector<Cpath>& del_list,
+                    vector<Cpath>& set_list, vector<Cpath>& com_list)
 {
   if ((cfg1 && !cfg1->isLeaf()) || (cfg2 && !cfg2->isLeaf())) {
     // not a leaf node
@@ -675,7 +671,7 @@ _get_cmds_diff_leaf(const CfgNode *cfg1, const CfgNode *cfg2,
   }
 
   const CfgNode *cfg = NULL;
-  vector<vector<string> > *list = NULL;
+  vector<Cpath> *list = NULL;
   if (cfg1) {
     cfg = cfg1;
     if (!cfg2) {
@@ -736,12 +732,10 @@ _get_cmds_diff_leaf(const CfgNode *cfg1, const CfgNode *cfg2,
 
 static void
 _get_cmds_diff_other(const CfgNode *cfg1, const CfgNode *cfg2,
-                     vector<string>& cur_path,
-                     vector<vector<string> >& del_list,
-                     vector<vector<string> >& set_list,
-                     vector<vector<string> >& com_list)
+                     Cpath& cur_path, vector<Cpath>& del_list,
+                     vector<Cpath>& set_list, vector<Cpath>& com_list)
 {
-  vector<vector<string> > *list = NULL;
+  vector<Cpath> *list = NULL;
   if (cfg1) {
     if (!cfg2) {
       // exists in cfg1 but not in cfg2 => delete and stop recursion
@@ -773,9 +767,9 @@ _get_cmds_diff_other(const CfgNode *cfg1, const CfgNode *cfg2,
     const string *val = (is_value ? &value : NULL);
     _get_comment_diff_cmd(cfg1, cfg2, cur_path, com_list, val);
 
-    cur_path.push_back(name);
+    cur_path.push(name);
     if (is_value) {
-      cur_path.push_back(value);
+      cur_path.push(value);
     }
   }
   for (size_t i = 0; i < rcnodes1.size(); i++) {
@@ -784,17 +778,16 @@ _get_cmds_diff_other(const CfgNode *cfg1, const CfgNode *cfg2,
   }
   if (add_this) {
     if (is_value) {
-      cur_path.pop_back();
+      cur_path.pop();
     }
-    cur_path.pop_back();
+    cur_path.pop();
   }
 }
 
 static void
 _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
-               vector<string>& cur_path, vector<vector<string> >& del_list,
-               vector<vector<string> >& set_list,
-               vector<vector<string> >& com_list)
+               Cpath& cur_path, vector<Cpath>& del_list,
+               vector<Cpath>& set_list, vector<Cpath>& com_list)
 {
   // if doesn't exist, treat as NULL
   if (cfg1 && !cfg1->exists()) {
@@ -820,12 +813,12 @@ _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
 }
 
 static void
-_print_cmds_list(const char *op, vector<vector<string> >& list)
+_print_cmds_list(const char *op, vector<Cpath>& list)
 {
   for (size_t i = 0; i < list.size(); i++) {
     printf("%s", op);
     for (size_t j = 0; j < list[i].size(); j++) {
-      printf(" '%s'", list[i][j].c_str());
+      printf(" '%s'", list[i][j]);
     }
     printf("\n");
   }
@@ -834,8 +827,8 @@ _print_cmds_list(const char *op, vector<vector<string> >& list)
 ////// algorithms
 void
 cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
-                     vector<string>& cur_path, bool show_def,
-                     bool hide_secret, bool context_diff)
+                     Cpath& cur_path, bool show_def, bool hide_secret,
+                     bool context_diff)
 {
   if (cfg1.isInvalid() || cfg2.isInvalid()) {
     printf("Specified configuration path is not valid\n");
@@ -847,7 +840,7 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
     return;
   }
   // use an invalid value for initial last_ctx
-  vector<string> last_ctx(1, "");
+  Cpath last_ctx;
   _show_diff(&cfg1, &cfg2, -1, cur_path, last_ctx, show_def, hide_secret,
              context_diff);
 }
@@ -855,17 +848,17 @@ cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
 void
 cnode::show_cfg(const CfgNode& cfg, bool show_def, bool hide_secret)
 {
-  vector<string> cur_path;
+  Cpath cur_path;
   show_cfg_diff(cfg, cfg, cur_path, show_def, hide_secret);
 }
 
 void
 cnode::show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2)
 {
-  vector<string> cur_path;
-  vector<vector<string> > del_list;
-  vector<vector<string> > set_list;
-  vector<vector<string> > com_list;
+  Cpath cur_path;
+  vector<Cpath> del_list;
+  vector<Cpath> set_list;
+  vector<Cpath> com_list;
   _get_cmds_diff(&cfg1, &cfg2, cur_path, del_list, set_list, com_list);
 
   _print_cmds_list("delete", del_list);
@@ -881,32 +874,31 @@ cnode::show_cmds(const CfgNode& cfg)
 
 void
 cnode::get_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2,
-                     vector<vector<string> >& del_list,
-                     vector<vector<string> >& set_list,
-                     vector<vector<string> >& com_list)
+                     vector<Cpath>& del_list, vector<Cpath>& set_list,
+                     vector<Cpath>& com_list)
 {
-  vector<string> cur_path;
+  Cpath cur_path;
   _get_cmds_diff(&cfg1, &cfg2, cur_path, del_list, set_list, com_list);
 }
 
 void
-cnode::get_cmds(const CfgNode& cfg, vector<vector<string> >& set_list,
-                vector<vector<string> >& com_list)
+cnode::get_cmds(const CfgNode& cfg, vector<Cpath>& set_list,
+                vector<Cpath>& com_list)
 {
-  vector<string> cur_path;
-  vector<vector<string> > del_list;
+  Cpath cur_path;
+  vector<Cpath> del_list;
   _get_cmds_diff(&cfg, &cfg, cur_path, del_list, set_list, com_list);
 }
 
 void
 cnode::showConfig(const string& cfg1, const string& cfg2,
-                  const vector<string>& path, bool show_def, bool hide_secret,
+                  const Cpath& path, bool show_def, bool hide_secret,
                   bool context_diff, bool show_cmds)
 {
   tr1::shared_ptr<CfgNode> aroot, wroot, croot1, croot2;
   tr1::shared_ptr<Cstore> cstore;
-  vector<string> rpath(path);
-  vector<string> cur_path;
+  Cpath rpath(path);
+  Cpath cur_path;
 
   if ((cfg1 == ACTIVE_CFG || cfg1 == WORKING_CFG)
       && (cfg2 == ACTIVE_CFG || cfg2 == WORKING_CFG)) {

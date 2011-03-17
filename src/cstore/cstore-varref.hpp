@@ -30,18 +30,18 @@ public:
   ~VarRef() {};
 
   bool getValue(string& value, vtw_type_e& def_type);
-  bool getSetPath(vector<string>& path_comps);
+  bool getSetPath(Cpath& path_comps);
 
 private:
   Cstore *_cstore;
   bool _active;
   bool _absolute;
   string _at_string;
-  vector<string> _orig_path_comps;
-  vector<pair<vector<string>, vtw_type_e> > _paths;
+  Cpath _orig_path_comps;
+  vector<pair<Cpath, vtw_type_e> > _paths;
 
-  void process_ref(const vector<string>& ref_comps,
-                   const vector<string>& cur_path_comps, vtw_type_e def_type);
+  void process_ref(const Cpath& ref_comps,
+                   const Cpath& cur_path_comps, vtw_type_e def_type);
 };
 
 } // end namespace cstore

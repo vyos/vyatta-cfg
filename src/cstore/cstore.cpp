@@ -37,7 +37,7 @@
 #include <cnode/cnode-algorithm.hpp>
 #include <cparse/cparse.hpp>
 
-using namespace cstore;
+namespace cstore { // begin namespace cstore
 
 ////// constants
 //// node status
@@ -103,14 +103,14 @@ Cstore::Cstore(string& env)
 Cstore *
 Cstore::createCstore(bool use_edit_level)
 {
-  return (new UnionfsCstore(use_edit_level));
+  return (new unionfs::UnionfsCstore(use_edit_level));
 }
 
 // for "specific session" (see UnionfsCstore constructor for details)
 Cstore *
 Cstore::createCstore(const string& session_id, string& env)
 {
-  return (new UnionfsCstore(session_id, env));
+  return (new unionfs::UnionfsCstore(session_id, env));
 }
 
 
@@ -120,10 +120,10 @@ Cstore::createCstore(const string& session_id, string& env)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals)
+Cstore::validateTmplPath(const Cpath& path_comps, bool validate_vals)
 {
   // if we can get parsed tmpl, path is valid
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, validate_vals));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, validate_vals));
   return (def.get() != 0);
 }
 
@@ -131,8 +131,8 @@ Cstore::validateTmplPath(const vector<string>& path_comps, bool validate_vals)
  * note: if last path component is "value" (i.e., def.is_value), parsed
  * template is actually at "full path - 1". see get_parsed_tmpl() for details.
  */
-Ctemplate *
-Cstore::parseTmpl(const vector<string>& path_comps, bool validate_vals)
+tr1::shared_ptr<Ctemplate>
+Cstore::parseTmpl(const Cpath& path_comps, bool validate_vals)
 {
   return get_parsed_tmpl(path_comps, validate_vals);
 }
@@ -142,7 +142,7 @@ Cstore::parseTmpl(const vector<string>& path_comps, bool validate_vals)
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::getParsedTmpl(const vector<string>& path_comps,
+Cstore::getParsedTmpl(const Cpath& path_comps,
                       Cstore::MapT<string, string>& tmap, bool allow_val)
 {
   /* currently this function is used outside actual CLI operations, mainly
@@ -152,7 +152,7 @@ Cstore::getParsedTmpl(const vector<string>& path_comps,
    *
    * anyway, not validating values in the following call.
    */
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
   if (!def.get()) {
     return false;
   }
@@ -210,26 +210,25 @@ Cstore::getParsedTmpl(const vector<string>& path_comps,
  * note: if specified path is at a "tag node", "node.tag" will be returned.
  */
 void
-Cstore::tmplGetChildNodes(const vector<string>& path_comps,
+Cstore::tmplGetChildNodes(const Cpath& path_comps,
                           vector<string>& cnodes)
 {
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_tmpl_path(path_comps);
   get_all_tmpl_child_node_names(cnodes);
   sort_nodes(cnodes);
-  RESTORE_PATHS;
 }
 
 /* delete specified "logical path" from "working config".
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::deleteCfgPath(const vector<string>& path_comps)
+Cstore::deleteCfgPath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
@@ -251,7 +250,7 @@ Cstore::deleteCfgPath(const vector<string>& path_comps)
    */
   if (def->getDefault()) {
     // case 1. construct path for value file.
-    SAVE_PATHS;
+    auto_ptr<SavePaths> save(create_save_paths());
     append_cfg_path(path_comps);
     if (def->isValue()) {
       // last comp is "value". need to go up 1 level.
@@ -263,13 +262,12 @@ Cstore::deleteCfgPath(const vector<string>& path_comps)
      * also deactivated. note that unmark_deactivated() succeeds if it's
      * not marked deactivated. also mark "changed".
      */
-    bool ret = (write_value(def->getDefault()) && mark_display_default()
-                && unmark_deactivated() && mark_changed_with_ancestors());
-    if (!ret) {
+    if (!(write_value(def->getDefault()) && mark_display_default()
+          && unmark_deactivated() && mark_changed_with_ancestors())) {
       output_user("Failed to set default value during delete\n");
+      return false;
     }
-    RESTORE_PATHS;
-    return ret;
+    return true;
   }
 
   /* case 2.
@@ -287,7 +285,7 @@ Cstore::deleteCfgPath(const vector<string>& path_comps)
    *       => remove node
    */
   bool ret = false;
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   if (!def->isValue()) {
     // sub-case (2)
@@ -311,7 +309,6 @@ Cstore::deleteCfgPath(const vector<string>& path_comps)
     // mark changed
     ret = mark_changed_with_ancestors();
   }
-  RESTORE_PATHS;
   if (!ret) {
     output_user("Failed to delete specified config path\n");
   }
@@ -322,20 +319,19 @@ Cstore::deleteCfgPath(const vector<string>& path_comps)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateSetPath(const vector<string>& path_comps)
+Cstore::validateSetPath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
   // if we can get parsed tmpl, path is valid
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, true, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, true, terr));
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
 
-  bool ret = true;
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   if (!def->isValue()) {
     if (!def->isTypeless()) {
       /* disallow setting value node without value
@@ -344,7 +340,7 @@ Cstore::validateSetPath(const vector<string>& path_comps)
        *       (single-value, multi-value, and tag) must be set with value.
        */
       output_user("The specified configuration node requires a value\n");
-      ret = false;
+      return false;
     } else {
       /* typeless node
        * note: XXX the following is present in the original logic, perhaps
@@ -355,24 +351,23 @@ Cstore::validateSetPath(const vector<string>& path_comps)
        */
       append_cfg_path(path_comps);
       append_tmpl_path(path_comps);
-      if (!validate_val(def.get(), "")) {
-        ret = false;
+      if (!validate_val(def, "")) {
+        return false;
       }
     }
   }
-  RESTORE_PATHS;
-  return ret;
+  return true;
 }
 
 /* check if specified "logical path" is valid for "activate" operation
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateActivatePath(const vector<string>& path_comps)
+Cstore::validateActivatePath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  auto_ptr<Ctemplate> def(validate_act_deact(path_comps, "activate"));
+  tr1::shared_ptr<Ctemplate> def(validate_act_deact(path_comps, "activate"));
   if (!def.get()) {
     return false;
   }
@@ -381,35 +376,35 @@ Cstore::validateActivatePath(const vector<string>& path_comps)
                 "deactivate\ncommand has been performed.\n");
     return false;
   }
-  bool ret = true;
+
   if (def->isTagValue() && def->getTagLimit() > 0) {
     // we are activating a tag, and there is a limit on number of tags.
     vector<string> cnodes;
-    SAVE_PATHS;
+    auto_ptr<SavePaths> save(create_save_paths());
     append_cfg_path(path_comps);
-    string t = pop_cfg_path();
+    string t;
+    pop_cfg_path(t);
     // get child nodes, excluding deactivated ones.
     get_all_child_node_names(cnodes, false, false);
     if (def->getTagLimit() <= cnodes.size()) {
       // limit exceeded
       output_user("Cannot activate \"%s\": number of values exceeds limit "
                   "(%d allowed)\n", t.c_str(), def->getTagLimit());
-      ret = false;
+      return false;
     }
-    RESTORE_PATHS;
   }
-  return ret;
+  return true;
 }
 
 /* check if specified "logical path" is valid for "deactivate" operation
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateDeactivatePath(const vector<string>& path_comps)
+Cstore::validateDeactivatePath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  auto_ptr<Ctemplate> def(validate_act_deact(path_comps, "deactivate"));
+  tr1::shared_ptr<Ctemplate> def(validate_act_deact(path_comps, "deactivate"));
   return (def.get() != 0);
 }
 
@@ -419,12 +414,12 @@ Cstore::validateDeactivatePath(const vector<string>& path_comps)
  * operation and return true.
  */
 bool
-Cstore::getEditEnv(const vector<string>& path_comps, string& env)
+Cstore::getEditEnv(const Cpath& path_comps, string& env)
 {
   ASSERT_IN_SESSION;
 
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
@@ -453,11 +448,10 @@ Cstore::getEditEnv(const vector<string>& path_comps, string& env)
       return false;
     }
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   append_tmpl_path(path_comps);
   get_edit_env(env);
-  RESTORE_PATHS;
   /* doing the save/restore above to be consistent with the rest of the API.
    * however, after the caller evals the returned environment string, the
    * levels in "this" will become out-of-sync with the environment. so
@@ -488,14 +482,14 @@ Cstore::getEditUpEnv(string& env)
   }
 
   string terr;
-  vector<string> path_comps;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  Cpath path_comps;
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
   if (!def.get()) {
     // this should not happen since it's using existing levels
     output_user("%s\n", terr.c_str());
     return false;
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   if (def->isTagValue()) {
     // edit level is at "tag value". go up 1 extra level.
     pop_cfg_path();
@@ -504,7 +498,6 @@ Cstore::getEditUpEnv(string& env)
   pop_cfg_path();
   pop_tmpl_path();
   get_edit_env(env);
-  RESTORE_PATHS;
   // also see getEditEnv for comment on save/restore above
 
   return true;
@@ -518,13 +511,12 @@ Cstore::getEditResetEnv(string& env)
 {
   ASSERT_IN_SESSION;
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   while (!edit_level_at_root()) {
     pop_cfg_path();
     pop_tmpl_path();
   }
   get_edit_env(env);
-  RESTORE_PATHS;
   // also see getEditEnv for comment on save/restore above
 
   return true;
@@ -537,15 +529,17 @@ Cstore::getEditResetEnv(string& env)
  *       first path element (which can be empty string).
  */
 bool
-Cstore::getCompletionEnv(const vector<string>& comps, string& env)
+Cstore::getCompletionEnv(const Cpath& comps, string& env)
 {
   ASSERT_IN_SESSION;
 
-  vector<string> pcomps = comps;
-  string cmd = pcomps[0];
-  string last_comp = pcomps.back();
-  pcomps.erase(pcomps.begin());
-  pcomps.pop_back();
+  string cmd = comps[0];
+  string last_comp = comps.back();
+  Cpath pcomps;
+  for (size_t i = 1; i < (comps.size() - 1); i++) {
+    pcomps.push(comps[i]);
+  }
+
   bool exists_only = (cmd == "delete" || cmd == "show"
                       || cmd == "comment" || cmd == "activate"
                       || cmd == "deactivate");
@@ -553,290 +547,294 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
   /* at this point, pcomps contains the command line arguments minus the
    * "command" and the last one.
    */
-  bool ret = false;
-  SAVE_PATHS;
-  do {
-    bool is_typeless = true;
-    bool is_leaf_value = false;
-    bool is_value = false;
-    auto_ptr<Ctemplate> def;
-    if (pcomps.size() > 0) {
-      def.reset(get_parsed_tmpl(pcomps, false));
-      if (!def.get()) {
-        // invalid path
-        break;
-      }
-      if (exists_only && !cfg_path_exists(pcomps, false, true)) {
-        // invalid path for the command (must exist)
-        break;
-      }
-      append_cfg_path(pcomps);
-      append_tmpl_path(pcomps);
-      is_typeless = def->isTypeless();
-      is_leaf_value = def->isLeafValue();
-      is_value = def->isValue();
-    } else {
-      /* we are at root. default values simulate a typeless node so nop.
-       * note that in this case def is "empty", so must ensure that it's
-       * not used.
-       */
+  auto_ptr<SavePaths> save(create_save_paths());
+  bool is_typeless = true;
+  bool is_leaf_value = false;
+  bool is_value = false;
+  tr1::shared_ptr<Ctemplate> def;
+  if (pcomps.size() > 0) {
+    def = get_parsed_tmpl(pcomps, false);
+    if (!def.get()) {
+      // invalid path
+      return false;
     }
-
-    /* at this point, cfg and tmpl paths are constructed up to the comp
-     * before last_comp, and def is parsed.
+    if (exists_only && !cfg_path_exists(pcomps, false, true)) {
+      // invalid path for the command (must exist)
+      return false;
+    }
+    append_cfg_path(pcomps);
+    append_tmpl_path(pcomps);
+    is_typeless = def->isTypeless();
+    is_leaf_value = def->isLeafValue();
+    is_value = def->isValue();
+  } else {
+    /* we are at root. default values simulate a typeless node so nop.
+     * note that in this case def is "empty", so must ensure that it's
+     * not used.
      */
-    if (is_leaf_value) {
-      // invalid path (this means the comp before last_comp is a leaf value)
-      break;
-    }
+  }
 
-    vector<string> comp_vals;
-    string comp_string;
-    string comp_help;
-    vector<pair<string, string> > help_pairs;
-    bool last_comp_val = true;
-    if (is_typeless || is_value) {
-      /* path so far is at a typeless node OR a tag value (tag already
-       * checked above):
-       *   completions: from tmpl children.
-       *   help:
-       *     values: same as completions.
-       *     text: "help" from child templates.
-       *
-       * note: for such completions, we filter non-existent nodes if
-       *       necessary.
-       *
-       * also, the "root" node case above will reach this block, so
-       * must not use def in this block.
-       */
-      vector<string> ufvec;
-      if (exists_only) {
-        // only return existing config nodes
-        get_all_child_node_names(ufvec, false, true);
-      } else {
-        // return all template children
-        get_all_tmpl_child_node_names(ufvec);
-      }
-      for (size_t i = 0; i < ufvec.size(); i++) {
-        if (last_comp == ""
-            || ufvec[i].compare(0, last_comp.length(), last_comp) == 0) {
-          comp_vals.push_back(ufvec[i]);
-        }
-      }
-      if (comp_vals.size() == 0) {
-        // no matches
-        break;
-      }
-      sort(comp_vals.begin(), comp_vals.end());
-      for (size_t i = 0; i < comp_vals.size(); i++) {
-        pair<string, string> hpair(comp_vals[i], "");
-        push_tmpl_path(hpair.first);
-        auto_ptr<Ctemplate> cdef(tmpl_parse());
-        if (cdef.get() && cdef->getNodeHelp()) {
-          hpair.second = cdef->getNodeHelp();
-        } else {
-          hpair.second = "<No help text available>";
-        }
-        help_pairs.push_back(hpair);
-        pop_tmpl_path();
-      }
-      // last comp is not value
-      last_comp_val = false;
-    } else {
-      /* path so far is at a "value node".
-       * note: follow the original implementation and don't filter
-       *       non-existent values for such completions
-       *
-       * also, cannot be "root" node if we reach here, so def can be used.
-       */
-      // first, handle completions.
-      if (def->isTag()) {
-        // it's a "tag node". get completions from tag values.
-        get_all_child_node_names(comp_vals, false, true);
-      } else {
-        // it's a "leaf value node". get completions from values.
-        read_value_vec(comp_vals, false);
-      }
-      /* more possible completions from this node's template:
-       *   "allowed"
-       *   "enumeration"
-       *   "$VAR(@) in ..."
-       */
-      if (def->getEnumeration() || def->getAllowed()) {
-        /* do "enumeration" or "allowed".
-         * note: emulate original implementation and set up COMP_WORDS and
-         *       COMP_CWORD environment variables. these are needed by some
-         *       "allowed" scripts.
-         */
-        ostringstream cword_count;
-        cword_count << (comps.size() - 1);
-        string cmd_str = ("export " + C_ENV_SHELL_CWORD_COUNT + "="
-                           + cword_count.str() + "; ");
-        cmd_str += ("export " + C_ENV_SHELL_CWORDS + "=(");
-        for (size_t i = 0; i < comps.size(); i++) {
-          cmd_str += (" '" + comps[i] + "'");
-        }
-        cmd_str += "); ";
-        if (def->getEnumeration()) {
-          cmd_str += (C_ENUM_SCRIPT_DIR + "/" + def->getEnumeration());
-        } else {
-          string astr = def->getAllowed();
-          shell_escape_squotes(astr);
-          cmd_str += "_cstore_internal_allowed () { eval '";
-          cmd_str += astr;
-          cmd_str += "'; }; _cstore_internal_allowed";
-        }
+  /* at this point, cfg and tmpl paths are constructed up to the comp
+   * before last_comp, and def is parsed.
+   */
+  if (is_leaf_value) {
+    // invalid path (this means the comp before last_comp is a leaf value)
+    return false;
+  }
 
-        char *buf = (char *) malloc(MAX_CMD_OUTPUT_SIZE);
-        int ret = get_shell_command_output(cmd_str.c_str(), buf,
-                                           MAX_CMD_OUTPUT_SIZE);
-        if (ret > 0) {
-          // '<' and '>' need to be escaped
-          char *ptr = buf;
-          while (*ptr) {
-            if (*ptr == '<' || *ptr == '>') {
-              comp_string += "\\";
-            }
-            comp_string += *ptr;
-            ptr++;
-          }
-        }
-        /* note that for "enumeration" and "allowed", comp_string is the
-         * complete output of the command and it is to be evaled by the
-         * shell into an array of values.
-         */
-        free(buf);
-      } else if (def->getActions(syntax_act)->vtw_list_head) {
-        // look for "self ref in values" from syntax
-        const valstruct *vals = get_syntax_self_in_valstruct(
-                                  def->getActions(syntax_act)->vtw_list_head);
-        if (vals) {
-          if (vals->cnt == 0 && vals->val) {
-            comp_vals.push_back(vals->val);
-          } else if (vals->cnt > 0) {
-            for (int i = 0; i < vals->cnt; i++) {
-              if (vals->vals[i]) {
-                comp_vals.push_back(vals->vals[i]);
-              }
-            }
-          }
-        }
-      }
-
-      // now handle help.
-      if (def->getCompHelp()) {
-        // "comp_help" exists.
-        comp_help = def->getCompHelp();
-        shell_escape_squotes(comp_help);
-      }
-      if (def->getValHelp()) {
-        // has val_help. first separate individual lines.
-        size_t start = 0, i = 0;
-        vector<string> vhelps;
-        for (i = 0; (def->getValHelp())[i]; i++) {
-          if ((def->getValHelp())[i] == '\n') {
-            vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
-            start = i + 1;
-          }
-        }
-        if (start < i) {
-          vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
-        }
-
-        // process each line
-        for (i = 0; i < vhelps.size(); i++) {
-          size_t sc;
-          if ((sc = vhelps[i].find(';')) == vhelps[i].npos) {
-            // no ';'
-            if (i == 0 && !def->isTypeless(1)) {
-              // first val_help. pair with "type".
-              help_pairs.push_back(pair<string, string>(
-                                     def->getTypeName(1), vhelps[i]));
-            }
-            if (i == 1 && !def->isTypeless(2)) {
-              // second val_help. pair with second "type".
-              help_pairs.push_back(pair<string, string>(
-                                     def->getTypeName(2), vhelps[i]));
-            }
-          } else {
-            // ';' at index sc
-            help_pairs.push_back(pair<string, string>(
-                                   vhelps[i].substr(0, sc),
-                                   vhelps[i].substr(sc + 1)));
-          }
-        }
-      } else if (!def->isTypeless(1) && def->getNodeHelp()) {
-        // simple case. just use "type" and "help"
-        help_pairs.push_back(pair<string, string>(def->getTypeName(1),
-                                                  def->getNodeHelp()));
-      }
-    }
-
-    /* from this point on cannot use def (since the "root" node case
-     * can reach here).
-     */
-
-    // this var is the array of possible completions
-    env = (C_ENV_SHAPI_COMP_VALS + "=(");
-    for (size_t i = 0; i < comp_vals.size(); i++) {
-      shell_escape_squotes(comp_vals[i]);
-      env += ("'" + comp_vals[i] + "' ");
-    }
-    /* as mentioned above, comp_string is the complete command output.
-     * let the shell eval it into the array since we don't want to
-     * re-implement the shell interpretation here.
+  vector<string> comp_vals;
+  string comp_string;
+  string comp_help;
+  vector<pair<string, string> > help_pairs;
+  bool last_comp_val = true;
+  if (is_typeless || is_value) {
+    /* path so far is at a typeless node OR a tag value (tag already
+     * checked above):
+     *   completions: from tmpl children.
+     *   help:
+     *     values: same as completions.
+     *     text: "help" from child templates.
      *
-     * note that as a result, we will not be doing the filtering here.
-     * instead, the completion script will do the filtering on
-     * the resulting comp_values array. should be straightforward since
-     * there's no "existence filtering", only "prefix filtering".
+     * note: for such completions, we filter non-existent nodes if
+     *       necessary.
+     *
+     * also, the "root" node case above will reach this block, so
+     * must not use def in this block.
      */
-    env += (comp_string + "); ");
-
-    /* this var indicates whether the last comp is "value"
-     * follow original implementation: if last comp is value, completion
-     * script needs to do the following.
-     *   use comp_help if exists
-     *   prefix filter comp_values
-     *   replace any <*> in comp_values with ""
-     *   convert help items to data representation
-     */
-    env += (C_ENV_SHAPI_LCOMP_VAL + "=");
-    env += (last_comp_val ? "true; " : "false; ");
-
-    // this var is the "comp_help" string
-    env += (C_ENV_SHAPI_COMP_HELP + "='" + comp_help + "'; ");
-
-    // this var is the array of "help items", i.e., type names, etc.
-    string hitems = (C_ENV_SHAPI_HELP_ITEMS + "=(");
-    // this var is the array of "help strings" corresponding to the items
-    string hstrs = (C_ENV_SHAPI_HELP_STRS + "=(");
-    for (size_t i = 0; i < help_pairs.size(); i++) {
-      string hi = help_pairs[i].first;
-      string hs = help_pairs[i].second;
-      shell_escape_squotes(hi);
-      shell_escape_squotes(hs);
-      // get rid of leading/trailing "space" chars in help string
-      while (hi.size() > 0 && isspace(hi[0])) {
-        hi.erase(0, 1);
-      }
-      while (hs.size() > 0 && isspace(hs[0])) {
-        hs.erase(0, 1);
-      }
-      while (hi.size() > 0 && isspace(hi[hi.size() - 1])) {
-        hi.erase(hi.size() - 1);
-      }
-      while (hs.size() > 0 && isspace(hs[hs.size() - 1])) {
-        hs.erase(hs.size() - 1);
-      }
-      hitems += ("'" + hi + "' ");
-      hstrs += ("'" + hs + "' ");
+    vector<string> ufvec;
+    if (exists_only) {
+      // only return existing config nodes
+      get_all_child_node_names(ufvec, false, true);
+    } else {
+      // return all template children
+      get_all_tmpl_child_node_names(ufvec);
     }
-    env += (hitems + "); " + hstrs + "); ");
-    ret = true;
-  } while(0);
-  RESTORE_PATHS;
-  return ret;
+    for (size_t i = 0; i < ufvec.size(); i++) {
+      if (last_comp == ""
+          || ufvec[i].compare(0, last_comp.length(), last_comp) == 0) {
+        comp_vals.push_back(ufvec[i]);
+      }
+    }
+    if (comp_vals.size() == 0) {
+      // no matches
+      return false;
+    }
+    sort(comp_vals.begin(), comp_vals.end());
+
+    /* loop below calls get_parsed_tmpl(), which takes the whole path.
+     * so need to save current paths and reset them before (and restore them
+     * after).
+     */
+    auto_ptr<SavePaths> save1(create_save_paths());
+    reset_paths();
+    for (size_t i = 0; i < comp_vals.size(); i++) {
+      pair<string, string> hpair(comp_vals[i], "");
+      pcomps.push(comp_vals[i]);
+      tr1::shared_ptr<Ctemplate> cdef(get_parsed_tmpl(pcomps, false));
+      if (cdef.get() && cdef->getNodeHelp()) {
+        hpair.second = cdef->getNodeHelp();
+      } else {
+        hpair.second = "<No help text available>";
+      }
+      help_pairs.push_back(hpair);
+      pcomps.pop();
+    }
+    // last comp is not value
+    last_comp_val = false;
+  } else {
+    /* path so far is at a "value node".
+     * note: follow the original implementation and don't filter
+     *       non-existent values for such completions
+     *
+     * also, cannot be "root" node if we reach here, so def can be used.
+     */
+    // first, handle completions.
+    if (def->isTag()) {
+      // it's a "tag node". get completions from tag values.
+      get_all_child_node_names(comp_vals, false, true);
+    } else {
+      // it's a "leaf value node". get completions from values.
+      read_value_vec(comp_vals, false);
+    }
+    /* more possible completions from this node's template:
+     *   "allowed"
+     *   "enumeration"
+     *   "$VAR(@) in ..."
+     */
+    if (def->getEnumeration() || def->getAllowed()) {
+      /* do "enumeration" or "allowed".
+       * note: emulate original implementation and set up COMP_WORDS and
+       *       COMP_CWORD environment variables. these are needed by some
+       *       "allowed" scripts.
+       */
+      ostringstream cword_count;
+      cword_count << (comps.size() - 1);
+      string cmd_str = ("export " + C_ENV_SHELL_CWORD_COUNT + "="
+                         + cword_count.str() + "; ");
+      cmd_str += ("export " + C_ENV_SHELL_CWORDS + "=(");
+      for (size_t i = 0; i < comps.size(); i++) {
+        cmd_str += " '";
+        cmd_str += comps[i];
+        cmd_str += "'";
+      }
+      cmd_str += "); ";
+      if (def->getEnumeration()) {
+        cmd_str += (C_ENUM_SCRIPT_DIR + "/" + def->getEnumeration());
+      } else {
+        string astr = def->getAllowed();
+        shell_escape_squotes(astr);
+        cmd_str += "_cstore_internal_allowed () { eval '";
+        cmd_str += astr;
+        cmd_str += "'; }; _cstore_internal_allowed";
+      }
+
+      char *buf = (char *) malloc(MAX_CMD_OUTPUT_SIZE);
+      int ret = get_shell_command_output(cmd_str.c_str(), buf,
+                                         MAX_CMD_OUTPUT_SIZE);
+      if (ret > 0) {
+        // '<' and '>' need to be escaped
+        char *ptr = buf;
+        while (*ptr) {
+          if (*ptr == '<' || *ptr == '>') {
+            comp_string += "\\";
+          }
+          comp_string += *ptr;
+          ptr++;
+        }
+      }
+      /* note that for "enumeration" and "allowed", comp_string is the
+       * complete output of the command and it is to be evaled by the
+       * shell into an array of values.
+       */
+      free(buf);
+    } else if (def->getActions(syntax_act)->vtw_list_head) {
+      // look for "self ref in values" from syntax
+      const valstruct *vals = get_syntax_self_in_valstruct(
+                                def->getActions(syntax_act)->vtw_list_head);
+      if (vals) {
+        if (vals->cnt == 0 && vals->val) {
+          comp_vals.push_back(vals->val);
+        } else if (vals->cnt > 0) {
+          for (int i = 0; i < vals->cnt; i++) {
+            if (vals->vals[i]) {
+              comp_vals.push_back(vals->vals[i]);
+            }
+          }
+        }
+      }
+    }
+
+    // now handle help.
+    if (def->getCompHelp()) {
+      // "comp_help" exists.
+      comp_help = def->getCompHelp();
+      shell_escape_squotes(comp_help);
+    }
+    if (def->getValHelp()) {
+      // has val_help. first separate individual lines.
+      size_t start = 0, i = 0;
+      vector<string> vhelps;
+      for (i = 0; (def->getValHelp())[i]; i++) {
+        if ((def->getValHelp())[i] == '\n') {
+          vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
+          start = i + 1;
+        }
+      }
+      if (start < i) {
+        vhelps.push_back(string(&((def->getValHelp())[start]), i - start));
+      }
+
+      // process each line
+      for (i = 0; i < vhelps.size(); i++) {
+        size_t sc;
+        if ((sc = vhelps[i].find(';')) == vhelps[i].npos) {
+          // no ';'
+          if (i == 0 && !def->isTypeless(1)) {
+            // first val_help. pair with "type".
+            help_pairs.push_back(pair<string, string>(
+                                   def->getTypeName(1), vhelps[i]));
+          }
+          if (i == 1 && !def->isTypeless(2)) {
+            // second val_help. pair with second "type".
+            help_pairs.push_back(pair<string, string>(
+                                   def->getTypeName(2), vhelps[i]));
+          }
+        } else {
+          // ';' at index sc
+          help_pairs.push_back(pair<string, string>(
+                                 vhelps[i].substr(0, sc),
+                                 vhelps[i].substr(sc + 1)));
+        }
+      }
+    } else if (!def->isTypeless(1) && def->getNodeHelp()) {
+      // simple case. just use "type" and "help"
+      help_pairs.push_back(pair<string, string>(def->getTypeName(1),
+                                                def->getNodeHelp()));
+    }
+  }
+
+  /* from this point on cannot use def (since the "root" node case
+   * can reach here).
+   */
+
+  // this var is the array of possible completions
+  env = (C_ENV_SHAPI_COMP_VALS + "=(");
+  for (size_t i = 0; i < comp_vals.size(); i++) {
+    shell_escape_squotes(comp_vals[i]);
+    env += ("'" + comp_vals[i] + "' ");
+  }
+  /* as mentioned above, comp_string is the complete command output.
+   * let the shell eval it into the array since we don't want to
+   * re-implement the shell interpretation here.
+   *
+   * note that as a result, we will not be doing the filtering here.
+   * instead, the completion script will do the filtering on
+   * the resulting comp_values array. should be straightforward since
+   * there's no "existence filtering", only "prefix filtering".
+   */
+  env += (comp_string + "); ");
+
+  /* this var indicates whether the last comp is "value"
+   * follow original implementation: if last comp is value, completion
+   * script needs to do the following.
+   *   use comp_help if exists
+   *   prefix filter comp_values
+   *   replace any <*> in comp_values with ""
+   *   convert help items to data representation
+   */
+  env += (C_ENV_SHAPI_LCOMP_VAL + "=");
+  env += (last_comp_val ? "true; " : "false; ");
+
+  // this var is the "comp_help" string
+  env += (C_ENV_SHAPI_COMP_HELP + "='" + comp_help + "'; ");
+
+  // this var is the array of "help items", i.e., type names, etc.
+  string hitems = (C_ENV_SHAPI_HELP_ITEMS + "=(");
+  // this var is the array of "help strings" corresponding to the items
+  string hstrs = (C_ENV_SHAPI_HELP_STRS + "=(");
+  for (size_t i = 0; i < help_pairs.size(); i++) {
+    string hi = help_pairs[i].first;
+    string hs = help_pairs[i].second;
+    shell_escape_squotes(hi);
+    shell_escape_squotes(hs);
+    // get rid of leading/trailing "space" chars in help string
+    while (hi.size() > 0 && isspace(hi[0])) {
+      hi.erase(0, 1);
+    }
+    while (hs.size() > 0 && isspace(hs[0])) {
+      hs.erase(0, 1);
+    }
+    while (hi.size() > 0 && isspace(hi[hi.size() - 1])) {
+      hi.erase(hi.size() - 1);
+    }
+    while (hs.size() > 0 && isspace(hs[hs.size() - 1])) {
+      hs.erase(hs.size() - 1);
+    }
+    hitems += ("'" + hi + "' ");
+    hstrs += ("'" + hs + "' ");
+  }
+  env += (hitems + "); " + hstrs + "); ");
+  return true;
 }
 
 /* set specified "logical path" in "working config".
@@ -844,7 +842,7 @@ Cstore::getCompletionEnv(const vector<string>& comps, string& env)
  * note: assume specified path is valid (i.e., validateSetPath()).
  */
 bool
-Cstore::setCfgPath(const vector<string>& path_comps)
+Cstore::setCfgPath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
@@ -855,7 +853,7 @@ Cstore::setCfgPath(const vector<string>& path_comps)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateRenameArgs(const vector<string>& args)
+Cstore::validateRenameArgs(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
@@ -866,7 +864,7 @@ Cstore::validateRenameArgs(const vector<string>& args)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateCopyArgs(const vector<string>& args)
+Cstore::validateCopyArgs(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
@@ -877,22 +875,20 @@ Cstore::validateCopyArgs(const vector<string>& args)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validateMoveArgs(const vector<string>& args)
+Cstore::validateMoveArgs(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
-  vector<string> epath;
-  vector<string> nargs;
+  Cpath epath;
+  Cpath nargs;
   if (!conv_move_args_for_rename(args, epath, nargs)) {
     output_user("Invalid move command\n");
     return false;
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(epath);
   append_tmpl_path(epath);
-  bool ret = validate_rename_copy(nargs, "move");
-  RESTORE_PATHS;
-  return ret;
+  return validate_rename_copy(nargs, "move");
 }
 
 /* perform rename in "working config" according to specified args.
@@ -900,13 +896,13 @@ Cstore::validateMoveArgs(const vector<string>& args)
  * note: assume args are already validated (i.e., validateRenameArgs()).
  */
 bool
-Cstore::renameCfgPath(const vector<string>& args)
+Cstore::renameCfgPath(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
-  string otagnode = args[0];
-  string otagval = args[1];
-  string ntagval = args[4];
+  const char *otagnode = args[0];
+  const char *otagval = args[1];
+  const char *ntagval = args[4];
   push_cfg_path(otagnode);
   /* also mark changed. note that it's marking the "tag node" but not the
    * "tag values" since one is being "deleted" and the other is being
@@ -923,13 +919,13 @@ Cstore::renameCfgPath(const vector<string>& args)
  * note: assume args are already validated (i.e., validateCopyArgs()).
  */
 bool
-Cstore::copyCfgPath(const vector<string>& args)
+Cstore::copyCfgPath(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
-  string otagnode = args[0];
-  string otagval = args[1];
-  string ntagval = args[4];
+  const char *otagnode = args[0];
+  const char *otagval = args[1];
+  const char *ntagval = args[4];
   push_cfg_path(otagnode);
   /* also mark changed. note that it's marking the "tag node" but not the
    * new "tag value" since it is being "added" anyway.
@@ -944,7 +940,7 @@ Cstore::copyCfgPath(const vector<string>& args)
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::commentCfgPath(const vector<string>& args)
+Cstore::commentCfgPath(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
@@ -952,13 +948,13 @@ Cstore::commentCfgPath(const vector<string>& args)
    * follow the original implementation: the last arg is the comment, and
    * everything else is part of the path.
    */
-  vector<string> path_comps(args);
-  string comment = args.back();
-  path_comps.pop_back();
+  Cpath path_comps(args);
+  string comment;
+  path_comps.pop(comment);
 
   // check the path
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
@@ -994,22 +990,23 @@ Cstore::commentCfgPath(const vector<string>& args)
     return false;
   }
 
-  SAVE_PATHS;
-  append_cfg_path(path_comps);
-  bool ret;
-  if (comment == "") {
-    // follow original impl: empty comment => remove it
-    ret = remove_comment();
-    if (!ret) {
-      output_user("Failed to remove comment for specified config node\n");
-    }
-  } else {
-    ret = set_comment(comment);
-    if (!ret) {
-      output_user("Failed to add comment for specified config node\n");
+  bool ret = false;
+  {
+    auto_ptr<SavePaths> save(create_save_paths());
+    append_cfg_path(path_comps);
+    if (comment == "") {
+      // follow original impl: empty comment => remove it
+      ret = remove_comment();
+      if (!ret) {
+        output_user("Failed to remove comment for specified config node\n");
+      }
+    } else {
+      ret = set_comment(comment);
+      if (!ret) {
+        output_user("Failed to add comment for specified config node\n");
+      }
     }
   }
-  RESTORE_PATHS;
   if (ret) {
     // mark the root as changed for "comment"
     ret = mark_changed_with_ancestors();
@@ -1043,22 +1040,20 @@ Cstore::discardChanges()
  * note: assume args are already validated (i.e., validateMoveArgs()).
  */
 bool
-Cstore::moveCfgPath(const vector<string>& args)
+Cstore::moveCfgPath(const Cpath& args)
 {
   ASSERT_IN_SESSION;
 
-  vector<string> epath;
-  vector<string> nargs;
+  Cpath epath;
+  Cpath nargs;
   if (!conv_move_args_for_rename(args, epath, nargs)) {
     output_user("Invalid move command\n");
     return false;
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(epath);
   append_tmpl_path(epath);
-  bool ret = renameCfgPath(nargs);
-  RESTORE_PATHS;
-  return ret;
+  return renameCfgPath(nargs);
 }
 
 /* check if specified "logical path" exists in working config (i.e., the union)
@@ -1066,7 +1061,7 @@ Cstore::moveCfgPath(const vector<string>& args)
  * return true if it exists. otherwise return false.
  */
 bool
-Cstore::cfgPathExists(const vector<string>& path_comps, bool active_cfg)
+Cstore::cfgPathExists(const Cpath& path_comps, bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
@@ -1077,7 +1072,7 @@ Cstore::cfgPathExists(const vector<string>& path_comps, bool active_cfg)
 
 // same as above but "deactivate-aware" 
 bool
-Cstore::cfgPathExistsDA(const vector<string>& path_comps, bool active_cfg,
+Cstore::cfgPathExistsDA(const Cpath& path_comps, bool active_cfg,
                         bool include_deactivated)
 {
   if (!active_cfg) {
@@ -1090,7 +1085,7 @@ Cstore::cfgPathExistsDA(const vector<string>& path_comps, bool active_cfg,
 /* check if specified "logical path" has been deleted in working config.
  */
 bool
-Cstore::cfgPathDeleted(const vector<string>& path_comps)
+Cstore::cfgPathDeleted(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
@@ -1102,7 +1097,7 @@ Cstore::cfgPathDeleted(const vector<string>& path_comps)
 /* check if specified "logical path" has been added in working config.
  */
 bool
-Cstore::cfgPathAdded(const vector<string>& path_comps)
+Cstore::cfgPathAdded(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
@@ -1130,25 +1125,23 @@ Cstore::cfgPathAdded(const vector<string>& path_comps)
  *       (3) cfg_node_changed()
  */
 bool
-Cstore::cfgPathChanged(const vector<string>& path_comps)
+Cstore::cfgPathChanged(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
   if (cfgPathDeleted(path_comps) || cfgPathAdded(path_comps)) {
     return true;
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = cfg_node_changed();
-  RESTORE_PATHS;
-  return ret;
+  return cfg_node_changed();
 }
 
 /* get names of "deleted" child nodes of specified path during commit
  * operation. names are returned in cnodes.
  */
 void
-Cstore::cfgPathGetDeletedChildNodes(const vector<string>& path_comps,
+Cstore::cfgPathGetDeletedChildNodes(const Cpath& path_comps,
                                     vector<string>& cnodes)
 {
   ASSERT_IN_SESSION;
@@ -1158,7 +1151,7 @@ Cstore::cfgPathGetDeletedChildNodes(const vector<string>& path_comps,
 
 // same as above but "deactivate-aware"
 void
-Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
+Cstore::cfgPathGetDeletedChildNodesDA(const Cpath& path_comps,
                                       vector<string>& cnodes,
                                       bool include_deactivated)
 {
@@ -1189,8 +1182,7 @@ Cstore::cfgPathGetDeletedChildNodesDA(const vector<string>& path_comps,
  *       status is purely based on the presence/absence of a value.
  */
 void
-Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
-                                vector<string>& dvals)
+Cstore::cfgPathGetDeletedValues(const Cpath& path_comps, vector<string>& dvals)
 {
   ASSERT_IN_SESSION;
 
@@ -1199,7 +1191,7 @@ Cstore::cfgPathGetDeletedValues(const vector<string>& path_comps,
 
 // same as above but DA
 void
-Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
+Cstore::cfgPathGetDeletedValuesDA(const Cpath& path_comps,
                                   vector<string>& dvals,
                                   bool include_deactivated)
 {
@@ -1229,15 +1221,15 @@ Cstore::cfgPathGetDeletedValuesDA(const vector<string>& path_comps,
  * "marked deactivated".
  */
 bool
-Cstore::cfgPathDeactivated(const vector<string>& path_comps, bool active_cfg)
+Cstore::cfgPathDeactivated(const Cpath& path_comps, bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  vector<string> ppath;
+  Cpath ppath;
   for (size_t i = 0; i < path_comps.size(); i++) {
-    ppath.push_back(path_comps[i]);
+    ppath.push(path_comps[i]);
     if (cfgPathMarkedDeactivated(ppath, active_cfg)) {
       // an ancestor or itself is marked deactivated
       return true;
@@ -1252,26 +1244,23 @@ Cstore::cfgPathDeactivated(const vector<string>& path_comps, bool active_cfg)
  * performed on the node.
  */
 bool
-Cstore::cfgPathMarkedDeactivated(const vector<string>& path_comps,
-                                 bool active_cfg)
+Cstore::cfgPathMarkedDeactivated(const Cpath& path_comps, bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = marked_deactivated(active_cfg);
-  RESTORE_PATHS;
-  return ret;
+  return marked_deactivated(active_cfg);
 }
 
 /* get names of child nodes of specified path in working config or active
  * config. names are returned in cnodes.
  */
 void
-Cstore::cfgPathGetChildNodes(const vector<string>& path_comps,
-                             vector<string>& cnodes, bool active_cfg)
+Cstore::cfgPathGetChildNodes(const Cpath& path_comps, vector<string>& cnodes,
+                             bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
@@ -1282,9 +1271,8 @@ Cstore::cfgPathGetChildNodes(const vector<string>& path_comps,
 
 // same as above but "deactivate-aware" 
 void
-Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
-                               vector<string>& cnodes, bool active_cfg,
-                               bool include_deactivated)
+Cstore::cfgPathGetChildNodesDA(const Cpath& path_comps, vector<string>& cnodes,
+                               bool active_cfg, bool include_deactivated)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
@@ -1296,10 +1284,11 @@ Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
      */
     return;
   }
-  SAVE_PATHS;
-  append_cfg_path(path_comps);
-  get_all_child_node_names(cnodes, active_cfg, include_deactivated);
-  RESTORE_PATHS;
+  {
+    auto_ptr<SavePaths> save(create_save_paths());
+    append_cfg_path(path_comps);
+    get_all_child_node_names(cnodes, active_cfg, include_deactivated);
+  }
   sort_nodes(cnodes);
 }
 
@@ -1310,7 +1299,7 @@ Cstore::cfgPathGetChildNodesDA(const vector<string>& path_comps,
  * otherwise return true.
  */
 bool
-Cstore::cfgPathGetValue(const vector<string>& path_comps, string& value,
+Cstore::cfgPathGetValue(const Cpath& path_comps, string& value,
                         bool active_cfg)
 {
   if (!active_cfg) {
@@ -1322,14 +1311,14 @@ Cstore::cfgPathGetValue(const vector<string>& path_comps, string& value,
 
 // same as above but "deactivate-aware" 
 bool
-Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
+Cstore::cfgPathGetValueDA(const Cpath& path_comps, string& value,
                           bool active_cfg, bool include_deactivated)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
   if (!def.get()) {
     // invalid node
     return false;
@@ -1349,18 +1338,16 @@ Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
     return false;
   }
   vector<string> vvec;
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = false;
   if (read_value_vec(vvec, active_cfg)) {
     if (vvec.size() >= 1) {
       // if for some reason we got multiple values, just take the first one.
       value = vvec[0];
-      ret = true;
+      return true;
     }
   }
-  RESTORE_PATHS;
-  return ret;
+  return false;
 }
 
 /* get values of specified multi-value node.
@@ -1370,8 +1357,8 @@ Cstore::cfgPathGetValueDA(const vector<string>& path_comps, string& value,
  * otherwise return true.
  */
 bool
-Cstore::cfgPathGetValues(const vector<string>& path_comps,
-                         vector<string>& values, bool active_cfg)
+Cstore::cfgPathGetValues(const Cpath& path_comps, vector<string>& values,
+                         bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
@@ -1382,15 +1369,14 @@ Cstore::cfgPathGetValues(const vector<string>& path_comps,
 
 // same as above but "deactivate-aware" 
 bool
-Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
-                           vector<string>& values, bool active_cfg,
-                           bool include_deactivated)
+Cstore::cfgPathGetValuesDA(const Cpath& path_comps, vector<string>& values,
+                           bool active_cfg, bool include_deactivated)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
   if (!def.get()) {
     // invalid node
     return false;
@@ -1409,11 +1395,9 @@ Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
     // specified node doesn't exist
     return false;
   }
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = read_value_vec(values, active_cfg);
-  RESTORE_PATHS;
-  return ret;
+  return read_value_vec(values, active_cfg);
 }
 
 /* get comment of specified node.
@@ -1423,18 +1407,16 @@ Cstore::cfgPathGetValuesDA(const vector<string>& path_comps,
  * otherwise return true.
  */
 bool
-Cstore::cfgPathGetComment(const vector<string>& path_comps, string& comment,
+Cstore::cfgPathGetComment(const Cpath& path_comps, string& comment,
                           bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = get_comment(comment, active_cfg);
-  RESTORE_PATHS;
-  return ret;
+  return get_comment(comment, active_cfg);
 }
 
 /* return whether specified path is "default". if a node is "default", it
@@ -1442,17 +1424,15 @@ Cstore::cfgPathGetComment(const vector<string>& path_comps, string& comment,
  *   active_cfg: whether to observe active config.
  */
 bool
-Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
+Cstore::cfgPathDefault(const Cpath& path_comps, bool active_cfg)
 {
   if (!active_cfg) {
     ASSERT_IN_SESSION;
   }
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = marked_display_default(active_cfg);
-  RESTORE_PATHS;
-  return ret;
+  return marked_display_default(active_cfg);
 }
 
 /* the following functions are observers of the "effective" config.
@@ -1534,9 +1514,9 @@ Cstore::cfgPathDefault(const vector<string>& path_comps, bool active_cfg)
 
 // return whether specified path is "effective".
 bool
-Cstore::cfgPathEffective(const vector<string>& path_comps)
+Cstore::cfgPathEffective(const Cpath& path_comps)
 {
-  auto_ptr<Ctemplate> def(parseTmpl(path_comps, false));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false));
   if (!def.get()) {
     // invalid path
     return false;
@@ -1553,19 +1533,17 @@ Cstore::cfgPathEffective(const vector<string>& path_comps)
     // case (1)
     return true;
   }
-  bool ret = false;
-  SAVE_PATHS;
+
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   if (!in_active && in_work) {
     // check if case (2)
-    ret = marked_committed(def.get(), true);
+    return marked_committed(def, true);
   } else if (in_active && !in_work) {
     // check if case (3)
-    ret = !marked_committed(def.get(), false);
+    return !marked_committed(def, false);
   }
-  RESTORE_PATHS;
-
-  return ret;
+  return false;
 }
 
 /* get names of "effective" child nodes of specified path during commit
@@ -1573,7 +1551,7 @@ Cstore::cfgPathEffective(const vector<string>& path_comps)
  * names are returned in cnodes.
  */
 void
-Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
+Cstore::cfgPathGetEffectiveChildNodes(const Cpath& path_comps,
                                       vector<string>& cnodes)
 {
   if (!inSession()) {
@@ -1596,15 +1574,15 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
   }
 
   // get only the effective ones from the union
-  vector<string> ppath = path_comps;
+  Cpath ppath(path_comps);
   MapT<string, bool>::iterator it = cmap.begin();
   for (; it != cmap.end(); ++it) {
     string c = (*it).first;
-    ppath.push_back(c);
+    ppath.push(c);
     if (cfgPathEffective(ppath)) {
       cnodes.push_back(c);
     }
-    ppath.pop_back();
+    ppath.pop();
   }
   sort_nodes(cnodes);
 }
@@ -1614,15 +1592,14 @@ Cstore::cfgPathGetEffectiveChildNodes(const vector<string>& path_comps,
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::cfgPathGetEffectiveValue(const vector<string>& path_comps,
-                                 string& value)
+Cstore::cfgPathGetEffectiveValue(const Cpath& path_comps, string& value)
 {
   if (!inSession()) {
     // not in a config session. use active config only.
     return cfgPathGetValue(path_comps, value, true);
   }
 
-  vector<string> ppath = path_comps;
+  Cpath ppath(path_comps);
   string oval, nval;
   bool oret = cfgPathGetValue(path_comps, oval, true);
   bool nret = cfgPathGetValue(path_comps, nval, false);
@@ -1630,7 +1607,7 @@ Cstore::cfgPathGetEffectiveValue(const vector<string>& path_comps,
   // all 4 combinations of oret and nret are covered below
   if (nret) {
     // got new value
-    ppath.push_back(nval);
+    ppath.push(nval);
     if (cfgPathEffective(ppath)) {
       // nval already effective
       value = nval;
@@ -1644,7 +1621,7 @@ Cstore::cfgPathGetEffectiveValue(const vector<string>& path_comps,
     }
   } else if (oret) {
     // got oval only
-    ppath.push_back(oval);
+    ppath.push(oval);
     if (cfgPathEffective(ppath)) {
       // oval still effective
       value = oval;
@@ -1659,7 +1636,7 @@ Cstore::cfgPathGetEffectiveValue(const vector<string>& path_comps,
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
+Cstore::cfgPathGetEffectiveValues(const Cpath& path_comps,
                                   vector<string>& values)
 {
   if (!inSession()) {
@@ -1682,15 +1659,15 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
   }
 
   // get only the effective ones from the union
-  vector<string> ppath = path_comps;
+  Cpath ppath(path_comps);
   MapT<string, bool>::iterator it = vmap.begin();
   for (; it != vmap.end(); ++it) {
     string c = (*it).first;
-    ppath.push_back(c);
+    ppath.push(c);
     if (cfgPathEffective(ppath)) {
       values.push_back(c);
     }
-    ppath.pop_back();
+    ppath.pop();
   }
   return (values.size() > 0);
 }
@@ -1704,20 +1681,18 @@ Cstore::cfgPathGetEffectiveValues(const vector<string>& path_comps,
  * otherwise return NULL.
  */
 char *
-Cstore::getVarRef(const string& ref_str, vtw_type_e& type, bool from_active)
+Cstore::getVarRef(const char *ref_str, vtw_type_e& type, bool from_active)
 {
-  char *ret = NULL;
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   VarRef vref(this, ref_str, from_active);
   string val;
   vtw_type_e t;
   if (vref.getValue(val, t)) {
     type = t;
     // follow original implementation. caller is supposed to free this.
-    ret = strdup(val.c_str());
+    return strdup(val.c_str());
   }
-  RESTORE_PATHS;
-  return ret;
+  return NULL;
 }
 
 /* set the node corresponding to specified variable ref string to specified
@@ -1729,7 +1704,7 @@ Cstore::getVarRef(const string& ref_str, vtw_type_e& type, bool from_active)
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::setVarRef(const string& ref_str, const string& value, bool to_active)
+Cstore::setVarRef(const char *ref_str, const char *value, bool to_active)
 {
   /* XXX functions in cli_new only performs "set var ref" operations (e.g.,
    *     '$VAR(@) = ""', which sets current node's value to empty string)
@@ -1744,23 +1719,21 @@ Cstore::setVarRef(const string& ref_str, const string& value, bool to_active)
    *     from high-level functions). as a result, this function is unused
    *     and untested at the moment. must revisit when converting commit.
    */
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   VarRef vref(this, ref_str, to_active);
-  vector<string> pcomps;
-  bool ret = false;
+  Cpath pcomps;
   if (vref.getSetPath(pcomps)) {
     reset_paths();
-    auto_ptr<Ctemplate> def(get_parsed_tmpl(pcomps, false));
+    tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(pcomps, false));
     if (def.get() && def->isSingleLeafNode()) {
       // currently only support single-value node
       append_cfg_path(pcomps);
       if (write_value(value, to_active)) {
-        ret = true;
+        return true;
       }
     }
   }
-  RESTORE_PATHS;
-  return ret;
+  return false;
 }
 
 /* perform deactivate operation on a node, i.e., make the node
@@ -1770,7 +1743,7 @@ Cstore::setVarRef(const string& ref_str, const string& value, bool to_active)
  *       that had been marked deactivated are unmarked.
  */
 bool
-Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
+Cstore::markCfgPathDeactivated(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
@@ -1780,13 +1753,11 @@ Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
     return true;
   }
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   // note: also mark changed
-  bool ret = (mark_deactivated() && unmark_deactivated_descendants()
-              && mark_changed_with_ancestors());
-  RESTORE_PATHS;
-  return ret;
+  return (mark_deactivated() && unmark_deactivated_descendants()
+          && mark_changed_with_ancestors());
 }
 
 /* perform activate operation on a node, i.e., make the node no longer
@@ -1794,16 +1765,14 @@ Cstore::markCfgPathDeactivated(const vector<string>& path_comps)
  * note: assume all validations have been peformed (see activate.cpp).
  */
 bool
-Cstore::unmarkCfgPathDeactivated(const vector<string>& path_comps)
+Cstore::unmarkCfgPathDeactivated(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   // note: also mark changed
-  bool ret = (unmark_deactivated() && mark_changed_with_ancestors());
-  RESTORE_PATHS;
-  return ret;
+  return (unmark_deactivated() && mark_changed_with_ancestors());
 }
 
 // load specified config file
@@ -1830,29 +1799,29 @@ Cstore::loadFile(const char *filename)
   }
 
   // get the config tree from the active config
-  vector<string> args;
+  Cpath args;
   cnode::CfgNode aroot(*this, args, true, true);
 
   // get the "commands diff" between the two
-  vector<vector<string> > del_list;
-  vector<vector<string> > set_list;
-  vector<vector<string> > com_list;
+  vector<Cpath> del_list;
+  vector<Cpath> set_list;
+  vector<Cpath> com_list;
   cnode::get_cmds_diff(aroot, *froot, del_list, set_list, com_list);
 
   // "apply" the changes to the working config
   for (size_t i = 0; i < del_list.size(); i++) {
     if (!deleteCfgPath(del_list[i])) {
-      print_str_vec("Delete [", "] failed\n", del_list[i], "'");
+      print_path_vec("Delete [", "] failed\n", del_list[i], "'");
     }
   }
   for (size_t i = 0; i < set_list.size(); i++) {
     if (!validateSetPath(set_list[i]) || !setCfgPath(set_list[i])) {
-      print_str_vec("Set [", "] failed\n", set_list[i], "'");
+      print_path_vec("Set [", "] failed\n", set_list[i], "'");
     }
   }
   for (size_t i = 0; i < com_list.size(); i++) {
     if (!commentCfgPath(com_list[i])) {
-      print_str_vec("Comment [", "] failed\n", com_list[i], "'");
+      print_path_vec("Comment [", "] failed\n", com_list[i], "'");
     }
   }
 
@@ -1907,19 +1876,20 @@ Cstore::loadFile(const char *filename)
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::unmarkCfgPathChanged(const vector<string>& path_comps)
+Cstore::unmarkCfgPathChanged(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
-  SAVE_PATHS;
+  auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
-  bool ret = unmark_changed_with_descendants();
-  RESTORE_PATHS;
-  return ret;
+  return unmark_changed_with_descendants();
 }
 
 
 ////// protected functions
+Cstore::SavePaths::~SavePaths() {
+}
+
 void
 Cstore::output_user(const char *fmt, ...)
 {
@@ -1991,12 +1961,17 @@ Cstore::sort_nodes(vector<string>& nvec, unsigned int sort_alg)
 /* try to append the logical path to template path.
  *   is_tag: (output) whether the last component is a "tag".
  * return false if logical path is not valid. otherwise return true.
+ *
+ * note: if the last comp is already "node.tag", is_tag won't be set.
+ *       currently this should only happen when get_parsed_tmpl() "borrows"
+ *       comps from the current tmpl path, in which case this is not
+ *       a problem.
  */
 bool
-Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
+Cstore::append_tmpl_path(const Cpath& path_comps, bool& is_tag)
 {
-  is_tag = false;
   for (size_t i = 0; i < path_comps.size(); i++) {
+    is_tag = false;
     push_tmpl_path(path_comps[i]);
     if (tmpl_node_exists()) {
       // got exact match. continue to next component.
@@ -2007,10 +1982,7 @@ Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
     push_tmpl_path_tag();
     if (tmpl_node_exists()) {
       // got tag match. continue to next component.
-      if (i == (path_comps.size() - 1)) {
-        // last comp
-        is_tag = true;
-      }
+      is_tag = true;
       continue;
     }
     // not a valid path
@@ -2019,9 +1991,12 @@ Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
   return true;
 }
 
+typedef Cstore::MapT<Cpath, tr1::shared_ptr<Ctemplate>, CpathHash> TmplCacheT;
+static TmplCacheT _tmpl_cache;
+
 /* check whether specified "logical path" is valid template path.
  * then template at the path is parsed.
- *   path_comps: vector of path components.
+ *   path_comps: path components.
  *   validate_vals: whether to validate all "values" along specified path.
  *   error: (output) error message if failed.
  * return parsed template if successful. otherwise return 0.
@@ -2029,44 +2004,53 @@ Cstore::append_tmpl_path(const vector<string>& path_comps, bool& is_tag)
  *   also, if last path component is value (i.e., isValue()), the template
  *   parsed is actually at "full path - 1".
  */
-Ctemplate *
-Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
+tr1::shared_ptr<Ctemplate>
+Cstore::get_parsed_tmpl(const Cpath& path_comps, bool validate_vals,
                         string& error)
 {
-  Ctemplate *rtmpl = 0;
+  tr1::shared_ptr<Ctemplate> rtmpl;
   // default error message
   error = "The specified configuration node is not valid";
 
-  if (tmpl_path_at_root() && path_comps.size() == 0) {
-    // empty path not valid
-    return rtmpl;
+  bool do_caching = false;
+  if (tmpl_path_at_root()) {
+    if (path_comps.size() == 0) {
+      // empty path not valid
+      return rtmpl;
+    }
+    // we are starting from root => caching applies
+    do_caching = true;
+    TmplCacheT::iterator p = _tmpl_cache.find(path_comps);
+    if (p != _tmpl_cache.end()) {
+      // return cached
+      return p->second;
+    }
   }
 
-  /* note: this function may be invoked recursively (depth 1) when
-   *       validating values, i.e., validate_value will process variable
-   *       reference, which calls this indirectly to get templates.
-   *       so need special save/restore identifier.
-   */
-  const char *not_validating = "get_parsed_tmpl_not_validating";
-  if (validate_vals) {
-    SAVE_PATHS;
-  } else {
-    save_paths(not_validating);
-  }
+  auto_ptr<SavePaths> save(create_save_paths());
+
   /* need at least 1 comp to work. 2 comps if last comp is value.
    * so pop tmpl_path and prepend them. note that path_comps remain
    * constant.
    */
-  vector<string> *pcomps = const_cast<vector<string> *>(&path_comps);
-  vector<string> new_path_comps;
-  if (path_comps.size() < 2) {
-    new_path_comps = path_comps;
-    pcomps = &new_path_comps;
-    for (unsigned int i = 0; i < 2 && pcomps->size() < 2; i++) {
+  Cpath *pcomps = const_cast<Cpath *>(&path_comps);
+  Cpath new_path_comps;
+  size_t p_size = path_comps.size();
+  if (p_size < 2) {
+    Cpath tmp;
+    for (unsigned int i = 0; i < 2 && (i + p_size) < 2; i++) {
       if (!tmpl_path_at_root()) {
-        pcomps->insert(pcomps->begin(), pop_tmpl_path());
+        string last;
+        pop_tmpl_path(last);
+        tmp.push(last);
       }
     }
+    while (tmp.size() > 0) {
+      new_path_comps.push(tmp.back());
+      tmp.pop();
+    }
+    new_path_comps /= path_comps;
+    pcomps = &new_path_comps;
   }
   do {
     /* cases for template path:
@@ -2089,7 +2073,7 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
     // first scan up to "full path - 1"
     bool valid = true;
     for (size_t i = 0; i < (pcomps->size() - 1); i++) {
-      if ((*pcomps)[i] == "") {
+      if ((*pcomps)[i][0] == 0) {
         // only the last component is potentially allowed to be empty str
         valid = false;
         break;
@@ -2104,7 +2088,8 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
            *       pop it.
            */
           pop_tmpl_path();
-          if (!validate_val(0, (*pcomps)[i])) {
+          tr1::shared_ptr<Ctemplate> ttmpl(tmpl_parse());
+          if (!validate_val(ttmpl, (*pcomps)[i])) {
             // invalid value
             error = "Value validation failed";
             valid = false;
@@ -2133,19 +2118,19 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
      * we haven't done anything yet.
      */
     if (pcomps->size() > 1) {
-      auto_ptr<Ctemplate> ttmpl(tmpl_parse());
+      tr1::shared_ptr<Ctemplate> ttmpl(tmpl_parse());
       if (ttmpl.get()) {
         if (ttmpl->isTag() || ttmpl->isMulti() || !ttmpl->isTypeless()) {
           // case (2). last component is "value".
           if (validate_vals) {
             // validate value
-            if (!validate_val(ttmpl.get(), (*pcomps)[pcomps->size() - 1])) {
+            if (!validate_val(ttmpl, (*pcomps)[pcomps->size() - 1])) {
               // invalid value
               error = "Value validation failed";
               break;
             }
           }
-          rtmpl = ttmpl.release();
+          rtmpl = ttmpl;
           rtmpl->setIsValue(true);
           break;
         }
@@ -2153,7 +2138,7 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
       // if no valid template or not a value, it's not case (2) so continue.
     }
     // now check last component
-    if ((*pcomps)[pcomps->size() - 1] == "") {
+    if ((*pcomps)[pcomps->size() - 1][0] == 0) {
       // only value is potentially allowed to be empty str
       break;
     }
@@ -2161,8 +2146,9 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
     // no need to push cfg path (only needed for validate_val())
     if (tmpl_node_exists()) {
       // case (1). last component is "node".
-      if (!(rtmpl = tmpl_parse())) {
-        exit_internal("failed to parse tmpl [%s]\n",
+      rtmpl.reset(tmpl_parse());
+      if (!rtmpl.get()) {
+        exit_internal("get_parsed_tmpl: failed to parse tmpl [%s]\n",
                       tmpl_path_to_str().c_str());
       }
       rtmpl->setIsValue(false);
@@ -2170,10 +2156,10 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
     }
     // case (3) (fall through)
   } while (0);
-  if (validate_vals) {
-    RESTORE_PATHS;
-  } else {
-    restore_paths(not_validating);
+
+  if (do_caching && rtmpl.get()) {
+    // only cache if we got a valid template
+    _tmpl_cache[path_comps] = rtmpl;
   }
   return rtmpl;
 }
@@ -2182,14 +2168,15 @@ Cstore::get_parsed_tmpl(const vector<string>& path_comps, bool validate_vals,
  * "deactivate" operation.
  * return parsed template if valid. otherwise return 0.
  */
-Ctemplate *
-Cstore::validate_act_deact(const vector<string>& path_comps, const string& op)
+tr1::shared_ptr<Ctemplate>
+Cstore::validate_act_deact(const Cpath& path_comps, const char *op)
 {
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, false, terr));
+  tr1::shared_ptr<Ctemplate> none;
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
-    return 0;
+    return none;
   }
   {
     /* XXX this is a temporary workaround for bug 5708, which should be
@@ -2198,76 +2185,72 @@ Cstore::validate_act_deact(const vector<string>& path_comps, const string& op)
      *     this workaround should be removed and the bug fixed properly.
      */
     if (!def->isTag() && !def->isTypeless()) {
-      output_user("Cannot %s a leaf configuration node\n", op.c_str());
-      return 0;
+      output_user("Cannot %s a leaf configuration node\n", op);
+      return none;
     }
   }
   if (def->isLeafValue()) {
     /* last component is a value of a single- or multi-value node (i.e.,
      * a leaf value) => not allowed
      */
-    output_user("Cannot %s a leaf configuration value\n", op.c_str());
-    return 0;
+    output_user("Cannot %s a leaf configuration value\n", op);
+    return none;
   }
   if (!cfg_path_exists(path_comps, false, true)) {
     output_user("Nothing to %s (the specified %s does not exist)\n",
-                op.c_str(),
-                (!def->isValue() || def->isTag()) ? "node" : "value");
-    return 0;
+                op, (!def->isValue() || def->isTag()) ? "node" : "value");
+    return none;
   }
-  return def.release();
+  return def;
 }
 
 /* check if specified args is valid for "rename" or "copy" operation.
  * return true if valid. otherwise return false.
  */
 bool
-Cstore::validate_rename_copy(const vector<string>& args, const string& op)
+Cstore::validate_rename_copy(const Cpath& args, const char *op)
 {
-  if (args.size() != 5 || args[2] != "to") {
-    output_user("Invalid %s command\n", op.c_str());
+  if (args.size() != 5 || strcmp(args[2], "to") != 0) {
+    output_user("Invalid %s command\n", op);
     return false;
   }
-  string otagnode = args[0];
-  string otagval = args[1];
-  string ntagnode = args[3];
-  string ntagval = args[4];
-  if (otagnode != ntagnode) {
-    output_user("Cannot %s from \"%s\" to \"%s\"\n",
-                op.c_str(), otagnode.c_str(), ntagnode.c_str());
+  const char *otagnode = args[0];
+  const char *otagval = args[1];
+  const char *ntagnode = args[3];
+  const char *ntagval = args[4];
+  if (strcmp(otagnode, ntagnode) != 0) {
+    output_user("Cannot %s from \"%s\" to \"%s\"\n", op, otagnode, ntagnode);
     return false;
   }
 
   // check the old path
-  vector<string> ppath;
-  ppath.push_back(otagnode);
-  ppath.push_back(otagval);
+  Cpath ppath;
+  ppath.push(otagnode);
+  ppath.push(otagval);
   string terr;
-  auto_ptr<Ctemplate> def(get_parsed_tmpl(ppath, false, terr));
+  tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(ppath, false, terr));
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
   }
   if (!def->isTagValue()) {
     // can only rename "tagnode tagvalue"
-    output_user("Cannot %s under \"%s\"\n", op.c_str(), otagnode.c_str());
+    output_user("Cannot %s under \"%s\"\n", op, otagnode);
     return false;
   }
   if (!cfg_path_exists(ppath, false, true)) {
-    output_user("Configuration \"%s %s\" does not exist\n",
-                otagnode.c_str(), otagval.c_str());
+    output_user("Configuration \"%s %s\" does not exist\n", otagnode, otagval);
     return false;
   }
 
   // check the new path
-  ppath.pop_back();
-  ppath.push_back(ntagval);
+  ppath.pop();
+  ppath.push(ntagval);
   if (cfg_path_exists(ppath, false, true)) {
-    output_user("Configuration \"%s %s\" already exists\n",
-                ntagnode.c_str(), ntagval.c_str());
+    output_user("Configuration \"%s %s\" already exists\n", ntagnode, ntagval);
     return false;
   }
-  def.reset(get_parsed_tmpl(ppath, true, terr));
+  def = get_parsed_tmpl(ppath, true, terr);
   if (!def.get()) {
     output_user("%s\n", terr.c_str());
     return false;
@@ -2277,9 +2260,8 @@ Cstore::validate_rename_copy(const vector<string>& args, const string& op)
 
 // convert args for "move" to be used for equivalent "rename" operation
 bool
-Cstore::conv_move_args_for_rename(const vector<string>& args,
-                                  vector<string>& edit_path_comps,
-                                  vector<string>& rn_args)
+Cstore::conv_move_args_for_rename(const Cpath& args, Cpath& edit_path_comps,
+                                  Cpath& rn_args)
 {
   /* note:
    *   "move interfaces ethernet eth2 vif 100 to 200"
@@ -2294,13 +2276,13 @@ Cstore::conv_move_args_for_rename(const vector<string>& args,
     return false;
   }
   for (size_t i = 0; i < (num_args - 4); i++) {
-    edit_path_comps.push_back(args[i]);
+    edit_path_comps.push(args[i]);
   }
-  rn_args.push_back(args[num_args - 4]); // vif
-  rn_args.push_back(args[num_args - 3]); // 100
-  rn_args.push_back(args[num_args - 2]); // to
-  rn_args.push_back(args[num_args - 4]); // vif
-  rn_args.push_back(args[num_args - 1]); // 200
+  rn_args.push(args[num_args - 4]); // vif
+  rn_args.push(args[num_args - 3]); // 100
+  rn_args.push(args[num_args - 2]); // to
+  rn_args.push(args[num_args - 4]); // vif
+  rn_args.push(args[num_args - 1]); // 200
   return true;
 }
 
@@ -2310,19 +2292,21 @@ Cstore::conv_move_args_for_rename(const vector<string>& args,
  * return true if it exists. otherwise return false.
  */
 bool
-Cstore::cfg_path_exists(const vector<string>& path_comps,
-                        bool active_cfg, bool include_deactivated)
+Cstore::cfg_path_exists(const Cpath& path_comps, bool active_cfg,
+                        bool include_deactivated)
 {
-  SAVE_PATHS;
-  append_cfg_path(path_comps);
-  // first check if it's a "node".
-  bool ret = cfg_node_exists(active_cfg);
-  if (!ret) {
-    // doesn't exist as a node. maybe a value?
-    pop_cfg_path();
-    ret = cfg_value_exists(path_comps[path_comps.size() - 1], active_cfg);
+  bool ret = false;
+  {
+    auto_ptr<SavePaths> save(create_save_paths());
+    append_cfg_path(path_comps);
+    // first check if it's a "node".
+    ret = cfg_node_exists(active_cfg);
+    if (!ret) {
+      // doesn't exist as a node. maybe a value?
+      pop_cfg_path();
+      ret = cfg_value_exists(path_comps[path_comps.size() - 1], active_cfg);
+    }
   }
-  RESTORE_PATHS;
   if (ret && !include_deactivated
       && cfgPathDeactivated(path_comps, active_cfg)) {
     // don't include deactivated
@@ -2337,25 +2321,24 @@ Cstore::cfg_path_exists(const vector<string>& path_comps,
  * note: assume specified path is valid (i.e., validateSetPath()).
  */
 bool
-Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
+Cstore::set_cfg_path(const Cpath& path_comps, bool output)
 {
-  vector<string> ppath;
-  auto_ptr<Ctemplate> def;
+  Cpath ppath;
+  tr1::shared_ptr<Ctemplate> def;
   bool ret = true;
   bool path_exists = true;
   // do the set from the top down
-  SAVE_PATHS;
   for (size_t i = 0; i < path_comps.size(); i++) {
     // partial path
-    ppath.push_back(path_comps[i]);
+    ppath.push(path_comps[i]);
 
     // get template at this level
-    def.reset(get_parsed_tmpl(ppath, false));
+    def = get_parsed_tmpl(ppath, false);
     if (!def.get()) {
       output_internal("paths[%s,%s]\n", cfg_path_to_str().c_str(),
                       tmpl_path_to_str().c_str());
       for (size_t i = 0; i < ppath.size(); i++) {
-        output_internal("  [%s]\n", ppath[i].c_str());
+        output_internal("  [%s]\n", ppath[i]);
       }
       exit_internal("failed to get tmpl during set. not validate first?\n");
     }
@@ -2364,6 +2347,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
     if (cfg_path_exists(ppath, false, true)) {
       continue;
     }
+
+    // paths have not been changed up to this point. now save them.
+    auto_ptr<SavePaths> save(create_save_paths());
+
     path_exists = false;
 
     // this level not in working. set it.
@@ -2372,14 +2359,19 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
 
     if (!def->isValue()) {
       // this level is a "node"
-      if (!add_node() || !create_default_children()) {
+      if (!add_node()) {
+        ret = false;
+        break;
+      }
+      if (!def->isTag() && !create_default_children(ppath)) {
+        // failed to create default child nodes for a typeless node
         ret = false;
         break;
       }
     } else if (def->isTag()) {
       // this level is a "tag value".
       // add the tag, taking the max tag limit into consideration.
-      if (!add_tag(def->getTagLimit()) || !create_default_children()) {
+      if (!add_tag(def->getTagLimit()) || !create_default_children(ppath)) {
         ret = false;
         break;
       }
@@ -2406,11 +2398,10 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
       ret = false;
       break;
     }
-    RESTORE_PATHS;
   }
-  RESTORE_PATHS; // if "break" was hit
 
   if (ret && def->isValue() && def->getDefault()) {
+    auto_ptr<SavePaths> save(create_save_paths());
     /* a node with default has been explicitly set. needs to be marked
      * as non-default for display purposes.
      *
@@ -2450,7 +2441,6 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
         ret = mark_changed_with_ancestors();
       }
     }
-    RESTORE_PATHS;
   }
   if (path_exists) {
     // whole path already exists
@@ -2471,7 +2461,7 @@ Cstore::set_cfg_path(const vector<string>& path_comps, bool output)
  * note: this function is NOT "deactivate-aware".
  */
 void
-Cstore::get_child_nodes_status(const vector<string>& path_comps,
+Cstore::get_child_nodes_status(const Cpath& path_comps,
                                Cstore::MapT<string, string>& cmap,
                                vector<string> *sorted_keys)
 {
@@ -2489,11 +2479,11 @@ Cstore::get_child_nodes_status(const vector<string>& path_comps,
   }
 
   // get the status of each one
-  vector<string> ppath = path_comps;
+  Cpath ppath(path_comps);
   MapT<string, bool>::iterator it = umap.begin();
   for (; it != umap.end(); ++it) {
     string c = (*it).first;
-    ppath.push_back(c);
+    ppath.push(c);
     if (sorted_keys) {
       sorted_keys->push_back(c);
     }
@@ -2507,7 +2497,7 @@ Cstore::get_child_nodes_status(const vector<string>& path_comps,
     } else {
       cmap[c] = C_NODE_STATUS_STATIC;
     }
-    ppath.pop_back();
+    ppath.pop();
   }
   if (sorted_keys) {
     sort_nodes(*sorted_keys);
@@ -2521,7 +2511,7 @@ Cstore::get_child_nodes_status(const vector<string>& path_comps,
  * note: this follows the original perl API listNodeStatus() implementation.
  */
 void
-Cstore::get_child_nodes_status_da(const vector<string>& path_comps,
+Cstore::get_child_nodes_status_da(const Cpath& path_comps,
                                   Cstore::MapT<string, string>& cmap,
                                   vector<string> *sorted_keys)
 {
@@ -2538,9 +2528,9 @@ Cstore::get_child_nodes_status_da(const vector<string>& path_comps,
   // get all nodes in working config
   vector<string> work_nodes;
   cfgPathGetChildNodesDA(path_comps, work_nodes, false);
-  vector<string> ppath = path_comps;
+  Cpath ppath(path_comps);
   for (size_t i = 0; i < work_nodes.size(); i++) {
-    ppath.push_back(work_nodes[i]);
+    ppath.push(work_nodes[i]);
     if (sorted_keys) {
       sorted_keys->push_back(work_nodes[i]);
     }
@@ -2561,17 +2551,16 @@ Cstore::get_child_nodes_status_da(const vector<string>& path_comps,
         && cfg_path_exists(ppath, false, true)) {
       cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
     } else {
-      SAVE_PATHS;
+      auto_ptr<SavePaths> save(create_save_paths());
       append_cfg_path(ppath);
       if (cfg_node_changed()) {
         cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
       } else {
         cmap[work_nodes[i]] = C_NODE_STATUS_STATIC;
       }
-      RESTORE_PATHS;
     }
 
-    ppath.pop_back();
+    ppath.pop();
   }
   if (sorted_keys) {
     sort_nodes(*sorted_keys);
@@ -2592,7 +2581,8 @@ Cstore::remove_tag()
 
   // go up one level and check if that was the last tag
   bool ret = true;
-  string c = pop_cfg_path();
+  string c;
+  pop_cfg_path(c);
   vector<string> cnodes;
   // get child nodes, including deactivated ones.
   get_all_child_node_names(cnodes, false, true);
@@ -2602,7 +2592,7 @@ Cstore::remove_tag()
       ret = false;
     }
   }
-  push_cfg_path(c);
+  push_cfg_path(c.c_str());
   return ret;
 }
 
@@ -2656,33 +2646,21 @@ Cstore::cfg_value_exists(const string& value, bool active_cfg)
 }
 
 /* validate value at current template path.
- *   def: pointer to parsed template. NULL if none.
+ *   def: pointer to parsed template.
  *   val: value to be validated.
  * return true if valid. otherwise return false.
  * note: current template and cfg paths both point to the node,
  *       not the value.
  */
 bool
-Cstore::validate_val(const Ctemplate *def, const string& value)
+Cstore::validate_val(const tr1::shared_ptr<Ctemplate>& def, const char *value)
 {
-  auto_ptr<Ctemplate> ndef;
-  if (!def) {
-    ndef.reset(tmpl_parse());
-    if (!(def = ndef.get())) {
-      exit_internal("failed to parse tmpl [%s]\n", tmpl_path_to_str().c_str());
-    }
-    if (def->isTypeless()) {
-      // not a value node
-      exit_internal("validating non-value node [%s]\n",
-                    tmpl_path_to_str().c_str());
-    }
+  if (!def.get()) {
+    exit_internal("validate_val: no tmpl [%s]\n", tmpl_path_to_str().c_str());
   }
 
   // validate_value() may change "value". make a copy first.
-  size_t vlen = value.size();
-  char *vbuf = (char *) malloc(vlen + 1);
-  strncpy(vbuf, value.c_str(), vlen + 1);
-  vbuf[vlen] = 0;
+  char *vbuf = strdup(value);
   bool ret = validate_val_impl(def, vbuf);
   free(vbuf);
   return ret;
@@ -2696,7 +2674,8 @@ Cstore::validate_val(const Ctemplate *def, const string& value)
 bool
 Cstore::add_tag(unsigned int tlimit)
 {
-  string t = pop_cfg_path();
+  string t;
+  pop_cfg_path(t);
   vector<string> cnodes;
   // get child nodes, excluding deactivated ones.
   get_all_child_node_names(cnodes, false, false);
@@ -2717,7 +2696,7 @@ Cstore::add_tag(unsigned int tlimit)
     // neither of the above. just add the tag.
     ret = add_child_node(t);
   } while (0);
-  push_cfg_path(t);
+  push_cfg_path(t.c_str());
   return ret;
 }
 
@@ -2770,7 +2749,7 @@ Cstore::get_all_child_node_names(vector<string>& cnodes, bool active_cfg,
   get_all_child_node_names_impl(nodes, active_cfg);
   for (size_t i = 0; i < nodes.size(); i++) {
     if (!include_deactivated) {
-      push_cfg_path(nodes[i]);
+      push_cfg_path(nodes[i].c_str());
       bool skip = marked_deactivated(active_cfg);
       pop_cfg_path();
       if (skip) {
@@ -2782,31 +2761,36 @@ Cstore::get_all_child_node_names(vector<string>& cnodes, bool active_cfg,
 }
 
 /* create all child nodes of current work path that have default values
+ *   path_comps: path components. MUST match the work path and is only
+ *               needed for the get_parsed_tmpl() call.
  * return true if successful. otherwise return false.
  * note: assume current work path has just been created so no child
  *       nodes exist.
  */
 bool
-Cstore::create_default_children()
+Cstore::create_default_children(const Cpath& path_comps)
 {
   vector<string> tcnodes;
   get_all_tmpl_child_node_names(tcnodes);
+
   bool ret = true;
+  Cpath pcomps(path_comps);
+  // need to save/reset/restore paths for get_parsed_tmpl()
+  auto_ptr<SavePaths> save(create_save_paths());
+  reset_paths();
   for (size_t i = 0; i < tcnodes.size(); i++) {
-    push_tmpl_path(tcnodes[i]);
-    if (tmpl_node_exists()) {
-      auto_ptr<Ctemplate> def(tmpl_parse());
-      if (def.get() && def->getDefault()) {
-        // has default value. set it.
-        push_cfg_path(tcnodes[i]);
-        if (!add_node() || !write_value(def->getDefault())
-            || !mark_display_default()) {
-          ret = false;
-        }
-        pop_cfg_path();
+    pcomps.push(tcnodes[i]);
+    tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(pcomps, false));
+    if (def.get() && def->getDefault()) {
+      // has default value. set it.
+      append_cfg_path(pcomps);
+      if (!add_node() || !write_value(def->getDefault())
+          || !mark_display_default()) {
+        ret = false;
       }
+      reset_paths();
     }
-    pop_tmpl_path();
+    pcomps.pop();
     if (!ret) {
       break;
     }
@@ -2820,7 +2804,7 @@ Cstore::create_default_children()
 void
 Cstore::get_edit_env(string& env)
 {
-  vector<string> lvec;
+  Cpath lvec;
   get_edit_level(lvec);
   string lvl;
   for (size_t i = 0; i < lvec.size(); i++) {
@@ -2860,15 +2844,15 @@ Cstore::shell_escape_squotes(string& str)
 
 // print a vector of strings
 void
-Cstore::print_str_vec(const char *pre, const char *post,
-                      const vector<string>& vec, const char *quote)
+Cstore::print_path_vec(const char *pre, const char *post,
+                       const Cpath& pvec, const char *quote)
 {
   output_user("%s", pre);
-  for (size_t i = 0; i < vec.size(); i++) {
+  for (size_t i = 0; i < pvec.size(); i++) {
     if (i > 0) {
       output_user(" ");
     }
-    output_user("%s%s%s", quote, vec[i].c_str(), quote);
+    output_user("%s%s%s", quote, pvec[i], quote);
   }
   output_user("%s", post);
 }
@@ -2930,4 +2914,6 @@ Cstore::vexit_internal(const char *fmt, va_list alist)
     exit(1);
   }
 }
+
+} // end namespace cstore
 

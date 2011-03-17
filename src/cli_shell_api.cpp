@@ -63,7 +63,7 @@ int op_show_commands = 0;
 char *op_show_cfg1 = NULL;
 char *op_show_cfg2 = NULL;
 
-typedef void (*OpFuncT)(Cstore& cstore, const vector<string>& args);
+typedef void (*OpFuncT)(Cstore& cstore, const Cpath& args);
 
 typedef struct {
   const char *op_name;
@@ -77,7 +77,7 @@ typedef struct {
 
 /* outputs an environment string to be "eval"ed */
 static void
-getSessionEnv(Cstore& cstore, const vector<string>& args)
+getSessionEnv(Cstore& cstore, const Cpath& args)
 {
   // need a "session-specific" cstore so ignore the default one
   string env;
@@ -88,7 +88,7 @@ getSessionEnv(Cstore& cstore, const vector<string>& args)
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditEnv(Cstore& cstore, const vector<string>& args)
+getEditEnv(Cstore& cstore, const Cpath& args)
 {
   string env;
   if (!cstore.getEditEnv(args, env)) {
@@ -99,7 +99,7 @@ getEditEnv(Cstore& cstore, const vector<string>& args)
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditUpEnv(Cstore& cstore, const vector<string>& args)
+getEditUpEnv(Cstore& cstore, const Cpath& args)
 {
   string env;
   if (!cstore.getEditUpEnv(env)) {
@@ -110,7 +110,7 @@ getEditUpEnv(Cstore& cstore, const vector<string>& args)
 
 /* outputs an environment string to be "eval"ed */
 static void
-getEditResetEnv(Cstore& cstore, const vector<string>& args)
+getEditResetEnv(Cstore& cstore, const Cpath& args)
 {
   string env;
   if (!cstore.getEditResetEnv(env)) {
@@ -120,14 +120,14 @@ getEditResetEnv(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-editLevelAtRoot(Cstore& cstore, const vector<string>& args)
+editLevelAtRoot(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.editLevelAtRoot() ? 0 : 1);
 }
 
 /* outputs an environment string to be "eval"ed */
 static void
-getCompletionEnv(Cstore& cstore, const vector<string>& args)
+getCompletionEnv(Cstore& cstore, const Cpath& args)
 {
   string env;
   if (!cstore.getCompletionEnv(args, env)) {
@@ -138,15 +138,19 @@ getCompletionEnv(Cstore& cstore, const vector<string>& args)
 
 /* outputs a string */
 static void
-getEditLevelStr(Cstore& cstore, const vector<string>& args)
+getEditLevelStr(Cstore& cstore, const Cpath& args)
 {
-  vector<string> lvec;
+  Cpath lvec;
   cstore.getEditLevel(lvec);
-  print_vec(lvec, " ", "");
+  vector<string> vec;
+  for (size_t i = 0; i < lvec.size(); i++) {
+    vec.push_back(lvec[i]);
+  }
+  print_vec(vec, " ", "");
 }
 
 static void
-markSessionUnsaved(Cstore& cstore, const vector<string>& args)
+markSessionUnsaved(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.markSessionUnsaved()) {
     exit(1);
@@ -154,7 +158,7 @@ markSessionUnsaved(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-unmarkSessionUnsaved(Cstore& cstore, const vector<string>& args)
+unmarkSessionUnsaved(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.unmarkSessionUnsaved()) {
     exit(1);
@@ -162,7 +166,7 @@ unmarkSessionUnsaved(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-sessionUnsaved(Cstore& cstore, const vector<string>& args)
+sessionUnsaved(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.sessionUnsaved()) {
     exit(1);
@@ -170,7 +174,7 @@ sessionUnsaved(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-sessionChanged(Cstore& cstore, const vector<string>& args)
+sessionChanged(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.sessionChanged()) {
     exit(1);
@@ -178,7 +182,7 @@ sessionChanged(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-teardownSession(Cstore& cstore, const vector<string>& args)
+teardownSession(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.teardownSession()) {
     exit(1);
@@ -186,7 +190,7 @@ teardownSession(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-setupSession(Cstore& cstore, const vector<string>& args)
+setupSession(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.setupSession()) {
     exit(1);
@@ -194,7 +198,7 @@ setupSession(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-inSession(Cstore& cstore, const vector<string>& args)
+inSession(Cstore& cstore, const Cpath& args)
 {
   if (!cstore.inSession()) {
     exit(1);
@@ -203,21 +207,21 @@ inSession(Cstore& cstore, const vector<string>& args)
 
 /* same as exists() in Perl API */
 static void
-exists(Cstore& cstore, const vector<string>& args)
+exists(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.cfgPathExists(args, false) ? 0 : 1);
 }
 
 /* same as existsOrig() in Perl API */
 static void
-existsActive(Cstore& cstore, const vector<string>& args)
+existsActive(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.cfgPathExists(args, true) ? 0 : 1);
 }
 
 /* same as isEffective() in Perl API */
 static void
-existsEffective(Cstore& cstore, const vector<string>& args)
+existsEffective(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.cfgPathEffective(args) ? 0 : 1);
 }
@@ -235,7 +239,7 @@ existsEffective(Cstore& cstore, const vector<string>& args)
  *   eval "nodes=($(cli-shell-api listNodes interfaces))"
  */
 static void
-listNodes(Cstore& cstore, const vector<string>& args)
+listNodes(Cstore& cstore, const Cpath& args)
 {
   vector<string> cnodes;
   cstore.cfgPathGetChildNodes(args, cnodes, false);
@@ -248,7 +252,7 @@ listNodes(Cstore& cstore, const vector<string>& args)
  * "eval"ed into an array of nodes. see listNodes above.
  */
 static void
-listActiveNodes(Cstore& cstore, const vector<string>& args)
+listActiveNodes(Cstore& cstore, const Cpath& args)
 {
   vector<string> cnodes;
   cstore.cfgPathGetChildNodes(args, cnodes, true);
@@ -261,7 +265,7 @@ listActiveNodes(Cstore& cstore, const vector<string>& args)
  * "eval"ed into an array of nodes. see listNodes above.
  */
 static void
-listEffectiveNodes(Cstore& cstore, const vector<string>& args)
+listEffectiveNodes(Cstore& cstore, const Cpath& args)
 {
   vector<string> cnodes;
   cstore.cfgPathGetEffectiveChildNodes(args, cnodes);
@@ -270,7 +274,7 @@ listEffectiveNodes(Cstore& cstore, const vector<string>& args)
 
 /* same as returnValue() in Perl API. outputs a string. */
 static void
-returnValue(Cstore& cstore, const vector<string>& args)
+returnValue(Cstore& cstore, const Cpath& args)
 {
   string val;
   if (!cstore.cfgPathGetValue(args, val, false)) {
@@ -281,7 +285,7 @@ returnValue(Cstore& cstore, const vector<string>& args)
 
 /* same as returnOrigValue() in Perl API. outputs a string. */
 static void
-returnActiveValue(Cstore& cstore, const vector<string>& args)
+returnActiveValue(Cstore& cstore, const Cpath& args)
 {
   string val;
   if (!cstore.cfgPathGetValue(args, val, true)) {
@@ -292,7 +296,7 @@ returnActiveValue(Cstore& cstore, const vector<string>& args)
 
 /* same as returnEffectiveValue() in Perl API. outputs a string. */
 static void
-returnEffectiveValue(Cstore& cstore, const vector<string>& args)
+returnEffectiveValue(Cstore& cstore, const Cpath& args)
 {
   string val;
   if (!cstore.cfgPathGetEffectiveValue(args, val)) {
@@ -322,7 +326,7 @@ returnEffectiveValue(Cstore& cstore, const vector<string>& args)
  * failure would result in an empty array after the eval.
  */
 static void
-returnValues(Cstore& cstore, const vector<string>& args)
+returnValues(Cstore& cstore, const Cpath& args)
 {
   vector<string> vvec;
   if (!cstore.cfgPathGetValues(args, vvec, false)) {
@@ -337,7 +341,7 @@ returnValues(Cstore& cstore, const vector<string>& args)
  * "eval"ed into an array of values. see returnValues above.
  */
 static void
-returnActiveValues(Cstore& cstore, const vector<string>& args)
+returnActiveValues(Cstore& cstore, const Cpath& args)
 {
   vector<string> vvec;
   if (!cstore.cfgPathGetValues(args, vvec, true)) {
@@ -352,7 +356,7 @@ returnActiveValues(Cstore& cstore, const vector<string>& args)
  * "eval"ed into an array of values. see returnValues above.
  */
 static void
-returnEffectiveValues(Cstore& cstore, const vector<string>& args)
+returnEffectiveValues(Cstore& cstore, const Cpath& args)
 {
   vector<string> vvec;
   if (!cstore.cfgPathGetEffectiveValues(args, vvec)) {
@@ -365,24 +369,31 @@ returnEffectiveValues(Cstore& cstore, const vector<string>& args)
  * the validity of any "tag values" along the path.
  */
 static void
-validateTmplPath(Cstore& cstore, const vector<string>& args)
+validateTmplPath(Cstore& cstore, const Cpath& args)
 {
-  exit(cstore.validateTmplPath(args, false) ? 0 : 1);
+  printf("validate:");
+  Cpath p;
+  for (size_t i = 0; i < args.size(); i++) {
+    p.push(args[i]);
+    printf(" [%s]", p[i]);
+  }
+  printf("\n");
+  exit(cstore.validateTmplPath(p, false) ? 0 : 1);
 }
 
 /* checks if specified path is a valid "template path", *including* the
  * validity of any "tag values" along the path.
  */
 static void
-validateTmplValPath(Cstore& cstore, const vector<string>& args)
+validateTmplValPath(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.validateTmplPath(args, true) ? 0 : 1);
 }
 
 static void
-showCfg(Cstore& cstore, const vector<string>& args)
+showCfg(Cstore& cstore, const Cpath& args)
 {
-  vector<string> nargs(args);
+  Cpath nargs(args);
   bool active_only = (!cstore.inSession() || op_show_active_only);
   bool working_only = (cstore.inSession() && op_show_working_only);
   cnode::CfgNode aroot(cstore, nargs, true, true);
@@ -396,7 +407,7 @@ showCfg(Cstore& cstore, const vector<string>& args)
       // just show the working config (no diff)
       cnode::show_cfg(wroot, op_show_show_defaults, op_show_hide_secrets);
     } else {
-      vector<string> cur_path;
+      Cpath cur_path;
       cstore.getEditLevel(cur_path);
       cnode::show_cfg_diff(aroot, wroot, cur_path, op_show_show_defaults,
                            op_show_hide_secrets, op_show_context_diff);
@@ -434,7 +445,7 @@ showCfg(Cstore& cstore, const vector<string>& args)
  * both "args" and "edit level" are ignored.
  */
 static void
-showConfig(Cstore& cstore, const vector<string>& args)
+showConfig(Cstore& cstore, const Cpath& args)
 {
   string cfg1 = cnode::ACTIVE_CFG;
   string cfg2 = cnode::WORKING_CFG;
@@ -456,9 +467,9 @@ showConfig(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-loadFile(Cstore& cstore, const vector<string>& args)
+loadFile(Cstore& cstore, const Cpath& args)
 {
-  if (!cstore.loadFile(args[0].c_str())) {
+  if (!cstore.loadFile(args[0])) {
     // loadFile failed
     exit(1);
   }
@@ -582,10 +593,7 @@ main(int argc, char **argv)
     exit(1);
   }
 
-  vector<string> args;
-  for (int i = 0; i < nargs; i++) {
-    args.push_back(nargv[i]);
-  }
+  Cpath args(const_cast<const char **>(nargv), nargs);
 
   // call the op function
   Cstore *cstore = Cstore::createCstore(OP_use_edit);

@@ -80,7 +80,7 @@ static const bool op_need_cfg_node_args[] = {
 #define OP_need_cfg_node_args op_need_cfg_node_args[op_idx]
 
 static void
-doSet(Cstore& cstore, const vector<string>& path_comps)
+doSet(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateSetPath(path_comps)) {
     bye("invalid set path\n");
@@ -91,7 +91,7 @@ doSet(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doDelete(Cstore& cstore, const vector<string>& path_comps)
+doDelete(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.deleteCfgPath(path_comps)) {
     bye("delete failed\n");
@@ -99,7 +99,7 @@ doDelete(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doActivate(Cstore& cstore, const vector<string>& path_comps)
+doActivate(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateActivatePath(path_comps)) {
     bye("%s validate failed", OP_str);
@@ -110,7 +110,7 @@ doActivate(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doDeactivate(Cstore& cstore, const vector<string>& path_comps)
+doDeactivate(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateDeactivatePath(path_comps)) {
     bye("%s validate failed", OP_str);
@@ -121,7 +121,7 @@ doDeactivate(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doRename(Cstore& cstore, const vector<string>& path_comps)
+doRename(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateRenameArgs(path_comps)) {
     bye("invalid rename args\n");
@@ -132,7 +132,7 @@ doRename(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doCopy(Cstore& cstore, const vector<string>& path_comps)
+doCopy(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateCopyArgs(path_comps)) {
     bye("invalid copy args\n");
@@ -143,7 +143,7 @@ doCopy(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doComment(Cstore& cstore, const vector<string>& path_comps)
+doComment(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.commentCfgPath(path_comps)) {
     bye("comment cfg path failed\n");
@@ -151,7 +151,7 @@ doComment(Cstore& cstore, const vector<string>& path_comps)
 }
 
 static void
-doDiscard(Cstore& cstore, const vector<string>& args)
+doDiscard(Cstore& cstore, const Cpath& args)
 {
   if (args.size() > 0) {
     OUTPUT_USER("Invalid discard command\n");
@@ -163,7 +163,7 @@ doDiscard(Cstore& cstore, const vector<string>& args)
 }
 
 static void
-doMove(Cstore& cstore, const vector<string>& path_comps)
+doMove(Cstore& cstore, const Cpath& path_comps)
 {
   if (!cstore.validateMoveArgs(path_comps)) {
     bye("invalid move args\n");
@@ -174,7 +174,7 @@ doMove(Cstore& cstore, const vector<string>& path_comps)
 }
 
 typedef void (*OpFuncT)(Cstore& cstore,
-                        const vector<string>& path_comps);
+                        const Cpath& path_comps);
 OpFuncT OpFunc[] = {
   &doSet,
   &doDelete,
@@ -214,10 +214,7 @@ main(int argc, char **argv)
 
   // actual CLI operations use the edit levels from environment, so pass true.
   Cstore *cstore = Cstore::createCstore(true);
-  vector<string> path_comps;
-  for (int i = 1; i < argc; i++) {
-    path_comps.push_back(argv[i]);
-  }
+  Cpath path_comps(const_cast<const char **>(argv + 1), argc - 1);
 
   // call the op function
   OpFunc[op_idx](*cstore, path_comps);

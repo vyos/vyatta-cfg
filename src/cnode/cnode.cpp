@@ -28,20 +28,19 @@ using namespace cnode;
 
 
 ////// constructors/destructors
-CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
-                 char *comment, int deact, Cstore *cstore,
-                 bool tag_if_invalid)
+CfgNode::CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
+                 int deact, Cstore *cstore, bool tag_if_invalid)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
     _is_invalid(false), _is_empty(true), _exists(true)
 {
   if (name && name[0]) {
     // name must be non-empty
-    path_comps.push_back(name);
+    path_comps.push(name);
   }
   if (val) {
     // value could be empty
-    path_comps.push_back(val);
+    path_comps.push(val);
   }
 
   while (1) {
@@ -50,7 +49,7 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
       break;
     }
 
-    auto_ptr<Ctemplate> def(cstore->parseTmpl(path_comps, false));
+    tr1::shared_ptr<Ctemplate> def(cstore->parseTmpl(path_comps, false));
     if (def.get()) {
       // got the def
       _is_tag = def->isTag();
@@ -106,16 +105,16 @@ CfgNode::CfgNode(vector<string>& path_comps, char *name, char *val,
     } else {
       _value = val;
     }
-    path_comps.pop_back();
+    path_comps.pop();
   }
   if (name && name[0]) {
     _name = name;
-    path_comps.pop_back();
+    path_comps.pop();
   }
 }
 
-CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
-                 bool active, bool recursive)
+CfgNode::CfgNode(Cstore& cstore, Cpath& path_comps, bool active,
+                 bool recursive)
   : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
     _is_invalid(false), _is_empty(false), _exists(true)
@@ -124,7 +123,7 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
    * "root", treat it as an intermediate node.
    */
   if (path_comps.size() > 0) {
-    auto_ptr<Ctemplate> def(cstore.parseTmpl(path_comps, false));
+    tr1::shared_ptr<Ctemplate> def(cstore.parseTmpl(path_comps, false));
     if (def.get()) {
       // got the def
       if (!cstore.cfgPathExists(path_comps, active)) {
@@ -202,10 +201,10 @@ CfgNode::CfgNode(Cstore& cstore, vector<string>& path_comps,
 
   // recurse
   for (size_t i = 0; i < cnodes.size(); i++) {
-    path_comps.push_back(cnodes[i]);
+    path_comps.push(cnodes[i]);
     CfgNode *cn = new CfgNode(cstore, path_comps, active, recursive);
     _child_nodes.push_back(cn);
-    path_comps.pop_back();
+    path_comps.pop();
   }
 }
 

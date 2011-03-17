@@ -37,9 +37,15 @@ Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)
   }
 
   _absolute = (ref_str[0] == '/');
+  vector<string> tmp;
   while (!_absolute && !_cstore->cfg_path_at_root()) {
-    _orig_path_comps.insert(_orig_path_comps.begin(),
-                            _cstore->pop_cfg_path());
+    string last;
+    _cstore->pop_cfg_path(last);
+    tmp.push_back(last);
+  }
+  while (tmp.size() > 0) {
+    _orig_path_comps.push(tmp.back());
+    tmp.pop_back();
   }
   _cstore->reset_paths();
   /* at this point, cstore paths are at root. _orig_path_comps contains
@@ -48,14 +54,14 @@ Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)
 
   size_t si = (_absolute ? 1 : 0);
   size_t sn = 0;
-  vector<string> rcomps;
+  Cpath rcomps;
   while (si < ref_str.length()
          && (sn = ref_str.find('/', si)) != ref_str.npos) {
-    rcomps.push_back(ref_str.substr(si, sn - si));
+    rcomps.push(ref_str.substr(si, sn - si));
     si = sn + 1;
   }
   if (si < ref_str.length()) {
-    rcomps.push_back(ref_str.substr(si));
+    rcomps.push(ref_str.substr(si));
   }
   // NOTE: if path ends in '/', the trailing slash is ignored.
 
@@ -63,7 +69,7 @@ Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)
   _at_string = get_at_string();
 
   // process ref
-  vector<string> pcomps = _orig_path_comps;
+  Cpath pcomps(_orig_path_comps);
   process_ref(rcomps, pcomps, ERROR_TYPE);
 }
 
@@ -77,23 +83,24 @@ Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)
  *       actual config (working or active).
  */
 void
-Cstore::VarRef::process_ref(const vector<string>& ref_comps,
-                            const vector<string>& cur_path_comps,
+Cstore::VarRef::process_ref(const Cpath& ref_comps,
+                            const Cpath& cur_path_comps,
                             vtw_type_e def_type)
 {
   if (ref_comps.size() == 0) {
     // done
-    _paths.push_back(pair<vector<string>,
-                          vtw_type_e>(cur_path_comps, def_type));
+    _paths.push_back(pair<Cpath, vtw_type_e>(cur_path_comps, def_type));
     return;
   }
 
-  vector<string> rcomps = ref_comps;
-  vector<string> pcomps = cur_path_comps;
-  string cr_comp= rcomps.front();
-  rcomps.erase(rcomps.begin());
+  Cpath rcomps;
+  Cpath pcomps(cur_path_comps);
+  string cr_comp = ref_comps[0];
+  for (size_t i = 1; i < ref_comps.size(); i++) {
+    rcomps.push(ref_comps[i]);
+  }
 
-  auto_ptr<Ctemplate> def(_cstore->parseTmpl(pcomps, false));
+  tr1::shared_ptr<Ctemplate> def(_cstore->parseTmpl(pcomps, false));
   bool got_tmpl = (def.get() != 0);
   bool handle_leaf = false;
   if (cr_comp == "@") {
@@ -106,19 +113,18 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       return;
     }
     if (pcomps.size() == _orig_path_comps.size()) {
-      if (pcomps.size() == 0
-          || equal(pcomps.begin(), pcomps.end(), _orig_path_comps.begin())) {
+      if (pcomps.size() == 0 || pcomps == _orig_path_comps) {
         /* we are at the original path. this is a self-reference, e.g.,
          * $VAR(@), so use the "at string".
          */
-        pcomps.push_back(_at_string);
+        pcomps.push(_at_string);
         process_ref(rcomps, pcomps, def->getType(1));
         return;
       }
     }
     if (pcomps.size() < _orig_path_comps.size()) {
       // within the original path. @ translates to the path comp.
-      pcomps.push_back(_orig_path_comps[pcomps.size()]);
+      pcomps.push(_orig_path_comps[pcomps.size()]);
       process_ref(rcomps, pcomps, def->getType(1));
       return;
     }
@@ -135,8 +141,8 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       // invalid path
       return;
     }
-    pcomps.pop_back();
-    def.reset(_cstore->parseTmpl(pcomps, false));
+    pcomps.pop();
+    def = _cstore->parseTmpl(pcomps, false);
     if (!def.get()) {
       // invalid tmpl path
       return;
@@ -147,7 +153,7 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
         // invalid path
         return;
       }
-      pcomps.pop_back();
+      pcomps.pop();
     }
     process_ref(rcomps, pcomps, ERROR_TYPE);
   } else if (cr_comp == "@@") {
@@ -168,9 +174,9 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       vector<string> cnodes;
       _cstore->cfgPathGetChildNodes(pcomps, cnodes, _active);
       for (size_t i = 0; i < cnodes.size(); i++) {
-        pcomps.push_back(cnodes[i]);
+        pcomps.push(cnodes[i]);
         process_ref(rcomps, pcomps, def->getType(1));
-        pcomps.pop_back();
+        pcomps.pop();
       }
     } else {
       // handle leaf node
@@ -185,9 +191,9 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
         return;
       }
       // within the original path. take the original tag value.
-      pcomps.push_back(_orig_path_comps[pcomps.size()]);
+      pcomps.push(_orig_path_comps[pcomps.size()]);
     }
-    pcomps.push_back(cr_comp);
+    pcomps.push(cr_comp);
     process_ref(rcomps, pcomps, ERROR_TYPE);
   }
 
@@ -205,9 +211,9 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
         }
         val += vals[i];
       }
-      pcomps.push_back(val);
+      pcomps.push(val);
       // treat "joined" multi-values as TEXT_TYPE
-      _paths.push_back(pair<vector<string>, vtw_type_e>(pcomps, TEXT_TYPE));
+      _paths.push_back(pair<Cpath, vtw_type_e>(pcomps, TEXT_TYPE));
       // at leaf. stop recursion.
     } else {
       // single-value node
@@ -215,9 +221,8 @@ Cstore::VarRef::process_ref(const vector<string>& ref_comps,
       if (!_cstore->cfgPathGetValue(pcomps, val, _active)) {
         return;
       }
-      pcomps.push_back(val);
-      _paths.push_back(pair<vector<string>, vtw_type_e>(pcomps,
-                                                        def->getType(1)));
+      pcomps.push(val);
+      _paths.push_back(pair<Cpath, vtw_type_e>(pcomps, def->getType(1)));
       // at leaf. stop recursion.
     }
   }
@@ -273,7 +278,7 @@ Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
 }
 
 bool
-Cstore::VarRef::getSetPath(vector<string>& path_comps)
+Cstore::VarRef::getSetPath(Cpath& path_comps)
 {
   /* XXX this function is currently unused and untested. see setVarRef()
    *     in Cstore for more information.

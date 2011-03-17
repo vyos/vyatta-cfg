@@ -28,10 +28,10 @@ using namespace std;
 
 class Ctemplate {
 public:
-  Ctemplate(tr1::shared_ptr<vtw_def> def) : _def(def) {};
+  Ctemplate(tr1::shared_ptr<vtw_def> def) : _def(def), _is_value(false) {};
   ~Ctemplate() {};
 
-  bool isValue() const { return _def->is_value; };
+  bool isValue() const { return _is_value; };
   bool isMulti() const { return _def->multi; };
   bool isTag() const { return _def->tag; };
   bool isTagNode() const { return (isTag() && !isValue()); };
@@ -90,7 +90,7 @@ public:
   unsigned int getTagLimit() const { return _def->def_tag; };
   unsigned int getMultiLimit() const { return _def->def_multi; };
 
-  void setIsValue(bool is_val) { _def->is_value = is_val; };
+  void setIsValue(bool is_val) { _is_value = is_val; };
 
   const vtw_def *getDef() const {
     /* XXX this is a hack for code that has not been converted and is still
@@ -118,6 +118,9 @@ private:
    *     handled properly.
    */
   tr1::shared_ptr<vtw_def> _def;
+  bool _is_value; /* whether the last path component is a "value". set by
+                   * the cstore in get_parsed_tmpl().
+                   */
 };
 
 } // end namespace cstore

@@ -27,10 +27,10 @@ using namespace cstore;
 
 class CfgNode {
 public:
-  CfgNode(vector<string>& path_comps, char *name, char *val, char *comment,
+  CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
           int deact, Cstore *cstore, bool tag_if_invalid = false);
-  CfgNode(Cstore& cstore, std::vector<string>& path_comps,
-          bool active = false, bool recursive = true);
+  CfgNode(Cstore& cstore, Cpath& path_comps, bool active = false,
+          bool recursive = true);
   ~CfgNode() {};
 
   bool isTag() const { return _is_tag; }
@@ -44,11 +44,11 @@ public:
   bool isEmpty() const { return _is_empty; }
   bool exists() const { return _exists; }
 
-  const std::string& getName() const { return _name; }
-  const std::string& getValue() const { return _value; }
-  const std::vector<std::string>& getValues() const { return _values; }
-  const std::string& getComment() const { return _comment; }
-  const std::vector<CfgNode *>& getChildNodes() const { return _child_nodes; }
+  const string& getName() const { return _name; }
+  const string& getValue() const { return _value; }
+  const vector<string>& getValues() const { return _values; }
+  const string& getComment() const { return _comment; }
+  const vector<CfgNode *>& getChildNodes() const { return _child_nodes; }
 
   void addMultiValue(char *val) { _values.push_back(val); }
   void addChildNode(CfgNode *cnode) {
@@ -68,11 +68,11 @@ private:
   bool _is_invalid;
   bool _is_empty;
   bool _exists;
-  std::string _name;
-  std::string _value;
-  std::vector<std::string> _values;
-  std::string _comment;
-  std::vector<CfgNode *> _child_nodes;
+  string _name;
+  string _value;
+  vector<string> _values;
+  string _comment;
+  vector<CfgNode *> _child_nodes;
 };
 
 } // namespace cnode

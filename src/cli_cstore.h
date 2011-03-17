@@ -109,8 +109,6 @@ typedef struct {
   boolean    tag;
   boolean    multi;
   vtw_list   actions[top_act];
-  int        is_value; /* this is used by the config store to indicate whether
-                        * the last path component is a "value". */
 } vtw_def;
 
 /* extern variables */

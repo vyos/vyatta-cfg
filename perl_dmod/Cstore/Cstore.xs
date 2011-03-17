@@ -31,6 +31,7 @@
 using namespace cstore;
 
 typedef SV STRVEC;
+typedef SV CPATH;
 typedef SV STRSTRMAP;
 
 MODULE = Cstore		PACKAGE = Cstore		
@@ -45,43 +46,43 @@ OUTPUT:
 
 
 bool
-Cstore::cfgPathExists(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathExists(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathExists(arg_strvec, active_cfg);
+  RETVAL = THIS->cfgPathExists(arg_cpath, active_cfg);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathDefault(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathDefault(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathDefault(arg_strvec, active_cfg);
+  RETVAL = THIS->cfgPathDefault(arg_cpath, active_cfg);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::cfgPathGetChildNodes(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetChildNodes(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetChildNodes(arg_strvec, ret_strvec, active_cfg);
+  THIS->cfgPathGetChildNodes(arg_cpath, ret_strvec, active_cfg);
 OUTPUT:
   RETVAL
 
 
 SV *
-Cstore::cfgPathGetValue(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetValue(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   string value;
-  if (THIS->cfgPathGetValue(arg_strvec, value, active_cfg)) {
+  if (THIS->cfgPathGetValue(arg_cpath, value, active_cfg)) {
     RETVAL = newSVpv(value.c_str(), 0);
   } else {
     XSRETURN_UNDEF;
@@ -91,44 +92,44 @@ OUTPUT:
 
 
 STRVEC *
-Cstore::cfgPathGetValues(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetValues(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetValues(arg_strvec, ret_strvec, active_cfg);
+  THIS->cfgPathGetValues(arg_cpath, ret_strvec, active_cfg);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathEffective(STRVEC *vref)
+Cstore::cfgPathEffective(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathEffective(arg_strvec);
+  RETVAL = THIS->cfgPathEffective(arg_cpath);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::cfgPathGetEffectiveChildNodes(STRVEC *vref)
+Cstore::cfgPathGetEffectiveChildNodes(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetEffectiveChildNodes(arg_strvec, ret_strvec);
+  THIS->cfgPathGetEffectiveChildNodes(arg_cpath, ret_strvec);
 OUTPUT:
   RETVAL
 
 
 SV *
-Cstore::cfgPathGetEffectiveValue(STRVEC *vref)
+Cstore::cfgPathGetEffectiveValue(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   string value;
-  if (THIS->cfgPathGetEffectiveValue(arg_strvec, value)) {
+  if (THIS->cfgPathGetEffectiveValue(arg_cpath, value)) {
     RETVAL = newSVpv(value.c_str(), 0);
   } else {
     XSRETURN_UNDEF;
@@ -138,97 +139,97 @@ OUTPUT:
 
 
 STRVEC *
-Cstore::cfgPathGetEffectiveValues(STRVEC *vref)
+Cstore::cfgPathGetEffectiveValues(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetEffectiveValues(arg_strvec, ret_strvec);
+  THIS->cfgPathGetEffectiveValues(arg_cpath, ret_strvec);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathDeleted(STRVEC *vref)
+Cstore::cfgPathDeleted(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathDeleted(arg_strvec);
+  RETVAL = THIS->cfgPathDeleted(arg_cpath);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathAdded(STRVEC *vref)
+Cstore::cfgPathAdded(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathAdded(arg_strvec);
+  RETVAL = THIS->cfgPathAdded(arg_cpath);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathChanged(STRVEC *vref)
+Cstore::cfgPathChanged(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathChanged(arg_strvec);
+  RETVAL = THIS->cfgPathChanged(arg_cpath);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::cfgPathGetDeletedChildNodes(STRVEC *vref)
+Cstore::cfgPathGetDeletedChildNodes(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetDeletedChildNodes(arg_strvec, ret_strvec);
+  THIS->cfgPathGetDeletedChildNodes(arg_cpath, ret_strvec);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::cfgPathGetDeletedValues(STRVEC *vref)
+Cstore::cfgPathGetDeletedValues(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetDeletedValues(arg_strvec, ret_strvec);
+  THIS->cfgPathGetDeletedValues(arg_cpath, ret_strvec);
 OUTPUT:
   RETVAL
 
 
 STRSTRMAP *
-Cstore::cfgPathGetChildNodesStatus(STRVEC *vref)
+Cstore::cfgPathGetChildNodesStatus(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   Cstore::MapT<string, string> ret_strstrmap;
-  THIS->cfgPathGetChildNodesStatus(arg_strvec, ret_strstrmap);
+  THIS->cfgPathGetChildNodesStatus(arg_cpath, ret_strstrmap);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::cfgPathGetValuesDA(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetValuesDA(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetValuesDA(arg_strvec, ret_strvec, active_cfg);
+  THIS->cfgPathGetValuesDA(arg_cpath, ret_strvec, active_cfg);
 OUTPUT:
   RETVAL
 
 
 SV *
-Cstore::cfgPathGetValueDA(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetValueDA(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   string value;
-  if (THIS->cfgPathGetValueDA(arg_strvec, value, active_cfg)) {
+  if (THIS->cfgPathGetValueDA(arg_cpath, value, active_cfg)) {
     RETVAL = newSVpv(value.c_str(), 0);
   } else {
     XSRETURN_UNDEF;
@@ -238,65 +239,65 @@ OUTPUT:
 
 
 STRVEC *
-Cstore::cfgPathGetChildNodesDA(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetChildNodesDA(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->cfgPathGetChildNodesDA(arg_strvec, ret_strvec, active_cfg);
+  THIS->cfgPathGetChildNodesDA(arg_cpath, ret_strvec, active_cfg);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::cfgPathDeactivated(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathDeactivated(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->cfgPathDeactivated(arg_strvec, active_cfg);
+  RETVAL = THIS->cfgPathDeactivated(arg_cpath, active_cfg);
 OUTPUT:
   RETVAL
 
 
 STRSTRMAP *
-Cstore::cfgPathGetChildNodesStatusDA(STRVEC *vref)
+Cstore::cfgPathGetChildNodesStatusDA(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   Cstore::MapT<string, string> ret_strstrmap;
-  THIS->cfgPathGetChildNodesStatusDA(arg_strvec, ret_strstrmap);
+  THIS->cfgPathGetChildNodesStatusDA(arg_cpath, ret_strstrmap);
 OUTPUT:
   RETVAL
 
 
 STRVEC *
-Cstore::tmplGetChildNodes(STRVEC *vref)
+Cstore::tmplGetChildNodes(CPATH *pref)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   vector<string> ret_strvec;
-  THIS->tmplGetChildNodes(arg_strvec, ret_strvec);
+  THIS->tmplGetChildNodes(arg_cpath, ret_strvec);
 OUTPUT:
   RETVAL
 
 
 bool
-Cstore::validateTmplPath(STRVEC *vref, bool validate_vals)
+Cstore::validateTmplPath(CPATH *pref, bool validate_vals)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
-  RETVAL = THIS->validateTmplPath(arg_strvec, validate_vals);
+  RETVAL = THIS->validateTmplPath(arg_cpath, validate_vals);
 OUTPUT:
   RETVAL
 
 
 STRSTRMAP *
-Cstore::getParsedTmpl(STRVEC *vref, bool allow_val)
+Cstore::getParsedTmpl(CPATH *pref, bool allow_val)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   Cstore::MapT<string, string> ret_strstrmap;
-  if (!THIS->getParsedTmpl(arg_strvec, ret_strstrmap, allow_val)) {
+  if (!THIS->getParsedTmpl(arg_cpath, ret_strstrmap, allow_val)) {
     XSRETURN_UNDEF;
   }
 OUTPUT:
@@ -304,12 +305,12 @@ OUTPUT:
 
 
 SV *
-Cstore::cfgPathGetComment(STRVEC *vref, bool active_cfg)
+Cstore::cfgPathGetComment(CPATH *pref, bool active_cfg)
 PREINIT:
-  vector<string> arg_strvec;
+  Cpath arg_cpath;
 CODE:
   string comment;
-  if (THIS->cfgPathGetComment(arg_strvec, comment, active_cfg)) {
+  if (THIS->cfgPathGetComment(arg_cpath, comment, active_cfg)) {
     RETVAL = newSVpv(comment.c_str(), 0);
   } else {
     XSRETURN_UNDEF;

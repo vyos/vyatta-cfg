@@ -24,14 +24,6 @@
 
 using namespace cstore;
 
-static void
-_get_str_vec(vector<string>& vec, const char *strs[], int num_strs)
-{
-  for (int i = 0; i < num_strs; i++) {
-    vec.push_back(strs[i]);
-  }
-}
-
 void *
 cstore_init(void)
 {
@@ -51,10 +43,9 @@ cstore_validate_tmpl_path(void *handle, const char *path_comps[],
                           int num_comps, int validate_tags)
 {
   if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
+    Cpath p(path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
-    return (cs->validateTmplPath(vs, validate_tags) ? 1 : 0);
+    return (cs->validateTmplPath(p, validate_tags) ? 1 : 0);
   }
   return 0;
 }
@@ -63,10 +54,9 @@ int
 cstore_cfg_path_exists(void *handle, const char *path_comps[], int num_comps)
 {
   if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
+    Cpath p(path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
-    return (cs->cfgPathExists(vs) ? 1 : 0);
+    return (cs->cfgPathExists(p) ? 1 : 0);
   }
   return 0;
 }
@@ -99,10 +89,9 @@ cstore_cfg_path_deactivated(void *handle, const char *path_comps[],
                             int num_comps, int in_active)
 {
   if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
+    Cpath p(path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
-    return (cs->cfgPathDeactivated(vs, in_active) ? 1 : 0);
+    return (cs->cfgPathDeactivated(p, in_active) ? 1 : 0);
   }
   return 0;
 }
@@ -112,11 +101,10 @@ cstore_cfg_path_get_effective_value(void *handle, const char *path_comps[],
                                     int num_comps)
 {
   if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
+    Cpath p(path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
     string val;
-    if (!cs->cfgPathGetEffectiveValue(vs, val)) {
+    if (!cs->cfgPathGetEffectiveValue(p, val)) {
       return NULL;
     }
 
@@ -138,10 +126,9 @@ cstore_unmark_cfg_path_changed(void *handle, const char *path_comps[],
                                int num_comps)
 {
   if (handle) {
-    vector<string> vs;
-    _get_str_vec(vs, path_comps, num_comps);
+    Cpath p(path_comps, num_comps);
     Cstore *cs = (Cstore *) handle;
-    return (cs->unmarkCfgPathChanged(vs) ? 1 : 0);
+    return (cs->unmarkCfgPathChanged(p) ? 1 : 0);
   }
   return 0;
 }
