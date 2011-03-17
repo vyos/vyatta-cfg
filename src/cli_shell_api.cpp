@@ -371,14 +371,7 @@ returnEffectiveValues(Cstore& cstore, const Cpath& args)
 static void
 validateTmplPath(Cstore& cstore, const Cpath& args)
 {
-  printf("validate:");
-  Cpath p;
-  for (size_t i = 0; i < args.size(); i++) {
-    p.push(args[i]);
-    printf(" [%s]", p[i]);
-  }
-  printf("\n");
-  exit(cstore.validateTmplPath(p, false) ? 0 : 1);
+  exit(cstore.validateTmplPath(args, false) ? 0 : 1);
 }
 
 /* checks if specified path is a valid "template path", *including* the
