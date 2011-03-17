@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.90) unstable; urgency=low
+
+  * remove another copied-and-pasted function
+  * add config path abstraction and high-level caching
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 17 Mar 2011 11:50:02 -0700
+
 vyatta-cfg (0.18.89) unstable; urgency=low
 
   * support for fix to bug 6081. return hash of ipv4net, ipv6net
