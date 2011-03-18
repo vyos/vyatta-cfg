@@ -315,6 +315,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
 
   const CfgNode *cfg = NULL;
   const char *force_pfx_diff = NULL;
+  bool is_default = (cfg2 ? cfg2->isDefault() : cfg1->isDefault());
   if (!cfg1) {
     cfg = cfg2;
     force_pfx_diff = PFX_DIFF_ADD.c_str();
@@ -388,7 +389,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     }
   } else {
     // single-value node
-    if (show_def || !cfg->isDefault()) {
+    if (show_def || !is_default) {
       string val = cfg->getValue();
       if (!force_pfx_diff) {
         const string& val1 = cfg1->getValue();
