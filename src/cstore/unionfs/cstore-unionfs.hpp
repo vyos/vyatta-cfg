@@ -91,6 +91,8 @@ private:
   // path buffers
   FsPath mutable_cfg_path;  // mutable part of config path
   FsPath tmpl_path;         // whole template path
+  FsPath orig_mutable_cfg_path;  // original mutable cfg path
+  FsPath orig_tmpl_path;         // original template path
 
   ////// virtual functions defined in base class
   // begin path modifiers
@@ -128,8 +130,8 @@ private:
     }
   };
   void reset_paths() {
-    tmpl_path = tmpl_root;
-    mutable_cfg_path = "";
+    tmpl_path = orig_tmpl_path;
+    mutable_cfg_path = orig_mutable_cfg_path;
   };
 
   class UnionfsSavePaths : public SavePaths {

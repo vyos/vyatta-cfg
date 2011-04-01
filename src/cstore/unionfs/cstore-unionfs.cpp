@@ -210,6 +210,8 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
       tmpl_path /= tlvl;
     }
   }
+  orig_mutable_cfg_path = mutable_cfg_path;
+  orig_tmpl_path = tmpl_path;
   _init_fs_escape_chars();
 }
 
