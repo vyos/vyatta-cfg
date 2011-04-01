@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.92) unstable; urgency=low
+
+  * fix for bug 6966
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Thu, 31 Mar 2011 17:56:11 -0700
+
 vyatta-cfg (0.18.91) unstable; urgency=low
 
   * remove debug output
