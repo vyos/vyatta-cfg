@@ -21,14 +21,9 @@
 #include <string>
 #include <tr1/functional>
 
-namespace cstore {
+#include <cstore/util.hpp>
 
-template<int v>
-struct Int2Type {
-  enum {
-    value = v
-  };
-};
+namespace cstore {
 
 template<class P>
 class svector {
@@ -88,6 +83,9 @@ public:
   size_t hash() const {
     return std::tr1::_Fnv_hash<sizeof(size_t)>::hash(_data, _len);
   };
+  std::string to_string() const {
+    return to_string(Int2Type<RAW_CSTR_DATA>());
+  };
 
 private:
   size_t _num_elems;
@@ -117,7 +115,20 @@ private:
   };
   const char *elem_at(size_t idx, Int2Type<true>) const {
     return (idx < _num_elems ? (_elems[idx] + 1) : NULL);
-  }
+  };
+  std::string to_string(Int2Type<true>) const {
+    return std::string(_data);
+  };
+  std::string to_string(Int2Type<false>) const {
+    std::string ret;
+    for (size_t i = 0; i < size(); i++) {
+      if (i > 0) {
+        ret += " ";
+      }
+      ret += elem_at(i, Int2Type<RANDOM_ACCESS>());
+    }
+    return ret;
+  };
 };
 
 template<class P>

@@ -62,12 +62,12 @@ _cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
 {
   const vector<string>& ovec = cfg1->getValues();
   const vector<string>& nvec = cfg2->getValues();
-  Cstore::MapT<string, bool> nmap;
+  MapT<string, bool> nmap;
   bool changed = false;
   for (size_t i = 0; i < nvec.size(); i++) {
     nmap[nvec[i]] = true;
   }
-  Cstore::MapT<string, bool> omap;
+  MapT<string, bool> omap;
   for (size_t i = 0; i < ovec.size(); i++) {
     omap[ovec[i]] = true;
     if (nmap.find(ovec[i]) == nmap.end()) {
@@ -119,8 +119,8 @@ _cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
     cnodes2 = cfg2->getChildNodes();
   }
 
-  Cstore::MapT<string, bool> map;
-  Cstore::MapT<string, CfgNode *> nmap1, nmap2;
+  MapT<string, bool> map;
+  MapT<string, CfgNode *> nmap1, nmap2;
   for (size_t i = 0; i < cnodes1.size(); i++) {
     string key = (is_tag_node
                   ? cnodes1[i]->getValue() : cnodes1[i]->getName());
@@ -135,15 +135,15 @@ _cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
   }
 
   vector<string> cnodes;
-  Cstore::MapT<string, bool>::iterator it = map.begin();
+  MapT<string, bool>::iterator it = map.begin();
   for (; it != map.end(); ++it) {
     cnodes.push_back((*it).first);
   }
   Cstore::sortNodes(cnodes);
 
   for (size_t i = 0; i < cnodes.size(); i++) {
-    Cstore::MapT<string, CfgNode *>::iterator p1 = nmap1.find(cnodes[i]);
-    Cstore::MapT<string, CfgNode *>::iterator p2 = nmap2.find(cnodes[i]);
+    MapT<string, CfgNode *>::iterator p1 = nmap1.find(cnodes[i]);
+    MapT<string, CfgNode *>::iterator p2 = nmap2.find(cnodes[i]);
     bool in1 = (p1 != nmap1.end());
     bool in2 = (p2 != nmap2.end());
     CfgNode *c1 = (in1 ? p1->second : NULL);

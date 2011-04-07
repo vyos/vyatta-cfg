@@ -232,7 +232,7 @@ bool
 Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
 {
   vector<string> result;
-  Cstore::MapT<string, bool> added;
+  MapT<string, bool> added;
   def_type = ERROR_TYPE;
   for (size_t i = 0; i < _paths.size(); i++) {
     if (_paths[i].first.size() == 0) {

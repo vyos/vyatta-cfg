@@ -65,6 +65,7 @@ public:
   const char *back() const {
     return (size() > 0 ? _data[size() - 1] : NULL);
   };
+  std::string to_string() const { return _data.to_string(); };
 
 private:
   struct CpathParams {

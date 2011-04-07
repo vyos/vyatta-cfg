@@ -89,6 +89,7 @@ public:
   const char *getValHelp() const { return _def->def_val_help; };
   unsigned int getTagLimit() const { return _def->def_tag; };
   unsigned int getMultiLimit() const { return _def->def_multi; };
+  unsigned int getPriority() const { return _def->def_priority; };
 
   void setIsValue(bool is_val) { _is_value = is_val; };
 

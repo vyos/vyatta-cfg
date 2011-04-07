@@ -38,7 +38,7 @@ static char *ncomment = NULL;
 static char *nname = NULL;
 static char *nval = NULL;
 
-typedef Cstore::MapT<Cpath, CfgNode *, CpathHash> NmapT;
+typedef MapT<Cpath, CfgNode *, CpathHash> NmapT;
 static NmapT node_map;
 static Cstore *cstore_ = NULL;
 static CfgNode *cur_node = NULL;

@@ -206,7 +206,7 @@ Cstore::cfgPathGetChildNodesStatus(CPATH *pref)
 PREINIT:
   Cpath arg_cpath;
 CODE:
-  Cstore::MapT<string, string> ret_strstrmap;
+  MapT<string, string> ret_strstrmap;
   THIS->cfgPathGetChildNodesStatus(arg_cpath, ret_strstrmap);
 OUTPUT:
   RETVAL
@@ -264,7 +264,7 @@ Cstore::cfgPathGetChildNodesStatusDA(CPATH *pref)
 PREINIT:
   Cpath arg_cpath;
 CODE:
-  Cstore::MapT<string, string> ret_strstrmap;
+  MapT<string, string> ret_strstrmap;
   THIS->cfgPathGetChildNodesStatusDA(arg_cpath, ret_strstrmap);
 OUTPUT:
   RETVAL
@@ -296,7 +296,7 @@ Cstore::getParsedTmpl(CPATH *pref, bool allow_val)
 PREINIT:
   Cpath arg_cpath;
 CODE:
-  Cstore::MapT<string, string> ret_strstrmap;
+  MapT<string, string> ret_strstrmap;
   if (!THIS->getParsedTmpl(arg_cpath, ret_strstrmap, allow_val)) {
     XSRETURN_UNDEF;
   }

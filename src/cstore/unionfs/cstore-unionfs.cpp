@@ -64,8 +64,8 @@ const string UnionfsCstore::C_DEF_NAME = "node.def";
 
 
 ////// static
-static Cstore::MapT<char, string> _fs_escape_chars;
-static Cstore::MapT<string, char> _fs_unescape_chars;
+static MapT<char, string> _fs_escape_chars;
+static MapT<string, char> _fs_unescape_chars;
 static void
 _init_fs_escape_chars()
 {
@@ -81,7 +81,7 @@ _init_fs_escape_chars()
 static string
 _escape_char(char c)
 {
-  Cstore::MapT<char, string>::iterator p = _fs_escape_chars.find(c);
+  MapT<char, string>::iterator p = _fs_escape_chars.find(c);
   if (p != _fs_escape_chars.end()) {
     return p->second;
   } else {
@@ -89,12 +89,12 @@ _escape_char(char c)
   }
 }
 
-static Cstore::MapT<string, string> _escape_path_name_cache;
+static MapT<string, string> _escape_path_name_cache;
 
 static string
 _escape_path_name(const string& path)
 {
-  Cstore::MapT<string, string>::iterator p
+  MapT<string, string>::iterator p
     = _escape_path_name_cache.find(path);
   if (p != _escape_path_name_cache.end()) {
     // found escaped string in cache. just return it.
@@ -112,12 +112,12 @@ _escape_path_name(const string& path)
   return npath;
 }
 
-static Cstore::MapT<string, string> _unescape_path_name_cache;
+static MapT<string, string> _unescape_path_name_cache;
 
 static string
 _unescape_path_name(const string& path)
 {
-  Cstore::MapT<string, string>::iterator p
+  MapT<string, string>::iterator p
     = _unescape_path_name_cache.find(path);
   if (p != _unescape_path_name_cache.end()) {
     // found unescaped string in cache. just return it.
@@ -132,7 +132,7 @@ _unescape_path_name(const string& path)
       break;
     }
     string s = path.substr(i, 3);
-    Cstore::MapT<string, char>::iterator p = _fs_unescape_chars.find(s);
+    MapT<string, char>::iterator p = _fs_unescape_chars.find(s);
     if (p != _fs_unescape_chars.end()) {
       char c = p->second;
       if (path.size() == 3 && c == -1) {
@@ -426,8 +426,7 @@ UnionfsCstore::tmpl_node_exists()
   return (path_exists(tmpl_path) && path_is_directory(tmpl_path));
 }
 
-typedef Cstore::MapT<FsPath, tr1::shared_ptr<vtw_def>, FsPathHash>
-  ParsedTmplCacheT;
+typedef MapT<FsPath, tr1::shared_ptr<vtw_def>, FsPathHash> ParsedTmplCacheT;
 static ParsedTmplCacheT _parsed_tmpl_cache;
 
 /* parse template at current tmpl_path and return an allocated Ctemplate

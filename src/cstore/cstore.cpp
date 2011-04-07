@@ -74,7 +74,7 @@ const unsigned int Cstore::SORT_NONE = 1;
 
 ////// static
 bool Cstore::_init = false;
-Cstore::MapT<unsigned int, Cstore::SortFuncT> Cstore::_sort_func_map;
+MapT<unsigned int, Cstore::SortFuncT> Cstore::_sort_func_map;
 
 
 ////// constructors/destructors
@@ -142,8 +142,8 @@ Cstore::parseTmpl(const Cpath& path_comps, bool validate_vals)
  * return true if successful. otherwise return false.
  */
 bool
-Cstore::getParsedTmpl(const Cpath& path_comps,
-                      Cstore::MapT<string, string>& tmap, bool allow_val)
+Cstore::getParsedTmpl(const Cpath& path_comps, MapT<string, string>& tmap,
+                      bool allow_val)
 {
   /* currently this function is used outside actual CLI operations, mainly
    * from the perl API. since value validation is from the original CLI
@@ -1950,7 +1950,7 @@ Cstore::sort_func_deb_version(string a, string b)
 void
 Cstore::sort_nodes(vector<string>& nvec, unsigned int sort_alg)
 {
-  Cstore::MapT<unsigned int, Cstore::SortFuncT>::iterator p
+  MapT<unsigned int, Cstore::SortFuncT>::iterator p
     = _sort_func_map.find(sort_alg);
   if (p == _sort_func_map.end()) {
     return;
@@ -1991,7 +1991,7 @@ Cstore::append_tmpl_path(const Cpath& path_comps, bool& is_tag)
   return true;
 }
 
-typedef Cstore::MapT<Cpath, tr1::shared_ptr<Ctemplate>, CpathHash> TmplCacheT;
+typedef MapT<Cpath, tr1::shared_ptr<Ctemplate>, CpathHash> TmplCacheT;
 static TmplCacheT _tmpl_cache;
 
 /* check whether specified "logical path" is valid template path.
@@ -2462,7 +2462,7 @@ Cstore::set_cfg_path(const Cpath& path_comps, bool output)
  */
 void
 Cstore::get_child_nodes_status(const Cpath& path_comps,
-                               Cstore::MapT<string, string>& cmap,
+                               MapT<string, string>& cmap,
                                vector<string> *sorted_keys)
 {
   // get a union of active and working
@@ -2512,7 +2512,7 @@ Cstore::get_child_nodes_status(const Cpath& path_comps,
  */
 void
 Cstore::get_child_nodes_status_da(const Cpath& path_comps,
-                                  Cstore::MapT<string, string>& cmap,
+                                  MapT<string, string>& cmap,
                                   vector<string> *sorted_keys)
 {
   // process deleted nodes first

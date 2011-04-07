@@ -19,9 +19,9 @@
 #include <cstdarg>
 #include <vector>
 #include <string>
-#include <tr1/unordered_map>
 
 #include <cli_cstore.h>
+#include <cstore/util.hpp>
 #include <cstore/cpath.hpp>
 #include <cstore/ctemplate.hpp>
 
@@ -55,10 +55,6 @@ public:
   static Cstore *createCstore(bool use_edit_level = false);
   static Cstore *createCstore(const string& session_id, string& env);
 
-  // types
-  template<class K, class V, class H = tr1::hash<K> >
-    class MapT : public tr1::unordered_map<K, V, H> {};
-
   // constants
   static const string C_NODE_STATUS_DELETED;
   static const string C_NODE_STATUS_ADDED;
@@ -86,7 +82,7 @@ public:
   // for sorting
   /* apparently unordered_map template does not work with "enum" type, so
    * change this to simply unsigned ints to allow unifying all map types,
-   * i.e., "Cstore::MapT".
+   * i.e., "cstore::MapT".
    */
   static const unsigned int SORT_DEFAULT;
   static const unsigned int SORT_DEB_VERSION;
@@ -448,10 +444,10 @@ private:
                        bool include_deactivated);
   bool set_cfg_path(const Cpath& path_comps, bool output);
   void get_child_nodes_status(const Cpath& path_comps,
-                              Cstore::MapT<string, string>& cmap,
+                              MapT<string, string>& cmap,
                               vector<string> *sorted_keys);
   void get_child_nodes_status_da(const Cpath& path_comps,
-                                 Cstore::MapT<string, string>& cmap,
+                                 MapT<string, string>& cmap,
                                  vector<string> *sorted_keys);
 
   // these operate on current work path (or active with "active_cfg")
