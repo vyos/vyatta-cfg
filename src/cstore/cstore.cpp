@@ -903,15 +903,20 @@ Cstore::renameCfgPath(const Cpath& args)
   const char *otagnode = args[0];
   const char *otagval = args[1];
   const char *ntagval = args[4];
+  auto_ptr<SavePaths> save(create_save_paths());
   push_cfg_path(otagnode);
-  /* also mark changed. note that it's marking the "tag node" but not the
-   * "tag values" since one is being "deleted" and the other is being
-   * "added" anyway.
+  if (!rename_child_node(otagval, ntagval)) {
+    return false;
+  }
+  /* also mark the new "tag value" changed since one possible scenario is that
+   * the "new" tag value was there before but is being deleted, and something
+   * else is being renamed to the same tag value. one side effect of this is
+   * that if the subtree under the new tag value is completely identical
+   * before and after this delete/rename sequence, then it will be marked
+   * "changed" even though nothing changed.
    */
-  bool ret = (rename_child_node(otagval, ntagval)
-              && mark_changed_with_ancestors());
-  pop_cfg_path();
-  return ret;
+  push_cfg_path(ntagval);
+  return mark_changed_with_ancestors();
 }
 
 /* perform copy in "working config" according to specified args.
