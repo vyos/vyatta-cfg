@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.94) unstable; urgency=low
+
+  * minor refactoring
+  * fix for bug 6985
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 08 Apr 2011 10:48:56 -0700
+
 vyatta-cfg (0.18.93) unstable; urgency=low
 
   * add missing initialization
