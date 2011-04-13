@@ -100,7 +100,8 @@ if ($mode eq 'local') {
 }
 
 select $save;
-my @show_cmd = ('cli-shell-api', 'showCfg', '--show-active-only');
+my @show_cmd = ('cli-shell-api', 'showConfig', '--show-active-only',
+                '--show-ignore-edit');
 if ($show_default) {
   push @show_cmd, '--show-show-defaults';
 }

@@ -894,14 +894,14 @@ cnode::get_cmds(const CfgNode& cfg, vector<Cpath>& set_list,
 void
 cnode::showConfig(const string& cfg1, const string& cfg2,
                   const Cpath& path, bool show_def, bool hide_secret,
-                  bool context_diff, bool show_cmds)
+                  bool context_diff, bool show_cmds, bool ignore_edit)
 {
   tr1::shared_ptr<CfgNode> aroot, wroot, croot1, croot2;
   tr1::shared_ptr<Cstore> cstore;
   Cpath rpath(path);
   Cpath cur_path;
 
-  if ((cfg1 == ACTIVE_CFG || cfg1 == WORKING_CFG)
+  if (!ignore_edit && (cfg1 == ACTIVE_CFG || cfg1 == WORKING_CFG)
       && (cfg2 == ACTIVE_CFG || cfg2 == WORKING_CFG)) {
     // active/working config only => use edit level and path
     cstore.reset(Cstore::createCstore(true));

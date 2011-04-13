@@ -42,7 +42,7 @@ extern const string WORKING_CFG;
 void showConfig(const string& cfg1, const string& cfg2,
                 const Cpath& path, bool show_def = false,
                 bool hide_secret = false, bool context_diff = false,
-                bool show_cmds = false);
+                bool show_cmds = false, bool ignore_edit = false);
 
 } // namespace cnode
 

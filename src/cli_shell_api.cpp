@@ -60,6 +60,7 @@ int op_show_hide_secrets = 0;
 int op_show_working_only = 0;
 int op_show_context_diff = 0;
 int op_show_commands = 0;
+int op_show_ignore_edit = 0;
 char *op_show_cfg1 = NULL;
 char *op_show_cfg2 = NULL;
 
@@ -429,6 +430,8 @@ showCfg(Cstore& cstore, const Cpath& args)
  *       show "context diff" between two configs
  *   --show-commands
  *       show output in "commands"
+ *   --show-ignore-edit
+ *       don't use the edit level in environment
  *
  * note that when neither cfg1 nor cfg2 specifies a config file, the "args"
  * argument specifies the root path for the show output, and the "edit level"
@@ -456,7 +459,7 @@ showConfig(Cstore& cstore, const Cpath& args)
 
   cnode::showConfig(cfg1, cfg2, args, op_show_show_defaults,
                     op_show_hide_secrets, op_show_context_diff,
-                    op_show_commands);
+                    op_show_commands, op_show_ignore_edit);
 }
 
 static void
@@ -535,6 +538,7 @@ struct option options[] = {
   {"show-working-only", no_argument, &op_show_working_only, 1},
   {"show-context-diff", no_argument, &op_show_context_diff, 1},
   {"show-commands", no_argument, &op_show_commands, 1},
+  {"show-ignore-edit", no_argument, &op_show_ignore_edit, 1},
   {"show-cfg1", required_argument, NULL, SHOW_CFG1},
   {"show-cfg2", required_argument, NULL, SHOW_CFG2},
   {NULL, 0, NULL, 0}
