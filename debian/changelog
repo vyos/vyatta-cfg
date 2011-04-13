@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.95) unstable; urgency=low
+
+  * fix for bug 6996
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Wed, 13 Apr 2011 15:33:49 -0700
+
 vyatta-cfg (0.18.94) unstable; urgency=low
 
   * minor refactoring
