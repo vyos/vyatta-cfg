@@ -44,6 +44,12 @@ void showConfig(const string& cfg1, const string& cfg2,
                 bool hide_secret = false, bool context_diff = false,
                 bool show_cmds = false, bool ignore_edit = false);
 
+CfgNode *findCfgNode(CfgNode *root, const Cpath& path, bool& is_value);
+CfgNode *findCfgNode(CfgNode *root, const Cpath& path);
+bool getCfgNodeValue(CfgNode *root, const Cpath& path, string& value);
+bool getCfgNodeValues(CfgNode *root, const Cpath& path,
+                      vector<string>& values);
+
 } // namespace cnode
 
 #endif /* _CNODE_ALGORITHM_HPP_ */

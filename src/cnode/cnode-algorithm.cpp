@@ -946,3 +946,118 @@ cnode::showConfig(const string& cfg1, const string& cfg2,
   }
 }
 
+/* find and return pointer to the CfgNode corresponding to specified path in
+ * the tree rooted at root. return NULL if not found.
+ *
+ * if path ends in value, the actual "node" (i.e., at path minus value)
+ * is returned *if* the value actually exists (in which case is_value is
+ * set to true). otherwise return NULL.
+ */
+CfgNode *
+cnode::findCfgNode(CfgNode *root, const Cpath& path, bool& is_value)
+{
+  is_value = false;
+  if (path.size() < 1) {
+    return NULL;
+  }
+
+  CfgNode *node = root;
+  for (size_t i = 0; i < path.size(); i++) {
+    if (node->isLeaf()) {
+      // reached a leaf node
+      if (i != (path.size() - 1)) {
+        // there's more after the current comp => can't exist
+        return NULL;
+      }
+
+      // look for value
+      if (node->isMulti()) {
+        // multi-value
+        const vector<string>& vals = node->getValues();
+        for (size_t j = 0; j < vals.size(); j++) {
+          if (vals[j] == path[i]) {
+            is_value = true;
+            return node;
+          }
+        }
+        return NULL;
+      } else {
+        // single-value
+        if (node->getValue() == path[i]) {
+          is_value = true;
+          return node;
+        }
+        return NULL;
+      }
+    }
+
+    const vector<CfgNode *>& cnodes = node->getChildNodes();
+    bool found = false;
+    for (size_t j = 0; j < cnodes.size(); j++) {
+      if (cnodes[j]->isValue()) {
+        // tag value
+        found = (cnodes[j]->getValue() == path[i]);
+      } else {
+        // others
+        found = (cnodes[j]->getName() == path[i]);
+      }
+      if (found) {
+        node = cnodes[j];
+        break;
+      }
+    }
+    if (!found) {
+      return NULL;
+    }
+  }
+
+  return node;
+}
+
+// wrapper for above
+CfgNode *
+cnode::findCfgNode(CfgNode *root, const Cpath& path)
+{
+  bool dummy;
+  return findCfgNode(root, path, dummy);
+}
+
+bool
+cnode::getCfgNodeValue(CfgNode *root, const Cpath& path, string& value)
+{
+  bool is_val;
+  CfgNode *node = findCfgNode(root, path, is_val);
+  if (!node) {
+    // doesn't exist
+    return false;
+  }
+  if (is_val || !node->isLeaf() || node->isMulti()) {
+    // invalid path (already value, non-leaf, or multi-value)
+    fprintf(stderr, "Invalid path used with cnode::getCfgNodeValue()\n");
+    return false;
+  }
+
+  value = node->getValue();
+  return true;
+}
+
+bool
+cnode::getCfgNodeValues(CfgNode *root, const Cpath& path,
+                        vector<string>& values)
+{
+  bool is_val;
+  CfgNode *node = findCfgNode(root, path, is_val);
+  if (!node) {
+    // doesn't exist
+    return false;
+  }
+  if (is_val || !node->isLeaf() || !node->isMulti()) {
+    // invalid path (already value, non-leaf, or single-value)
+    fprintf(stderr, "Invalid path used with cnode::getCfgNodeValues()\n");
+    return false;
+  }
+
+  values = node->getValues();
+  return true;
+}
+

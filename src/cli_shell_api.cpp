@@ -471,6 +471,57 @@ loadFile(Cstore& cstore, const Cpath& args)
   }
 }
 
+/* the following "cf" functions form the "config file" shell API, which
+ * allows shell scripts to "query" the "config" represented by a config
+ * file in a way similar to how they query the active/working config.
+ * usage example:
+ *
+ *   cli-shell-api cfExists /config/config.boot service ssh allow-root
+ *
+ * the above command will exit with 0 (success) if the "allow-root" node
+ * is present in the specified config file (or exit with 1 if it's not).
+ */
+static void
+cfExists(Cstore& cstore, const Cpath& args)
+{
+  Cpath path;
+  for (size_t i = 1; i < args.size(); i++) {
+    path.push(args[i]);
+  }
+  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  exit(cnode::findCfgNode(root, path) ? 0 : 1);
+}
+
+static void
+cfReturnValue(Cstore& cstore, const Cpath& args)
+{
+  Cpath path;
+  for (size_t i = 1; i < args.size(); i++) {
+    path.push(args[i]);
+  }
+  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  string value;
+  if (!cnode::getCfgNodeValue(root, path, value)) {
+    exit(1);
+  }
+  printf("%s", value.c_str());
+}
+
+static void
+cfReturnValues(Cstore& cstore, const Cpath& args)
+{
+  Cpath path;
+  for (size_t i = 1; i < args.size(); i++) {
+    path.push(args[i]);
+  }
+  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  vector<string> values;
+  if (!cnode::getCfgNodeValues(root, path, values)) {
+    exit(1);
+  }
+  print_vec(values, " ", "'");
+}
+
 #define OP(name, exact, exact_err, min, min_err, use_edit) \
   { #name, exact, exact_err, min, min_err, use_edit, &name }
 
@@ -516,6 +567,10 @@ static OpT ops[] = {
   OP(showCfg, -1, NULL, -1, NULL, true),
   OP(showConfig, -1, NULL, -1, NULL, true),
   OP(loadFile, 1, "Must specify config file", -1, NULL, false),
+
+  OP(cfExists, -1, NULL, 2, "Must specify config file and path", false),
+  OP(cfReturnValue, -1, NULL, 2, "Must specify config file and path", false),
+  OP(cfReturnValues, -1, NULL, 2, "Must specify config file and path", false),
 
   {NULL, -1, NULL, -1, NULL, NULL, false}
 };
