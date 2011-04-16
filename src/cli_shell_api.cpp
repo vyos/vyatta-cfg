@@ -471,6 +471,20 @@ loadFile(Cstore& cstore, const Cpath& args)
   }
 }
 
+static cnode::CfgNode *
+_cf_process_args(Cstore& cstore, const Cpath& args, Cpath& path)
+{
+  for (size_t i = 1; i < args.size(); i++) {
+    path.push(args[i]);
+  }
+  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  if (!root) {
+    fprintf(stderr, "Failed to parse config file\n");
+    exit(1);
+  }
+  return root;
+}
+
 /* the following "cf" functions form the "config file" shell API, which
  * allows shell scripts to "query" the "config" represented by a config
  * file in a way similar to how they query the active/working config.
@@ -485,10 +499,7 @@ static void
 cfExists(Cstore& cstore, const Cpath& args)
 {
   Cpath path;
-  for (size_t i = 1; i < args.size(); i++) {
-    path.push(args[i]);
-  }
-  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  cnode::CfgNode *root = _cf_process_args(cstore, args, path);
   exit(cnode::findCfgNode(root, path) ? 0 : 1);
 }
 
@@ -496,10 +507,7 @@ static void
 cfReturnValue(Cstore& cstore, const Cpath& args)
 {
   Cpath path;
-  for (size_t i = 1; i < args.size(); i++) {
-    path.push(args[i]);
-  }
-  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  cnode::CfgNode *root = _cf_process_args(cstore, args, path);
   string value;
   if (!cnode::getCfgNodeValue(root, path, value)) {
     exit(1);
@@ -511,10 +519,7 @@ static void
 cfReturnValues(Cstore& cstore, const Cpath& args)
 {
   Cpath path;
-  for (size_t i = 1; i < args.size(); i++) {
-    path.push(args[i]);
-  }
-  cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
+  cnode::CfgNode *root = _cf_process_args(cstore, args, path);
   vector<string> values;
   if (!cnode::getCfgNodeValues(root, path, values)) {
     exit(1);
