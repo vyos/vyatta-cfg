@@ -1,3 +1,13 @@
+vyatta-cfg (0.18.96) unstable; urgency=low
+
+  [ An-Cheng Huang ]
+  * initial implementation of "config file" shell API
+  * add validation to config file API
+
+  [ Mohit Mehta ]
+
+ -- Mohit Mehta <mohit@vyatta.com>  Mon, 18 Apr 2011 17:22:32 -0700
+
 vyatta-cfg (0.18.95) unstable; urgency=low
 
   * fix for bug 6996
