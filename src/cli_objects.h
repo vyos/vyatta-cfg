@@ -21,15 +21,10 @@ extern "C" {
 /* the string to use as $(@), must be set 
    before call to expand_string */
 char* get_at_string(void);
-void set_at_string(char* s);
 void free_at_string(void);
 
 boolean is_in_delete_action(void);
-void set_in_delete_action(boolean b);
-
 boolean is_in_commit(void);
-void set_in_commit(boolean b);
-
 boolean is_in_exec(void);
 void set_in_exec(boolean b);
 

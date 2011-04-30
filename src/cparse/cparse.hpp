@@ -22,10 +22,8 @@
 
 namespace cparse {
 
-using namespace cnode;
-
-CfgNode *parse_file(FILE *fin, Cstore& cs);
-CfgNode *parse_file(const char *fname, Cstore& cs);
+cnode::CfgNode *parse_file(FILE *fin, cstore::Cstore& cs);
+cnode::CfgNode *parse_file(const char *fname, cstore::Cstore& cs);
 
 } // namespace cparse
 

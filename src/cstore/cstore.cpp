@@ -36,8 +36,11 @@
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
 #include <cparse/cparse.hpp>
+#include <commit/commit-algorithm.hpp>
 
 namespace cstore { // begin namespace cstore
+
+using namespace cnode;
 
 ////// constants
 //// node status
@@ -707,10 +710,10 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
        * shell into an array of values.
        */
       free(buf);
-    } else if (def->getActions(syntax_act)->vtw_list_head) {
+    } else if (def->getActions(syntax_act)) {
       // look for "self ref in values" from syntax
-      const valstruct *vals = get_syntax_self_in_valstruct(
-                                def->getActions(syntax_act)->vtw_list_head);
+      const valstruct *vals
+        = get_syntax_self_in_valstruct(def->getActions(syntax_act));
       if (vals) {
         if (vals->cnt == 0 && vals->val) {
           comp_vals.push_back(vals->val);
@@ -1534,21 +1537,8 @@ Cstore::cfgPathEffective(const Cpath& path_comps)
   }
 
   bool in_work = cfg_path_exists(path_comps, false, false);
-  if (in_active && in_work) {
-    // case (1)
-    return true;
-  }
-
-  auto_ptr<SavePaths> save(create_save_paths());
-  append_cfg_path(path_comps);
-  if (!in_active && in_work) {
-    // check if case (2)
-    return marked_committed(def, true);
-  } else if (in_active && !in_work) {
-    // check if case (3)
-    return !marked_committed(def, false);
-  }
-  return false;
+  return commit::isCommitPathEffective(*this, path_comps, def,
+                                       in_active, in_work);
 }
 
 /* get names of "effective" child nodes of specified path during commit
@@ -1797,7 +1787,7 @@ Cstore::loadFile(const char *filename)
   }
 
   // get the config tree from the file
-  cnode::CfgNode *froot = cparse::parse_file(fin, *this);
+  CfgNode *froot = cparse::parse_file(fin, *this);
   if (!froot) {
     output_user("Failed to parse specified config file\n");
     return false;
@@ -1805,13 +1795,13 @@ Cstore::loadFile(const char *filename)
 
   // get the config tree from the active config
   Cpath args;
-  cnode::CfgNode aroot(*this, args, true, true);
+  CfgNode aroot(*this, args, true, true);
 
   // get the "commands diff" between the two
   vector<Cpath> del_list;
   vector<Cpath> set_list;
   vector<Cpath> com_list;
-  cnode::get_cmds_diff(aroot, *froot, del_list, set_list, com_list);
+  get_cmds_diff(aroot, *froot, del_list, set_list, com_list);
 
   // "apply" the changes to the working config
   for (size_t i = 0; i < del_list.size(); i++) {
@@ -1888,6 +1878,45 @@ Cstore::unmarkCfgPathChanged(const Cpath& path_comps)
   auto_ptr<SavePaths> save(create_save_paths());
   append_cfg_path(path_comps);
   return unmark_changed_with_descendants();
+}
+
+// execute the specified actions
+bool
+Cstore::executeTmplActions(char *at_str, const Cpath& path,
+                           const Cpath& disp_path, const vtw_node *actions,
+                           const vtw_def *def)
+{
+  string sdisp = " ";
+  sdisp += disp_path.to_string();
+  sdisp += " ";
+  set_at_string(at_str);
+
+  auto_ptr<SavePaths> save(create_save_paths());
+  append_cfg_path(path);
+  append_tmpl_path(path);
+
+  var_ref_handle = (void *) this;
+  // const_cast for legacy code
+  bool ret = execute_list(const_cast<vtw_node *>(actions), def,
+                          sdisp.c_str(), false);
+  var_ref_handle = NULL;
+  return ret;
+}
+
+bool
+Cstore::cfgPathMarkedCommitted(const Cpath& path_comps, bool is_delete)
+{
+  auto_ptr<SavePaths> save(create_save_paths());
+  append_cfg_path(path_comps);
+  return marked_committed(is_delete);
+}
+
+bool
+Cstore::markCfgPathCommitted(const Cpath& path_comps, bool is_delete)
+{
+  auto_ptr<SavePaths> save(create_save_paths());
+  append_cfg_path(path_comps);
+  return mark_committed(is_delete);
 }
 
 
@@ -2665,9 +2694,15 @@ Cstore::validate_val(const tr1::shared_ptr<Ctemplate>& def, const char *value)
   }
 
   // validate_value() may change "value". make a copy first.
-  char *vbuf = strdup(value);
-  bool ret = validate_val_impl(def, vbuf);
-  free(vbuf);
+  auto_ptr<char> vbuf(strdup(value));
+
+  /* set the handle to be used during validate_value() for var ref
+   * processing. this is a global var in cli_new.c.
+   */
+  var_ref_handle = (void *) this;
+  bool ret = validate_value(def->getDef(), vbuf.get());
+  var_ref_handle = NULL;
+
   return ret;
 }
 

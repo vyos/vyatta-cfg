@@ -17,12 +17,34 @@
 #ifndef _CNODE_ALGORITHM_HPP_
 #define _CNODE_ALGORITHM_HPP_
 
+#include <vector>
+#include <string>
+
+#include <cstore/cpath.hpp>
 #include <cnode/cnode.hpp>
 
 namespace cnode {
 
+enum DiffState {
+  DIFF_ADD,
+  DIFF_DEL,
+  DIFF_UPD,
+  DIFF_NONE,
+  DIFF_NULL
+};
+
+bool cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
+                      std::vector<std::string>& values,
+                      std::vector<DiffState>& pfxs);
+void cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
+                        std::vector<CfgNode *>& rcnodes1,
+                        std::vector<CfgNode *>& rcnodes2,
+                        bool& not_tag_node, bool& is_value,
+                        bool& is_leaf_typeless, std::string& name,
+                        std::string& value);
+
 void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
-                   Cpath& cur_path, bool show_def = false,
+                   cstore::Cpath& cur_path, bool show_def = false,
                    bool hide_secret = false, bool context_diff = false);
 void show_cfg(const CfgNode& cfg, bool show_def = false,
               bool hide_secret = false);
@@ -31,24 +53,27 @@ void show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2);
 void show_cmds(const CfgNode& cfg);
 
 void get_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2,
-                   vector<Cpath>& del_list, vector<Cpath>& set_list,
-                   vector<Cpath>& com_list);
-void get_cmds(const CfgNode& cfg, vector<Cpath>& set_list,
-              vector<Cpath>& com_list);
+                   std::vector<cstore::Cpath>& del_list,
+                   std::vector<cstore::Cpath>& set_list,
+                   std::vector<cstore::Cpath>& com_list);
+void get_cmds(const CfgNode& cfg, std::vector<cstore::Cpath>& set_list,
+              std::vector<cstore::Cpath>& com_list);
 
-extern const string ACTIVE_CFG;
-extern const string WORKING_CFG;
+extern const std::string ACTIVE_CFG;
+extern const std::string WORKING_CFG;
 
-void showConfig(const string& cfg1, const string& cfg2,
-                const Cpath& path, bool show_def = false,
+void showConfig(const std::string& cfg1, const std::string& cfg2,
+                const cstore::Cpath& path, bool show_def = false,
                 bool hide_secret = false, bool context_diff = false,
                 bool show_cmds = false, bool ignore_edit = false);
 
-CfgNode *findCfgNode(CfgNode *root, const Cpath& path, bool& is_value);
-CfgNode *findCfgNode(CfgNode *root, const Cpath& path);
-bool getCfgNodeValue(CfgNode *root, const Cpath& path, string& value);
-bool getCfgNodeValues(CfgNode *root, const Cpath& path,
-                      vector<string>& values);
+CfgNode *findCfgNode(CfgNode *root, const cstore::Cpath& path,
+                     bool& is_value);
+CfgNode *findCfgNode(CfgNode *root, const cstore::Cpath& path);
+bool getCfgNodeValue(CfgNode *root, const cstore::Cpath& path,
+                     std::string& value);
+bool getCfgNodeValues(CfgNode *root, const cstore::Cpath& path,
+                      std::vector<std::string>& values);
 
 } // namespace cnode
 

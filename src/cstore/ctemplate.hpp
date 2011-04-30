@@ -20,15 +20,13 @@
 #include <tr1/memory>
 
 #include <cli_cstore.h>
-#include <cstore/cstore.hpp>
 
 namespace cstore { // begin namespace cstore
 
-using namespace std;
-
 class Ctemplate {
 public:
-  Ctemplate(tr1::shared_ptr<vtw_def> def) : _def(def), _is_value(false) {};
+  Ctemplate(std::tr1::shared_ptr<vtw_def> def)
+    : _def(def), _is_value(false) {};
   ~Ctemplate() {};
 
   bool isValue() const { return _is_value; };
@@ -82,8 +80,8 @@ public:
   const char *getNodeHelp() const { return _def->def_node_help; };
   const char *getEnumeration() const { return _def->def_enumeration; };
   const char *getAllowed() const { return _def->def_allowed; };
-  const vtw_list *getActions(vtw_act_type act) const {
-    return &(_def->actions[act]);
+  const vtw_node *getActions(vtw_act_type act) const {
+    return _def->actions[act].vtw_list_head;
   };
   const char *getCompHelp() const { return _def->def_comp_help; };
   const char *getValHelp() const { return _def->def_val_help; };
@@ -92,6 +90,13 @@ public:
   unsigned int getPriority() const { return _def->def_priority; };
 
   void setIsValue(bool is_val) { _is_value = is_val; };
+  void setPriority(unsigned int p) const {
+    /* this changes the parsed template and is only used during commit IF the
+     * priority specified in the template violates the "hierarchical
+     * constraint" and therefore needs to be changed.
+     */
+    _def->def_priority = p;
+  }
 
   const vtw_def *getDef() const {
     /* XXX this is a hack for code that has not been converted and is still
@@ -118,7 +123,7 @@ private:
    *     suitable containers so that memory allocation/deallocation can be
    *     handled properly.
    */
-  tr1::shared_ptr<vtw_def> _def;
+  std::tr1::shared_ptr<vtw_def> _def;
   bool _is_value; /* whether the last path component is a "value". set by
                    * the cstore in get_parsed_tmpl().
                    */

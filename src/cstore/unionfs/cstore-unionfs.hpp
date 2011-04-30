@@ -30,6 +30,11 @@
 #include <cstore/cstore.hpp>
 #include <cstore/unionfs/fspath.hpp>
 
+// forward decl
+namespace commit {
+class PrioNode;
+}
+
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
 
@@ -50,6 +55,8 @@ public:
   bool setupSession();
   bool teardownSession();
   bool inSession();
+  bool clearCommittedMarkers();
+  bool commitConfig(commit::PrioNode& pnode);
 
 private:
   // constants
@@ -85,7 +92,7 @@ private:
   FsPath work_root;   // working root (union)
   FsPath active_root; // active root (readonly part of union)
   FsPath change_root; // change root (r/w part of union)
-  FsPath tmp_root;   // temp root
+  FsPath tmp_root;    // temp root
   FsPath tmpl_root;   // template root
 
   // path buffers
@@ -93,6 +100,22 @@ private:
   FsPath tmpl_path;         // whole template path
   FsPath orig_mutable_cfg_path;  // original mutable cfg path
   FsPath orig_tmpl_path;         // original template path
+
+  // for commit processing
+  FsPath tmp_active_root;
+  FsPath tmp_work_root;
+  FsPath commit_marker_file;
+  void init_commit_data() {
+    tmp_active_root = tmp_root;
+    tmp_work_root = tmp_root;
+    commit_marker_file = tmp_root;
+    tmp_active_root.push("active");
+    tmp_work_root.push("work");
+    commit_marker_file.push(C_COMMITTED_MARKER_FILE);
+  }
+  bool construct_commit_active(commit::PrioNode& node);
+  bool mark_dir_changed(const FsPath& d, const FsPath& root);
+  bool sync_dir(const FsPath& src, const FsPath& dst, const FsPath& root);
 
   ////// virtual functions defined in base class
   // begin path modifiers
@@ -196,12 +219,6 @@ private:
   bool get_comment(string& comment, bool active_cfg);
   bool marked_display_default(bool active_cfg);
 
-  // observers during commit operation
-  bool marked_committed(const tr1::shared_ptr<Ctemplate>& def, bool is_set);
-
-  // these operate on both current tmpl and work paths
-  bool validate_val_impl(const tr1::shared_ptr<Ctemplate>& def, char *value);
-
   // observers for "edit/tmpl levels" (for "edit"-related operations).
   // note that these should be moved to base class in the future.
   string get_edit_level_path() {
@@ -215,6 +232,10 @@ private:
     return cfg_path_at_root();
   };
 
+  // functions for commit operation
+  bool marked_committed(bool is_delete);
+  bool mark_committed(bool is_delete);
+
   // for testing/debugging
   string cfg_path_to_str();
   string tmpl_path_to_str();
@@ -226,14 +247,33 @@ private:
   void push_path(FsPath& old_path, const char *new_comp);
   void pop_path(FsPath& path);
   void pop_path(FsPath& path, string& last);
-  void get_all_child_dir_names(const FsPath& root, vector<string>& nodes);
-  bool write_file(const FsPath& file, const string& data);
+  bool check_dir_entries(const FsPath& root, vector<string> *cnodes,
+                         bool filter_nodes = true, bool empty_check = false);
+  bool is_directory_empty(const FsPath& d) {
+    return (!check_dir_entries(d, NULL, false, true));
+  }
+  void get_all_child_dir_names(const FsPath& root, vector<string>& nodes) {
+    check_dir_entries(root, &nodes);
+  }
+  bool write_file(const char *file, const string& data,
+                  bool append = false);
+  bool write_file(const FsPath& file, const string& data,
+                  bool append = false) {
+    return write_file(file.path_cstr(), data, append);
+  }
+  bool create_file(const char *file) {
+    return write_file(file, "");
+  };
   bool create_file(const FsPath& file) {
     return write_file(file, "");
   };
   bool read_whole_file(const FsPath& file, string& data);
-  bool committed_marker_exists(const string& marker);
-  void recursive_copy_dir(const FsPath& src, const FsPath& dst);
+  void recursive_copy_dir(const FsPath& src, const FsPath& dst,
+                          bool filter_dot_entries = false);
+  void get_committed_marker(bool is_delete, string& marker);
+  bool find_line_in_file(const FsPath& file, const string& line);
+  bool do_mount(const FsPath& rwdir, const FsPath& rdir, const FsPath& mdir);
+  bool do_umount(const FsPath& mdir);
 
   // boost fs operations wrappers
   bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {

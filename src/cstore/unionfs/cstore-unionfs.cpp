@@ -25,6 +25,8 @@
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
+#include <cnode/cnode.hpp>
+#include <commit/commit-algorithm.hpp>
 
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
@@ -56,7 +58,7 @@ const string UnionfsCstore::C_MARKER_DEF_VALUE  = "def";
 const string UnionfsCstore::C_MARKER_DEACTIVATE = ".disable";
 const string UnionfsCstore::C_MARKER_CHANGED = ".modified";
 const string UnionfsCstore::C_MARKER_UNSAVED = ".unsaved";
-const string UnionfsCstore::C_COMMITTED_MARKER_FILE = "/tmp/.changes";
+const string UnionfsCstore::C_COMMITTED_MARKER_FILE = ".changes";
 const string UnionfsCstore::C_COMMENT_FILE = ".comment";
 const string UnionfsCstore::C_TAG_NAME = "node.tag";
 const string UnionfsCstore::C_VAL_NAME = "node.val";
@@ -181,6 +183,7 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
   }
   if ((val = getenv(C_ENV_TMP_ROOT.c_str()))) {
     tmp_root = val;
+    init_commit_data();
   }
   if ((val = getenv(C_ENV_ACTIVE_ROOT.c_str()))) {
     active_root = val;
@@ -240,6 +243,7 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
   work_root = (C_DEF_WORK_PREFIX + sid);
   change_root = (C_DEF_CHANGE_PREFIX + sid);
   tmp_root = (C_DEF_TMP_PREFIX + sid);
+  init_commit_data();
 
   string declr = " declare -x -r "; // readonly vars
   env += " umask 002; {";
@@ -345,15 +349,7 @@ UnionfsCstore::setupSession()
     }
 
     // union mount
-    string mopts = "dirs=";
-    mopts += change_root.path_cstr();
-    mopts += "=rw:";
-    mopts += active_root.path_cstr();
-    mopts += "=ro";
-    if (mount("unionfs", work_root.path_cstr(), "unionfs", 0,
-              mopts.c_str()) != 0) {
-      output_internal("setup session mount failed [%s][%s]\n",
-                      strerror(errno), work_root.path_cstr());
+    if (!do_mount(change_root, active_root, work_root)) {
       return false;
     }
   } else if (!path_is_directory(work_root)) {
@@ -381,9 +377,7 @@ UnionfsCstore::teardownSession()
   }
 
   // unmount the work root (union)
-  if (umount(wstr.c_str()) != 0) {
-    output_internal("teardown session umount failed [%s][%s]\n",
-                    strerror(errno), wstr.c_str());
+  if (!do_umount(work_root)) {
     return false;
   }
 
@@ -413,6 +407,275 @@ UnionfsCstore::inSession()
   string wstr = work_root.path_cstr();
   return (!wstr.empty() && wstr.find(C_DEF_WORK_PREFIX) == 0
           && path_exists(work_root) && path_is_directory(work_root));
+}
+
+bool
+UnionfsCstore::clearCommittedMarkers()
+{
+  try {
+    b_fs::remove(commit_marker_file.path_cstr());
+  } catch (...) {
+    output_internal("failed to clear committed markers\n");
+    return false;
+  }
+  return true;
+}
+
+bool
+UnionfsCstore::construct_commit_active(commit::PrioNode& node)
+{
+  auto_ptr<SavePaths> save(create_save_paths());
+  reset_paths();
+  append_cfg_path(node.getCommitPath());
+
+  FsPath ap(get_active_path());
+  FsPath wp(get_work_path());
+  FsPath tap(tmp_active_root);
+  tap /= mutable_cfg_path;
+
+  if (path_exists(tap)) {
+    output_internal("rm[%s]\n", tap.path_cstr());
+    if (b_fs::remove_all(tap.path_cstr()) < 1) {
+      output_user("FAILED\n");
+      return false;
+    }
+    cnode::CfgNode *c = node.getCfgNode();
+    if (c && c->isTag()) {
+      FsPath p(tap);
+      p.pop();
+      if (is_directory_empty(p)) {
+        output_internal("rm[%s]\n", p.path_cstr());
+        if (b_fs::remove_all(p.path_cstr()) < 1) {
+          output_user("FAILED\n");
+          return false;
+        }
+      }
+    }
+  } else {
+    output_internal("no tap[%s]\n", tap.path_cstr());
+  }
+  if (node.succeeded()) {
+    // prio subtree succeeded
+    if (path_exists(wp)) {
+      output_internal("cp[%s]->[%s]\n", wp.path_cstr(), tap.path_cstr());
+      try {
+        recursive_copy_dir(wp, tap, true);
+      } catch (...) {
+        output_user("FAILED\n");
+        return false;
+      }
+    } else {
+      output_internal("no wp[%s]\n", wp.path_cstr());
+    }
+    if (!node.hasSubtreeFailure()) {
+      // whole subtree succeeded => stop recursion
+      return true;
+    }
+    // failure present in subtree
+  } else {
+    // prio subtree failed
+    if (path_exists(ap)) {
+      output_internal("cp[%s]->[%s]\n", ap.path_cstr(), tap.path_cstr());
+      try {
+        recursive_copy_dir(ap, tap, false);
+      } catch (...) {
+        output_user("FAILED\n");
+        return false;
+      }
+    } else {
+      output_internal("no ap[%s]\n", ap.path_cstr());
+    }
+    if (!node.hasSubtreeSuccess()) {
+      // whole subtree failed => stop recursion
+      return true;
+    }
+    // success present in subtree
+  }
+  for (size_t i = 0; i < node.numChildNodes(); i++) {
+    if (!construct_commit_active(*(node.childAt(i)))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool
+UnionfsCstore::mark_dir_changed(const FsPath& d, const FsPath& root)
+{
+  if (!path_is_directory(d)) {
+    output_internal("mark_dir_changed on non-directory [%s]\n",
+                    d.path_cstr());
+    return false;
+  }
+
+  FsPath marker(d);
+  while (marker.size() >= root.size()) {
+    marker.push(C_MARKER_CHANGED);
+    if (path_exists(marker)) {
+      // reached a node already marked => done
+      break;
+    }
+    if (!create_file(marker)) {
+      output_internal("failed to mark changed [%s]\n", marker.path_cstr());
+      return false;
+    }
+    marker.pop();
+    marker.pop();
+  }
+  return true;
+}
+
+bool
+UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
+                        const FsPath& root)
+{
+  if (!path_exists(src) || !path_exists(dst)) {
+    output_user("sync_dir with non-existing dir(s)[%s][%s]\n",
+                src.path_cstr(), dst.path_cstr());
+    return false;
+  }
+  MapT<string, bool> smap;
+  MapT<string, bool> dmap;
+  vector<string> sentries;
+  vector<string> dentries;
+  check_dir_entries(src, &sentries, false);
+  check_dir_entries(dst, &dentries, false);
+  for (size_t i = 0; i < sentries.size(); i++) {
+    smap[sentries[i]] = true;
+  }
+  for (size_t i = 0; i < dentries.size(); i++) {
+    dmap[dentries[i]] = true;
+    if (smap.find(dentries[i]) == smap.end()) {
+      // entry in dst but not in src => delete
+      FsPath d(dst);
+      if (!mark_dir_changed(d, root)) {
+        return false;
+      }
+      push_path(d, dentries[i].c_str());
+      if (b_fs::remove_all(d.path_cstr()) < 1) {
+        return false;
+      }
+    } else {
+      // entry in both src and dst
+      FsPath s(src);
+      FsPath d(dst);
+      push_path(s, dentries[i].c_str());
+      push_path(d, dentries[i].c_str());
+      if (path_is_regular(s) && path_is_regular(d)) {
+        // it's file => compare and replace if necessary
+        string ds, dd;
+        if (!read_whole_file(s, ds) || !read_whole_file(d, dd)) {
+          // error
+          output_user("failed to replace file [%s][%s]\n",
+                      s.path_cstr(), d.path_cstr());
+          return false;
+        }
+        if (ds != dd) {
+          // need to replace
+          if (!write_file(d, ds)) {
+            output_user("failed to write file [%s]\n", d.path_cstr());
+            return false;
+          }
+          d.pop();
+          if (!mark_dir_changed(d, root)) {
+            return false;
+          }
+        }
+      } else if (path_is_directory(s) && path_is_directory(d)) {
+        // it's dir => recurse
+        if (!sync_dir(s, d, root)) {
+          return false;
+        }
+      } else {
+        // something is wrong
+        output_user("inconsistent config entry [%s][%s]\n",
+                    s.path_cstr(), d.path_cstr());
+        return false;
+      }
+    }
+  }
+  for (size_t i = 0; i < sentries.size(); i++) {
+    if (dmap.find(sentries[i]) == dmap.end()) {
+      // entry in src but not in dst => copy
+      FsPath s(src);
+      FsPath d(dst);
+      push_path(s, sentries[i].c_str());
+      push_path(d, sentries[i].c_str());
+      try {
+        if (path_is_regular(s)) {
+          // it's file
+          b_fs::copy_file(s.path_cstr(), d.path_cstr());
+        } else {
+          // dir
+          recursive_copy_dir(s, d, true);
+        }
+        d.pop();
+        if (!mark_dir_changed(d, root)) {
+          return false;
+        }
+      } catch (...) {
+        output_user("copy failed [%s][%s]\n", s.path_cstr(), d.path_cstr());
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool
+UnionfsCstore::commitConfig(commit::PrioNode& node)
+{
+  // make a copy of current "work" dir
+  try {
+    if (path_exists(tmp_work_root)) {
+      output_internal("rm[%s]\n", tmp_work_root.path_cstr());
+      if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1) {
+        output_user("FAILED\n");
+        return false;
+      }
+    }
+    output_internal("cp[%s]->[%s]\n", work_root.path_cstr(),
+                    tmp_work_root.path_cstr());
+    recursive_copy_dir(work_root, tmp_work_root, true);
+  } catch (...) {
+    output_user("FAILED\n");
+    return false;
+  }
+
+  if (!construct_commit_active(node)) {
+    return false;
+  }
+
+  if (!do_umount(work_root)) {
+    return false;
+  }
+  if (b_fs::remove_all(change_root.path_cstr()) < 1
+      || b_fs::remove_all(active_root.path_cstr()) < 1) {
+    output_user("failed to remove existing directories\n");
+    return false;
+  }
+  try {
+    b_fs::create_directories(change_root.path_cstr());
+    recursive_copy_dir(tmp_active_root, active_root, true);
+  } catch (...) {
+    return false;
+  }
+  if (!do_mount(change_root, active_root, work_root)) {
+    return false;
+  }
+  if (!sync_dir(tmp_work_root, work_root, work_root)) {
+    return false;
+  }
+#if 0
+  if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1
+      || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
+    output_user("failed to remove temp directories\n");
+    return false;
+  }
+#endif
+  // all done
+  return true;
 }
 
 
@@ -932,58 +1195,6 @@ UnionfsCstore::cfg_node_changed()
   return path_exists(marker);
 }
 
-/* XXX currently "committed marking" is done inside commit.
- *     TODO move "committed marking" out of commit and into low-level
- *     implementation (here).
- */
-/* return whether current "cfg path" has been committed, i.e., whether
- * the set or delete operation on the path has been processed by commit.
- *   is_set: whether the operation is set (for sanity check as there can
- *           be only one operation on the path).
- */
-bool
-UnionfsCstore::marked_committed(const tr1::shared_ptr<Ctemplate>& def,
-                                bool is_set)
-{
-  FsPath cpath = mutable_cfg_path;
-  string com_str = cpath.path_cstr();
-  com_str += "/";
-  if (def->isLeafValue()) {
-    // path includes leaf value. construct the right string.
-    string val;
-    cpath.pop(val);
-    val = _unescape_path_name(val);
-    /* XXX current commit implementation escapes value strings for
-     *     single-value nodes but not for multi-value nodes for some
-     *     reason. the following match current behavior.
-     */
-    if (!def->isMulti()) {
-      val = _escape_path_name(val);
-    }
-    com_str = cpath.path_cstr();
-    com_str += "/value:";
-    com_str += val;
-  }
-  com_str = (is_set ? "+ " : "- ") + com_str;
-  return committed_marker_exists(com_str);
-}
-
-bool
-UnionfsCstore::validate_val_impl(const tr1::shared_ptr<Ctemplate>& def,
-                                 char *value)
-{
-  /* XXX filesystem paths/accesses are completely embedded in var ref lib.
-   *     for now, treat the lib as a unionfs-specific implementation.
-   *     generalizing it will need a rewrite.
-   * set the handle to be used during validate_value() for var ref
-   * processing. this is a global var in cli_new.c.
-   */
-  var_ref_handle = (void *) this;
-  bool ret = validate_value(def->getDef(), value);
-  var_ref_handle = NULL;
-  return ret;
-}
-
 void
 UnionfsCstore::get_edit_level(Cpath& pcomps) {
   FsPath opath = mutable_cfg_path; // use a copy
@@ -997,6 +1208,23 @@ UnionfsCstore::get_edit_level(Cpath& pcomps) {
     pcomps.push(tmp.back());
     tmp.pop_back();
   }
+}
+
+bool
+UnionfsCstore::marked_committed(bool is_delete)
+{
+  string marker;
+  get_committed_marker(is_delete, marker);
+  return find_line_in_file(commit_marker_file, marker);
+}
+
+bool
+UnionfsCstore::mark_committed(bool is_delete)
+{
+  string marker;
+  get_committed_marker(is_delete, marker);
+  // write one marker per line
+  return write_file(commit_marker_file, marker + "\n", true);
 }
 
 string
@@ -1041,36 +1269,48 @@ UnionfsCstore::pop_path(FsPath& path, string& last)
   last = _unescape_path_name(last);
 }
 
-void
-UnionfsCstore::get_all_child_dir_names(const FsPath& root,
-                                       vector<string>& nodes)
+bool
+UnionfsCstore::check_dir_entries(const FsPath& root, vector<string> *cnodes,
+                                 bool filter_nodes, bool empty_check)
 {
   if (!path_exists(root) || !path_is_directory(root)) {
-    // not a valid root. nop.
-    return;
+    // not a valid root => treat as empty
+    return false;
   }
+  bool found = false;
   try {
     b_fs::directory_iterator di(root.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
-      // must be directory
-      if (!path_is_directory(di->path().file_string().c_str())) {
-        continue;
-      }
-      // name cannot start with "."
       string cname = di->path().filename();
-      if (cname.length() < 1 || cname[0] == '.') {
-        continue;
+      if (filter_nodes) {
+        // must be directory
+        if (!path_is_directory(di->path().file_string().c_str())) {
+          continue;
+        }
+        // name cannot start with "."
+        if (cname.length() < 1 || cname[0] == '.') {
+          continue;
+        }
       }
       // found one
-      nodes.push_back(_unescape_path_name(cname));
+      if (empty_check) {
+        // only checking and directory is not empty
+        return true;
+      }
+      if (cnodes) {
+        cnodes->push_back(_unescape_path_name(cname));
+      } else {
+        found = true;
+      }
     }
   } catch (...) {
-    return;
+    // skip the rest
   }
+  return (cnodes ? (cnodes->size() > 0) : found);
 }
 
 bool
-UnionfsCstore::write_file(const FsPath& file, const string& data)
+UnionfsCstore::write_file(const char *file, const string& data, bool append)
 {
   if (data.size() > C_UNIONFS_MAX_FILE_SIZE) {
     output_internal("write_file too large\n");
@@ -1085,7 +1325,10 @@ UnionfsCstore::write_file(const FsPath& file, const string& data)
     // write the file
     ofstream fout;
     fout.exceptions(ofstream::failbit | ofstream::badbit);
-    fout.open(file.path_cstr(), ios_base::out | ios_base::trunc);
+    ios_base::openmode mflags = ios_base::out;
+    mflags |= ((!append || !path_exists(file))
+               ? ios_base::trunc : ios_base::app); // truncate or append
+    fout.open(file, mflags);
     fout << data;
     fout.close();
   } catch (...) {
@@ -1127,19 +1370,54 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
   return true;
 }
 
-/* return whether specified "commited marker" exists in the
- * "committed marker file".
+/* recursively copy source directory to destination.
+ * will throw exception (from b_fs) if fail.
  */
+void
+UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
+                                  bool filter_dot_entries)
+{
+  string src_str = src.path_cstr();
+  string dst_str = dst.path_cstr();
+  b_fs::create_directories(dst.path_cstr());
+
+  b_fs::recursive_directory_iterator di(src_str);
+  for (; di != b_fs::recursive_directory_iterator(); ++di) {
+    const char *oname = di->path().file_string().c_str();
+    string nname = oname;
+    nname.replace(0, src_str.length(), dst_str);
+    if (path_is_directory(oname)) {
+      b_fs::create_directory(nname);
+    } else {
+      if (filter_dot_entries) {
+        string of = di->path().filename();
+        if (!of.empty() && of.at(0) == '.') {
+          // filter dot files
+          continue;
+        }
+      }
+      b_fs::copy_file(di->path(), nname);
+    }
+  }
+}
+
+void
+UnionfsCstore::get_committed_marker(bool is_delete, string& marker)
+{
+  marker = (is_delete ? "-" : "");
+  marker += mutable_cfg_path.path_cstr();
+}
+
 bool
-UnionfsCstore::committed_marker_exists(const string& marker)
+UnionfsCstore::find_line_in_file(const FsPath& file, const string& line)
 {
   bool ret = false;
   try {
-    ifstream fin(C_COMMITTED_MARKER_FILE.c_str());
+    ifstream fin(file.path_cstr());
     while (!fin.eof() && !fin.bad() && !fin.fail()) {
-      string line;
-      getline(fin, line);
-      if (line == marker) {
+      string in;
+      getline(fin, in);
+      if (in == line) {
         ret = true;
         break;
       }
@@ -1151,27 +1429,32 @@ UnionfsCstore::committed_marker_exists(const string& marker)
   return ret;
 }
 
-/* recursively copy source directory to destination.
- * will throw exception (from b_fs) if fail.
- */
-void
-UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst)
+bool
+UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
+                        const FsPath& mdir)
 {
-  string src_str = src.path_cstr();
-  string dst_str = dst.path_cstr();
-  b_fs::create_directory(dst.path_cstr());
-
-  b_fs::recursive_directory_iterator di(src_str);
-  for (; di != b_fs::recursive_directory_iterator(); ++di) {
-    const char *oname = di->path().file_string().c_str();
-    string nname = oname;
-    nname.replace(0, src_str.length(), dst_str);
-    if (path_is_directory(oname)) {
-      b_fs::create_directory(nname);
-    } else {
-      b_fs::copy_file(oname, nname);
-    }
+  string mopts = "dirs=";
+  mopts += rwdir.path_cstr();
+  mopts += "=rw:";
+  mopts += rdir.path_cstr();
+  mopts += "=ro";
+  if (mount("unionfs", mdir.path_cstr(), "unionfs", 0, mopts.c_str()) != 0) {
+    output_internal("union mount failed [%s][%s]\n",
+                    strerror(errno), mdir.path_cstr());
+    return false;
   }
+  return true;
+}
+
+bool
+UnionfsCstore::do_umount(const FsPath& mdir)
+{
+  if (umount(mdir.path_cstr()) != 0) {
+    output_internal("union umount failed [%s][%s]\n",
+                    strerror(errno), mdir.path_cstr());
+    return false;
+  }
+  return true;
 }
 
 bool

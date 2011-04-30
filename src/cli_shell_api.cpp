@@ -25,6 +25,7 @@
 #include <cstore/cstore.hpp>
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
+#include <commit/commit-algorithm.hpp>
 #include <cparse/cparse.hpp>
 
 using namespace cstore;

@@ -87,11 +87,7 @@ extern valstruct str2val(char *cp);
 extern void switch_path(first_seg *seg);
 extern void free_val(valstruct *val);
 extern int mkdir_p(const char *path);
-
-extern boolean execute_list(vtw_node *cur, vtw_def *def, const char *outbuf,boolean format);
-
 extern void free_path(vtw_path *path);
-
 extern int get_config_lock(void);
 extern void release_config_lock(void);
 
