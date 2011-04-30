@@ -25,14 +25,17 @@
 #include <cnode/cnode.hpp>
 
 using namespace cnode;
+using namespace cstore;
 
 
 ////// constructors/destructors
+// for parser
 CfgNode::CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
                  int deact, Cstore *cstore, bool tag_if_invalid)
-  : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
+  : TreeNode<CfgNode>(),
+    _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
-    _is_invalid(false), _is_empty(true), _exists(true)
+    _is_invalid(false), _exists(true)
 {
   if (name && name[0]) {
     // name must be non-empty
@@ -49,15 +52,15 @@ CfgNode::CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
       break;
     }
 
-    tr1::shared_ptr<Ctemplate> def(cstore->parseTmpl(path_comps, false));
-    if (def.get()) {
+    setTmpl(cstore->parseTmpl(path_comps, false));
+    if (getTmpl().get()) {
       // got the def
-      _is_tag = def->isTag();
-      _is_leaf = (!_is_tag && !def->isTypeless());
+      _is_tag = getTmpl()->isTag();
+      _is_leaf = (!_is_tag && !getTmpl()->isTypeless());
 
       // match constructor from cstore (leaf node never _is_value)
-      _is_value = (def->isValue() && !_is_leaf);
-      _is_multi = def->isMulti();
+      _is_value = (getTmpl()->isValue() && !_is_leaf);
+      _is_multi = getTmpl()->isMulti();
 
       /* XXX given the current definition of "default", the concept of
        * "default" doesn't really apply to config files.
@@ -113,18 +116,20 @@ CfgNode::CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
   }
 }
 
+// for active/working config
 CfgNode::CfgNode(Cstore& cstore, Cpath& path_comps, bool active,
                  bool recursive)
-  : _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
+  : TreeNode<CfgNode>(),
+    _is_tag(false), _is_leaf(false), _is_multi(false), _is_value(false),
     _is_default(false), _is_deactivated(false), _is_leaf_typeless(false),
-    _is_invalid(false), _is_empty(false), _exists(true)
+    _is_invalid(false), _exists(true)
 {
   /* first get the def (only if path is not empty). if path is empty, i.e.,
    * "root", treat it as an intermediate node.
    */
   if (path_comps.size() > 0) {
-    tr1::shared_ptr<Ctemplate> def(cstore.parseTmpl(path_comps, false));
-    if (def.get()) {
+    setTmpl(cstore.parseTmpl(path_comps, false));
+    if (getTmpl().get()) {
       // got the def
       if (!cstore.cfgPathExists(path_comps, active)) {
         // path doesn't exist
@@ -132,10 +137,10 @@ CfgNode::CfgNode(Cstore& cstore, Cpath& path_comps, bool active,
         return;
       }
 
-      _is_value = def->isValue();
-      _is_tag = def->isTag();
-      _is_leaf = (!_is_tag && !def->isTypeless());
-      _is_multi = def->isMulti();
+      _is_value = getTmpl()->isValue();
+      _is_tag = getTmpl()->isTag();
+      _is_leaf = (!_is_tag && !getTmpl()->isTypeless());
+      _is_multi = getTmpl()->isMulti();
       _is_default = cstore.cfgPathDefault(path_comps, active);
       _is_deactivated = cstore.cfgPathDeactivated(path_comps, active);
       cstore.cfgPathGetComment(path_comps, _comment, active);
@@ -190,7 +195,6 @@ CfgNode::CfgNode(Cstore& cstore, Cpath& path_comps, bool active,
       // typeless leaf node
       _is_leaf_typeless = true;
     }
-    _is_empty = true;
     return;
   }
 
@@ -203,7 +207,7 @@ CfgNode::CfgNode(Cstore& cstore, Cpath& path_comps, bool active,
   for (size_t i = 0; i < cnodes.size(); i++) {
     path_comps.push(cnodes[i]);
     CfgNode *cn = new CfgNode(cstore, path_comps, active, recursive);
-    _child_nodes.push_back(cn);
+    addChildNode(cn);
     path_comps.pop();
   }
 }

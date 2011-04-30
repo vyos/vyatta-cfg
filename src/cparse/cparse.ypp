@@ -8,6 +8,8 @@
 #include "cparse.hpp"
 #include "cparse_def.h"
 
+using namespace cstore;
+using namespace cnode;
 using namespace cparse;
 
 /* to enable tracing, define ENABLE_PARSER_TRACE. may also want to invoke

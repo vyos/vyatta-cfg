@@ -40,6 +40,13 @@ extern "C" void* Perl_get_context(void)
                             "calling %s() without config session", \
                             __func__);
 
+// forward decl
+namespace cnode {
+class CfgNode;
+}
+namespace commit {
+class PrioNode;
+}
 
 namespace cstore { // begin namespace cstore
 
@@ -163,6 +170,13 @@ public:
   virtual bool inSession() = 0;
   // commit
   bool unmarkCfgPathChanged(const Cpath& path_comps);
+  bool executeTmplActions(char *at_str, const Cpath& path,
+                          const Cpath& disp_path, const vtw_node *actions,
+                          const vtw_def *def);
+  bool cfgPathMarkedCommitted(const Cpath& path_comps, bool is_delete);
+  bool markCfgPathCommitted(const Cpath& path_comps, bool is_delete);
+  virtual bool clearCommittedMarkers() = 0;
+  virtual bool commitConfig(commit::PrioNode& pnode) = 0;
   // load
   bool loadFile(const char *filename);
 
@@ -361,14 +375,6 @@ private:
   virtual bool get_comment(string& comment, bool active_cfg) = 0;
   virtual bool marked_display_default(bool active_cfg) = 0;
 
-  // observers during commit operation
-  virtual bool marked_committed(const tr1::shared_ptr<Ctemplate>& def,
-                                bool is_set) = 0;
-
-  // these operate on both current tmpl and work paths
-  virtual bool validate_val_impl(const tr1::shared_ptr<Ctemplate>& def,
-                                 char *value) = 0;
-
   // observers for "edit/tmpl levels" (for "edit"-related operations)
   /* note that these should be handled in the base class since they
    * should not be implementation-specific. however, current definitions
@@ -384,6 +390,10 @@ private:
   virtual string get_tmpl_level_path() = 0;
   virtual void get_edit_level(Cpath& path_comps) = 0;
   virtual bool edit_level_at_root() = 0;
+
+  // functions for commit operation
+  virtual bool marked_committed(bool is_delete) = 0;
+  virtual bool mark_committed(bool is_delete) = 0;
 
   // these are for testing/debugging
   virtual string cfg_path_to_str() = 0;

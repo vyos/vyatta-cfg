@@ -23,6 +23,8 @@
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
+#include <cnode/cnode.hpp>
+#include <commit/commit-algorithm.hpp>
 
 using namespace cstore;
 
@@ -37,6 +39,7 @@ static const char *op_bin_name[] = {
   "my_comment",
   "my_discard",
   "my_move",
+  "my_commit",
   NULL
 };
 static const char *op_Str[] = {
@@ -49,6 +52,7 @@ static const char *op_Str[] = {
   "Comment",
   "Discard",
   "Move",
+  "Commit",
   NULL
 };
 static const char *op_str[] = {
@@ -61,6 +65,7 @@ static const char *op_str[] = {
   "comment",
   "discard",
   "move",
+  "commit",
   NULL
 };
 static const bool op_need_cfg_node_args[] = {
@@ -73,11 +78,26 @@ static const bool op_need_cfg_node_args[] = {
   true,
   false,
   true,
+  false,
+  false // dummy
+};
+static const bool op_use_edit_level[] = {
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
   false // dummy
 };
 #define OP_Str op_Str[op_idx]
 #define OP_str op_str[op_idx]
 #define OP_need_cfg_node_args op_need_cfg_node_args[op_idx]
+#define OP_use_edit_level op_use_edit_level[op_idx]
 
 static void
 doSet(Cstore& cstore, const Cpath& path_comps)
@@ -173,6 +193,17 @@ doMove(Cstore& cstore, const Cpath& path_comps)
   }
 }
 
+static void
+doCommit(Cstore& cstore, const Cpath& path_comps)
+{
+  Cpath dummy;
+  cnode::CfgNode aroot(cstore, dummy, true, true);
+  cnode::CfgNode wroot(cstore, dummy, false, true);
+  if (!commit::doCommit(cstore, aroot, wroot)) {
+    exit(1);
+  }
+}
+
 typedef void (*OpFuncT)(Cstore& cstore,
                         const Cpath& path_comps);
 OpFuncT OpFunc[] = {
@@ -185,6 +216,7 @@ OpFuncT OpFunc[] = {
   &doComment,
   &doDiscard,
   &doMove,
+  &doCommit,
   NULL
 };
 
@@ -212,8 +244,7 @@ main(int argc, char **argv)
     bye("nothing to %s\n", OP_str);
   }
 
-  // actual CLI operations use the edit levels from environment, so pass true.
-  Cstore *cstore = Cstore::createCstore(true);
+  Cstore *cstore = Cstore::createCstore(OP_use_edit_level);
   Cpath path_comps(const_cast<const char **>(argv + 1), argc - 1);
 
   // call the op function

@@ -65,6 +65,7 @@ public:
   };
 
   size_t length() const { return _data.length(); };
+  size_t size() const { return _data.size(); };
   bool has_parent_path() const { return (_data.size() > 0); };
   const char *path_cstr() const { return _data.get_cstr(); };
   size_t hash() const { return _data.hash(); };

@@ -28,7 +28,7 @@ if [ "$sysconfdir" != "/etc" ]; then
 fi
 
 # capability stuff
-for bin in my_cli_bin my_cli_shell_api my_commit; do
+for bin in my_cli_bin my_cli_shell_api; do
   touch -ac $sbindir/$bin
   setcap cap_sys_admin=pe $sbindir/$bin
 done

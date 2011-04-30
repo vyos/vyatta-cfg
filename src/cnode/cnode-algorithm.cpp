@@ -25,6 +25,8 @@
 #include <cnode/cnode-algorithm.hpp>
 
 using namespace cnode;
+using namespace cstore;
+using namespace std;
 
 
 ////// constants
@@ -38,6 +40,24 @@ const string cnode::ACTIVE_CFG = "@ACTIVE";
 const string cnode::WORKING_CFG = "@WORKING";
 
 ////// static (internal) functions
+static inline const char *
+diff_to_pfx(DiffState s)
+{
+  switch (s) {
+  case DIFF_ADD:
+    return PFX_DIFF_ADD.c_str();
+  case DIFF_DEL:
+    return PFX_DIFF_DEL.c_str();
+  case DIFF_UPD:
+    return PFX_DIFF_UPD.c_str();
+  case DIFF_NONE:
+    return PFX_DIFF_NONE.c_str();
+  case DIFF_NULL:
+  default:
+    return PFX_DIFF_NULL.c_str();
+  }
+}
+
 static void
 _show_diff(const CfgNode *cfg1, const CfgNode *cfg2, int level,
            Cpath& cur_path, Cpath& last_ctx, bool show_def,
@@ -49,16 +69,16 @@ _get_cmds_diff(const CfgNode *cfg1, const CfgNode *cfg2,
                vector<Cpath>& set_list, vector<Cpath>& com_list);
 
 /* compare the values of a "multi" node in the two configs. the values and
- * the "prefix" of each value are returned in "values" and "pfxs",
+ * the "diff" of each value are returned in "values" and "pfxs",
  * respectively.
  *
  * return value indicates whether the node is different in the two configs.
  *
  * comparison follows the original perl logic.
  */
-static bool
-_cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
-                  vector<string>& values, vector<const char *>& pfxs)
+bool
+cnode::cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
+                        vector<string>& values, vector<DiffState>& pfxs)
 {
   const vector<string>& ovec = cfg1->getValues();
   const vector<string>& nvec = cfg2->getValues();
@@ -72,7 +92,7 @@ _cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
     omap[ovec[i]] = true;
     if (nmap.find(ovec[i]) == nmap.end()) {
       values.push_back(ovec[i]);
-      pfxs.push_back(PFX_DIFF_DEL.c_str());
+      pfxs.push_back(DIFF_DEL);
       changed = true;
     }
   }
@@ -80,12 +100,12 @@ _cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
   for (size_t i = 0; i < nvec.size(); i++) {
     values.push_back(nvec[i]);
     if (omap.find(nvec[i]) == omap.end()) {
-      pfxs.push_back(PFX_DIFF_ADD.c_str());
+      pfxs.push_back(DIFF_ADD);
       changed = true;
     } else if (i < ovec.size() && nvec[i] == ovec[i]) {
-      pfxs.push_back(PFX_DIFF_NONE.c_str());
+      pfxs.push_back(DIFF_NONE);
     } else {
-      pfxs.push_back(PFX_DIFF_UPD.c_str());
+      pfxs.push_back(DIFF_UPD);
       changed = true;
     }
   }
@@ -93,12 +113,12 @@ _cmp_multi_values(const CfgNode *cfg1, const CfgNode *cfg2,
   return changed;
 }
 
-static void
-_cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
-                    vector<CfgNode *>& rcnodes1,
-                    vector<CfgNode *>& rcnodes2, bool& not_tag_node,
-                    bool& is_value, bool& is_leaf_typeless,
-                    string& name, string& value)
+void
+cnode::cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
+                          vector<CfgNode *>& rcnodes1,
+                          vector<CfgNode *>& rcnodes2, bool& not_tag_node,
+                          bool& is_value, bool& is_leaf_typeless,
+                          string& name, string& value)
 {
   const CfgNode *cfg = (cfg1 ? cfg1 : cfg2);
   is_value = cfg->isValue();
@@ -361,12 +381,12 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
     } else {
       // need to actually do a diff.
       vector<string> values;
-      vector<const char *> pfxs;
-      bool changed = _cmp_multi_values(cfg1, cfg2, values, pfxs);
+      vector<DiffState> pfxs;
+      bool changed = cmp_multi_values(cfg1, cfg2, values, pfxs);
       if (!context_diff || changed) {
         // not context diff OR there is a difference => print the node
         for (size_t i = 0; i < values.size(); i++) {
-          if (context_diff && pfxs[i] == PFX_DIFF_NONE.c_str()) {
+          if (context_diff && pfxs[i] == DIFF_NONE) {
             // not printing unchanged values if doing context diff
             continue;
           }
@@ -380,7 +400,7 @@ _diff_check_and_show_leaf(const CfgNode *cfg1, const CfgNode *cfg2, int level,
             _diff_print_context(cur_path, last_ctx);
             cprint = true;
           }
-          _diff_print_indent(cfg1, cfg2, level, pfxs[i]);
+          _diff_print_indent(cfg1, cfg2, level, diff_to_pfx(pfxs[i]));
           printf("%s ", cfg->getName().c_str());
           _print_value_str(cfg->getName(), values[i].c_str(), hide_secret);
           printf("\n");
@@ -441,7 +461,7 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
   string name, value;
   bool not_tag_node, is_value, is_leaf_typeless;
   vector<CfgNode *> rcnodes1, rcnodes2;
-  _cmp_non_leaf_nodes(cfg1, cfg2, rcnodes1, rcnodes2, not_tag_node, is_value,
+  cmp_non_leaf_nodes(cfg1, cfg2, rcnodes1, rcnodes2, not_tag_node, is_value,
                       is_leaf_typeless, name, value);
 
   /* only print "this" node if it
@@ -700,8 +720,8 @@ _get_cmds_diff_leaf(const CfgNode *cfg1, const CfgNode *cfg2,
     } else {
       // need to actually do a diff.
       vector<string> dummy_vals;
-      vector<const char *> dummy_pfxs;
-      if (_cmp_multi_values(cfg1, cfg2, dummy_vals, dummy_pfxs)) {
+      vector<DiffState> dummy_pfxs;
+      if (cmp_multi_values(cfg1, cfg2, dummy_vals, dummy_pfxs)) {
         /* something changed. to get the correct ordering for multi-node
          * values, need to delete the node and then set the new values.
          */
@@ -755,7 +775,7 @@ _get_cmds_diff_other(const CfgNode *cfg1, const CfgNode *cfg2,
   string name, value;
   bool not_tag_node, is_value, is_leaf_typeless;
   vector<CfgNode *> rcnodes1, rcnodes2;
-  _cmp_non_leaf_nodes(cfg1, cfg2, rcnodes1, rcnodes2, not_tag_node, is_value,
+  cmp_non_leaf_nodes(cfg1, cfg2, rcnodes1, rcnodes2, not_tag_node, is_value,
                       is_leaf_typeless, name, value);
   if (rcnodes1.size() < 1 && list) {
     // subtree is empty

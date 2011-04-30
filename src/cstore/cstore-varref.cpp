@@ -122,14 +122,12 @@ Cstore::VarRef::process_ref(const Cpath& ref_comps,
         return;
       }
     }
-    if (pcomps.size() < _orig_path_comps.size()) {
-      // within the original path. @ translates to the path comp.
-      pcomps.push(_orig_path_comps[pcomps.size()]);
-      process_ref(rcomps, pcomps, def->getType(1));
-      return;
-    }
-    if (def->isValue() || def->isTag()) {
-      // invalid ref
+    if (!def->isSingleLeafNode() && !def->isMultiLeafNode()) {
+      if (pcomps.size() < _orig_path_comps.size()) {
+        // within the original path. @ translates to the path comp.
+        pcomps.push(_orig_path_comps[pcomps.size()]);
+        process_ref(rcomps, pcomps, def->getType(1));
+      }
       return;
     }
     // handle leaf node
@@ -186,12 +184,16 @@ Cstore::VarRef::process_ref(const Cpath& ref_comps,
     // just text. go down 1 level.
     if (got_tmpl && def->isTagNode()) {
       // at "tag node". need to go down 1 more level.
-      if (pcomps.size() >= _orig_path_comps.size()) {
+      if (pcomps.size() > _orig_path_comps.size()) {
         // already under the original node. invalid ref.
         return;
+      } else if (pcomps.size() == _orig_path_comps.size()) {
+        // at the tag value. use the at_string.
+        pcomps.push(_at_string);
+      } else  {
+        // within the original path. take the original tag value.
+        pcomps.push(_orig_path_comps[pcomps.size()]);
       }
-      // within the original path. take the original tag value.
-      pcomps.push(_orig_path_comps[pcomps.size()]);
     }
     pcomps.push(cr_comp);
     process_ref(rcomps, pcomps, ERROR_TYPE);
@@ -218,11 +220,16 @@ Cstore::VarRef::process_ref(const Cpath& ref_comps,
     } else {
       // single-value node
       string val;
+      vtw_type_e t = def->getType(1);
       if (!_cstore->cfgPathGetValue(pcomps, val, _active)) {
-        return;
+        /* can't get value => treat it as non-existent (empty value
+         * and type ERROR_TYPE)
+         */
+        val = "";
+        t = ERROR_TYPE;
       }
       pcomps.push(val);
-      _paths.push_back(pair<Cpath, vtw_type_e>(pcomps, def->getType(1)));
+      _paths.push_back(pair<Cpath, vtw_type_e>(pcomps, t));
       // at leaf. stop recursion.
     }
   }
@@ -288,6 +295,13 @@ Cstore::VarRef::getSetPath(Cpath& path_comps)
     return false;
   }
   path_comps = _paths[0].first;
+  /* note that for "varref set" operation, the varref must refer to the
+   * "value" of a single-value leaf node, e.g.,
+   * "$VAR(plaintext-password/@)". so pop the last comp to give the
+   * correct path for "set". the caller is responsible for verifying
+   * whether the path points to a single-value leaf node.
+   */
+  path_comps.pop();
   return true;
 }
 

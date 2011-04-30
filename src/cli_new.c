@@ -223,7 +223,7 @@ void append(vtw_list *l, vtw_node *n, int aux)
  * completion mechanism to get such "allowed" values specified by "syntax".
  */
 const valstruct *
-get_syntax_self_in_valstruct(vtw_node *vnode)
+get_syntax_self_in_valstruct(const vtw_node *vnode)
 {
   const valstruct *ret = NULL;
   if (!vnode) {
@@ -427,7 +427,9 @@ get_config_lock()
 /* returns FALSE if execution returns non-null,
    returns TRUE if every excution returns NULL
 */
-boolean execute_list(vtw_node *cur, vtw_def *def, const char *prepend_msg,boolean format) 
+boolean
+execute_list(vtw_node *cur, const vtw_def *def, const char *prepend_msg,
+             boolean format)
 {
   boolean ret;
   int status;
@@ -912,11 +914,7 @@ static int change_var_value(const char* var_reference,const char* value, int act
 
   if(var_reference && value) {
     if (var_ref_handle) {
-      /* XXX current var ref lib implementation is fs-specific.
-       *     for now treat it as a part of the unionfs-specific
-       *     cstore implementation.
-       * handle is set => we are in cstore operation.
-       */
+      /* handle is set => we are in cstore operation.  */
       if (cstore_set_var_ref(var_ref_handle, var_reference, value,
                              active_dir)) {
         ret = 0;
@@ -1217,11 +1215,7 @@ static int eval_va(valstruct *res, vtw_node *node)
       *endp = 0;
       
       if (var_ref_handle) {
-        /* XXX current var ref lib implementation is fs-specific.
-         *     for now treat it as a part of the unionfs-specific
-         *     cstore implementation.
-         * handle is set => we are in cstore operation.
-         */
+        /* handle is set => we are in cstore operation. */
         vtw_type_e vtype;
         char *vptr = NULL;
         if (!cstore_get_var_ref(var_ref_handle, pathp, &vtype, &vptr,
@@ -1395,11 +1389,7 @@ static int expand_string(char *stringp)
 	  bye("Empty path");	  
 	
         if (var_ref_handle) {
-          /* XXX current var ref lib implementation is fs-specific.
-           *     for now treat it as a part of the unionfs-specific
-           *     cstore implementation.
-           * handle is set => we are in cstore operation.
-           */
+          /* handle is set => we are in cstore operation. */
           vtw_type_e vtype;
           char *vptr = NULL;
           if (cstore_get_var_ref(var_ref_handle, scanp, &vtype, &vptr,

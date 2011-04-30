@@ -45,6 +45,7 @@ src_libvyatta_cfg_la_SOURCES += src/cnode/cnode.cpp
 src_libvyatta_cfg_la_SOURCES += src/cnode/cnode-algorithm.cpp
 src_libvyatta_cfg_la_SOURCES += src/cparse/cparse.cpp
 src_libvyatta_cfg_la_SOURCES += src/cparse/cparse_lex.c
+src_libvyatta_cfg_la_SOURCES += src/commit/commit-algorithm.cpp
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 CLEANFILES += src/cparse/cparse.cpp src/cparse/cparse.h
 CLEANFILES += src/cparse/cparse_lex.c
@@ -71,7 +72,6 @@ vpincdir = $(vincludedir)/cparse
 vpinc_HEADERS = src/cparse/cparse.hpp
 
 sbin_PROGRAMS = src/priority
-sbin_PROGRAMS += src/my_commit
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/check_tmpl
@@ -79,7 +79,6 @@ sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
 
 src_priority_SOURCES = src/priority.c
-src_my_commit_SOURCES = src/commit2.cpp
 src_exe_action_SOURCES = src/exe_action.c
 src_dump_SOURCES = src/dump_session.c
 src_check_tmpl_SOURCES = src/check_tmpl.c
@@ -129,7 +128,8 @@ install-exec-hook:
 	  $(LN_S) my_cli_bin my_copy; \
 	  $(LN_S) my_cli_bin my_comment; \
 	  $(LN_S) my_cli_bin my_discard; \
-	  $(LN_S) my_cli_bin my_move
+	  $(LN_S) my_cli_bin my_move; \
+	  $(LN_S) my_cli_bin my_commit
 	mkdir -p $(DESTDIR)/bin
 	cd $(DESTDIR)/bin ; \
 	  $(LN_S) $(sbindir)/my_cli_shell_api cli-shell-api
