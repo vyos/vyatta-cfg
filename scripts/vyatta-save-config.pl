@@ -23,6 +23,7 @@ use strict;
 use lib "/opt/vyatta/share/perl5";
 use Vyatta::ConfigOutput;
 use File::Sync qw(fsync);
+use Vyatta::Misc qw(get_short_config_path);
 
 my $etcdir = "/opt/vyatta/etc";
 my $bootpath = $etcdir . "/config";
@@ -76,7 +77,9 @@ if ($mode eq 'local' and !($save_file =~ /^\//)) {
 }
 
 my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
-print "Saving configuration to '$save_file'...\n";
+# when presenting to users, show shortened /config path
+my $shortened_save_file = get_short_config_path($save_file);
+print "Saving configuration to '$shortened_save_file'...\n";
 
 my $save;
 if ($mode eq 'local') {

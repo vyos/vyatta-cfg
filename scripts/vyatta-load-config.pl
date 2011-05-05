@@ -29,6 +29,7 @@ use Getopt::Long;
 use Sys::Syslog qw(:standard :macros);
 use Vyatta::Config;
 use Vyatta::ConfigLoad;
+use Vyatta::Misc qw(get_short_config_path);
 
 $SIG{'INT'} = 'IGNORE';
 
@@ -174,7 +175,11 @@ system("$sbindir/vyatta_config_migrate.pl $load_file");
 # note: "load" is now handled in the backend so only "merge" is actually
 # handled in this script. "merge" hasn't been moved into the backend since
 # the command itself needs to be revisited after mendocino time frame.
-print "Loading configuration from '$load_file'...\n";
+
+# when presenting to users, show shortened /config path
+my $shortened_load_file = get_short_config_path($load_file);
+print "Loading configuration from '$shortened_load_file'...\n";
+
 my $cobj = new Vyatta::Config;
 if (!defined($merge)) {
   # "load" => use backend through API
