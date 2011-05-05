@@ -1136,6 +1136,21 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   CfgNode *root = getCommitTree(&cfg1, &cfg2, p);
   if (!root) {
     OUTPUT_USER("No configuration changes to commit\n");
+    /* call the low-level commitConfig() function with a dummy structure
+     * representing successful commit on the whole tree. this is equivalent
+     * to copying the whole working config back to the active config. since
+     * the two are "logically" the same, this is redundant in most cases.
+     * however, in some cases, this gives the low-level implementation a
+     * chance to clean up any intermediate state that are no longer needed.
+     */
+    Cpath rp;
+    auto_ptr<CfgNode> cn(new CfgNode(rp, NULL, NULL, NULL, 0, &cs, false));
+    PrioNode pn(cn.get());
+    pn.setSucceeded(true);
+    if (!cs.commitConfig(pn)) {
+      OUTPUT_USER("Failed to generate committed config\n");
+      return false;
+    }
     return true;
   }
 
@@ -1185,6 +1200,9 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   if (!cs.clearCommittedMarkers()) {
     OUTPUT_USER("Failed to clear committed markers\n");
     ret = false;
+  }
+  if (ret) {
+    ret = cs.markSessionUnsaved();
   }
   return ret;
 }
