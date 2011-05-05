@@ -30,7 +30,8 @@ our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_local_address is_primary_address get_ipnet_intf_hash);
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
-		    getPortRuleString);
+		    getPortRuleString
+                    get_short_config_path);
 
 use Vyatta::Config;
 use Vyatta::Interface;
@@ -103,6 +104,15 @@ sub is_primary_address {
 
   return 1 if ($ip_address eq $primary_address);
   return;
+}
+
+# remove '/opt/vyatta/etc' from begining of config directory path
+sub get_short_config_path {
+  my $cfg_path = shift;
+  my $shortened_cfg_path = "";
+  $shortened_cfg_path = $cfg_path if defined $cfg_path;
+  $shortened_cfg_path =~ s/^\/opt\/vyatta\/etc//;
+  return $shortened_cfg_path;
 }
 
 sub get_sysfs_value {
