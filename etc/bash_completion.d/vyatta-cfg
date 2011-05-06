@@ -451,16 +451,16 @@ vyatta_compare_complete ()
       echo
       echo "Possible completions:"
       echo -e "<enter>\tCompare working & active configurations"
-      echo -e "<N>\tCompare working with revion N"
-      echo -e "<N> <M>\tCompare revion N with M"
+      echo -e "<N>\tCompare working with revision N"
+      echo -e "<N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
       echo
       echo "Possible completions:"
       echo -e "<enter>\tCompare working & active configurations"
-      echo -e "<N>\tCompare working with revion N"
-      echo -e "<N> <M>\tCompare revion N with M"
+      echo -e "<N>\tCompare working with revision N"
+      echo -e "<N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
   else
