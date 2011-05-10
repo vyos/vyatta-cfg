@@ -1,3 +1,14 @@
+vyatta-cfg (0.18.98) unstable; urgency=low
+
+  [ Michael Larson ]
+  * fix typo in help text
+
+  [ An-Cheng Huang ]
+  * preliminary implementation of new commit
+  * clean up when committing no changes
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 10 May 2011 09:25:52 +0800
+
 vyatta-cfg (0.18.97) unstable; urgency=low
 
   * Fix Bug 7010 Update commands to save/retrieve files from /config
