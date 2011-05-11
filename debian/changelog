@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.99) unstable; urgency=low
+
+  * Fix Bug 7012 make /config available with init-floppy
+
+ -- Mohit Mehta <mohit@vyatta.com>  Wed, 11 May 2011 11:35:13 -0700
+
 vyatta-cfg (0.18.98) unstable; urgency=low
 
   [ Michael Larson ]
