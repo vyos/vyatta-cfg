@@ -79,6 +79,8 @@ init_bootfile () {
 
     [ -d /media/floppy/config ] &&
 	mount -o bind /media/floppy/config /opt/vyatta/etc/config
+	mkdir -p /config
+	mount -o bind /media/floppy/config /config
 
     if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
 			    $BOOTFILE >&/dev/null; then
