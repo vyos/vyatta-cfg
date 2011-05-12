@@ -1898,7 +1898,7 @@ Cstore::executeTmplActions(char *at_str, const Cpath& path,
   var_ref_handle = (void *) this;
   // const_cast for legacy code
   bool ret = execute_list(const_cast<vtw_node *>(actions), def,
-                          sdisp.c_str(), false);
+                          sdisp.c_str());
   var_ref_handle = NULL;
   return ret;
 }

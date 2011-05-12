@@ -639,13 +639,13 @@ process_func(GNode *node, gpointer data)
         if (g_old_print_output == TRUE) {
           status
             = execute_list(c->_def.actions[result->_action].vtw_list_head,
-                           &c->_def, NULL, g_print_error_location_all);
+                           &c->_def, NULL);
         }
         else {
           char *p = process_script_path(d->_path);
           status
             = execute_list(c->_def.actions[result->_action].vtw_list_head,
-                           &c->_def, p, g_print_error_location_all);
+                           &c->_def, p);
           free(p);
         }
       } else {
@@ -1458,12 +1458,12 @@ validate_func(GNode *node, gpointer data)
     if (g_old_print_output == TRUE) {
       status
         = execute_list(c->_def.actions[result->_action].vtw_list_head,
-                       &c->_def, NULL, g_print_error_location_all);
+                       &c->_def, NULL);
     } else {
       char *p = process_script_path(d->_path);
       status
         = execute_list(c->_def.actions[result->_action].vtw_list_head,
-                       &c->_def, p, g_print_error_location_all);
+                       &c->_def, p);
       free(p);
     }
     unsetenv(ENV_DATA_PATH);

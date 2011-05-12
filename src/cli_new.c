@@ -428,15 +428,17 @@ get_config_lock()
    returns TRUE if every excution returns NULL
 */
 boolean
-execute_list(vtw_node *cur, const vtw_def *def, const char *prepend_msg,
-             boolean format)
+execute_list(vtw_node *cur, const vtw_def *def, const char *prepend_msg)
 {
   boolean ret;
   int status;
   set_in_exec(TRUE);
   status = char2val(def, get_at_string(), &validate_value_val);  
   if (status) return FALSE;
-  ret = check_syn(cur,prepend_msg,format);
+
+  // XXX emulate original impl for "error" location
+  ret = check_syn(cur, prepend_msg,
+                  (getenv("VYATTA_OUTPUT_ERROR_LOCATION") != NULL));
   free_val(&validate_value_val);
   set_in_exec(FALSE);
   return ret;
@@ -2101,149 +2103,208 @@ restore_output()
   return 0;
 }
 
-/* system_out:
- * call system() with output re-enabled.
- * output is again redirected before returning from here.
- * note: this function may be used outside of actual CLI operations, so output
- *       may not have been redirected. check out_stream for such cases.
- */
-
 int
-old_system_out(const char *command)
+system_out(const char *cmd, const char *prepend_msg, boolean eloc)
 {
-  int ret = -1;
-  if (out_stream && restore_output() == -1) {
-    return -1;
-  }
-  
-  ret = system(command);
-  if (out_stream && redirect_output() == -1) {
-    return -1;
-  }
-  
-  //  fprintf(out_stream,"old system out: %d, for cmd: %s\n",ret,command);
-  return ret;
-}
+  int pfd[2];
+  int ret;
+  pid_t cpid;
 
-int
-system_out(const char *cmd, const char *prepend_msg, boolean format) 
-{
-  //  fprintf(out_stream,"system out\n");
-  if (prepend_msg == NULL) {                 
-    return old_system_out(cmd);
-  }                                                                                                             
-  if (cmd == NULL) {
-    return -1;               
-  }
-
-  int cp[2]; // Child to parent pipe
-  if( pipe(cp) < 0) {                                                                                                       
+  if (!cmd || (ret = pipe(pfd)) != 0) {
     return -1;
   }
 
-  pid_t pid = fork();                                                                                 
-  if (pid == 0) {                                                                                          
-    //child
-    close(cp[0]);
-    close(STDIN_FILENO); // Close current stdout./
-    dup2(cp[1],STDOUT_FILENO); // Make stdout go to write end of pipe.
-    dup2(cp[1],STDERR_FILENO); // Make stderr go to write end of pipe.
-    close(cp[1]);
-    int ret = 0;  
-    //    fprintf(out_stream,"executing: %s\n",cmd);
-    if (execl("/bin/sh","sh","-c",cmd,NULL) == -1) {                                   
-      ret = errno;
-    }
-    close(cp[1]);
-    exit(ret);
-  }
-  else {
-    //parent         
-    char buf[8192];
-    char last_char = '\0';
-    memset(buf,'\0',8192);
-    close(cp[1]);
-    boolean first = TRUE;
-    boolean print = FALSE;
-    fd_set rfds;
-    struct timeval tv;
-    char errloc_buf[] = "_errloc_:";
-    size_t errloc_len = strlen(errloc_buf);
-
-    FD_ZERO(&rfds);
-    FD_SET(cp[0], &rfds);
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
-
-    int flags = fcntl(cp[0], F_GETFL); 
-    flags |= O_NONBLOCK; fcntl(cp[0], F_SETFL, flags);
-
-    while (select(FD_SETSIZE, &rfds, NULL, NULL, &tv) != -1) {
-      int err = 0;
-      if ((err = read(cp[0], &buf, 8191)) > 0) {
-
-
-	print = TRUE;
-	if (first == TRUE) {
-	  if (strncmp(buf,errloc_buf,errloc_len) == 0) {
-	    if (format == FALSE) { 
-	      fprintf(out_stream,"%s",buf+errloc_len);
-	    }
-	    else {
-	      fprintf(out_stream,"%s",buf);
-	    }
-	  }
-	  else {
-	    //currently set to format option for GUI client.
-	    if (prepend_msg != NULL) {
-	      if (format == FALSE) { 
-		fprintf(out_stream,"[%s]\n%s",prepend_msg,buf);
-	      }
-	      else {
-		fprintf(out_stream,"%s[%s]\n%s",errloc_buf,prepend_msg,buf);
-	      }
-	    }
-	  }	
-	}
-	else {
-	  if (strncmp(buf,errloc_buf,errloc_len) == 0 && format == FALSE) { 
-	    fprintf(out_stream,"%s",buf+errloc_len);
-	  }
-	  else {
-	    fprintf(out_stream,"%s",buf);
-	  }
-	}
-
-
-	first = FALSE;
-	last_char = buf[strlen(buf)-2];
-	memset(buf,'\0',8192);
-      }
-      else if (err == -1 && errno == EAGAIN) {
-	//try again
-      }
-      else {
-	break;
-      }
-      FD_ZERO(&rfds);
-      FD_SET(cp[0], &rfds);
-      tv.tv_sec = 1;
-      tv.tv_usec = 0;
-
-      fflush(NULL);
-    }
-
-    if (print == TRUE && last_char != '\n') {
-      fprintf(out_stream,"\n");
-    }
-    //now wait on child to kick the bucket                  
+  /* note that the process management mechanism here is a new implementation.
+   * this fixes bug 6771, which was broken by the change introduced in
+   * commit 792d6aa0dd0ecfd45c9b5ab57c6c0cb71a9b8da6.
+   *
+   * basically, that commit changed the process management such that the
+   * commit process does not terminate if any child process is spawned in a
+   * certain way (more specifically, if its STDERR fd is not closed).
+   *
+   * saying that "STDERR *should* be closed and therefore this is not our
+   * fault" is not an acceptable solution since we use many debian packages
+   * "as-is", and expecting all child processes spawned by any present and
+   * future packages in our system to do that is not practical (nor is it
+   * feasible to expect us to keep finding and fixing such cases, which
+   * would most likely involve taking ownership of debian packages that we
+   * could have used as-is.)
+   *
+   * the new process management mechanism below does not have this problem.
+   */
+  if ((cpid = fork())) {
     int status;
-    wait(&status);
-    close(cp[0]);
-    if (WIFEXITED(status)) {
-      return WEXITSTATUS(status);
+    int waited = 0;
+    int prepend = 1;
+
+    if (cpid == -1) {
+      return -1;
     }
-    return 1;
+
+    close(pfd[1]);
+    while (1) {
+      int sret;
+      fd_set readfds;
+      struct timeval timeout;
+      FD_ZERO(&readfds);
+      FD_SET(pfd[0], &readfds);
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 100000;
+      sret = select(pfd[0] + 1, &readfds, NULL, NULL, &timeout);
+      if (sret == 1) {
+        /* ready for read */
+        char buf[128];
+        char *out = buf;
+        ssize_t count = read(pfd[0], buf, 128);
+        if (count <= 0) {
+          /* eof or error */
+          break;
+        }
+
+        /* XXX XXX XXX BEGIN emulating original "error" location handling */
+
+        /* the following code segment is the "logic" for handling "error"
+         * location in the original impl. (note that this code is preserved
+         * here for demonstration purpose. this is not "commented-out"
+         * code.)
+         */
+        /***
+        if (first == TRUE) {
+          if (strncmp(buf,errloc_buf,errloc_len) == 0) {
+            if (format == FALSE) {
+              fprintf(out_stream,"%s",buf+errloc_len);
+            }
+            else {
+              fprintf(out_stream,"%s",buf);
+            }
+          } else {
+            //currently set to format option for GUI client.
+            if (prepend_msg != NULL) {
+              if (format == FALSE) {
+                fprintf(out_stream,"[%s]\n%s",prepend_msg,buf);
+              } else {
+                fprintf(out_stream,"%s[%s]\n%s",errloc_buf,prepend_msg,buf);
+              }
+            }
+          }
+        } else {
+          if (strncmp(buf,errloc_buf,errloc_len) == 0 && format == FALSE) {
+            fprintf(out_stream,"%s",buf+errloc_len);
+          } else {
+            fprintf(out_stream,"%s",buf);
+          }
+        }
+        ***/
+        /* XXX analysis of above:
+         * the main issue is that this seems to indicate that the "error"
+         * location can actually be prepended in two different layers (the
+         * layer here and the actual command output). the "logic" above
+         * seems to be:
+         *   (1) for first buffer read
+         *     (A) if the lower layer has already prepended "errloc" string
+         *       (a) if we DON'T want errloc string, then strip it from
+         *           the lower-layer output.
+         *       (b) if we DO want the string, let it pass through
+         *     (B) if the lower layer did not prepend
+         *       (a) if we DON'T want errloc, don't prepend it here
+         *       (b) if we DO want the string, prepend it here
+         *   (2) for any subsequent buffer reads
+         *     (A) if lower layer prepended errloc AND we DON'T want errloc,
+         *         strip it from output
+         *     (B) otherwise (lower layer did not prepend OR
+         *         we DO want errloc), let it pass through
+         *
+         * note that the handling of subsequent buffer reads makes no sense.
+         * the reads can start at any offsets, so if we actually need to
+         * strip out any errloc string at the start of any subsequent reads
+         * from the command output, then something is very broken here.
+         *
+         * secondly, assuming (2) is in fact not needed, the main issue
+         * in (1) is the fact that the errloc string can be prepended in two
+         * different layers, resulting in the "logic" seen above. if the
+         * eventual appearance (i.e., errloc or not) is completely determined
+         * in this layer here, then such a "design" choice is weird.
+         *
+         * given the resource availability, at the moment, the only feasible
+         * approach here is to emulate the original impl's behavior in terms
+         * of "errloc".
+         *
+         * another (unrelated) issue is that the original impl assumes the
+         * buffer reads do not contain any '\0' bytes since it uses
+         * fprintf() to output the buffer. A '\0' byte will cause the rest
+         * of the buffer to be truncated. the new impl does not have this
+         * problem.
+         *
+         * the logic below emulates the case (1) in the original impl and
+         * ignores case (2). if somehow case (2) is indeed necessary, we
+         * should really take a good look at the reason and fix the
+         * underlying problem. (heck, even (1) is fugly as hell, but
+         * right now it's simply not feasible to look into it.)
+         */
+        if (prepend) {
+          prepend = 0;
+
+          /* XXX follow original behavior */
+#define errloc_str "_errloc_:"
+#define errloc_len 9
+          if (count > errloc_len
+              && memcmp(buf, errloc_str, errloc_len) == 0) {
+            /* XXX lower-layer already prepended errloc, so strip it out if
+             * we don't want errloc. AND in such cases we don't want the
+             * prepend_msg either. (!?)
+             */
+            out = (eloc ? buf : (buf + errloc_len));
+          } else {
+            /* XXX lower-layer did not prepend errloc */
+            if (eloc) {
+              /* XXX prepend errloc since we want it */
+              fprintf(out_stream, "%s", errloc_str);
+            }
+            /* XXX and in such cases we DO want prepend_msg */
+            if (prepend_msg) {
+              fprintf(out_stream, "[%s]\n", prepend_msg);
+            }
+          }
+#undef errloc_str
+#undef errloc_len
+        }
+
+        /* XXX XXX XXX END emulating original "error" location handling */
+
+        if (fwrite(out, count, 1, out_stream) != 1) {
+          return -1;
+        }
+      } else if (sret == 0) {
+        /* timeout */
+        if (waitpid(cpid, &status, WNOHANG) == cpid) {
+          /* child done */
+          waited = 1;
+          break;
+        }
+      } else {
+        /* error (-1) */
+        break;
+      }
+    }
+    if (!prepend) {
+      fprintf(out_stream, "\n");
+    }
+    if (!waited) {
+      if (waitpid(cpid, &status, 0) != cpid) {
+        return -1;
+      }
+    }
+    return (WIFEXITED(status) ? WEXITSTATUS(status) : 1);
+  } else {
+    /* child process */
+    close(pfd[0]);
+    if ((ret = dup2(pfd[1], STDOUT_FILENO) < 0)
+        || (ret = dup2(pfd[1], STDERR_FILENO)) < 0) {
+      exit(1);
+    }
+    char *eargs[] = { "sh", "-c", cmd, NULL };
+    execv("/bin/sh", eargs);
+    return -1; /* should not get here */
   }
 }
 
