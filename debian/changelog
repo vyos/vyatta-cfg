@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.102) unstable; urgency=low
+
+  * raise max number of inodes for config tmpfs mount
+  * minor changes
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Sat, 14 May 2011 00:33:48 +0800
+
 vyatta-cfg (0.18.101) unstable; urgency=low
 
   * provide more info on failures
