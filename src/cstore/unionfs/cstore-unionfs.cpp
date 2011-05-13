@@ -436,7 +436,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
   if (path_exists(tap)) {
     output_internal("rm[%s]\n", tap.path_cstr());
     if (b_fs::remove_all(tap.path_cstr()) < 1) {
-      output_user("FAILED\n");
+      output_internal("rm ta failed\n");
       return false;
     }
     cnode::CfgNode *c = node.getCfgNode();
@@ -446,7 +446,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       if (is_directory_empty(p)) {
         output_internal("rm[%s]\n", p.path_cstr());
         if (b_fs::remove_all(p.path_cstr()) < 1) {
-          output_user("FAILED\n");
+          output_internal("rm tag failed\n");
           return false;
         }
       }
@@ -460,8 +460,11 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", wp.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(wp, tap, true);
+      } catch (const b_fs::filesystem_error& e) {
+        output_internal("cp w->ta failed[%s]\n", e.what());
+        return false;
       } catch (...) {
-        output_user("FAILED\n");
+        output_internal("cp w->ta failed[unknown exception]\n");
         return false;
       }
     } else {
@@ -478,8 +481,11 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", ap.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(ap, tap, false);
+      } catch (const b_fs::filesystem_error& e) {
+        output_internal("cp a->ta failed[%s]\n", e.what());
+        return false;
       } catch (...) {
-        output_user("FAILED\n");
+        output_internal("cp a->ta failed[unknown exception]\n");
         return false;
       }
     } else {
@@ -631,15 +637,18 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     if (path_exists(tmp_work_root)) {
       output_internal("rm[%s]\n", tmp_work_root.path_cstr());
       if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1) {
-        output_user("FAILED\n");
+        output_internal("rm tw failed\n");
         return false;
       }
     }
     output_internal("cp[%s]->[%s]\n", work_root.path_cstr(),
                     tmp_work_root.path_cstr());
     recursive_copy_dir(work_root, tmp_work_root, true);
+  } catch (const b_fs::filesystem_error& e) {
+    output_internal("cp w->tw failed[%s]\n", e.what());
+    return false;
   } catch (...) {
-    output_user("FAILED\n");
+    output_internal("cp w->tw failed[unknown exception]\n");
     return false;
   }
 
@@ -652,13 +661,17 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   }
   if (b_fs::remove_all(change_root.path_cstr()) < 1
       || b_fs::remove_all(active_root.path_cstr()) < 1) {
-    output_user("failed to remove existing directories\n");
+    output_internal("failed to remove existing directories\n");
     return false;
   }
   try {
     b_fs::create_directories(change_root.path_cstr());
     recursive_copy_dir(tmp_active_root, active_root, true);
+  } catch (const b_fs::filesystem_error& e) {
+    output_internal("cp ta->a failed[%s]\n", e.what());
+    return false;
   } catch (...) {
+    output_internal("cp ta->a failed[unknown exception]\n");
     return false;
   }
   if (!do_mount(change_root, active_root, work_root)) {
