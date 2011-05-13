@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.101) unstable; urgency=low
+
+  * provide more info on failures
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 13 May 2011 08:30:29 +0800
+
 vyatta-cfg (0.18.100) unstable; urgency=low
 
   * fix for bug 6771
