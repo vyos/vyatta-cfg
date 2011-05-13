@@ -961,7 +961,7 @@ static int change_var_value(const char* var_reference,const char* value, int act
   return ret;
 }
 
-int system_out(const char *command, const char *prepend_msg, boolean format);
+int system_out(char *command, const char *prepend_msg, boolean eloc);
 
 /****************************************************
  check_syn:
@@ -2104,7 +2104,7 @@ restore_output()
 }
 
 int
-system_out(const char *cmd, const char *prepend_msg, boolean eloc)
+system_out(char *cmd, const char *prepend_msg, boolean eloc)
 {
   int pfd[2];
   int ret;
@@ -2274,6 +2274,7 @@ system_out(const char *cmd, const char *prepend_msg, boolean eloc)
         if (fwrite(out, count, 1, out_stream) != 1) {
           return -1;
         }
+        fflush(out_stream);
       } else if (sret == 0) {
         /* timeout */
         if (waitpid(cpid, &status, WNOHANG) == cpid) {
