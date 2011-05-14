@@ -2290,6 +2290,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
     if (!prepend) {
       fprintf(out_stream, "\n");
     }
+    close(pfd[0]);
     if (!waited) {
       if (waitpid(cpid, &status, 0) != cpid) {
         return -1;
