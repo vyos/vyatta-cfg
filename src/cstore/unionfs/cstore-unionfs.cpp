@@ -659,9 +659,16 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   if (!do_umount(work_root)) {
     return false;
   }
-  if (b_fs::remove_all(change_root.path_cstr()) < 1
-      || b_fs::remove_all(active_root.path_cstr()) < 1) {
-    output_internal("failed to remove existing directories\n");
+  if (b_fs::remove_all(change_root.path_cstr()) < 1) {
+    output_internal("failed to remove [%s]\n", change_root.path_cstr());
+    return false;
+  }
+  /* note: unionfs can't cope with whole directory being removed, so just
+   * remove the content.
+   */
+  if (!remove_dir_content(active_root.path_cstr())) {
+    output_internal("failed to remove [%s] content\n",
+                    active_root.path_cstr());
     return false;
   }
   try {
@@ -680,13 +687,11 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   if (!sync_dir(tmp_work_root, work_root, work_root)) {
     return false;
   }
-#if 0
   if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1
       || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
     output_user("failed to remove temp directories\n");
     return false;
   }
-#endif
   // all done
   return true;
 }
@@ -1498,6 +1503,22 @@ UnionfsCstore::path_is_regular(const char *path)
     return false;
   }
   return b_fs::is_regular(result);
+}
+
+bool
+UnionfsCstore::remove_dir_content(const char *path)
+{
+  if (!path_is_directory(path)) {
+    return false;
+  }
+
+  b_fs::directory_iterator di(path);
+  for (; di != b_fs::directory_iterator(); ++di) {
+    if (b_fs::remove_all(di->path()) < 1) {
+      return false;
+    }
+  }
+  return true;
 }
 
 } // end namespace unionfs
