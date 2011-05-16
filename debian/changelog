@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.104) unstable; urgency=low
+
+  * tweak directory handling for unionfs
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 16 May 2011 15:26:27 -0700
+
 vyatta-cfg (0.18.103) unstable; urgency=low
 
   * close pipe fd before returning
