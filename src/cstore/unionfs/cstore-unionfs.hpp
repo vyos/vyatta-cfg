@@ -293,6 +293,7 @@ private:
   bool path_is_regular(const FsPath& path) {
     return path_is_regular(path.path_cstr());
   };
+  bool remove_dir_content(const char *path);
 };
 
 } // end namespace unionfs
