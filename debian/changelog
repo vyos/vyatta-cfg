@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.106) unstable; urgency=low
+
+  * reimplement commit hooks mechanism
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 16 May 2011 20:01:14 -0700
+
 vyatta-cfg (0.18.105) unstable; urgency=low
 
   * rectify conditional code
