@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.108) unstable; urgency=low
+
+  * add var ref "bug" to maintain backward compatibility.
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 17 May 2011 11:51:31 -0700
+
 vyatta-cfg (0.18.107) unstable; urgency=low
 
   * minor feature etc.
