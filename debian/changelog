@@ -1,3 +1,10 @@
+vyatta-cfg (0.18.107) unstable; urgency=low
+
+  * minor feature etc.
+  * reimplement commit locking
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Tue, 17 May 2011 11:05:17 -0700
+
 vyatta-cfg (0.18.106) unstable; urgency=low
 
   * reimplement commit hooks mechanism
