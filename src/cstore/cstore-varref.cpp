@@ -109,7 +109,13 @@ Cstore::VarRef::process_ref(const Cpath& ref_comps,
       return;
     }
     if (def->isTypeless()) {
-      // no value for typeless node
+      /* no value for typeless node, so this should be invalid ref
+       * according to the spec.
+       * XXX however, the original implementation erroneously treats
+       * this as valid ref and returns the node "name" as the "value".
+       * for backward compatibility, keep the same behavior.
+       */
+      process_ref(rcomps, pcomps, ERROR_TYPE);
       return;
     }
     if (pcomps.size() == _orig_path_comps.size()) {
