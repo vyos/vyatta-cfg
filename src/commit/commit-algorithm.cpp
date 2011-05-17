@@ -1157,6 +1157,18 @@ commit::isCommitPathEffective(Cstore& cs, const Cpath& pcomps,
 bool
 commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
 {
+  /* get the lock first.
+   * note: the getCommitLock() interface provided by Cstore guarantees
+   * that the lock will be released upon process termination (either
+   * normally or abnormally), so this is all that is required in terms
+   * of commit locking.
+   */
+  if (!cs.getCommitLock()) {
+    OUTPUT_USER("Configuration system temporarily locked "
+                "due to another commit in progress\n");
+    return false;
+  }
+
   Cpath p;
   CfgNode *root = getCommitTree(&cfg1, &cfg2, p);
   if (!root) {

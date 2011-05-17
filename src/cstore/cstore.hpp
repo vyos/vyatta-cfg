@@ -177,6 +177,11 @@ public:
   bool markCfgPathCommitted(const Cpath& path_comps, bool is_delete);
   virtual bool clearCommittedMarkers() = 0;
   virtual bool commitConfig(commit::PrioNode& pnode) = 0;
+  virtual bool getCommitLock() = 0;
+    /* note: the getCommitLock() function must guarantee lock release/cleanup
+     * upon process termination (either normally or abnormally). there is no
+     * separate call for releasing the lock.
+     */
   // load
   bool loadFile(const char *filename);
 

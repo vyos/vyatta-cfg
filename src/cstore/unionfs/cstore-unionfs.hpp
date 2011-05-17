@@ -57,6 +57,7 @@ public:
   bool inSession();
   bool clearCommittedMarkers();
   bool commitConfig(commit::PrioNode& pnode);
+  bool getCommitLock();
 
 private:
   // constants
@@ -82,6 +83,7 @@ private:
   static const string C_TAG_NAME;
   static const string C_VAL_NAME;
   static const string C_DEF_NAME;
+  static const string C_COMMIT_LOCK_FILE;
 
   /* max size for a file.
    * currently this includes value file and comment file.

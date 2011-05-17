@@ -63,6 +63,7 @@ const string UnionfsCstore::C_COMMENT_FILE = ".comment";
 const string UnionfsCstore::C_TAG_NAME = "node.tag";
 const string UnionfsCstore::C_VAL_NAME = "node.val";
 const string UnionfsCstore::C_DEF_NAME = "node.def";
+const string UnionfsCstore::C_COMMIT_LOCK_FILE = "/opt/vyatta/config/.lock";
 
 
 ////// static
@@ -693,6 +694,23 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     return false;
   }
   // all done
+  return true;
+}
+
+bool
+UnionfsCstore::getCommitLock()
+{
+  int fd = creat(C_COMMIT_LOCK_FILE.c_str(), 0777);
+  if (fd < 0) {
+    // should not happen since all commit processes should have write access
+    output_internal("getCommitLock() failed to open lock file\n");
+    return false;
+  }
+  if (lockf(fd, F_TLOCK, 0) < 0) {
+    // locked by someone else
+    return false;
+  }
+  // got the lock
   return true;
 }
 
