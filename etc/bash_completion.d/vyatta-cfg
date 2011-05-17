@@ -123,11 +123,12 @@ commit ()
       args[${#args[@]}]="$arg"    
     fi
   done
-  args+=("-C '$comment'")
 
+  export COMMIT_COMMENT="$comment"
   export COMMIT_VIA=cli
   /opt/vyatta/sbin/my_commit "${args[@]}"
   unset COMMIT_VIA
+  unset COMMIT_COMMENT
 }
 
 commit-confirm ()

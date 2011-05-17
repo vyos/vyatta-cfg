@@ -26,7 +26,13 @@ using namespace commit;
 using namespace std;
 
 
-////// static functions
+////// static
+static const char *commit_hook_dirs[3] = {
+  "/etc/commit/pre-hooks.d",
+  "/etc/commit/post-hooks.d",
+  NULL
+};
+
 static void
 _set_node_commit_state(CfgNode& node, CommitState s, bool recursive)
 {
@@ -742,6 +748,16 @@ _get_commit_other_node(CfgNode *cfg1, CfgNode *cfg2, const Cpath& cur_path)
   return cn;
 }
 
+static void
+_execute_hooks(CommitHook hook)
+{
+  string cmd = "/bin/run-parts --regex='^[a-zA-Z0-9._-]+$' -- '";
+  cmd += getCommitHookDir(hook);
+  cmd += "'";
+  // not checking return status
+  system(cmd.c_str());
+}
+
 
 ////// class CommitData
 CommitData::CommitData()
@@ -1043,6 +1059,15 @@ PrioNode::setSubtreeSuccess()
 
 
 ////// exported functions
+const char *
+commit::getCommitHookDir(CommitHook hook)
+{
+  if (hook > LAST) {
+    return NULL;
+  }
+  return commit_hook_dirs[hook];
+}
+
 CfgNode *
 commit::getCommitTree(CfgNode *cfg1, CfgNode *cfg2, const Cpath& cur_path)
 {
@@ -1154,6 +1179,7 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
     return true;
   }
 
+  _execute_hooks(PRE_COMMIT);
   set_in_commit(true);
 
   PrioNode proot(root); // proot corresponds to root
@@ -1186,9 +1212,11 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
     pq.pop();
   }
   bool ret = true;
+  const char *cst = "SUCCESS";
   if (f > 0) {
     OUTPUT_USER("Commit failed\n");
     ret = false;
+    cst = ((s > 0) ? "PARTIAL" : "FAILURE");
   }
 
   if (!cs.commitConfig(proot)) {
@@ -1204,6 +1232,11 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   if (ret) {
     ret = cs.markSessionUnsaved();
   }
+
+  setenv("COMMIT_STATUS", cst, 1);
+  _execute_hooks(POST_COMMIT);
+  unsetenv("COMMIT_STATUS");
+
   return ret;
 }
 

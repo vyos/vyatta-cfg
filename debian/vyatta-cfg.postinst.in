@@ -33,6 +33,14 @@ for bin in my_cli_bin my_cli_shell_api; do
   setcap cap_sys_admin=pe $sbindir/$bin
 done
 
+# commit hooks
+for hook in PreCommit PostCommit; do
+  d=$(cli-shell-api get${hook}HookDir)
+  if [ -n "$d" ] && [ ! -e "$d" ]; then
+    mkdir -p "$d"
+  fi
+done
+
 # handle renamed file (not automatically deleted since it was "conffile")
 rm -f /etc/bash_completion.d/20vyatta-cfg
 

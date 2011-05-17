@@ -486,6 +486,26 @@ _cf_process_args(Cstore& cstore, const Cpath& args, Cpath& path)
   return root;
 }
 
+// output the "pre-commit hook dir"
+static void
+getPreCommitHookDir(Cstore& cstore, const Cpath& args)
+{
+  const char *d = commit::getCommitHookDir(commit::PRE_COMMIT);
+  if (d) {
+    printf("%s", d);
+  }
+}
+
+// output the "post-commit hook dir"
+static void
+getPostCommitHookDir(Cstore& cstore, const Cpath& args)
+{
+  const char *d = commit::getCommitHookDir(commit::POST_COMMIT);
+  if (d) {
+    printf("%s", d);
+  }
+}
+
 /* the following "cf" functions form the "config file" shell API, which
  * allows shell scripts to "query" the "config" represented by a config
  * file in a way similar to how they query the active/working config.
@@ -573,6 +593,9 @@ static OpT ops[] = {
   OP(showCfg, -1, NULL, -1, NULL, true),
   OP(showConfig, -1, NULL, -1, NULL, true),
   OP(loadFile, 1, "Must specify config file", -1, NULL, false),
+
+  OP(getPreCommitHookDir, 0, "No argument expected", -1, NULL, false),
+  OP(getPostCommitHookDir, 0, "No argument expected", -1, NULL, false),
 
   OP(cfExists, -1, NULL, 2, "Must specify config file and path", false),
   OP(cfReturnValue, -1, NULL, 2, "Must specify config file and path", false),

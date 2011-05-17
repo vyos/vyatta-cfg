@@ -50,6 +50,12 @@ enum CommitTreeTraversalOrder {
   POST_ORDER
 };
 
+enum CommitHook {
+  PRE_COMMIT,
+  POST_COMMIT,
+  LAST
+};
+
 class CommitData {
 public:
   CommitData();
@@ -120,35 +126,6 @@ public:
   void setSubtreeFailure();
   void setSubtreeSuccess();
 
-#if 0
-  // XXX testing
-  void print(size_t lvl) {
-#define INDENT for(size_t xyz = 0; xyz < lvl; xyz++) { printf("  "); };
-    INDENT;
-    if (_node) {
-      printf("[%s]\n", _node->getCommitPath().to_string().c_str());
-    } else {
-      printf("[---]\n");
-    }
-    INDENT; printf("|cp[%s]\n",
-                   (_cfg_parent
-                    ? _cfg_parent->getCommitPath().to_string().c_str()
-                      : NULL));
-    if (_node) {
-      INDENT; printf("======\n");
-      _node->rprint(lvl);
-      INDENT; printf("======\n");
-    }
-#undef INDENT
-  }
-  void rprint(size_t lvl) {
-    print(lvl);
-    for (size_t i = 0; i < numChildNodes(); i++) {
-      childAt(i)->rprint(lvl + 1);
-    }
-  }
-#endif
-
 private:
   CfgNode *_node;
   CfgNode *_cfg_parent;
@@ -184,6 +161,7 @@ typedef std::pair<CommitState, std::tr1::shared_ptr<Cpath> >
 typedef std::vector<CommittedPathT> CommittedPathListT;
 
 // exported functions
+const char *getCommitHookDir(CommitHook hook);
 CfgNode *getCommitTree(CfgNode *cfg1, CfgNode *cfg2, const Cpath& cur_path);
 bool isCommitPathEffective(Cstore& cs, const Cpath& pcomps,
                            std::tr1::shared_ptr<Ctemplate> def,
