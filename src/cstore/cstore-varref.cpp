@@ -140,18 +140,21 @@ Cstore::VarRef::process_ref(const Cpath& ref_comps,
       return;
     }
     pcomps.pop();
-    def = _cstore->parseTmpl(pcomps, false);
-    if (!def.get()) {
-      // invalid tmpl path
-      return;
-    }
-    if (def->isTagValue()) {
-      // at "tag value", need to pop one more.
-      if (pcomps.size() == 0) {
-        // invalid path
+    if (pcomps.size() > 0) {
+      // not at root yet
+      def = _cstore->parseTmpl(pcomps, false);
+      if (!def.get()) {
+        // invalid tmpl path
         return;
       }
-      pcomps.pop();
+      if (def->isTagValue()) {
+        // at "tag value", need to pop one more.
+        if (pcomps.size() == 0) {
+          // invalid path
+          return;
+        }
+        pcomps.pop();
+      }
     }
     process_ref(rcomps, pcomps, ERROR_TYPE);
   } else if (cr_comp == "@@") {

@@ -1219,6 +1219,11 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
     cst = ((s > 0) ? "PARTIAL" : "FAILURE");
   }
 
+  if (s > 0) {
+    // notify other users in config mode
+    system("/opt/vyatta/sbin/vyatta-cfg-notify");
+  }
+
   if (!cs.commitConfig(proot)) {
     OUTPUT_USER("Failed to generate committed config\n");
     ret = false;
