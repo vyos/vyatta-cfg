@@ -1428,8 +1428,10 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
       if (filter_dot_entries) {
         string of = di->path().filename();
         if (!of.empty() && of.at(0) == '.') {
-          // filter dot files
-          continue;
+          // filter dot files (with exceptions)
+          if (of != C_COMMENT_FILE) {
+            continue;
+          }
         }
       }
       b_fs::copy_file(di->path(), nname);

@@ -1172,8 +1172,10 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   Cpath p;
   CfgNode *root = getCommitTree(&cfg1, &cfg2, p);
   if (!root) {
-    OUTPUT_USER("No configuration changes to commit\n");
-    /* call the low-level commitConfig() function with a dummy structure
+    /* "session changed" check has already been performed before commit
+     * execution, so no need to repeat it here.
+     *
+     * call the low-level commitConfig() function with a dummy structure
      * representing successful commit on the whole tree. this is equivalent
      * to copying the whole working config back to the active config. since
      * the two are "logically" the same, this is redundant in most cases.
