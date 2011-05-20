@@ -118,8 +118,8 @@ _create_commit_cfg_node(CfgNode& cn, const Cpath& p, CommitState s)
 }
 
 /* "changed" multi-value leaf nodes. note that "changed" state applies to
- * the "node" itself. the actual states of the node values can only be
- * added, deleted, or unchanged.
+ * the "node" itself. the actual states of the node values can be added,
+ * deleted, changed, or unchanged.
  */
 static CfgNode *
 _create_commit_cfg_node(const CfgNode& cn, const Cpath& p,
@@ -455,9 +455,13 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
         return false;
       }
 
+      /* note that for CHANGED value we need to do BOTH a delete AND a
+       * create. this is the fix for bug 5460. more information in later
+       * comment about bug 5460.
+       */
       if (act == delete_act) {
         // delete pass
-        if (s == COMMIT_STATE_DELETED) {
+        if (s == COMMIT_STATE_DELETED || s == COMMIT_STATE_CHANGED) {
           if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
                                   node.getActions(delete_act), def)) {
             return false;
@@ -465,13 +469,12 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
         }
       } else {
         // update pass
-        if (s == COMMIT_STATE_ADDED) {
+        if (s == COMMIT_STATE_ADDED || s == COMMIT_STATE_CHANGED) {
           if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
                                   node.getActions(create_act), def)) {
             return false;
           }
         }
-        // no "CHANGED" for value of multi-value leaf node
       }
 
       // end
@@ -700,8 +703,21 @@ _get_commit_leaf_node(CfgNode *cfg1, CfgNode *cfg2, const Cpath& cur_path,
         states.push_back(COMMIT_STATE_ADDED);
       } else if (pfxs[i] == DIFF_DEL) {
         states.push_back(COMMIT_STATE_DELETED);
+      } else if (pfxs[i] == DIFF_UPD) {
+        states.push_back(COMMIT_STATE_CHANGED);
       } else {
-        // "changed" for "show" is really "unchanged" for "commit"
+        /* note that previously this was following the original impl
+         * and treating both DIFF_UPD and DIFF_NONE as "unchanged".
+         * in other words, if a value's position among the multiple
+         * values changes, no action will be invoked during commit.
+         *
+         * however, this was the cause of bug 5460. if the ordering
+         * for a "multi:" node actually matters, this bug means the
+         * value ordering will not work correctly for a value whose
+         * position has changed but is not being added or deleted.
+         *
+         * to fix the bug, we now distinguish between UPD and NONE.
+         */
         states.push_back(COMMIT_STATE_UNCHANGED);
       }
     }
