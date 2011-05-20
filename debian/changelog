@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.111) unstable; urgency=low
+
+  * fix for bug 5460
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 20 May 2011 13:52:07 -0700
+
 vyatta-cfg (0.18.110) unstable; urgency=low
 
   * update comment, fix typo, etc.
