@@ -53,7 +53,7 @@ enum CommitTreeTraversalOrder {
 enum CommitHook {
   PRE_COMMIT,
   POST_COMMIT,
-  LAST
+  LAST // not a valid hook
 };
 
 class CommitData {

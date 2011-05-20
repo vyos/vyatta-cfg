@@ -62,8 +62,19 @@ CfgNode::CfgNode(Cpath& path_comps, char *name, char *val, char *comment,
       _is_value = (getTmpl()->isValue() && !_is_leaf);
       _is_multi = getTmpl()->isMulti();
 
-      /* XXX given the current definition of "default", the concept of
-       * "default" doesn't really apply to config files.
+      /* XXX given the current definition of "default" (i.e., the
+       * "post-bug 1219" definition), the concept of "default" doesn't
+       * really apply to config files. however, if in the future we
+       * do go back to the original, simpler definition of "default"
+       * (which IMO is the right thing to do), the "default handling"
+       * here and elsewhere in the backend library will need to be
+       * revamped.
+       *
+       * in fact, in that case pretty much the only place that need to
+       * worry about "default" is in the "output" (i.e., "show")
+       * processing, and even there the only thing that needs to be
+       * done is to compare the current value with the "default value"
+       * in the template.
        */
       _is_default = false;
       _is_deactivated = deact;

@@ -117,7 +117,10 @@ _create_commit_cfg_node(CfgNode& cn, const Cpath& p, CommitState s)
   return node;
 }
 
-// "changed" multi-value leaf nodes
+/* "changed" multi-value leaf nodes. note that "changed" state applies to
+ * the "node" itself. the actual states of the node values can only be
+ * added, deleted, or unchanged.
+ */
 static CfgNode *
 _create_commit_cfg_node(const CfgNode& cn, const Cpath& p,
                         const vector<string>& values,
@@ -130,7 +133,7 @@ _create_commit_cfg_node(const CfgNode& cn, const Cpath& p,
   return node;
 }
 
-// "changed" single-value leaf nodes
+// "changed" single-value leaf nodes (this does apply to the value)
 static CfgNode *
 _create_commit_cfg_node(const CfgNode& cn, const Cpath& p, const string& val1,
                         const string& val2, bool def1, bool def2)
@@ -219,7 +222,7 @@ _trv_be_node(N *node)
 template<> bool
 _trv_be_node<CfgNode>(CfgNode *node)
 {
-  return node->isTagNode();
+  return node->isBeginEndNode();
 }
 
 template<class N> static void

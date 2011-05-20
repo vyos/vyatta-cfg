@@ -1707,12 +1707,12 @@ Cstore::setVarRef(const char *ref_str, const char *value, bool to_active)
    *     "syntax:", it will not be performed during "set" (but will be
    *     during commit).
    *
-   *     since commit has not been converted to use the new library, it
-   *     does not use this function. instead, it uses the "cli_val_engine"
-   *     implementation (where filesystem paths are deeply embedded, which
-   *     makes it difficult to abstract low-level filesystem operations
-   *     from high-level functions). as a result, this function is unused
-   *     and untested at the moment. must revisit when converting commit.
+   * XXX also the behavior here follows the original implementation and
+   *     has these limitations:
+   *     * it does not check if the type of the specified value is
+   *       correct, e.g., it may write a txt value to a u32 node if
+   *       that's what the template specifies.
+   *     * it only supports only single-value leaf nodes.
    */
   auto_ptr<SavePaths> save(create_save_paths());
   VarRef vref(this, ref_str, to_active);

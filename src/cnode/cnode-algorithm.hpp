@@ -67,6 +67,11 @@ void showConfig(const std::string& cfg1, const std::string& cfg2,
                 bool hide_secret = false, bool context_diff = false,
                 bool show_cmds = false, bool ignore_edit = false);
 
+/* these functions provide the functionality necessary for the "config
+ * file" shell API. basically the API uses the "cparse" interface to
+ * parse a config file into a CfgNode tree structure, and then these
+ * functions can be used to access the nodes in the tree.
+ */
 CfgNode *findCfgNode(CfgNode *root, const cstore::Cpath& path,
                      bool& is_value);
 CfgNode *findCfgNode(CfgNode *root, const cstore::Cpath& path);

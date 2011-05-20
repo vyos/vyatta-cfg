@@ -296,9 +296,6 @@ Cstore::VarRef::getValue(string& value, vtw_type_e& def_type)
 bool
 Cstore::VarRef::getSetPath(Cpath& path_comps)
 {
-  /* XXX this function is currently unused and untested. see setVarRef()
-   *     in Cstore for more information.
-   */
   if (_paths.size() != 1) {
     // for set_var_ref operation, there can be only one path.
     return false;
