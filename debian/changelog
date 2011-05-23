@@ -1,3 +1,9 @@
+vyatta-cfg (0.18.112) unstable; urgency=low
+
+  * match old "in_delete_action" behavior
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 23 May 2011 13:18:59 -0700
+
 vyatta-cfg (0.18.111) unstable; urgency=low
 
   * fix for bug 5460
