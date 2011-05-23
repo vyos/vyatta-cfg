@@ -254,8 +254,10 @@ _commit_tree_traversal(N *root, bool betree_only,
 static bool
 _exec_tmpl_actions(Cstore& cs, CommitState s, char *at_str,
                    const Cpath& path, const Cpath& disp_path,
-                   const vtw_node *actions, const vtw_def *def)
+                   const CfgNode& node, vtw_act_type act,
+                   const vtw_def *def)
 {
+  const vtw_node *actions = node.getActions(act);
   if (!actions) {
     // no actions => success
     return true;
@@ -265,7 +267,6 @@ _exec_tmpl_actions(Cstore& cs, CommitState s, char *at_str,
    * features are using it.
    */
   const char *aenv = "ACTIVE";
-  bool in_del = false;
   switch (s) {
   case COMMIT_STATE_ADDED:
   case COMMIT_STATE_CHANGED:
@@ -273,13 +274,12 @@ _exec_tmpl_actions(Cstore& cs, CommitState s, char *at_str,
     break;
   case COMMIT_STATE_DELETED:
     aenv = "DELETE";
-    in_del = true;
     break;
   default:
     break;
   }
   setenv("COMMIT_ACTION", aenv, 1);
-  set_in_delete_action(in_del);
+  set_in_delete_action((act == delete_act));
   bool ret = cs.executeTmplActions(at_str, path, disp_path, actions, def);
   set_in_delete_action(false);
   unsetenv("COMMIT_ACTION");
@@ -382,7 +382,7 @@ _exec_node_actions(Cstore& cs, CfgNode& node, vtw_act_type act,
   }
 
   if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                          node.getActions(act), node.getDef())) {
+                          node, act, node.getDef())) {
     if (act == create_act) {
       _set_node_commit_create_failed(node);
     }
@@ -444,14 +444,14 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
         continue;
       }
       if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                              node.getActions(syntax_act), def)) {
+                              node, syntax_act, def)) {
         return false;
       }
     } else {
       //// delete or update pass
       // begin
       if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                              node.getActions(begin_act), def)) {
+                              node, begin_act, def)) {
         return false;
       }
 
@@ -463,7 +463,7 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
         // delete pass
         if (s == COMMIT_STATE_DELETED || s == COMMIT_STATE_CHANGED) {
           if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                                  node.getActions(delete_act), def)) {
+                                  node, delete_act, def)) {
             return false;
           }
         }
@@ -471,7 +471,7 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
         // update pass
         if (s == COMMIT_STATE_ADDED || s == COMMIT_STATE_CHANGED) {
           if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                                  node.getActions(create_act), def)) {
+                                  node, create_act, def)) {
             return false;
           }
         }
@@ -479,7 +479,7 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
 
       // end
       if (!_exec_tmpl_actions(cs, s, at_str.get(), pcomps, *(pdisp.get()),
-                              node.getActions(end_act), def)) {
+                              node, end_act, def)) {
         return false;
       }
     }
