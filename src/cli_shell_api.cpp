@@ -480,7 +480,7 @@ _cf_process_args(Cstore& cstore, const Cpath& args, Cpath& path)
   }
   cnode::CfgNode *root = cparse::parse_file(args[0], cstore);
   if (!root) {
-    fprintf(stderr, "Failed to parse config file\n");
+    // failed to parse config file
     exit(1);
   }
   return root;
