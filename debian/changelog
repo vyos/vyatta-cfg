@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.0) unstable; urgency=low
+
+  * remove unneeded stderr message
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 27 May 2011 18:32:59 -0700
+
 vyatta-cfg (0.18.112) unstable; urgency=low
 
   * match old "in_delete_action" behavior
