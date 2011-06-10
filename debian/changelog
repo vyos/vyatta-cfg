@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.2) unstable; urgency=low
+
+  * Adjust the number of characters we print when creating an offset to
+    the buffer to remove the errloc tag
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 10 Jun 2011 10:53:49 -0700
+
 vyatta-cfg (0.99.1) unstable; urgency=low
 
   * Bugfix 7153: Initialize buffer before reading into it
