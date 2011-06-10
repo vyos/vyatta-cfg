@@ -2154,6 +2154,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
       if (sret == 1) {
         /* ready for read */
         char buf[128];
+        memset(buf,'\0',128);
         char *out = buf;
         ssize_t count = read(pfd[0], buf, 128);
         if (count <= 0) {
