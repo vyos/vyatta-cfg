@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.1) unstable; urgency=low
+
+  * Bugfix 7153: Initialize buffer before reading into it
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 09 Jun 2011 19:32:10 -0500
+
 vyatta-cfg (0.99.0) unstable; urgency=low
 
   * remove unneeded stderr message
