@@ -2154,7 +2154,6 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
       if (sret == 1) {
         /* ready for read */
         char buf[128];
-        memset(buf,'\0',128);
         char *out = buf;
         ssize_t count = read(pfd[0], buf, 128);
         if (count <= 0) {
@@ -2253,8 +2252,12 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
             /* XXX lower-layer already prepended errloc, so strip it out if
              * we don't want errloc. AND in such cases we don't want the
              * prepend_msg either. (!?)
+             *  It looks like the lower layer will print _errloc_:[prepend_msg]
+             * see Vyatta::Config::outputError in perl. 
+             * This is why when stripping errloc we don't want prepend_msg. 
              */
             out = (eloc ? buf : (buf + errloc_len));
+            count = (eloc ? count : (count - errloc_len));
           } else {
             /* XXX lower-layer did not prepend errloc */
             if (eloc) {
