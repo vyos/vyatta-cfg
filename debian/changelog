@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.4) unstable; urgency=low
+
+  * part of bug fix 7178 - suppress the non-required messages.
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Mon, 13 Jun 2011 09:22:52 -0700
+
 vyatta-cfg (0.99.3) unstable; urgency=low
 
   * bug fix for 7178 - commit hook for demo-entitlement notifications
