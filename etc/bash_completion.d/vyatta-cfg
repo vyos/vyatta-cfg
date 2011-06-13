@@ -126,7 +126,7 @@ commit ()
 
   export COMMIT_COMMENT="$comment"
   export COMMIT_VIA=cli
-  /opt/vyatta/sbin/my_commit "${args[@]}"
+  /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1 | grep -v '^run-parts:'
   unset COMMIT_VIA
   unset COMMIT_COMMENT
 }
