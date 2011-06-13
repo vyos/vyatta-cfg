@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.3) unstable; urgency=low
+
+  * bug fix for 7178 - commit hook for demo-entitlement notifications
+    not working.
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Mon, 13 Jun 2011 05:35:13 -0700
+
 vyatta-cfg (0.99.2) unstable; urgency=low
 
   * Adjust the number of characters we print when creating an offset to
