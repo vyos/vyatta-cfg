@@ -774,7 +774,9 @@ _execute_hooks(CommitHook hook)
   cmd += getCommitHookDir(hook);
   cmd += "'";
   // not checking return status
+  restore_output();
   system(cmd.c_str());
+  redirect_output();
 }
 
 

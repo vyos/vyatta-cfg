@@ -136,6 +136,8 @@ boolean execute_list(vtw_node *cur, const vtw_def *def, const char *outbuf);
 const char *type_to_name(vtw_type_e type);
 int initialize_output(const char *op);
 void bye(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
+int redirect_output(void);
+int restore_output(void);
 
 /* functions from cli_objects */
 char *get_at_string(void);
