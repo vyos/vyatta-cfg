@@ -100,8 +100,8 @@ extern void release_config_lock(void);
 #define    OPQ_NAME ".wh.__dir_opaque"
 
 /*** output ***/
-#define LOGFILE_STDOUT "/tmp/cfg-stdout.log"
-#define LOGFILE_STDERR "/tmp/cfg-stderr.log"
+#define LOGFILE_STDOUT "/var/log/vyatta/cfg-stdout.log"
+#define LOGFILE_STDERR "/var/log/vyatta/cfg-stderr.log"
 
 extern int out_fd;
 extern FILE *err_stream;

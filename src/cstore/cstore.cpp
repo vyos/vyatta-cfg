@@ -68,7 +68,7 @@ const string Cstore::C_ENV_SHAPI_HELP_STRS = "_cli_shell_api_hstrs";
 
 //// dirs/files
 const string Cstore::C_ENUM_SCRIPT_DIR = "/opt/vyatta/share/enumeration";
-const string Cstore::C_LOGFILE_STDOUT = "/tmp/cfg-stdout.log";
+const string Cstore::C_LOGFILE_STDOUT = "/var/log/vyatta/cfg-stdout.log";
 
 //// sorting
 const unsigned int Cstore::SORT_DEFAULT = 0;

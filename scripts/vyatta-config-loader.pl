@@ -29,7 +29,7 @@ use Sys::Syslog qw(:standard :macros);
 use POSIX qw(strftime);
 
 my $CWRAPPER = '/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper';
-my $CONFIG_LOG = '/tmp/vyatta-config-loader.log';
+my $CONFIG_LOG = '/var/log/vyatta/vyatta-config-loader.log';
 my $COMMIT_CMD  = "$CWRAPPER commit";
 my $CLEANUP_CMD = "$CWRAPPER cleanup";
 my $BEGIN_CMD   = "$CWRAPPER begin";

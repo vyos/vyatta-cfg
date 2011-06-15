@@ -26,6 +26,8 @@
 export vyatta_sysconfdir=/opt/vyatta/etc
 export vyatta_sbindir=/opt/vyatta/sbin
 
+LOGFILE=/var/log/vyatta/vyatta-commit.log
+
 # allow env variable to override default session id (ppid). this enables
 # the script to handle cases where the invocations can come from
 # different parents.
@@ -68,9 +70,9 @@ case "$1" in
     ;;
   commit)
     export COMMIT_VIA=cfg-cmd-wrapper
-    ${vyatta_sbindir}/my_commit -a >> /tmp/vyatta-commit.log
-    ${vyatta_sbindir}/my_commit -s >> /tmp/vyatta-commit.log
-    exec ${vyatta_sbindir}/my_commit -e -d >> /tmp/vyatta-commit.log
+    ${vyatta_sbindir}/my_commit -a >> $LOGFILE
+    ${vyatta_sbindir}/my_commit -s >> $LOGFILE
+    exec ${vyatta_sbindir}/my_commit -e -d >> $LOGFILE
     ;;
   commit_with_error)
     exec ${vyatta_sbindir}/my_commit

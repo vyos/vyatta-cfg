@@ -4,9 +4,9 @@ BOOT_FILE=$1
 shift
 
 CAPI=/bin/cli-shell-api
-CLOG=/tmp/vyatta-config-loader.log
+CLOG=/var/log/vyatta/vyatta-config-loader.log
 COMMIT=/opt/vyatta/sbin/my_commit
-COMMIT_LOG=/tmp/vyatta-commit.log
+COMMIT_LOG=/var/log/vyatta/vyatta-commit.log
 
 do_log () {
   local level=$1
