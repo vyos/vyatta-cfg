@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.5) unstable; urgency=low
+
+  * Bugfix 6767: Move log files from /tmp to /var/log/vyatta.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 15 Jun 2011 17:00:30 -0700
+
 vyatta-cfg (0.99.4) unstable; urgency=low
 
   * part of bug fix 7178 - suppress the non-required messages.
