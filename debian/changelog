@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.6) unstable; urgency=low
+
+  * Bugfix 6767: Syslog any errors from rmmod instead of writing to log
+    file.
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Wed, 15 Jun 2011 18:01:02 -0700
+
 vyatta-cfg (0.99.5) unstable; urgency=low
 
   * Bugfix 6767: Move log files from /tmp to /var/log/vyatta.
