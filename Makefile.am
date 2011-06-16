@@ -3,6 +3,7 @@ SUBDIRS = . perl_dmod
 share_perl5dir = /opt/vyatta/share/perl5/Vyatta
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
+logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
@@ -17,6 +18,7 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
+logrotate_DATA = etc/logrotate.d/vyatta-config-logs
 
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
