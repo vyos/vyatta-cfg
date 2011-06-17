@@ -147,6 +147,7 @@ const char* get_tmpp(void) {
   return tmpp;
 }
 
+#ifdef unused
 static char *
 get_elevp(void)
 {
@@ -184,6 +185,8 @@ get_tlevp(void)
 
   return tlevp;
 }
+#endif
+
 
 /************************* Init ***************************/
 

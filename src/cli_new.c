@@ -1520,7 +1520,8 @@ void free_path(vtw_path *path)
   }
 }
 
-static void free_reuse_list()
+#ifdef notused
+static void free_reuse_list(void)
 {
   vtw_node *next;
   int cnt = 0;
@@ -1536,6 +1537,7 @@ static void free_reuse_list()
   printf("%d nodes used\n", cnt);
 #endif
 }
+#endif
 
 /*****************************************************
   free_val - dealloc allocated memory of valstruct
