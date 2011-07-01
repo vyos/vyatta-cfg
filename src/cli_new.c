@@ -2243,7 +2243,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
          * underlying problem. (heck, even (1) is fugly as hell, but
          * right now it's simply not feasible to look into it.)
          */
-        if (prepend) {
+        if (prepend && out_stream != NULL) {
           prepend = 0;
 
           /* XXX follow original behavior */
