@@ -1,3 +1,19 @@
+vyatta-cfg (0.99.7) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Comment out unused functions
+
+  [ John Southworth ]
+  * Bugfix 7224: check nodes immediate children for changes when the
+    node its self is unchanged. If a child has changed run the commit
+    check for the node
+  * Bugfix 7259: check that out_stream is not null before attempting to
+    write to it
+  * Add another check for out_stream now all refrences are validated
+    before writing to it
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 01 Jul 2011 11:44:25 -0500
+
 vyatta-cfg (0.99.6) unstable; urgency=low
 
   * Bugfix 6767: Syslog any errors from rmmod instead of writing to log
