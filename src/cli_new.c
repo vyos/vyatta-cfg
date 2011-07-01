@@ -2276,11 +2276,12 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
         }
 
         /* XXX XXX XXX END emulating original "error" location handling */
-
-        if (fwrite(out, count, 1, out_stream) != 1) {
-          return -1;
+        if (out_stream != NULL) {
+          if (fwrite(out, count, 1, out_stream) != 1) {
+            return -1;
+          }
+          fflush(out_stream);
         }
-        fflush(out_stream);
       } else if (sret == 0) {
         /* timeout */
         if (waitpid(cpid, &status, WNOHANG) == cpid) {
@@ -2293,7 +2294,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
         break;
       }
     }
-    if (!prepend) {
+    if (!prepend && out_stream != NULL) {
       fprintf(out_stream, "\n");
     }
     close(pfd[0]);
