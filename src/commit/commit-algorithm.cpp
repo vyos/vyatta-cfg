@@ -509,8 +509,20 @@ _commit_check_cfg_node(Cstore& cs, CfgNode *node, CommittedPathListT& clist)
   for (size_t i = 0; i < nodelist.size(); i++) {
     CommitState s = nodelist[i]->getCommitState();
     if (s == COMMIT_STATE_UNCHANGED) {
-      // nop
-      continue;
+      // check if an immediate child node has changed.
+      // if so do the syntax act here
+      // This puts back the pre-larkspur behavior that features expect to happen.
+      vector <CfgNode *> childNodes;
+      childNodes = nodelist[i]->getChildNodes();
+      for (size_t j = 0; j < childNodes.size(); j++){
+        if (childNodes[j]->getCommitState() != COMMIT_STATE_UNCHANGED) {
+          if (!_exec_node_actions(cs, *(nodelist[i]), syntax_act)) {
+            return false;
+          }
+          break; // break out of the inner for loop
+        }
+      }
+      continue; //continue the outer for loop
     }
     _set_commit_subtree_changed(*(nodelist[i]));
 
