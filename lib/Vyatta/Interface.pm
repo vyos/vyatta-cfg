@@ -85,6 +85,32 @@ sub interface_types {
     return @types;
 }
 
+# check to see if an address is unique in the working configuration
+sub is_uniq_address {
+  my $ip = pop(@_);
+  my @cfgifs = get_all_cfg_interfaces();
+  my $config = new Vyatta::Config;
+  my %addr_hash = (); 
+  foreach my $intf ( @cfgifs ) { 
+    my $addrs = [ ];
+    my $path = "$intf->{'path'}";
+    if ($path =~ /openvpn/) {
+      $addrs = [$config->listNodes("$path local-address")]; 
+    } else {
+      $addrs = [$config->returnValues("$path address")];
+    }
+    foreach my $addr ( @{$addrs} ){
+      if (not exists $addr_hash{$addr}){
+        $addr_hash{$addr} = { _intf => [ $intf->{name} ] };
+      } else { 
+        $addr_hash{$addr}->{_intf} = 
+           [ @{$addr_hash{$addr}->{_intf}}, $intf->{name} ];
+      }   
+    }
+  }
+  return ((scalar @{$addr_hash{$ip}->{_intf}}) <= 1);
+}
+
 # get all configured interfaces (in active or working configuration)
 sub get_all_cfg_interfaces {
   my ($in_active) = @_;
