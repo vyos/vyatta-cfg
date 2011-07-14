@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.8+napa3) unstable; urgency=low
+
+  * Don't allow users to set migration comments
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 14 Jul 2011 18:49:15 -0500
+
 vyatta-cfg (0.99.8+napa2) unstable; urgency=low
 
   * Bugfix 7331: Napa timeframe fix for config migration commment bug.
