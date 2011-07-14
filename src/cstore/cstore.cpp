@@ -997,6 +997,16 @@ Cstore::commentCfgPath(const Cpath& args)
     output_user("Cannot use the '*' character in a comment\n");
     return false;
   }
+  if (comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW") != string::npos){
+    // Don't allow users to set configuration migration comments
+    output_user("Cannot use the string 'CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW' in a comment\n");
+    return false;
+  }
+  if (comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE") != string::npos){
+    // Don't allow users to set configuration migration comments
+    output_user("Cannot use the string 'CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE' in a comment\n");
+    return false;
+  }
 
   bool ret = false;
   {
