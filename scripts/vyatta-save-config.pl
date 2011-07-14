@@ -107,6 +107,7 @@ my $show_cmd = 'cli-shell-api showConfig --show-active-only --show-ignore-edit';
 if ($show_default) {
   $show_cmd .= ' --show-show-defaults';
 }
+# add a sed command to remove unwanted configuration comments.
 $show_cmd .= "| sed -e \'/--- CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW ---/";
 $show_cmd .= ",/--- CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE ---/d\'";
 open(my $show_fd, '-|', $show_cmd) or die 'Cannot execute config output';
