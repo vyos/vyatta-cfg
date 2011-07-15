@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.8+napa4) unstable; urgency=low
+
+  * Bugfix 7331: better fix for the bug
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 14 Jul 2011 19:39:08 -0500
+
 vyatta-cfg (0.99.8+napa3) unstable; urgency=low
 
   * Don't allow users to set migration comments
