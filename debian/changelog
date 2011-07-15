@@ -1,3 +1,13 @@
+vyatta-cfg (0.99.10) unstable; urgency=low
+
+  * Bugfix 7331: Napa timeframe fix for config migration commment bug.
+    Will investigate if this is a viable long term fix or if we want to
+    find another way to ignore migrated comments for oxnard
+  * Don't allow users to set migration comments
+  * Bugfix 7331: better fix for the bug
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 15 Jul 2011 11:59:45 -0500
+
 vyatta-cfg (0.99.9) unstable; urgency=low
 
   * new branch
