@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.11) unstable; urgency=low
+
+  * filter run-parts messages is no longer required.
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Fri, 15 Jul 2011 06:42:23 -0700
+
 vyatta-cfg (0.99.10) unstable; urgency=low
 
   * Bugfix 7331: Napa timeframe fix for config migration commment bug.
