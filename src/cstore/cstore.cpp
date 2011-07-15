@@ -999,12 +999,10 @@ Cstore::commentCfgPath(const Cpath& args)
   }
   if (comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW") != string::npos){
     // Don't allow users to set configuration migration comments
-    output_user("Cannot use the string 'CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW' in a comment\n");
     return false;
   }
   if (comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE") != string::npos){
     // Don't allow users to set configuration migration comments
-    output_user("Cannot use the string 'CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE' in a comment\n");
     return false;
   }
 
@@ -1826,7 +1824,11 @@ Cstore::loadFile(const char *filename)
   }
   for (size_t i = 0; i < com_list.size(); i++) {
     if (!commentCfgPath(com_list[i])) {
-      print_path_vec("Comment [", "] failed\n", com_list[i], "'");
+      string comment = string(com_list[i][com_list[i].size()-1]);
+      if (comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW") == string::npos
+       && comment.find("CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE") == string::npos) {
+        print_path_vec("Comment [", "] failed\n", com_list[i], "'");
+      }
     }
   }
 
