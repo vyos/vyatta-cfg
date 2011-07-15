@@ -97,9 +97,7 @@ show ()
       args+=("$arg")
     fi
   done
-  # Note: the sed command below is to fix bug 7331
   cli-shell-api "${opts[@]}" -- showCfg "${args[@]}" \
-    | sed -e '/--- CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW ---/,/--- CONFIGURATION COMMENTED OUT DURING MIGRATION ABOVE ---/d'\
     | eval "${VYATTA_PAGER:-cat}"
 }
 
