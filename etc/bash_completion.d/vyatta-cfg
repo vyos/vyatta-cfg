@@ -307,7 +307,7 @@ run ()
   echo Incomplete command
   return 1
  fi 
-  _vyatta_op_run $@
+  /opt/vyatta/bin/vyatta-op-cmd-wrapper $@
 }
 
 # do op mode completion
