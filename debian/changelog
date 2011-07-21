@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.12) unstable; urgency=low
+
+  * Bugfix 7357: change the the run command in cfg to use the op mode
+    wrapper to ensure the proper environment for the commands exists
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 20 Jul 2011 19:29:09 -0500
+
 vyatta-cfg (0.99.11) unstable; urgency=low
 
   * filter run-parts messages is no longer required.
