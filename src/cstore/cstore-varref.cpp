@@ -47,7 +47,7 @@ Cstore::VarRef::VarRef(Cstore *cstore, const string& ref_str, bool active)
     _orig_path_comps.push(tmp.back());
     tmp.pop_back();
   }
-  _cstore->reset_paths();
+  _cstore->reset_paths(true);
   /* at this point, cstore paths are at root. _orig_path_comps contains
    * the path originally in cstore (or empty if _absolute).
    */

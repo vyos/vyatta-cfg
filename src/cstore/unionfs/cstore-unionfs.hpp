@@ -154,7 +154,17 @@ private:
       push_cfg_path(path_comps[i]);
     }
   };
-  void reset_paths() {
+  void reset_paths(bool to_root=false) {
+    if (to_root){
+      char *val;
+      if ((val = getenv(C_ENV_TMPL_ROOT.c_str()))) {
+        tmpl_path = val; 
+      } else {
+        tmpl_path = C_DEF_TMPL_ROOT;
+      }
+      orig_tmpl_path = val;
+      orig_mutable_cfg_path = "/";
+    }
     tmpl_path = orig_tmpl_path;
     mutable_cfg_path = orig_mutable_cfg_path;
   };
