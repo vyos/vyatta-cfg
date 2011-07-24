@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.14) unstable; urgency=low
+
+  * Oops, should have been false by default.
+
+ -- John Southworth <john.southworth@vyatta.com>  Sat, 23 Jul 2011 21:52:24 -0700
+
 vyatta-cfg (0.99.13) unstable; urgency=low
 
   * Bugfix 7362: Make reset_paths reset to root level when resolving
