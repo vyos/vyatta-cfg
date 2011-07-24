@@ -339,7 +339,7 @@ private:
   virtual void pop_cfg_path() = 0;
   virtual void pop_cfg_path(string& last) = 0;
   virtual void append_cfg_path(const Cpath& path_comps) = 0;
-  virtual void reset_paths() = 0;
+  virtual void reset_paths(bool to_root = true) = 0;
   virtual auto_ptr<SavePaths> create_save_paths() = 0;
   virtual bool cfg_path_at_root() = 0;
   virtual bool tmpl_path_at_root() = 0;
