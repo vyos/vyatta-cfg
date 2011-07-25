@@ -162,11 +162,11 @@ private:
       } else {
         tmpl_path = C_DEF_TMPL_ROOT;
       }
-      orig_tmpl_path = val;
-      orig_mutable_cfg_path = "/";
+      mutable_cfg_path = "/";
+    } else {
+      tmpl_path = orig_tmpl_path;
+      mutable_cfg_path = orig_mutable_cfg_path;
     }
-    tmpl_path = orig_tmpl_path;
-    mutable_cfg_path = orig_mutable_cfg_path;
   };
 
   class UnionfsSavePaths : public SavePaths {
