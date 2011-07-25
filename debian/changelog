@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.15) unstable; urgency=low
+
+  * Bugfix 7362: Make some adjustments to previous patch per An-Cheng's
+    suggestions
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 25 Jul 2011 13:22:47 -0500
+
 vyatta-cfg (0.99.14) unstable; urgency=low
 
   * Oops, should have been false by default.
