@@ -49,9 +49,7 @@ umask 0002
   trace '-- begin commit'
   ret=0
   export COMMIT_VIA=boot-config-loader
-  do_commit -a
-  do_commit -s
-  if ! do_commit -e -d; then
+  if ! do_commit ; then
     do_log err 'Commit failed at boot.'
     trace '-- commit failed'
     ret=1
