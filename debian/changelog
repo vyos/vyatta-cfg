@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.16) unstable; urgency=low
+
+  * Bugfix 7374: remove redundant calls to commit on boot
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 26 Jul 2011 16:32:11 -0500
+
 vyatta-cfg (0.99.15) unstable; urgency=low
 
   * Bugfix 7362: Make some adjustments to previous patch per An-Cheng's
