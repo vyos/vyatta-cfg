@@ -4,6 +4,7 @@ debug
 delete
 disconnect
 exit
+force
 no
 ping
 ping6
