@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.17) unstable; urgency=low
+
+  * Added to make op-mode commands under force to be accessible by
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Wed, 27 Jul 2011 07:57:20 -0700
+
 vyatta-cfg (0.99.16) unstable; urgency=low
 
   * Bugfix 7374: remove redundant calls to commit on boot
