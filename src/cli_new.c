@@ -89,7 +89,6 @@ static int eval_va(valstruct *res, vtw_node *node);
 static int expand_string(char *p);
 static void free_node(vtw_node *node);
 static void free_node_tree(vtw_node *node);
-static void free_reuse_list(void);
 void free_path(vtw_path *path);
 static void free_string(char *str);
 static vtw_node * get_node(void);
