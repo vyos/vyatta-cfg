@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.19) unstable; urgency=low
+
+  * Fix build on older gcc
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 29 Jul 2011 23:51:42 -0700
+
 vyatta-cfg (0.99.18) unstable; urgency=low
 
   [ Stephen Hemminger ]
