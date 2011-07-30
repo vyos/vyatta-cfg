@@ -81,11 +81,11 @@ public:
     return _data;
   };
   size_t hash() const {
-#if __GNUC_MAJOR__ == 4 &&  __GNUC_MINOR__ < 6
-    return std::tr1::_Fnv_hash<sizeof(size_t)>::hash(_data, _len);
-#else
+#if (__GNUC__ > 4 ) || __GNUC__ == 4 &&  __GNUC_MINOR__ >= 6
     // Newer glibc has different internal
     return std::tr1::_Fnv_hash_base<sizeof(size_t)>::hash(_data, _len);
+#else
+    return std::tr1::_Fnv_hash<sizeof(size_t)>::hash(_data, _len);
 #endif
   };
   std::string to_string() const {
