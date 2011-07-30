@@ -1,3 +1,15 @@
+vyatta-cfg (0.99.18) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Fix warning about unused function prototype
+  * Fix build of config backend on Glibc 4.6
+
+  [ John Southworth ]
+  * Bugfix 2823: Configuration mode command interpreter, output
+    adjustments for consistency
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 29 Jul 2011 20:43:00 -0700
+
 vyatta-cfg (0.99.17) unstable; urgency=low
 
   * Added to make op-mode commands under force to be accessible by
