@@ -342,7 +342,8 @@ Cstore::validateSetPath(const Cpath& path_comps)
        *       single-value node without value. now all value nodes
        *       (single-value, multi-value, and tag) must be set with value.
        */
-      output_user("The specified configuration node requires a value\n");
+      string output = "Configuration path: ["+path_comps.to_string()+"] requires a value\n";
+      output_user(output.c_str());
       return false;
     } else {
       /* typeless node
@@ -443,7 +444,8 @@ Cstore::getEditEnv(const Cpath& path_comps, string& env)
      * follow the original implementation and do a "set".
      */
     if (!validateSetPath(path_comps)) {
-      output_user("The specified config path is not valid\n");
+      string output = "Configuration path: ["+path_comps.to_string()+"] is not valid\n";
+      output_user(output.c_str());
       return false;
     }
     if (!set_cfg_path(path_comps, false)) {
@@ -2056,7 +2058,7 @@ Cstore::get_parsed_tmpl(const Cpath& path_comps, bool validate_vals,
 {
   tr1::shared_ptr<Ctemplate> rtmpl;
   // default error message
-  error = "The specified configuration node is not valid";
+  error = "Configuration path: ["+path_comps.to_string()+"] is not valid\n";
 
   bool do_caching = false;
   if (tmpl_path_at_root()) {
@@ -2491,7 +2493,8 @@ Cstore::set_cfg_path(const Cpath& path_comps, bool output)
   if (path_exists) {
     // whole path already exists
     if (output) {
-      output_user("The specified configuration node already exists\n");
+      string userout = "Configuration path: ["+path_comps.to_string()+"] already exists\n";
+      output_user(userout.c_str());
     }
     // treat as success
   }

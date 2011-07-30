@@ -42,6 +42,48 @@ fi
 if [ -r /etc/default/vyatta ]; then
   source /etc/default/vyatta
 fi
+### Top level commands and help ###
+_vyatta_cfg_cmds=( "confirm" \
+                   "comment" \
+                   "commit" \
+                   "commit-confirm" \
+                   "compare" \
+                   "copy" \
+                   "delete" \
+                   "discard" \
+                   "edit" \
+                   "exit" \
+                   "load" \
+                   "loadkey" \
+                   "merge" \
+                   "rename" \
+                   "rollback" \
+                   "run" \
+                   "save" \
+                   "set" \
+                   "show" )
+_vyatta_cfg_helps=( \
+      "Confirm prior commit-confirm" \
+      "Add comment to this configuration element" \
+      "Commit the current set of changes" \
+      "Commit the current set of changes with 'confirm' required" \
+      "Compare configuration revisions" \
+      "Copy a configuration element" \
+      "Delete a configuration element" \
+      "Discard uncommitted changes" \
+      "Edit a sub-element" \
+      "Exit from this configuration level" \
+      "Load configuration from a file and replace running configuration" \
+      "Load user SSH key from a file" \
+      "Load configuration from a file and merge running configuration" \
+      "Rename a configuration element" \
+      "Rollback to a prior config revision (requires reboot)" \
+      "Run an operational-mode command" \
+      "Save configuration to a file" \
+      "Set the value of a parameter or create a new element" \
+      "Show the configuration (default values may be suppressed)" \
+    )
+###  End Top level commands and help ###
 
 # function for shell api
 vyatta_cli_shell_api ()
@@ -86,7 +128,9 @@ for cmd in "${unalias_cmds[@]}"; do
   unalias $cmd >& /dev/null
 done
 
-show ()
+### Top level command wrappers ###
+
+vyatta_config_show ()
 {
   local -a opts=()
   local -a args=()
@@ -101,7 +145,7 @@ show ()
     | eval "${VYATTA_PAGER:-cat}"
 }
 
-commit ()
+vyatta_config_commit ()
 {
   if ! vyatta_cli_shell_api sessionChanged; then
     echo "No configuration changes to commit"
@@ -131,7 +175,7 @@ commit ()
   unset COMMIT_COMMENT
 }
 
-commit-confirm ()
+vyatta_config_commit-confirm ()
 {
   if ! vyatta_cli_shell_api sessionChanged; then
     echo "No configuration changes to commit"
@@ -160,17 +204,17 @@ commit-confirm ()
   fi
 }
 
-confirm ()
+vyatta_config_confirm ()
 {
   ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=confirm
 }
 
-compare ()
+vyatta_config_compare ()
 {
   ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@" | eval "${VYATTA_PAGER:-cat}"
 }
 
-save ()
+vyatta_config_save ()
 {
   if vyatta_cli_shell_api sessionChanged; then
     echo -e "Warning: you have uncommitted changes that will not be saved.\n"
@@ -192,7 +236,7 @@ reboot ()
   echo "Exit from configure mode before rebooting."
 }
 
-rollback ()
+vyatta_config_rollback ()
 {
   if [ $# != 1 ]; then
     echo "Error: must include a revision # to rollback to"
@@ -212,7 +256,7 @@ reset_edit_level ()
   return $?
 }
 
-load ()
+vyatta_config_load ()
 {
   # don't load if there are uncommitted changes.
   if vyatta_cli_shell_api sessionChanged; then
@@ -225,7 +269,7 @@ load ()
   ${vyatta_sbindir}/vyatta-load-config.pl "$@"
 }
 
-merge ()
+vyatta_config_merge ()
 {
   # don't load if there are uncommitted changes.
   if vyatta_cli_shell_api sessionChanged; then
@@ -249,7 +293,7 @@ top ()
   reset_edit_level
 }
 
-edit ()
+vyatta_config_edit ()
 {
   vyatta_cli_shell_api getEditEnv "$@"
   return $?
@@ -272,7 +316,7 @@ really_exit()
   builtin exit 0
 }
 
-exit ()
+vyatta_config_exit ()
 {
   local discard
   if [ $# == 0 ]; then
@@ -301,7 +345,7 @@ exit ()
 }
 
 # run op mode commands
-run ()
+vyatta_config_run ()
 {
  if [ $# == 0 ]; then
   echo Incomplete command
@@ -310,6 +354,9 @@ run ()
   /opt/vyatta/bin/vyatta-op-cmd-wrapper $@
 }
 
+### End Top level command wrappers ###
+
+### Top level command completions ###
 # do op mode completion
 vyatta_run_complete ()
 {
@@ -336,23 +383,24 @@ vyatta_loadsave_complete()
   # is not supported yet.
   #
   if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
+      local command=$(vyatta_cfg_expand_top_level ${COMP_WORDS[0]})
       echo
       echo "Possible completions:"
-      if [ "${COMP_WORDS[0]}" = "load" ]; then
+      if [ "$command" = "load" ]; then
 	  echo -e "  <Enter>\t\t\t\tLoad from system config file"
 	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
 	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
 	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
 	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
 	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
-      elif [ "${COMP_WORDS[0]}" = "merge" ]; then
+      elif [ "$command" = "merge" ]; then
 	  echo -e "  <Enter>\t\t\t\tMerge from system config file"
 	  echo -e "  <file>\t\t\t\tMerge from file on local machine"
 	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tMerge from file on remote machine"
 	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tMerge from file on remote machine"
 	  echo -e "  http://<host>/<file>\t\t\tMerge from file on remote machine"
 	  echo -e "  tftp://<host>/<file>\t\t\tMerge from file on remote machine"
-      elif [ "${COMP_WORDS[0]}" = "save" ]; then
+      elif [ "$command" = "save" ]; then
 	  echo -e "  <Enter>\t\t\t\tSave to system config file"
 	  echo -e "  <file>\t\t\t\tSave to file on local machine"
 	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tSave to file on remote machine"
@@ -367,7 +415,7 @@ vyatta_loadsave_complete()
   eval $restore_shopts
 }
 
-loadkey()
+vyatta_config_loadkey()
 {
   # don't load if there are uncommitted changes.
   if vyatta_cli_shell_api sessionChanged; then
@@ -427,7 +475,7 @@ vyatta_rollback_complete ()
   if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
       echo
       echo "Possible completions:"
-      echo -e "<N>\tRollback to revision N (currently requires reboot)"
+      echo -e "  <N>\tRollback to revision N (currently requires reboot)"
       print_commit_log
       COMPREPLY=( "" " " )
   else
@@ -449,17 +497,17 @@ vyatta_compare_complete ()
   if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
       echo
       echo "Possible completions:"
-      echo -e "<enter>\tCompare working & active configurations"
-      echo -e "<N>\tCompare working with revision N"
-      echo -e "<N> <M>\tCompare revision N with M"
+      echo -e "  <enter>\tCompare working & active configurations"
+      echo -e "  <N>\tCompare working with revision N"
+      echo -e "  <N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
       echo
       echo "Possible completions:"
-      echo -e "<enter>\tCompare working & active configurations"
-      echo -e "<N>\tCompare working with revision N"
-      echo -e "<N> <M>\tCompare revision N with M"
+      echo -e "  <enter>\tCompare working & active configurations"
+      echo -e "  <N>\tCompare working with revision N"
+      echo -e "  <N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
   else
@@ -482,17 +530,17 @@ vyatta_commit_complete ()
       echo
       echo "Possible completions:"
       if [ "${COMP_WORDS[0]}" = "commit" ]; then
-         echo -e "<enter>\tCommit working configuration"
+         echo -e "  <enter>\tCommit working configuration"
       elif [ "${COMP_WORDS[0]}" = "commit-confirm" ]; then
-         echo -e "<enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
-         echo -e "<N>\tCommit, rollback/reboot in N minutes if no confirm"
+         echo -e "  <enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
+         echo -e "  <N>\tCommit, rollback/reboot in N minutes if no confirm"
       fi
-      echo -e "comment\tComment for commit log"
+      echo -e "  comment\tComment for commit log"
       COMPREPLY=( "" " " )
   elif [ "${COMP_WORDS[1]}" = "comment" ]; then
             echo
       echo "Possible completions:"
-      echo -e "<txt>\tText comment for commit log (e.g. \"add user bob\")"
+      echo -e "  <txt>\tText comment for commit log (e.g. \"add user bob\")"
       COMPREPLY=( "" " " )
   else
       COMPREPLY=()
@@ -500,6 +548,7 @@ vyatta_commit_complete ()
 
   eval $restore_shopts
 }
+### End Top level command completions ###
 
 get_prefix_filtered_list ()
 {
@@ -691,6 +740,40 @@ generate_pipe_help ()
   get_help_text
 }
 
+### Expand config compwords ###
+vyatta_config_expand_compwords ()
+{ 
+    local cmd=$1
+    cmd=$(vyatta_cfg_expand_top_level $cmd)
+    expanded_api_args=( "$cmd" )
+    local _cli_shell_api_last_comp_val=''
+    local _cli_shell_api_comp_help=''
+    local -a _cli_shell_api_comp_values=()
+    local -a _cli_shell_api_hitems=()
+    local -a _cli_shell_api_hstrs=()
+    local -a path=( "$cmd" )
+    for arg in "${@:2}"; do
+        _cli_shell_api_comp_values=()
+        _cli_shell_api_last_comp_val=''
+        if [[ -z $arg ]]; then 
+            path=( "${expanded_api_args[@]}" '' )
+        else
+            path=( "${expanded_api_args[@]}" "$arg" )
+        fi
+        vyatta_cli_shell_api getCompletionEnv "${path[@]}"
+        if [[ "${#_cli_shell_api_comp_values[@]}" == "1" ]]; then
+          if [[ "$_cli_shell_api_last_comp_val" == 'true' ]]; then
+            arg=$arg
+          else
+            arg=${_cli_shell_api_comp_values[0]}
+          fi
+          expanded_api_args+=( "$arg" )
+        else
+          expanded_api_args+=( "$arg" )
+        fi
+    done
+}
+
 # env variables for shell api completion
 declare _cli_shell_api_last_comp_val=''
 declare _cli_shell_api_comp_help=''
@@ -721,46 +804,8 @@ vyatta_config_complete ()
   fi
 
   if (( ${#COMP_WORDS[@]} < 2 )); then
-    _get_help_text_items=( "confirm" \
-                           "comment" \
-                           "commit" \
-                           "commit-confirm" \
-                           "compare" \
-                           "copy" \
-                           "delete" \
-                           "discard" \
-                           "edit" \
-                           "exit" \
-                           "load" \
-                           "loadkey" \
-                           "merge" \
-                           "rename" \
-                           "rollback" \
-                           "run" \
-                           "save" \
-                           "set" \
-                           "show" )
-    _get_help_text_helps=( \
-      "Confirm prior commit-confirm" \
-      "Add comment to this configuration element" \
-      "Commit the current set of changes" \
-      "Commit the current set of changes with 'confirm' required" \
-      "Compare configuration revisions" \
-      "Copy a configuration element" \
-      "Delete a configuration element" \
-      "Discard uncommitted changes" \
-      "Edit a sub-element" \
-      "Exit from this configuration level" \
-      "Load configuration from a file and replace running configuration" \
-      "Load user SSH key from a file" \
-      "Load configuration from a file and merge running configuration" \
-      "Rename a configuration element" \
-      "Rollback to a prior config revision (requires reboot)" \
-      "Run an operational-mode command" \
-      "Save configuration to a file" \
-      "Set the value of a parameter or create a new element" \
-      "Show the configuration (default values may be suppressed)" \
-    )
+    _get_help_text_items=( "${_vyatta_cfg_cmds[@]}" )
+    _get_help_text_helps=( "${_vyatta_cfg_helps[@]}" )
     if (( ${#COMP_WORDS[@]} == 1 )); then
       declare -a fitems=()
       declare -a fstrs=()
@@ -777,6 +822,8 @@ vyatta_config_complete ()
   fi
 
   local command=${COMP_WORDS[0]}
+  ### Expand top level commands
+  command=$(vyatta_cfg_expand_top_level $command)
   local last_comp="${COMP_WORDS[COMP_CWORD]}"
 
   # handle "exit"
@@ -828,6 +875,9 @@ vyatta_config_complete ()
     fi
   fi
 
+  local -a expanded_api_args
+  vyatta_config_expand_compwords "${api_args[@]}"
+  api_args=( "${expanded_api_args[@]}" )
   if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
     # invalid completion
     eval $restore_shopts
@@ -873,13 +923,249 @@ fi
 # disallow 'Ctrl-D' exit, since we need special actions on 'exit'
 builtin set -o ignoreeof 1
 
+
+### Top level wrappers ###
+vyatta_cfg_cmd_run ()
+{
+    local cmd=$1
+    local -a args=( "$@" )
+    local output=''
+    if [[ "$cmd" == "edit" ]]; then 
+      vyatta_config_edit "${@:2}"
+    elif [[ "$cmd" == "show" ]]; then 
+      vyatta_config_show "${@:2}"
+    else 
+      cmd="/opt/vyatta/sbin/my_$cmd"
+      output=$(eval "$cmd ${args[@]:1}")
+    fi   
+    vyatta_cfg_print_output "$output"
+}
+
+vyatta_cfg_print_output ()
+{
+  local output=$1
+  if [[ ! -z "${output}" ]];then
+    output=$(echo "$output" | sed -e 's/^/  /')
+    echo -ne "\n${output}\n\n" | eval "${VYATTA_PAGER:-cat}"
+  fi 
+}
+
+vyatta_cfg_validate_cmd ()
+{
+    local cmd=$1 
+    local -a expanded_api_args=( "$@" )
+    local path=''
+    local opath=''
+    for arg in "${expanded_api_args[@]:1}"; do
+      if [[ "$path" == '' ]]; then 
+        path="$arg"
+      else 
+        path="$path $arg"
+      fi   
+      if ! cli-shell-api validateTmplPath ${path}; then 
+        _cli_shell_api_comp_values=()
+        vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
+        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
+           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then 
+          local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+          local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+          local vyatta_help_text=''
+          if [[ $opath == '' ]]; then 
+            echo -ne "\n  Configuation path: [$arg] is ambiguous\n"
+          else
+            echo -ne "\n  Configuation path: $opath [$arg] is ambiguous\n"
+          fi
+          get_help_text
+          echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
+          echo -e "  ${cmd^} failed\n"
+          break
+        else
+          if [[ $opath == '' ]]; then 
+            echo -ne "\n  Configuation path: [$arg] is not valid\n  ${cmd^} failed\n\n"
+          else
+            echo -ne "\n  Configuation path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n"
+          fi
+          break
+        fi
+      else 
+        opath=$path
+      fi   
+    done 
+}
+
+vyatta_config_copy ()
+{
+    local cmd=$1 
+    if [[ "${#@}" == "1" ]]; then
+      vyatta_cfg_cmd_run $cmd
+      return
+    fi
+    local -a args=( "$@" )
+    local -a param1=( "$cmd" ${args[@]:1:2} )
+    local -a param2=( "$cmd" ${args[@]:4:5} )
+    local editlvl=$(cli-shell-api getEditLevelStr)
+    expanded_api_args=( )
+    vyatta_config_expand_compwords "${param1[@]}"
+    param1=( "${expanded_api_args[@]}" )
+    expanded_api_args=( )
+    vyatta_config_expand_compwords "${param2[@]}"
+    param2=( "${expanded_api_args[@]}" )
+    if [[ "${args[3]}" != "to" ]]; then
+        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n"
+    elif cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:1}" &&
+       cli-shell-api validateTmplPath ${editlvl[*]} "${param2[@]:1}" ; then
+      cmd="/opt/vyatta/sbin/my_$cmd"
+      output=$(eval "$cmd ${param1[@]:1} to ${param2[@]:1} | sed -e 's/^/  /'")
+      if [[ ! -z "${output}" ]];then
+        echo -ne "\n${output}\n\n"
+      fi
+    else
+      if ! cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:1}"; then
+        _cli_shell_api_comp_values=()
+        vyatta_cli_shell_api getCompletionEnv $cmd ${param1[1]}
+        if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
+           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+          echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n"
+          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n"
+        else
+          echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n"
+        fi
+      elif ! cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:2}"; then
+        _cli_shell_api_comp_values=()
+        vyatta_cli_shell_api getCompletionEnv $cmd "${param2[1]}" 
+        if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
+           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+          echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n"
+          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n"
+        else
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n"
+        fi
+      else
+        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n"
+      fi
+    fi
+}
+
+vyatta_config_comment ()
+{
+  local cmd=$1
+  if [[ "${#@}" == "1" ]]; then
+    vyatta_cfg_cmd_run $cmd
+    return
+  fi
+  # change the ifs so we can extract the entire comment
+  local OIFS=$IFS
+  local IFS='---'
+  local -a args=( "$@" )
+  # extract the comment
+  local comment="'${args[$[${#args[@]}-1]]}'"
+  args=( "${args[@]:0:$[${#args[@]}-1]}" )
+  IFS=$OIFS
+  local -a expanded_api_args=()
+  # expand the comment command
+  local editlvl=$(cli-shell-api getEditLevelStr)
+  vyatta_config_expand_compwords "${args[@]}"
+  if [[ "$#" != "${#expanded_api_args[@]}" ]]; then
+     expanded_api_args+=( $comment )
+  fi
+  # use the standard run function with the comment expansion
+  vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+}
+
+vyatta_cfg_cmd () 
+{ 
+  # commands that need expanded paths get called through here
+  local cmd=$1
+  if [[ "$#" == "1" ]]; then
+    vyatta_cfg_cmd_run $cmd
+    return
+  fi
+  # Note: the below code is to account for quoted strings as
+  #       leaf node parameter
+  # change the ifs so we can extract the entire last element
+  local OIFS=$IFS
+  local IFS='---'
+  local -a args=( "$@" )
+  local lastelem="${args[$[${#args[@]}-1]]}"
+  args=( "${args[@]:0:$[${#args[@]}-1]}" )
+  IFS=$OIFS
+  local -a lastelem_arr=( $lastelem )
+  #if there is only one last element don't quote it 
+  if [[ "${#lastelem_arr[@]}" == "1" ]]; then
+    args+=( "$lastelem" )
+  else
+    lastelem="'$lastelem'"
+  fi
+  local -a expanded_api_args=()
+  local editlvl=$(cli-shell-api getEditLevelStr)
+  vyatta_config_expand_compwords ${args[@]}
+  if cli-shell-api validateTmplPath ${editlvl[*]} "${expanded_api_args[@]:1}"; then
+    # if we have a valid command append the last parameter and run it
+    if [[ "$#" != "${#expanded_api_args[@]}" ]]; then
+       expanded_api_args+=( $lastelem )
+    fi
+    vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+  else
+    # find broken portion of command
+    vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+  fi
+}
+### Top level wrappers ###
+
+### Main run command ###
+vyatta_cfg_run ()
+{
+  # validate top level command and execute proper function
+  local cmd=$1
+  local -a args=( "$@" )
+  local -a filtered_cmds
+  get_prefix_filtered_list $cmd _vyatta_cfg_cmds filtered_cmds
+  local found
+  vyatta_cfg_is_elem_of "${cmd}" _vyatta_cfg_cmds
+  found=$?
+  if [[ "${#filtered_cmds[@]}" == "0" ]]; then
+    echo -ne "\n  Invalid command: [$cmd]\n\n"
+    return 1
+  elif [[ "${#filtered_cmds[@]}" != "1" && "$found" == "1" ]];  then
+    echo -ne "\n  Ambiguous command: [$cmd]\n"
+    local -a fitems=()
+    local -a fstrs=()
+    local -a _get_help_text_items=( "${_vyatta_cfg_cmds[@]}" )
+    local -a _get_help_text_helps=( "${_vyatta_cfg_helps[@]}" )
+    get_prefix_filtered_list2 "$cmd" \
+      _get_help_text_items fitems _get_help_text_helps fstrs
+    _get_help_text_items=( "${fitems[@]}" )
+    _get_help_text_helps=( "${fstrs[@]}" )
+    get_help_text
+    echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
+    return 1
+  fi
+  local fcmd;
+  if vyatta_cfg_is_elem_of "${cmd}" _vyatta_cfg_cmds; then
+    fcmd=$cmd
+  else
+    fcmd=${filtered_cmds[0]}
+  fi
+  case $fcmd in
+    compare) vyatta_config_compare "${@:2}" ;;
+    comment) vyatta_config_comment "${args[@]}" ;; # comment is a special case
+    copy|rename) vyatta_config_copy $fcmd ${@:2} ;; # copy is a special case
+    exit) vyatta_config_exit "${@:2}" ;; 
+    run) vyatta_config_run "${@:2}" ;; 
+    load) vyatta_config_load "${@:2}" ;; 
+    commit) vyatta_config_commit "${@:2}";;
+    confirm) vyatta_config_confirm "${@:2}";;
+    rollback) vyatta_config_rollback "${@:2}";;
+    commit-confirm) vyatta_config_commit-confirm "${@:2}";;
+    compare) vyatta_config_compare "${@:2}";;
+    save) vyatta_config_save "${@:2}" ;;
+    merge) vyatta_config_merge "${@:2}" ;;
+    loadkey) vyatta_config_loadkey "${@:2}";;
+    *) vyatta_cfg_cmd $fcmd "${@:2}" ;; # commands requiring path expansion must go through here
+  esac
+}
+
 reset_edit_level
-alias set=/opt/vyatta/sbin/my_set
-alias delete=/opt/vyatta/sbin/my_delete
-alias rename=/opt/vyatta/sbin/my_rename
-alias copy=/opt/vyatta/sbin/my_copy
-alias comment=/opt/vyatta/sbin/my_comment
-alias discard=/opt/vyatta/sbin/my_discard
 
 export VYATTA_COMP_LINE_EMPTY=VYATTA_COMP_LINE_EMPTY
 export VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
@@ -918,25 +1204,94 @@ vyatta_config_default_complete ()
   fi
 }
 
-complete -E -F vyatta_config_complete 
-complete -D -F vyatta_config_default_complete
-complete -F vyatta_config_complete set
-complete -F vyatta_config_complete delete
-complete -F vyatta_config_complete show
-complete -F vyatta_config_complete edit
-complete -F vyatta_config_complete exit
-complete -F vyatta_run_complete run
-complete -F vyatta_loadsave_complete save
-complete -F vyatta_loadsave_complete load
-complete -F vyatta_loadsave_complete merge
-complete -F vyatta_loadkey_complete loadkey
-complete -F vyatta_compare_complete compare
-complete -F vyatta_config_complete comment
-complete -F vyatta_config_complete copy
-complete -F vyatta_config_complete rename
-complete -F vyatta_rollback_complete rollback
-complete -F vyatta_commit_complete commit
-complete -F vyatta_commit_complete commit-confirm
+vyatta_cfg_is_elem_of () {
+  local elem=$1
+  local -a olist
+  eval "olist=( \"\${$2[@]}\" )"
+  for e in ${olist[*]}; do
+    if [[ "$e" == "$elem" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+vyatta_cfg_expand_top_level () {
+  local cmd=$1
+  local -a filtered_cmds=()
+  get_prefix_filtered_list ${cmd} _vyatta_cfg_cmds filtered_cmds
+  local found
+  vyatta_cfg_is_elem_of "${cmd}" _vyatta_cfg_cmds
+  found=$?
+  local fcmd
+  if [[ "${#filtered_cmds[@]}" == "1" || "$found" == "0" ]]; then
+    if [[ "${#filtered_cmds[@]}" == "1" ]]; then
+      fcmd=${filtered_cmds[0]}
+    else
+      fcmd=$cmd
+    fi
+  else
+    fcmd=$cmd
+  fi 
+  echo $fcmd
+}
+
+### Initalize top level command alias and completion functions
+_vyatta_cfg_init ()
+{
+    # empty and default line compeletion
+    complete -E -F vyatta_config_complete 
+    complete -D -F vyatta_config_default_complete
+
+    # create the top level aliases for the unambiguous portions of the commands
+    # this is the only place we need an entire enumerated list of the subcommands
+    for cmd in "${_vyatta_cfg_cmds[@]}"; do
+      for pos in $(seq 1 ${#cmd}); do
+        case ${cmd:0:$pos} in
+          for|do|done|if|fi|case|while|tr )
+            continue ;;
+          *) ;;
+        esac
+        local -a filtered_cmds=()
+        get_prefix_filtered_list ${cmd:0:$pos} _vyatta_cfg_cmds filtered_cmds
+        local found
+        vyatta_cfg_is_elem_of "${cmd:0:$pos}" _vyatta_cfg_cmds
+        found=$?
+        if [[ "${#filtered_cmds[@]}" == "1" || "${cmd:0:$pos}" == "$cmd"  || "$found" == "0" ]]; then
+          local fcmd
+          if [[ "${#filtered_cmds[@]}" == "1" ]]; then
+            fcmd=${filtered_cmds[0]}
+          elif vyatta_cfg_is_elem_of "${cmd:0:$pos}" _vyatta_cfg_cmds; then
+            fcmd=${cmd:0:$pos}
+          else
+            fcmd=$cmd
+          fi
+          case $fcmd in
+            save|load|merge)
+              complete -F vyatta_loadsave_complete ${cmd:0:$pos} ;;
+            run)
+              complete -F vyatta_run_complete ${cmd:0:$pos} ;;
+            loadkey)
+              complete -F vyatta_loadkey_complete ${cmd:0:$pos} ;;
+            compare)
+              complete -F vyatta_compare_complete ${cmd:0:$pos} ;;
+            rollback)
+              complete -F vyatta_rollback_complete ${cmd:0:$pos} ;;
+            commit|commit-confirm)
+               complete -F vyatta_commit_complete ${cmd:0:$pos} ;;
+            *)
+               complete -F vyatta_config_complete ${cmd:0:$pos} ;;
+          esac
+        else
+          complete -F vyatta_config_complete ${cmd:0:$pos} 
+        fi
+        eval alias ${cmd:0:$pos}=\'vyatta_cfg_run ${cmd:0:$pos}\'
+      done
+    done
+    shopt -s histverify
+}
+
+_vyatta_cfg_init 
 
 # Local Variables:
 # mode: shell-script
