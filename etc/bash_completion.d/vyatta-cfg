@@ -211,7 +211,14 @@ vyatta_config_confirm ()
 
 vyatta_config_compare ()
 {
-  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@" | eval "${VYATTA_PAGER:-cat}"
+  local -a comp=( "saved" )
+  local -a filtered=()
+  get_prefix_filtered_list $1 comp filtered
+  if [[ "${filtered[0]}" == "saved" ]]; then
+     cli-shell-api showConfig --show-cfg1 /config/config.boot --show-cfg2 @WORKING --show-context-diff
+  else  
+     ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@" | eval "${VYATTA_PAGER:-cat}"
+  fi 
 }
 
 vyatta_config_save ()
@@ -319,9 +326,12 @@ really_exit()
 vyatta_config_exit ()
 {
   local discard
+  local -a comp=( "discard" )
+  local -a filtered=()
+  get_prefix_filtered_list $1 comp filtered
   if [ $# == 0 ]; then
     discard=0
-  elif [ $# == 1 ] && [ "$1" == "discard" ]; then
+  elif [ $# == 1 ] && [ "${filtered[0]}" == "discard" ]; then
     discard=1
   else
     echo "Invalid argument \"$*\" for 'exit'"
@@ -458,7 +468,7 @@ print_commit_log ()
   local count=0
   for i in "${array[@]}"; do
      i=${i//_/ }
-     echo -e "  $count\t$i"
+     echo -e "    $count\t$i"
      (( count++ ))
   done
 }
@@ -476,6 +486,7 @@ vyatta_rollback_complete ()
       echo
       echo "Possible completions:"
       echo -e "  <N>\tRollback to revision N (currently requires reboot)"
+      echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
   else
@@ -498,18 +509,29 @@ vyatta_compare_complete ()
       echo
       echo "Possible completions:"
       echo -e "  <enter>\tCompare working & active configurations"
+      echo -e "  saved\t\tCompare working & saved configurations"
       echo -e "  <N>\t\tCompare working with revision N"
       echo -e "  <N> <M>\tCompare revision N with M"
+      echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
+      if [[ "${COMP_WORDS[1]}" == "config.boot" ]]; then
+        echo "Possible completions:"
+        echo -e "  <enter>\tCompare working and saved configurations"
+        COMPREPLY=( "" " " )
+        eval $restore_shopts
+        return
+      fi
       echo
       echo "Possible completions:"
-      echo -e "  <enter>\tCompare working & active configurations"
-      echo -e "  <N>\t\tCompare working with revision N"
-      echo -e "  <N> <M>\tCompare revision N with M"
+      echo -e "  <enter>\tCompare working revision N"
+      echo -e "  <M>\t\tCompare revision N with M"
+      echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
+  elif [ $COMP_CWORD -eq 1 ]; then
+      COMPREPLY=$(compgen -W saved -- ${COMP_WORDS[$COMP_CWORD]})
   else
       COMPREPLY=()
   fi
@@ -533,7 +555,7 @@ vyatta_commit_complete ()
          echo -e "  <enter>\tCommit working configuration"
       elif [ "${COMP_WORDS[0]}" = "commit-confirm" ]; then
          echo -e "  <enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
-         echo -e "  <N>\tCommit, rollback/reboot in N minutes if no confirm"
+         echo -e "  <N>\t\tCommit, rollback/reboot in N minutes if no confirm"
       fi
       echo -e "  comment\tComment for commit log"
       COMPREPLY=( "" " " )
@@ -542,6 +564,8 @@ vyatta_commit_complete ()
       echo "Possible completions:"
       echo -e "  <txt>\tText comment for commit log (e.g. \"add user bob\")"
       COMPREPLY=( "" " " )
+  elif [ $COMP_CWORD -eq 1 ]; then
+      COMPREPLY=$(compgen -W comment -- ${COMP_WORDS[$COMP_CWORD]})
   else
       COMPREPLY=()
   fi
@@ -1269,6 +1293,8 @@ _vyatta_cfg_init ()
           case $fcmd in
             save|load|merge)
               complete -F vyatta_loadsave_complete ${cmd:0:$pos} ;;
+            discard|confirm)
+              continue ;; 
             run)
               complete -F vyatta_run_complete ${cmd:0:$pos} ;;
             loadkey)
