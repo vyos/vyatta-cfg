@@ -516,7 +516,7 @@ vyatta_compare_complete ()
       print_commit_log
       COMPREPLY=( "" " " )
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
-      if [[ "${COMP_WORDS[1]}" == "config.boot" ]]; then
+      if [[ "${COMP_WORDS[1]}" == "saved" ]]; then
         echo "Possible completions:"
         echo -e "  <enter>\tCompare working and saved configurations"
         COMPREPLY=( "" " " )
