@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.22) unstable; urgency=low
+
+  * Fix incorrect comp_words check in previous commit. My original
+    implementation used config.boot instead of saved
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 01 Aug 2011 15:43:53 -0500
+
 vyatta-cfg (0.99.21) unstable; urgency=low
 
   * Cleanup some top level completion help text and add a 'compare
