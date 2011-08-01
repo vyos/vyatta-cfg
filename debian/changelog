@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.20) unstable; urgency=low
+
+  * Cleanup help text for compare
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 01 Aug 2011 13:23:16 -0500
+
 vyatta-cfg (0.99.19) unstable; urgency=low
 
   * Fix build on older gcc
