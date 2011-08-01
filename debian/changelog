@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.21) unstable; urgency=low
+
+  * Cleanup some top level completion help text and add a 'compare
+    saved' command so that users can check their saved config vs the
+    working config without loading
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 01 Aug 2011 15:34:31 -0500
+
 vyatta-cfg (0.99.20) unstable; urgency=low
 
   * Cleanup help text for compare
