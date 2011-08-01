@@ -458,7 +458,7 @@ print_commit_log ()
   local count=0
   for i in "${array[@]}"; do
      i=${i//_/ }
-     echo -e "$count\t$i"
+     echo -e "  $count\t$i"
      (( count++ ))
   done
 }
@@ -498,7 +498,7 @@ vyatta_compare_complete ()
       echo
       echo "Possible completions:"
       echo -e "  <enter>\tCompare working & active configurations"
-      echo -e "  <N>\tCompare working with revision N"
+      echo -e "  <N>\t\tCompare working with revision N"
       echo -e "  <N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
@@ -506,7 +506,7 @@ vyatta_compare_complete ()
       echo
       echo "Possible completions:"
       echo -e "  <enter>\tCompare working & active configurations"
-      echo -e "  <N>\tCompare working with revision N"
+      echo -e "  <N>\t\tCompare working with revision N"
       echo -e "  <N> <M>\tCompare revision N with M"
       print_commit_log
       COMPREPLY=( "" " " )
