@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.23) unstable; urgency=low
+
+  * Reorganize the bash completion and command interpreter scripts into
+    easier to manage chunks. Command interpreter is now in vyatta-cfg-
+    run and common functions have been moved to vyatta-op
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 02 Aug 2011 12:46:04 -0500
+
 vyatta-cfg (0.99.22) unstable; urgency=low
 
   * Fix incorrect comp_words check in previous commit. My original
