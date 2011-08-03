@@ -186,12 +186,6 @@ mount_slash_config ()
     fi
 }
 
-generate_unpriv_cmds ()
-{
-  source /opt/vyatta/share/vyatta-op/functions/interpreter/vyatta-unpriv
-  vyatta_unpriv_gen_allowed
-}
-
 start ()
 {
     log_action_begin_msg "Mounting Vyatta Config"
@@ -236,7 +230,6 @@ start ()
     telinit q
     bind_mount_boot
     chmod g-w,o-w /
-    generate_unpriv_cmds 
 }
 
 stop()
