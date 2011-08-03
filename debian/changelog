@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.25) unstable; urgency=low
+
+  * Move allowed-op.in to vyatta-op to allow allowed-op for
+    unpriviledged users to be generated at compile time. Remove boot
+    time generation of unpriviledged allowed-op
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 03 Aug 2011 12:01:41 -0500
+
 vyatta-cfg (0.99.24) unstable; urgency=low
 
   * Add support for unambiguous top level commands for unpriviledged
