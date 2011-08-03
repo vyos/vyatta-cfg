@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.24) unstable; urgency=low
+
+  * Add support for unambiguous top level commands for unpriviledged
+    users; generate allowed-op short commands at boot time
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 02 Aug 2011 19:43:32 -0500
+
 vyatta-cfg (0.99.23) unstable; urgency=low
 
   * Reorganize the bash completion and command interpreter scripts into
