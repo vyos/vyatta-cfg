@@ -1,3 +1,13 @@
+vyatta-cfg (0.99.8+napa7) unstable; urgency=low
+
+  * Bugfix 7362: Make reset_paths reset to root level when resolving
+    varrefs
+  * Oops, should have been false by default.
+  * Bugfix 7362: Make some adjustments to previous patch per An-Cheng's
+    suggestions
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 04 Aug 2011 14:06:30 -0500
+
 vyatta-cfg (0.99.8+napa6) unstable; urgency=low
 
   * Bugfix 7357: change the the run command in cfg to use the op mode
