@@ -352,6 +352,7 @@ vyatta_cfg_validate_cmd ()
 {
     local cmd=$1 
     local -a expanded_api_args=( "$@" )
+    local editlvl=$(cli-shell-api getEditLevelStr)
     local path=''
     local opath=''
     for arg in "${expanded_api_args[@]:1}"; do
@@ -360,7 +361,7 @@ vyatta_cfg_validate_cmd ()
       else 
         path="$path $arg"
       fi   
-      if ! cli-shell-api validateTmplPath ${path}; then 
+      if ! cli-shell-api validateTmplPath ${editlvl} ${path}; then 
         _cli_shell_api_comp_values=()
         vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
