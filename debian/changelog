@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.26) unstable; urgency=low
+
+  * Fix edit level in path validation function for short commands
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 09 Aug 2011 18:30:17 -0500
+
 vyatta-cfg (0.99.25) unstable; urgency=low
 
   * Move allowed-op.in to vyatta-op to allow allowed-op for
