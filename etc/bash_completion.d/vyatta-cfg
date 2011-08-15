@@ -552,7 +552,7 @@ vyatta_config_complete ()
     return
   fi
 
-  local -a api_args=("${COMP_WORDS[@]}")
+  local -a api_args=("${COMP_WORDS[@]:0:$[$COMP_CWORD+1]}")
 
   # handle "copy" and "rename"
   if [ "$command" == "copy" -o "$command" == "rename" ]; then
