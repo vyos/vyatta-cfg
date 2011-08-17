@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.28) unstable; urgency=low
+
+  * Bugfix 7442: Check if running interactively before doing binding
+    options
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 17 Aug 2011 16:06:43 -0500
+
 vyatta-cfg (0.99.27) unstable; urgency=low
 
   * Allow config mode completion to work when not at the end of the
