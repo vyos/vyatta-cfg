@@ -638,14 +638,18 @@ reset_edit_level
 export VYATTA_COMP_LINE_EMPTY=VYATTA_COMP_LINE_EMPTY
 export VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
 
-# readline bindings
-bind 'set show-all-if-ambiguous on'
-if ! bind -p |grep -q '\\C-x\\C-t'; then
-  bind '"\C-x\C-t": kill-region'
-fi
-if ! bind -p |grep -q '\\C-x\\C-o'; then
-  bind '"\C-x\C-o": copy-region-as-kill'
-fi
+#  readline bindings
+case "$-" in
+  *i*)
+    bind 'set show-all-if-ambiguous on'
+    if ! bind -p |grep -q '\\C-x\\C-t'; then
+      bind '"\C-x\C-t": kill-region'
+    fi
+    if ! bind -p |grep -q '\\C-x\\C-o'; then
+      bind '"\C-x\C-o": copy-region-as-kill'
+    fi
+  ;;
+esac
 
 # note: now that we're using bash's new "empty completion" (-E), it becomes
 # necessary to capture the "default completion" (-D) as well in order to
