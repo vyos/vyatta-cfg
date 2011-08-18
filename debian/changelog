@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.29) unstable; urgency=low
+
+  * Don't eval the commands just run them; simplify the command wrapper
+    functions
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 18 Aug 2011 15:49:09 -0500
+
 vyatta-cfg (0.99.28) unstable; urgency=low
 
   * Bugfix 7442: Check if running interactively before doing binding
