@@ -334,7 +334,7 @@ vyatta_cfg_cmd_run ()
       vyatta_config_show "${@:2}"
     else 
       cmd="/opt/vyatta/sbin/my_$cmd"
-      output=$(eval "$cmd ${args[@]:1}")
+      output=$($cmd "${args[@]:1}")
     fi   
     vyatta_cfg_print_output "$output"
 }
@@ -453,13 +453,10 @@ vyatta_config_comment ()
     return
   fi
   # change the ifs so we can extract the entire comment
-  local OIFS=$IFS
-  local IFS='---'
   local -a args=( "$@" )
   # extract the comment
   local comment="'${args[$[${#args[@]}-1]]}'"
   args=( "${args[@]:0:$[${#args[@]}-1]}" )
-  IFS=$OIFS
   local -a expanded_api_args=()
   # expand the comment command
   local editlvl=$(cli-shell-api getEditLevelStr)
@@ -468,7 +465,8 @@ vyatta_config_comment ()
      expanded_api_args+=( $comment )
   fi
   # use the standard run function with the comment expansion
-  vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+  output=$(eval "/opt/vyatta/sbin/my_${expanded_api_args[0]} ${expanded_api_args[@]:1}")
+  vyatta_cfg_print_output "$output"
 }
 
 vyatta_cfg_cmd () 
@@ -479,30 +477,11 @@ vyatta_cfg_cmd ()
     vyatta_cfg_cmd_run $cmd
     return
   fi
-  # Note: the below code is to account for quoted strings as
-  #       leaf node parameter
-  # change the ifs so we can extract the entire last element
-  local OIFS=$IFS
-  local IFS='---'
   local -a args=( "$@" )
-  local lastelem="${args[$[${#args[@]}-1]]}"
-  args=( "${args[@]:0:$[${#args[@]}-1]}" )
-  IFS=$OIFS
-  local -a lastelem_arr=( $lastelem )
-  #if there is only one last element don't quote it 
-  if [[ "${#lastelem_arr[@]}" == "1" ]]; then
-    args+=( "$lastelem" )
-  else
-    lastelem="'$lastelem'"
-  fi
   local -a expanded_api_args=()
   local editlvl=$(cli-shell-api getEditLevelStr)
-  vyatta_config_expand_compwords ${args[@]}
+  vyatta_config_expand_compwords "${args[@]}"
   if cli-shell-api validateTmplPath ${editlvl[*]} "${expanded_api_args[@]:1}"; then
-    # if we have a valid command append the last parameter and run it
-    if [[ "$#" != "${#expanded_api_args[@]}" ]]; then
-       expanded_api_args+=( $lastelem )
-    fi
     vyatta_cfg_cmd_run "${expanded_api_args[@]}"
   else
     # find broken portion of command
