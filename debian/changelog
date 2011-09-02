@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.30) unstable; urgency=low
+
+  *  Fix problems when using negative values
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 02 Sep 2011 12:03:20 -0500
+
 vyatta-cfg (0.99.29) unstable; urgency=low
 
   * Don't eval the commands just run them; simplify the command wrapper
