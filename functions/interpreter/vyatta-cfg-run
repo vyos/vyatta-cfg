@@ -317,7 +317,7 @@ vyatta_config_run ()
   echo Incomplete command
   return 1
  fi 
-  /opt/vyatta/bin/vyatta-op-cmd-wrapper $@
+  /opt/vyatta/bin/vyatta-op-cmd-wrapper "$@"
 }
 
 ### End Top level command wrappers ###
@@ -326,7 +326,6 @@ vyatta_config_run ()
 vyatta_cfg_cmd_run ()
 {
     local cmd=$1
-    local -a args=( "$@" )
     local output=''
     if [[ "$cmd" == "edit" ]]; then 
       vyatta_config_edit "${@:2}"
@@ -334,7 +333,7 @@ vyatta_cfg_cmd_run ()
       vyatta_config_show "${@:2}"
     else 
       cmd="/opt/vyatta/sbin/my_$cmd"
-      output=$($cmd "${args[@]:1}")
+      output=$($cmd "${@:2}")
     fi   
     vyatta_cfg_print_output "$output"
 }
@@ -361,7 +360,7 @@ vyatta_cfg_validate_cmd ()
       else 
         path="$path $arg"
       fi   
-      if ! cli-shell-api validateTmplPath ${editlvl} ${path}; then 
+      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then 
         _cli_shell_api_comp_values=()
         vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
@@ -411,15 +410,15 @@ vyatta_config_copy ()
     param2=( "${expanded_api_args[@]}" )
     if [[ "${args[3]}" != "to" ]]; then
         echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n"
-    elif cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:1}" &&
-       cli-shell-api validateTmplPath ${editlvl[*]} "${param2[@]:1}" ; then
+    elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}" &&
+       cli-shell-api validateTmplPath -- ${editlvl[*]} "${param2[@]:1}" ; then
       cmd="/opt/vyatta/sbin/my_$cmd"
       output=$(eval "$cmd ${param1[@]:1} to ${param2[@]:1} | sed -e 's/^/  /'")
       if [[ ! -z "${output}" ]];then
         echo -ne "\n${output}\n\n"
       fi
     else
-      if ! cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:1}"; then
+      if ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}"; then
         _cli_shell_api_comp_values=()
         vyatta_cli_shell_api getCompletionEnv $cmd ${param1[1]}
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
@@ -429,7 +428,7 @@ vyatta_config_copy ()
         else
           echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n"
         fi
-      elif ! cli-shell-api validateTmplPath ${editlvl[*]} "${param1[@]:2}"; then
+      elif ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:2}"; then
         _cli_shell_api_comp_values=()
         vyatta_cli_shell_api getCompletionEnv $cmd "${param2[1]}" 
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
@@ -481,7 +480,7 @@ vyatta_cfg_cmd ()
   local -a expanded_api_args=()
   local editlvl=$(cli-shell-api getEditLevelStr)
   vyatta_config_expand_compwords "${args[@]}"
-  if cli-shell-api validateTmplPath ${editlvl[*]} "${expanded_api_args[@]:1}"; then
+  if cli-shell-api validateTmplPath -- ${editlvl[*]} "${expanded_api_args[@]:1}"; then
     vyatta_cfg_cmd_run "${expanded_api_args[@]}"
   else
     # find broken portion of command
