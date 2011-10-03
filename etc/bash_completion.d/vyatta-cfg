@@ -430,7 +430,10 @@ vyatta_simple_complete ()
   # * "vyatta_help_text" is filled with the help text.
   # * "vyatta_completions" is an array of "filtered" possible completions
   #   (i.e., only those starting with the current last component).
-  if $vyatta_do_help; then
+  if [ ${#vyatta_completions[@]} -eq 1 ] &&
+     [[ "${vyatta_completions[0]}" =~ "${COMP_WORDS[COMP_CWORD]}" ]]; then
+    COMPREPLY=( "${vyatta_completions[@]}" )
+  elif $vyatta_do_help; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
