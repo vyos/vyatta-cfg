@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.31) unstable; urgency=low
+
+  * Prevent config mode completions from getting stuck when backspacing
+    over them
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 03 Oct 2011 13:17:06 -0500
+
 vyatta-cfg (0.99.30) unstable; urgency=low
 
   *  Fix problems when using negative values
