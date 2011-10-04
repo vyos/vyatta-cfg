@@ -55,6 +55,19 @@ for file in "${cfg_functions[@]}"; do
   source $file
 done
 
+#  readline bindings
+case "$-" in
+  *i*)
+    bind 'set show-all-if-ambiguous on'
+    if ! bind -p |grep -q '\\C-x\\C-t'; then
+      bind '"\C-x\C-t": kill-region'
+    fi
+    if ! bind -p |grep -q '\\C-x\\C-o'; then
+      bind '"\C-x\C-o": copy-region-as-kill'
+    fi
+  ;;
+esac
+
 # function for shell api
 vyatta_cli_shell_api ()
 {
@@ -105,10 +118,31 @@ vyatta_run_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+  
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  
+  if [[ $COMP_CWORD -eq 0 ]]; then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
 
   COMP_WORDS=( "${COMP_WORDS[@]:1}" )
   (( COMP_CWORD -= 1 ))
   _vyatta_op_expand
+  
+  if [ -z "$cur" ] ||
+     [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
+    for comp ; do
+      if [ -z "$comp" ] ; then
+        if [ ${#COMPREPLY[@]} -eq 0 ] ; then
+          COMPREPLY=( " " "" )
+        elif _vyatta_op_comprely_needs_ambiguity ; then
+          COMPREPLY+=( " " )
+        fi  
+      fi  
+    done
+  fi   
   
   eval $restore_shopts
 }
@@ -400,6 +434,7 @@ get_value_format_string ()
 }
 
 declare -a vyatta_completions
+declare -a vyatta_noncompletions
 declare vyatta_help_text="\\nNo help text available"
 declare vyatta_do_help=false
 vyatta_do_complete ()
@@ -424,20 +459,45 @@ vyatta_do_complete ()
   vyatta_help_text="\\nNo help text available"
 }
 
+_vyatta_cfg_comprely_needs_ambiguity ()
+{
+    local -a uniq
+
+    [ ${#COMPREPLY[@]} -eq 1 ] && return
+
+    uniq=( `printf "%s\n" ${COMPREPLY[@]} | cut -c1 | sort -u` )
+
+    [ ${#uniq[@]} -eq 1 ] && return
+    false
+}
+
+
 vyatta_simple_complete ()
 {
   # when this function is called, it is expected that:
   # * "vyatta_help_text" is filled with the help text.
   # * "vyatta_completions" is an array of "filtered" possible completions
   #   (i.e., only those starting with the current last component).
+  compopt -o nospace
+  local cur=${COMP_WORDS[COMP_CWORD]}
   if [ ${#vyatta_completions[@]} -eq 1 ] &&
-     [[ "${vyatta_completions[0]}" =~ "${COMP_WORDS[COMP_CWORD]}" ]]; then
-    COMPREPLY=( "${vyatta_completions[@]}" )
-  elif $vyatta_do_help; then
+     [ -n "$cur" ] &&
+     [[ "${vyatta_completions[0]}" =~ "$cur" ]]; then
+    COMPREPLY=( "${vyatta_completions[0]} " )
+    vyatta_do_help=true
+  elif $vyatta_do_help ||
+       [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
     COMPREPLY=( "${vyatta_completions[@]}" )
+    if [ -z "$cur" ]; then
+      if [ ${#COMPREPLY[@]} -eq 0 ]; then
+        COMPREPLY=( " " "" )
+      elif _vyatta_cfg_comprely_needs_ambiguity ; then
+        COMPREPLY+=( " " )
+      fi
+    fi
   fi
   vyatta_help_text="\\nNo help text available"
 }
@@ -487,6 +547,61 @@ vyatta_config_expand_compwords ()
     done
 }
 
+vyatta_config_invalid_comp ()
+{
+  local cmd=$1 
+  local -a expanded_api_args=( "$@" )
+  local editlvl=$(cli-shell-api getEditLevelStr)
+  local path=''
+  local opath=''
+  local failed=false
+  local validate="cli-shell-api validateTmplPath -- $editlvl ${expanded_api_args[@]:1}"
+  eval $validate
+  local validateret=$?
+  if [[ $validateret -eq 0 ]]; then
+    echo -en "\nPossible completions:\n"
+    echo -en "  <Enter>\tExecute the current command"
+  else
+    # find broken portion of command
+    for arg in "${expanded_api_args[@]:1}"; do
+      if [[ "$path" == '' ]]; then 
+        path="$arg"
+      else 
+        path="$path $arg"
+      fi   
+      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then 
+        _cli_shell_api_comp_values=()
+        vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
+        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
+           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then 
+          local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+          local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+          local vyatta_help_text=''
+          if [[ $opath == '' ]]; then 
+            echo -ne "\n\n  Configuation path: [$arg] is ambiguous\n"
+          else
+            echo -ne "\n\n  Configuation path: $opath [$arg] is ambiguous\n"
+          fi  
+          get_help_text
+          echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
+          failed=true
+          break
+        else
+          if [[ $opath == '' ]]; then 
+            echo -ne "\n\n  Configuation path: [$arg] is not valid"
+          else
+            echo -ne "\n\n  Configuation path: $opath [$arg] is not valid"
+          fi  
+          failed=true
+          break
+        fi  
+      else 
+        opath=$path
+      fi   
+    done 
+  fi
+}
+
 # env variables for shell api completion
 declare _cli_shell_api_last_comp_val=''
 declare _cli_shell_api_comp_help=''
@@ -498,7 +613,7 @@ vyatta_config_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
-
+  
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
     vyatta_do_help=true
@@ -516,7 +631,8 @@ vyatta_config_complete ()
     return
   fi
 
-  if (( ${#COMP_WORDS[@]} < 2 )); then
+  if (( ${#COMP_WORDS[@]} < 2 )) ||
+     [[ $COMP_CWORD -eq 0 ]]; then
     _get_help_text_items=( "${_vyatta_cfg_cmds[@]}" )
     _get_help_text_helps=( "${_vyatta_cfg_helps[@]}" )
     if (( ${#COMP_WORDS[@]} == 1 )); then
@@ -593,6 +709,8 @@ vyatta_config_complete ()
   api_args=( "${expanded_api_args[@]}" )
   if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
     # invalid completion
+    vyatta_config_invalid_comp "${expanded_api_args[@]}"
+    COMPREPLY=( "" " " )
     eval $restore_shopts
     return
   fi
@@ -604,12 +722,18 @@ vyatta_config_complete ()
     #   prefix filter comp_values
     #   replace any <*> in comp_values with ""
     #   convert help items to <...> representation
+    if [[ $DBG_CFG_COMPS -eq 1 ]]; then
+      echo -e "\n Comp Values: ${_cli_shell_api_comp_values[@]}"
+      echo -e "Help Items: ${_cli_shell_api_hitems[@]}"
+      echo -e "Help String: ${_cli_shell_api_hstrs[@]}\n"
+    fi
     _get_help_text_items=()
     for ((i = 0; i < ${#_cli_shell_api_hitems[@]}; i++)); do
       local t=$(get_value_format_string "${_cli_shell_api_hitems[i]}")
       _get_help_text_items+=("$t")
     done
     vyatta_completions=()
+    vyatta_noncompletions=( "${_cli_shell_api_hitems[@]}" )
     for ((i = 0; i < ${#_cli_shell_api_comp_values[@]}; i++)); do
       if [ -z "$last_comp" ] \
          && [[ "${_cli_shell_api_comp_values[i]}" = \<*\> ]]; then
@@ -641,18 +765,6 @@ reset_edit_level
 export VYATTA_COMP_LINE_EMPTY=VYATTA_COMP_LINE_EMPTY
 export VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
 
-#  readline bindings
-case "$-" in
-  *i*)
-    bind 'set show-all-if-ambiguous on'
-    if ! bind -p |grep -q '\\C-x\\C-t'; then
-      bind '"\C-x\C-t": kill-region'
-    fi
-    if ! bind -p |grep -q '\\C-x\\C-o'; then
-      bind '"\C-x\C-o": copy-region-as-kill'
-    fi
-  ;;
-esac
 
 # note: now that we're using bash's new "empty completion" (-E), it becomes
 # necessary to capture the "default completion" (-D) as well in order to
@@ -670,7 +782,8 @@ esac
 vyatta_config_default_complete ()
 {
   local wc=${#COMP_WORDS[@]}
-  if (( wc < 2 )); then
+  if (( wc < 2 )) ||
+     [[ $COMP_CWORD -eq 0 ]]; then
     vyatta_config_complete
   else
     # after the first word => cannot be vyatta command so use original default
