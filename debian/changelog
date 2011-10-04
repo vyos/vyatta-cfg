@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.35) unstable; urgency=low
+
+  * Fix compare completion when comparing to the saved config
+  * Fix exit help text to make it clear that you can exit without
+    discrarding.
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 18:31:51 -0500
+
 vyatta-cfg (0.99.34) unstable; urgency=low
 
   * Fix some help text, add discard and confirm completion functions,
