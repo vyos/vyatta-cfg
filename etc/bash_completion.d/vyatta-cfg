@@ -613,6 +613,7 @@ vyatta_config_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+  vyatta_cfg_comp_help=''
   
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
