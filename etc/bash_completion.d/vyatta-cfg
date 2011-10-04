@@ -147,12 +147,36 @@ vyatta_run_complete ()
   eval $restore_shopts
 }
 
+vyatta_single_word_complete()
+{
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
+
+  echo -en "\nPossible completions:\n"
+  echo -en "  <Enter>\tExecute the current command"
+  COMPREPLY=( "" " " )
+
+  eval $restore_shopts
+}
+
 vyatta_loadsave_complete()
 {
   # Generate completion help for the "load" and "save" commands
 
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
 
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
@@ -186,7 +210,9 @@ vyatta_loadsave_complete()
       fi
       COMPREPLY=( "" " " )
   else
-      COMPREPLY=()
+    echo -en "\nPossible completions:\n"
+    echo -en "  <Enter>\tExecute the current command"
+    COMPREPLY=( "" " " )
   fi
 
   eval $restore_shopts
@@ -207,6 +233,16 @@ vyatta_config_loadkey()
 
 vyatta_loadkey_complete()
 {
+ 
+  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
+  shopt -s extglob nullglob
+ 
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
+
   case "$COMP_CWORD" in
       1) if [ -z "${COMP_WORDS[1]}" ]; then
 	  COMPREPLY=( $(getent passwd | awk -F: '$7 == "/bin/vbash" { print $1}') )
@@ -221,7 +257,7 @@ vyatta_loadkey_complete()
 	  echo -e "  ftp://<user>@<host>/<file>\tLoad from file on remote machine"
 	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
 	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
-	  COMPREPLY=()
+	  COMPREPLY=( "" " " )
 	 else
 	  COMPREPLY=( $(compgen -f -- ${COMP_WORDS[2]} ) )
 	 fi ;;
@@ -247,6 +283,12 @@ vyatta_rollback_complete ()
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
 
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
+
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
   if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
@@ -257,7 +299,9 @@ vyatta_rollback_complete ()
       print_commit_log
       COMPREPLY=( "" " " )
   else
-      COMPREPLY=()
+      echo -en "\nPossible completions:\n"
+      echo -en "  <Enter>\tExecute the current command"
+      COMPREPLY=( "" " " )
   fi
 
   eval $restore_shopts
@@ -269,6 +313,12 @@ vyatta_compare_complete ()
 
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+  
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
 
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
@@ -300,7 +350,9 @@ vyatta_compare_complete ()
   elif [ $COMP_CWORD -eq 1 ]; then
       COMPREPLY=$(compgen -W saved -- ${COMP_WORDS[$COMP_CWORD]})
   else
-      COMPREPLY=()
+      echo -en "\nPossible completions:\n"
+      echo -en "  <Enter>\tExecute the current command"
+      COMPREPLY=( "" " " )
   fi
 
   eval $restore_shopts
@@ -312,6 +364,12 @@ vyatta_commit_complete ()
 
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+
+  if [[ $COMP_CWORD -eq 0 ]];then
+    vyatta_config_complete
+    eval $restore_shopts
+    return
+  fi
 
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
@@ -334,7 +392,9 @@ vyatta_commit_complete ()
   elif [ $COMP_CWORD -eq 1 ]; then
       COMPREPLY=$(compgen -W comment -- ${COMP_WORDS[$COMP_CWORD]})
   else
-      COMPREPLY=()
+      echo -en "\nPossible completions:\n"
+      echo -en "  <Enter>\tExecute the current command"
+      COMPREPLY=( "" " " )
   fi
 
   eval $restore_shopts
@@ -439,22 +499,36 @@ declare vyatta_help_text="\\nNo help text available"
 declare vyatta_do_help=false
 vyatta_do_complete ()
 {
-  if $vyatta_do_help; then
+  compopt -o nospace
+  local cur=''
+  if (( ${#COMP_WORDS[@]} > 0 )); then
+      cur=${COMP_WORDS[COMP_CWORD]}
+  fi
+  if [ ${#vyatta_completions[@]} -eq 1 ] &&
+     [ -n "$cur" ] &&
+     [[ "${vyatta_completions[0]}" =~ "$cur" ]]; then
+    COMPREPLY=( "${vyatta_completions[0]} " )
+    vyatta_do_help=true
+  elif $vyatta_do_help ||
+       [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
   else
     local -a f_comps=()
-    local cword=
-    if (( ${#COMP_WORDS[@]} > 0 )); then
-      cword=${COMP_WORDS[COMP_CWORD]}
-    fi
-    get_prefix_filtered_list "$cword" vyatta_completions f_comps
+    get_prefix_filtered_list "$cur" vyatta_completions f_comps
     local estr="COMPREPLY=( "
     for w in "${f_comps[@]}"; do
       estr="$estr\"$w\" "
     done
     estr="${estr})"
     eval "$estr"
+    if [ -z "$cur" ]; then
+      if [ ${#COMPREPLY[@]} -eq 0 ]; then
+        COMPREPLY=( " " "" )
+      elif _vyatta_cfg_comprely_needs_ambiguity ; then
+        COMPREPLY+=( " " )
+      fi
+    fi
   fi
   vyatta_help_text="\\nNo help text available"
 }
@@ -615,6 +689,7 @@ vyatta_config_complete ()
   shopt -s extglob nullglob
   vyatta_cfg_comp_help=''
   
+  
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
     vyatta_do_help=true
@@ -659,7 +734,9 @@ vyatta_config_complete ()
   # handle "exit"
   if [ "$command" == "exit" ]; then
     if (( COMP_CWORD > 1 )); then
-      COMPREPLY=()
+      echo -en "\nPossible completions:\n"
+      echo -en "  <Enter>\tExecute the current command"
+      COMPREPLY=( "" " " )
       eval $restore_shopts
       return
     fi
@@ -699,7 +776,9 @@ vyatta_config_complete ()
       api_args=("$command" "${COMP_WORDS[@]:4}")
     elif (( COMP_CWORD > 5 )); then
       # If parsing after index 5, there are no more valid parameters
-      COMPREPLY=()
+      echo -en "\nPossible completions:\n"
+      echo -en "  <Enter>\tExecute the current command"
+      COMPREPLY=( "" " " )
       eval $restore_shopts
       return
     fi
@@ -725,6 +804,7 @@ vyatta_config_complete ()
     #   convert help items to <...> representation
     if [[ $DBG_CFG_COMPS -eq 1 ]]; then
       echo -e "\n Comp Values: ${_cli_shell_api_comp_values[@]}"
+      echo -e "Comp Help: $_cli_shell_api_comp_help"
       echo -e "Help Items: ${_cli_shell_api_hitems[@]}"
       echo -e "Help String: ${_cli_shell_api_hstrs[@]}\n"
     fi
