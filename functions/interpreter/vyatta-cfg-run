@@ -576,7 +576,7 @@ _vyatta_cfg_init ()
             save|load|merge)
               complete -F vyatta_loadsave_complete ${cmd:0:$pos} ;;
             discard|confirm)
-               ;; 
+               complete -F vyatta_single_word_complete ${cmd:0:$pos} ;; 
             run)
               complete -F vyatta_run_complete ${cmd:0:$pos} ;;
             loadkey)

@@ -325,7 +325,7 @@ vyatta_compare_complete ()
   if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
       echo
       echo "Possible completions:"
-      echo -e "  <enter>\tCompare working & active configurations"
+      echo -e "  <Enter>\tCompare working & active configurations"
       echo -e "  saved\t\tCompare working & saved configurations"
       echo -e "  <N>\t\tCompare working with revision N"
       echo -e "  <N> <M>\tCompare revision N with M"
@@ -335,14 +335,14 @@ vyatta_compare_complete ()
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
       if [[ "${COMP_WORDS[1]}" == "saved" ]]; then
         echo "Possible completions:"
-        echo -e "  <enter>\tCompare working and saved configurations"
+        echo -e "  <Enter>\tCompare working and saved configurations"
         COMPREPLY=( "" " " )
         eval $restore_shopts
         return
       fi
       echo
       echo "Possible completions:"
-      echo -e "  <enter>\tCompare working revision N"
+      echo -e "  <Enter>\tCompare working revision N"
       echo -e "  <M>\t\tCompare revision N with M"
       echo -e "\n  Revisions:"
       print_commit_log
@@ -377,9 +377,9 @@ vyatta_commit_complete ()
       echo
       echo "Possible completions:"
       if [ "${COMP_WORDS[0]}" = "commit" ]; then
-         echo -e "  <enter>\tCommit working configuration"
+         echo -e "  <Enter>\tCommit working configuration"
       elif [ "${COMP_WORDS[0]}" = "commit-confirm" ]; then
-         echo -e "  <enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
+         echo -e "  <Enter>\tCommit, rollback/reboot in 10 minutes if no confirm"
          echo -e "  <N>\t\tCommit, rollback/reboot in N minutes if no confirm"
       fi
       echo -e "  comment\tComment for commit log"
@@ -633,6 +633,9 @@ vyatta_config_invalid_comp ()
   eval $validate
   local validateret=$?
   if [[ $validateret -eq 0 ]]; then
+    echo -en "\nPossible completions:\n"
+    echo -en "  <Enter>\tExecute the current command"
+  elif [[ "$cmd" ==  "comment" ]];then
     echo -en "\nPossible completions:\n"
     echo -en "  <Enter>\tExecute the current command"
   else
