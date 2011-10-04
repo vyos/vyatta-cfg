@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.32) unstable; urgency=low
+
+  * Make show, set, delete, and run completions in configuration mode
+    work similarly to op mode, other top level commands still need work
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 15:42:04 -0500
+
 vyatta-cfg (0.99.31) unstable; urgency=low
 
   * Prevent config mode completions from getting stuck when backspacing
