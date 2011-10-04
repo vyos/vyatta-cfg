@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.34) unstable; urgency=low
+
+  * Fix some help text, add discard and confirm completion functions,
+    fix comment completion validation
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 17:59:18 -0500
+
 vyatta-cfg (0.99.33) unstable; urgency=low
 
   * Clear vyatta_cfg_comp_help when starting a new completion otherwise
