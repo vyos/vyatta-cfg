@@ -1,3 +1,14 @@
+vyatta-cfg (0.99.33) unstable; urgency=low
+
+  * Clear vyatta_cfg_comp_help when starting a new completion otherwise
+    the Detailed Information section from the previous completion will
+    be retained on this completion
+  * Fix completions for confirm, discard, exit, copy, rename, load,
+    save, merge, and loadkey to be consistent with the rest of the
+    system
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 17:43:32 -0500
+
 vyatta-cfg (0.99.32) unstable; urgency=low
 
   * Make show, set, delete, and run completions in configuration mode
