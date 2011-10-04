@@ -743,8 +743,8 @@ vyatta_config_complete ()
       eval $restore_shopts
       return
     fi
-    _get_help_text_items=("discard")
-    _get_help_text_helps=("Discard any changes")
+    _get_help_text_items=("<Enter>" "discard")
+    _get_help_text_helps=("Execute the current command" "Discard any changes")
     get_help_text
     vyatta_completions=("discard")
     vyatta_do_complete
