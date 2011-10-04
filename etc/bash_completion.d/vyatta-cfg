@@ -333,9 +333,9 @@ vyatta_compare_complete ()
       print_commit_log
       COMPREPLY=( "" " " )
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
-      if [[ "${COMP_WORDS[1]}" == "saved" ]]; then
-        echo "Possible completions:"
-        echo -e "  <Enter>\tCompare working and saved configurations"
+      if [[ "saved" =~ "${COMP_WORDS[1]}" ]]; then
+        echo -e "\nPossible completions:"
+        echo -en "  <Enter>\tCompare working and saved configurations"
         COMPREPLY=( "" " " )
         eval $restore_shopts
         return
