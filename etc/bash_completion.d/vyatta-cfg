@@ -501,34 +501,46 @@ vyatta_do_complete ()
 {
   compopt -o nospace
   local cur=''
+  local current_prefix=$2
+  local current_word=$3
   if (( ${#COMP_WORDS[@]} > 0 )); then
       cur=${COMP_WORDS[COMP_CWORD]}
+  fi
+  local -a f_comps=()
+  if [ -z "$current_word" ];then
+    get_prefix_filtered_list "$cur" vyatta_completions f_comps
+  else
+    get_prefix_filtered_list "$current_prefix" vyatta_completions f_comps
+  fi
+  local estr="COMPREPLY=( "
+  for w in "${f_comps[@]}"; do
+    estr="$estr\"$w\" "
+  done
+  estr="${estr})"
+  eval "$estr"
+  if [ -z "$cur" ] ||
+     [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
+     for comp ; do
+        if [ -z "$comp" ] ; then
+          if [ ${#COMPREPLY[@]} -eq 0 ] ; then
+            COMPREPLY=( " " "" )
+          elif _vyatta_op_comprely_needs_ambiguity ; then
+            COMPREPLY+=( " " )
+          fi  
+        fi  
+      done
+  fi 
+  if [ ${#COMPREPLY[@]} -eq 1 ]; then 
+     COMPREPLY=( "${COMPREPLY[0]} " )
   fi
   if [ ${#vyatta_completions[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${vyatta_completions[0]}" =~ "$cur" ]]; then
-    COMPREPLY=( "${vyatta_completions[0]} " )
-    vyatta_do_help=true
+    vyatta_do_help=false
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
-  else
-    local -a f_comps=()
-    get_prefix_filtered_list "$cur" vyatta_completions f_comps
-    local estr="COMPREPLY=( "
-    for w in "${f_comps[@]}"; do
-      estr="$estr\"$w\" "
-    done
-    estr="${estr})"
-    eval "$estr"
-    if [ -z "$cur" ]; then
-      if [ ${#COMPREPLY[@]} -eq 0 ]; then
-        COMPREPLY=( " " "" )
-      elif _vyatta_cfg_comprely_needs_ambiguity ; then
-        COMPREPLY+=( " " )
-      fi
-    fi
   fi
   vyatta_help_text="\\nNo help text available"
 }
@@ -552,32 +564,45 @@ vyatta_simple_complete ()
   # * "vyatta_help_text" is filled with the help text.
   # * "vyatta_completions" is an array of "filtered" possible completions
   #   (i.e., only those starting with the current last component).
+  local current_prefix=$2
   compopt -o nospace
   local cur=${COMP_WORDS[COMP_CWORD]}
   local -a f_comps=()
-  get_prefix_filtered_list "$cur" vyatta_completions f_comps
+  get_prefix_filtered_list "$current_prefix" vyatta_completions f_comps
   f_comps=( $(printf "%s\n" "${vyatta_completions[@]}" | sort -u) )
+
+  COMPREPLY=( "${f_comps[@]}" )
+
+  if [ -z "$current_prefix" ] ||
+     [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
+     for comp ; do
+        if [ -z "$comp" ] ; then
+          if [ ${#COMPREPLY[@]} -eq 0 ] ; then
+            COMPREPLY=( " " "" )
+          elif _vyatta_op_comprely_needs_ambiguity ; then
+            COMPREPLY+=( " " )
+          fi  
+        fi  
+      done
+  fi 
+
+  if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+    COMPREPLY=( "${COMPREPLY[0]} " ) 
+  fi
+
   if [[ $DBG_CFG_COMPS -eq 1 ]]; then
     echo "cur: $cur"
     echo "f_comps: ${f_comps[@]}"
   fi
+
   if [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${f_comps[0]}" =~ "$cur" ]]; then
-    COMPREPLY=( "${f_comps[0]} " )
+     vyatta_do_help=false 
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text"
     COMPREPLY=( "" " " )
-  else
-    COMPREPLY=( "${vyatta_completions[@]}" )
-    if [ -z "$cur" ]; then
-      if [ ${#COMPREPLY[@]} -eq 0 ]; then
-        COMPREPLY=( " " "" )
-      elif _vyatta_cfg_comprely_needs_ambiguity ; then
-        COMPREPLY+=( " " )
-      fi
-    fi
   fi
   vyatta_help_text="\\nNo help text available"
 }
@@ -698,6 +723,8 @@ vyatta_config_complete ()
   shopt -s extglob nullglob
   vyatta_cfg_comp_help=''
   
+  local current_word=$3
+  local current_prefix=$2
   
   if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
@@ -711,7 +738,7 @@ vyatta_config_complete ()
   if _vyatta_pipe_completion "${COMP_WORDS[@]}"; then
     generate_pipe_help
     vyatta_completions=( "${_vyatta_pipe_completions[@]}" )
-    vyatta_do_complete
+    vyatta_do_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -723,8 +750,13 @@ vyatta_config_complete ()
     if (( ${#COMP_WORDS[@]} == 1 )); then
       declare -a fitems=()
       declare -a fstrs=()
-      get_prefix_filtered_list2 "${COMP_WORDS[0]}" \
-        _get_help_text_items fitems _get_help_text_helps fstrs
+      if [[ -z $current_word ]]; then
+        get_prefix_filtered_list2 "${COMP_WORDS[0]}" \
+          _get_help_text_items fitems _get_help_text_helps fstrs
+      else 
+        get_prefix_filtered_list2 "${current_prefix}" \
+          _get_help_text_items fitems _get_help_text_helps fstrs
+      fi
       _get_help_text_items=( "${fitems[@]}" )
       _get_help_text_helps=( "${fstrs[@]}" )
     fi
@@ -733,7 +765,7 @@ vyatta_config_complete ()
     if [[ ${#vyatta_completions[@]} -eq 0 ]]; then
        vyatta_help_text="\n\n  Invalid command: [${COMP_WORDS[COMP_CWORD]}]"
     fi
-    vyatta_do_complete
+    vyatta_do_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -756,7 +788,7 @@ vyatta_config_complete ()
     _get_help_text_helps=("Execute the current command" "Discard any changes")
     get_help_text
     vyatta_completions=("discard")
-    vyatta_do_complete
+    vyatta_do_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -780,7 +812,7 @@ vyatta_config_complete ()
       _get_help_text_helps=("Set destination")
       get_help_text
       vyatta_completions=("to")
-      vyatta_do_complete
+      vyatta_do_complete "$@"
       eval $restore_shopts
       return
     elif (( COMP_CWORD > 3 && COMP_CWORD < 6 )); then
@@ -799,6 +831,18 @@ vyatta_config_complete ()
   local -a expanded_api_args
   vyatta_config_expand_compwords "${api_args[@]}"
   api_args=( "${expanded_api_args[@]}" )
+  if [[ $DBG_CFG_COMPS -eq 1 ]]; then
+    echo -e "\nargs: '$@'"
+    echo -e "Current prefix: $current_prefix"
+    echo -e "Current command: $current_word"
+    echo -e "Last comp: $last_comp"
+
+  fi
+  if [[ -z "$current_prefix" ]] &&
+     [[ -n "$last_comp" ]] &&
+     [[ ! "$current_word" =~ "$last_comp"  ]]; then 
+     api_args=( "${api_args[@]:0:$COMP_CWORD}" "" )
+  fi
   if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
     # invalid completion
     vyatta_config_invalid_comp "${expanded_api_args[@]}"
@@ -815,7 +859,8 @@ vyatta_config_complete ()
     #   replace any <*> in comp_values with ""
     #   convert help items to <...> representation
     if [[ $DBG_CFG_COMPS -eq 1 ]]; then
-      echo -e "\n Comp Values: ${_cli_shell_api_comp_values[@]}"
+      echo -e "\nAPI args: '${api_args[@]}'"
+      echo -e "Comp Values: ${_cli_shell_api_comp_values[@]}"
       echo -e "Comp Help: $_cli_shell_api_comp_help"
       echo -e "Help Items: ${_cli_shell_api_hitems[@]}"
       echo -e "Help String: ${_cli_shell_api_hstrs[@]}\n"
@@ -826,13 +871,12 @@ vyatta_config_complete ()
       _get_help_text_items+=("$t")
     done
     vyatta_completions=()
-    vyatta_noncompletions=( "${_cli_shell_api_hitems[@]}" )
     for ((i = 0; i < ${#_cli_shell_api_comp_values[@]}; i++)); do
-      if [ -z "$last_comp" ] \
+      if [ -z "$current_prefix" ] \
          && [[ "${_cli_shell_api_comp_values[i]}" = \<*\> ]]; then
         vyatta_completions+=("")
       elif [ -z "$last_comp" ] \
-           || [[ "${_cli_shell_api_comp_values[i]}" = "$last_comp"* ]]; then
+           || [[ "${_cli_shell_api_comp_values[i]}" = "$current_prefix"* ]]; then
         vyatta_completions+=("${_cli_shell_api_comp_values[i]}")
       fi
     done
@@ -841,7 +885,7 @@ vyatta_config_complete ()
     vyatta_completions=( "${_cli_shell_api_comp_values[@]}" )
   fi
   get_help_text
-  vyatta_simple_complete
+  vyatta_simple_complete "$@"
   eval $restore_shopts
 }
 
