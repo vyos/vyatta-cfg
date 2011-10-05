@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.36) unstable; urgency=low
+
+  * Fix the handling of tag nodes in config mode completions
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 19:04:34 -0500
+
 vyatta-cfg (0.99.35) unstable; urgency=low
 
   * Fix compare completion when comparing to the saved config
