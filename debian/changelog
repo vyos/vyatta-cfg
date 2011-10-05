@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.38) unstable; urgency=low
+
+  * Make non-lastword completions more fluid by using the current prefix
+    and word provided by bash
+  * fix stuck completion on non-lastword
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 05 Oct 2011 17:53:50 -0500
+
 vyatta-cfg (0.99.37) unstable; urgency=low
 
   * warn user of invalid top level command, this will tell the user when
