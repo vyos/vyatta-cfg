@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.37) unstable; urgency=low
+
+  * warn user of invalid top level command, this will tell the user when
+    the try to complete on a non-vyatta command, after hitting space,
+    normal completion will continue to work for non-vyatta commands
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 04 Oct 2011 19:22:49 -0500
+
 vyatta-cfg (0.99.36) unstable; urgency=low
 
   * Fix the handling of tag nodes in config mode completions
