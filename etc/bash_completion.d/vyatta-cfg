@@ -730,6 +730,9 @@ vyatta_config_complete ()
     fi
     get_help_text
     vyatta_completions=( "${_get_help_text_items[@]}" )
+    if [[ ${#vyatta_completions[@]} -eq 0 ]]; then
+       vyatta_help_text="\n\n  Invalid command: [${COMP_WORDS[COMP_CWORD]}]"
+    fi
     vyatta_do_complete
     eval $restore_shopts
     return
