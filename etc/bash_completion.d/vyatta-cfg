@@ -554,11 +554,17 @@ vyatta_simple_complete ()
   #   (i.e., only those starting with the current last component).
   compopt -o nospace
   local cur=${COMP_WORDS[COMP_CWORD]}
-  if [ ${#vyatta_completions[@]} -eq 1 ] &&
+  local -a f_comps=()
+  get_prefix_filtered_list "$cur" vyatta_completions f_comps
+  f_comps=( $(printf "%s\n" "${vyatta_completions[@]}" | sort -u) )
+  if [[ $DBG_CFG_COMPS -eq 1 ]]; then
+    echo "cur: $cur"
+    echo "f_comps: ${f_comps[@]}"
+  fi
+  if [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
-     [[ "${vyatta_completions[0]}" =~ "$cur" ]]; then
-    COMPREPLY=( "${vyatta_completions[0]} " )
-    vyatta_do_help=true
+     [[ "${f_comps[0]}" =~ "$cur" ]]; then
+    COMPREPLY=( "${f_comps[0]} " )
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text"
