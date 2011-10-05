@@ -122,14 +122,14 @@ vyatta_run_complete ()
   local cur=${COMP_WORDS[COMP_CWORD]}
   
   if [[ $COMP_CWORD -eq 0 ]]; then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
 
   COMP_WORDS=( "${COMP_WORDS[@]:1}" )
   (( COMP_CWORD -= 1 ))
-  _vyatta_op_expand
+  _vyatta_op_expand "$@"
   
   if [ -z "$cur" ] ||
      [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
@@ -153,7 +153,7 @@ vyatta_single_word_complete()
   shopt -s extglob nullglob
 
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -173,7 +173,7 @@ vyatta_loadsave_complete()
   shopt -s extglob nullglob
 
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -238,7 +238,7 @@ vyatta_loadkey_complete()
   shopt -s extglob nullglob
  
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -284,7 +284,7 @@ vyatta_rollback_complete ()
   shopt -s extglob nullglob
 
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -315,7 +315,7 @@ vyatta_compare_complete ()
   shopt -s extglob nullglob
   
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -366,7 +366,7 @@ vyatta_commit_complete ()
   shopt -s extglob nullglob
 
   if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
     eval $restore_shopts
     return
   fi
@@ -930,7 +930,7 @@ vyatta_config_default_complete ()
   local wc=${#COMP_WORDS[@]}
   if (( wc < 2 )) ||
      [[ $COMP_CWORD -eq 0 ]]; then
-    vyatta_config_complete
+    vyatta_config_complete "$@"
   else
     # after the first word => cannot be vyatta command so use original default
     compopt -o filenames
