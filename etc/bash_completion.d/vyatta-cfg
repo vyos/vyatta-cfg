@@ -591,6 +591,7 @@ vyatta_simple_complete ()
   fi
 
   if [[ $DBG_CFG_COMPS -eq 1 ]]; then
+    echo -e "\n In simple complete"
     echo "cur: $cur"
     echo "f_comps: ${f_comps[@]}"
   fi
@@ -598,6 +599,10 @@ vyatta_simple_complete ()
   if [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${f_comps[0]}" =~ "$cur" ]]; then
+     vyatta_do_help=false 
+  elif [ ${#f_comps[@]} -eq 1 ] &&
+     [ -n "$current_prefix" ] &&
+     [[ "${f_comps[0]}" =~ "$current_prefix" ]]; then
      vyatta_do_help=false 
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
@@ -838,10 +843,14 @@ vyatta_config_complete ()
     echo -e "Last comp: $last_comp"
 
   fi
-  if [[ -z "$current_prefix" ]] &&
+  if [[ -n "$current_word" ]] &&
      [[ -n "$last_comp" ]] &&
      [[ ! "$current_word" =~ "$last_comp"  ]]; then 
-     api_args=( "${api_args[@]:0:$COMP_CWORD}" "" )
+     if [ -n "$current_prefix" ];then
+       api_args=( "${api_args[@]:0:$[$COMP_CWORD]}" "$current_prefix" )
+     else
+       api_args=( "${api_args[@]:0:$COMP_CWORD}" "" )
+     fi
   fi
   if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
     # invalid completion
