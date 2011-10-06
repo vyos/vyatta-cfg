@@ -724,7 +724,13 @@ vyatta_config_invalid_comp ()
   local path=''
   local opath=''
   local failed=false
-  local validate="cli-shell-api validateTmplPath -- $editlvl '${expanded_api_args[@]:1}'"
+  local validate="cli-shell-api validateTmplPath -- $editlvl"
+  for elem in "${expanded_api_args[@]:1}"; do
+    if [[ -z "$elem" ]]; then
+      continue
+    fi
+    validate="$validate '$elem'"
+  done
   eval $validate
   local validateret=$?
   if [[ $validateret -eq 0 ]]; then
