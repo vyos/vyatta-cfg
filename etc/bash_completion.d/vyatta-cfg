@@ -750,9 +750,9 @@ vyatta_config_invalid_comp ()
           local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
           local vyatta_help_text=''
           if [[ $opath == '' ]]; then 
-            echo -ne "\n\n  Configuation path: [$arg] is ambiguous\n"
+            echo -ne "\n\n  Configuration path: [$arg] is ambiguous\n"
           else
-            echo -ne "\n\n  Configuation path: $opath [$arg] is ambiguous\n"
+            echo -ne "\n\n  Configuration path: $opath [$arg] is ambiguous\n"
           fi  
           get_help_text
           echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
@@ -760,9 +760,9 @@ vyatta_config_invalid_comp ()
           break
         else
           if [[ $opath == '' ]]; then 
-            echo -ne "\n\n  Configuation path: [$arg] is not valid"
+            echo -ne "\n\n  Configuration path: [$arg] is not valid"
           else
-            echo -ne "\n\n  Configuation path: $opath [$arg] is not valid"
+            echo -ne "\n\n  Configuration path: $opath [$arg] is not valid"
           fi  
           failed=true
           break
