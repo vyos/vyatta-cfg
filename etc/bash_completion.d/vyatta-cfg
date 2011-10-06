@@ -310,9 +310,12 @@ vyatta_rollback_complete ()
 vyatta_compare_complete ()
 {
   # Generate completion help for the "compare" command
-
+  
+  local current_prefix=$2
+  local current_word=$3
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+  compopt -o nospace
   
   if [[ $COMP_CWORD -eq 0 ]];then
     vyatta_config_complete "$@"
@@ -320,9 +323,18 @@ vyatta_compare_complete ()
     return
   fi
 
+  if [[ $DBG_CFG_COMPS -eq 1 ]];then
+    echo "In commit complete"
+    echo "args: '$@'"
+    echo "comp_cword: '$COMP_CWORD'"
+    echo "current_prefix: '$current_prefix'"
+    echo "COMP_WORDS: '${COMP_WORDS[@]}'"
+  fi
+
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
-  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
+  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ] ||
+     [ $COMP_CWORD -eq 1 -a -z "$current_prefix" ]; then
       echo
       echo "Possible completions:"
       echo -e "  <Enter>\tCompare working & active configurations"
@@ -332,6 +344,12 @@ vyatta_compare_complete ()
       echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
+  elif [[ -n "$current_prefix" ]]  && 
+       [[ "saved" =~ "$current_prefix" ]] &&
+       [[ $COMP_CWORD -eq 1 ]]; then
+      COMPREPLY=( "saved " )
+      eval $restore_shopts
+      return
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
       if [[ "saved" =~ "${COMP_WORDS[1]}" ]]; then
         echo -e "\nPossible completions:"
@@ -347,8 +365,9 @@ vyatta_compare_complete ()
       echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
-  elif [ $COMP_CWORD -eq 1 ]; then
-      COMPREPLY=$(compgen -W saved -- ${COMP_WORDS[$COMP_CWORD]})
+  elif [ $COMP_CWORD -eq 1 ] &&
+       [[ -n "$current_prefix" ]]; then
+      COMPREPLY=( "$current_prefix " )
   else
       echo -en "\nPossible completions:\n"
       echo -en "  <Enter>\tExecute the current command"
@@ -362,8 +381,11 @@ vyatta_commit_complete ()
 {
   # Generate completion help for the "commit-confirm" command
 
+  local current_prefix=$2
+  local current_word=$3
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
+  compopt -o nospace
 
   if [[ $COMP_CWORD -eq 0 ]];then
     vyatta_config_complete "$@"
@@ -371,9 +393,18 @@ vyatta_commit_complete ()
     return
   fi
 
+  if [[ $DBG_CFG_COMPS -eq 1 ]];then
+    echo "In commit complete"
+    echo "args: '$@'"
+    echo "comp_cword: '$COMP_CWORD'"
+    echo "current_prefix: '$current_prefix'"
+    echo "COMP_WORDS: '${COMP_WORDS[@]}'"
+  fi
+
   # Only provide completions after command name has been typed, but
   # before any characters of the command argument have been entered.
-  if [ $COMP_CWORD -eq 1 -a -z "${COMP_WORDS[1]}" ]; then
+  if [ $COMP_CWORD -eq 1 ] &&
+     [[ -z "$current_prefix" ]]; then
       echo
       echo "Possible completions:"
       if [ "${COMP_WORDS[0]}" = "commit" ]; then
@@ -384,12 +415,20 @@ vyatta_commit_complete ()
       fi
       echo -e "  comment\tComment for commit log"
       COMPREPLY=( "" " " )
-  elif [ "${COMP_WORDS[1]}" = "comment" ]; then
-            echo
+  elif [[ ( -n "$current_prefix" && "comment" =~ "${current_prefix}" ) ]] &&
+       [[ $COMP_CWORD -eq 1 ]]; then
+      COMPREPLY=( "comment " )
+      eval $restore_shopts
+      return
+  elif [[ ( -n "${COMP_WORDS[1]}" && "comment" =~ "${COMP_WORDS[1]}" ) ]] &&
+       [[ $COMP_CWORD -eq 2 ]]; then
+      echo
       echo "Possible completions:"
       echo -e "  <txt>\tText comment for commit log (e.g. \"add user bob\")"
       COMPREPLY=( "" " " )
-  elif [ $COMP_CWORD -eq 1 ]; then
+      eval $restore_shopts
+      return
+  elif [ $COMP_CWORD -eq 1 ];then
       COMPREPLY=$(compgen -W comment -- ${COMP_WORDS[$COMP_CWORD]})
   else
       echo -en "\nPossible completions:\n"
