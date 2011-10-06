@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.44) unstable; urgency=low
+
+  * quote individual elements for the validation string
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 06 Oct 2011 18:01:49 -0500
+
 vyatta-cfg (0.99.43) unstable; urgency=low
 
   * Fix typo in error message
