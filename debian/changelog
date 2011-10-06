@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.43) unstable; urgency=low
+
+  * Fix typo in error message
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 06 Oct 2011 16:33:11 -0500
+
 vyatta-cfg (0.99.42) unstable; urgency=low
 
   * Bugfix 6747: use bash conditional expressions instead of posix test
