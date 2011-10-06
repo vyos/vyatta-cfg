@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.40) unstable; urgency=low
+
+  * Add comments to document the changes in completion script
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 05 Oct 2011 19:21:01 -0500
+
 vyatta-cfg (0.99.39) unstable; urgency=low
 
   * Pass through the completion parameters to functions that need them
