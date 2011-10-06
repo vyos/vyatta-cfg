@@ -507,6 +507,8 @@ vyatta_do_complete ()
       cur=${COMP_WORDS[COMP_CWORD]}
   fi
   local -a f_comps=()
+  # Get filtered word list, use the current comp word if current_word is empty
+  # this only happens at the beginning of the line
   if [ -z "$current_word" ];then
     get_prefix_filtered_list "$cur" vyatta_completions f_comps
   else
@@ -518,6 +520,10 @@ vyatta_do_complete ()
   done
   estr="${estr})"
   eval "$estr"
+  # Apply ambiguity to the completion array
+  # This is needed when we have an empty completion
+  # and there is only one element of the completion array
+  # This will maintain consistency with op mode completions
   if [ -z "$cur" ] ||
      [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
      for comp ; do
@@ -530,9 +536,14 @@ vyatta_do_complete ()
         fi  
       done
   fi 
+  # If we didn't need ambiguity and there is only one element
+  # in the compreply array then its the only available word,
+  # append a space to finish the completion.
   if [ ${#COMPREPLY[@]} -eq 1 ]; then 
      COMPREPLY=( "${COMPREPLY[0]} " )
   fi
+  # don't show help text if its the same word 
+  # keeps completions from getting stuck
   if [ ${#vyatta_completions[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${vyatta_completions[0]}" =~ "$cur" ]]; then
@@ -573,6 +584,10 @@ vyatta_simple_complete ()
 
   COMPREPLY=( "${f_comps[@]}" )
 
+  # Apply ambiguity to the completion array
+  # This is needed when we have an empty completion
+  # and there is only one element of the completion array
+  # This will maintain consistency with op mode completions
   if [ -z "$current_prefix" ] ||
      [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
      for comp ; do
@@ -586,6 +601,9 @@ vyatta_simple_complete ()
       done
   fi 
 
+  # If we didn't need ambiguity and there is only one element
+  # in the compreply array then its the only available word,
+  # append a space to finish the completion.
   if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
     COMPREPLY=( "${COMPREPLY[0]} " ) 
   fi
@@ -596,6 +614,8 @@ vyatta_simple_complete ()
     echo "f_comps: ${f_comps[@]}"
   fi
 
+  # don't show help text if its the same word 
+  # keeps completions from getting stuck
   if [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${f_comps[0]}" =~ "$cur" ]]; then
@@ -747,7 +767,7 @@ vyatta_config_complete ()
     eval $restore_shopts
     return
   fi
-
+  # This handles first word completion
   if (( ${#COMP_WORDS[@]} < 2 )) ||
      [[ $COMP_CWORD -eq 0 ]]; then
     _get_help_text_items=( "${_vyatta_cfg_cmds[@]}" )
@@ -755,6 +775,9 @@ vyatta_config_complete ()
     if (( ${#COMP_WORDS[@]} == 1 )); then
       declare -a fitems=()
       declare -a fstrs=()
+      # Get filtered word and help lists 
+      # use the current comp word if current_word is empty
+      # this only happens at the beginning of the line
       if [[ -z $current_word ]]; then
         get_prefix_filtered_list2 "${COMP_WORDS[0]}" \
           _get_help_text_items fitems _get_help_text_helps fstrs
@@ -843,6 +866,9 @@ vyatta_config_complete ()
     echo -e "Last comp: $last_comp"
 
   fi
+  # Change the api arguments when we are dealing with a non last word
+  # completion, this allows for completions to work when in the middle 
+  # of a string without requiring the user input additional spaces.
   if [[ -n "$current_word" ]] &&
      [[ -n "$last_comp" ]] &&
      [[ ! "$current_word" =~ "$last_comp"  ]]; then 
