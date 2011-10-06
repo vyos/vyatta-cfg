@@ -724,7 +724,7 @@ vyatta_config_invalid_comp ()
   local path=''
   local opath=''
   local failed=false
-  local validate="cli-shell-api validateTmplPath -- $editlvl ${expanded_api_args[@]:1}"
+  local validate="cli-shell-api validateTmplPath -- $editlvl '${expanded_api_args[@]:1}'"
   eval $validate
   local validateret=$?
   if [[ $validateret -eq 0 ]]; then
@@ -790,7 +790,7 @@ vyatta_config_complete ()
   local current_word=$3
   local current_prefix=$2
   
-  if [ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]; then
+  if [[ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
     vyatta_do_help=true
   else
@@ -843,7 +843,7 @@ vyatta_config_complete ()
   local last_comp="${COMP_WORDS[COMP_CWORD]}"
 
   # handle "exit"
-  if [ "$command" == "exit" ]; then
+  if [[ "$command" == "exit" ]]; then
     if (( COMP_CWORD > 1 )); then
       echo -en "\nPossible completions:\n"
       echo -en "  <Enter>\tExecute the current command"
@@ -863,7 +863,7 @@ vyatta_config_complete ()
   local -a api_args=("${COMP_WORDS[@]:0:$[$COMP_CWORD+1]}")
 
   # handle "copy" and "rename"
-  if [ "$command" == "copy" -o "$command" == "rename" ]; then
+  if [[ "$command" == "copy" || "$command" == "rename" ]]; then
     # Syntax of copy and rename commands are:
     #
     #     copy/rename <param1> <sub-param1> to <param2> <sub-param2>
@@ -911,7 +911,7 @@ vyatta_config_complete ()
   if [[ -n "$current_word" ]] &&
      [[ -n "$last_comp" ]] &&
      [[ ! "$current_word" =~ "$last_comp"  ]]; then 
-     if [ -n "$current_prefix" ];then
+     if [[ -n "$current_prefix" ]];then
        api_args=( "${api_args[@]:0:$[$COMP_CWORD]}" "$current_prefix" )
      else
        api_args=( "${api_args[@]:0:$COMP_CWORD}" "" )
@@ -946,10 +946,10 @@ vyatta_config_complete ()
     done
     vyatta_completions=()
     for ((i = 0; i < ${#_cli_shell_api_comp_values[@]}; i++)); do
-      if [ -z "$current_prefix" ] \
+      if [[ -z "$current_prefix" ]] \
          && [[ "${_cli_shell_api_comp_values[i]}" = \<*\> ]]; then
         vyatta_completions+=("")
-      elif [ -z "$last_comp" ] \
+      elif [[ -z "$last_comp" ]] \
            || [[ "${_cli_shell_api_comp_values[i]}" = "$current_prefix"* ]]; then
         vyatta_completions+=("${_cli_shell_api_comp_values[i]}")
       fi
