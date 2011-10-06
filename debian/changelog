@@ -1,3 +1,12 @@
+vyatta-cfg (0.99.42) unstable; urgency=low
+
+  * Bugfix 6747: use bash conditional expressions instead of posix test
+    expressions when doing comparisons. The conditional expressions
+    don't do as much expansion as the test expression does, and are the
+    modern variant
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 06 Oct 2011 16:21:15 -0500
+
 vyatta-cfg (0.99.41) unstable; urgency=low
 
   * Fix up completions for commit and compare
