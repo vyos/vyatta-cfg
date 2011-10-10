@@ -313,11 +313,15 @@ vyatta_config_exit ()
 # run op mode commands
 vyatta_config_run ()
 {
- if [ $# == 0 ]; then
-  echo Incomplete command
-  return 1
- fi 
-  /opt/vyatta/bin/vyatta-op-cmd-wrapper "$@"
+  if [ $# == 0 ]; then
+    echo -e "\n  Incomplete command: run\n"
+    return 1
+  fi
+  if [[ "set" =~ "$1" ]]; then
+    _vyatta_op_run "$@"
+  else
+    /opt/vyatta/bin/vyatta-op-cmd-wrapper "$@"
+  fi
 }
 
 ### End Top level command wrappers ###
