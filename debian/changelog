@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.46) unstable; urgency=low
+
+  * Fix completions for fields that have more than one word
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 11 Oct 2011 11:34:57 -0500
+
 vyatta-cfg (0.99.45) unstable; urgency=low
 
   * Handle operational commands that cannot be run non-interactively
