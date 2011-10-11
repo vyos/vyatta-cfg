@@ -137,7 +137,7 @@ vyatta_run_complete ()
       if [ -z "$comp" ] ; then
         if [ ${#COMPREPLY[@]} -eq 0 ] ; then
           COMPREPLY=( " " "" )
-        elif _vyatta_op_comprely_needs_ambiguity ; then
+        elif _vyatta_cfg_compreply_needs_ambiguity ; then
           COMPREPLY+=( " " )
         fi  
       fi  
@@ -569,7 +569,7 @@ vyatta_do_complete ()
         if [ -z "$comp" ] ; then
           if [ ${#COMPREPLY[@]} -eq 0 ] ; then
             COMPREPLY=( " " "" )
-          elif _vyatta_op_comprely_needs_ambiguity ; then
+          elif _vyatta_cfg_compreply_needs_ambiguity ; then
             COMPREPLY+=( " " )
           fi  
         fi  
@@ -595,13 +595,13 @@ vyatta_do_complete ()
   vyatta_help_text="\\nNo help text available"
 }
 
-_vyatta_cfg_comprely_needs_ambiguity ()
+_vyatta_cfg_compreply_needs_ambiguity ()
 {
     local -a uniq
 
     [ ${#COMPREPLY[@]} -eq 1 ] && return
 
-    uniq=( `printf "%s\n" ${COMPREPLY[@]} | cut -c1 | sort -u` )
+    uniq=( `printf "%s\n" "${COMPREPLY[@]}" | cut -c1 | sort -u` )
 
     [ ${#uniq[@]} -eq 1 ] && return
     false
@@ -619,7 +619,9 @@ vyatta_simple_complete ()
   local cur=${COMP_WORDS[COMP_CWORD]}
   local -a f_comps=()
   get_prefix_filtered_list "$current_prefix" vyatta_completions f_comps
-  f_comps=( $(printf "%s\n" "${vyatta_completions[@]}" | sort -u) )
+  if [[ ${#f_comps[@]} -ne 1 ]]; then
+    f_comps=( $(printf "%s\n" "${f_comps[@]}" | sort -u) )
+  fi
 
   COMPREPLY=( "${f_comps[@]}" )
 
@@ -633,7 +635,7 @@ vyatta_simple_complete ()
         if [ -z "$comp" ] ; then
           if [ ${#COMPREPLY[@]} -eq 0 ] ; then
             COMPREPLY=( " " "" )
-          elif _vyatta_op_comprely_needs_ambiguity ; then
+          elif _vyatta_cfg_compreply_needs_ambiguity ; then
             COMPREPLY+=( " " )
           fi  
         fi  
