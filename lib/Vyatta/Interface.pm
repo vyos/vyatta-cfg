@@ -79,6 +79,10 @@ my %net_prefix = (
     '^ifb[\d]+$'   => { path => 'input' },
 );
 
+sub get_net_prefix {
+  return %net_prefix;
+}
+
 # get list of interface types (only used in usage function)
 sub interface_types {
     my @types = map { $net_prefix{$_}{path} } keys %net_prefix;
