@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.47) unstable; urgency=low
+
+  * Provide accessor for the net_prefix hash
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 12 Oct 2011 18:49:44 -0500
+
 vyatta-cfg (0.99.46) unstable; urgency=low
 
   * Fix completions for fields that have more than one word
