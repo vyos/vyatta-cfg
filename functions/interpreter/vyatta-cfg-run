@@ -319,6 +319,9 @@ vyatta_config_run ()
   fi
   if [[ "set" =~ "$1" ]]; then
     _vyatta_op_run "$@"
+  elif [[ "$1" =~ "/" ]]; then
+    local args=("$@")
+    ${args[0]} "${args[@]:1}"
   else
     /opt/vyatta/bin/vyatta-op-cmd-wrapper "$@"
   fi

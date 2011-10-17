@@ -117,7 +117,6 @@ done
 vyatta_run_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
-  shopt -s extglob nullglob
   
   local cur=${COMP_WORDS[COMP_CWORD]}
   
@@ -129,7 +128,12 @@ vyatta_run_complete ()
 
   COMP_WORDS=( "${COMP_WORDS[@]:1}" )
   (( COMP_CWORD -= 1 ))
-  _vyatta_op_expand "$@"
+  if [[ ${COMP_WORDS[0]} =~ "/" ]]; then
+    _filedir_xspec
+  else
+    shopt -s extglob nullglob
+    _vyatta_op_expand "$@"
+  fi
   
   if [ -z "$cur" ] ||
      [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
