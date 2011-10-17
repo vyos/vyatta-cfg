@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.48) unstable; urgency=low
+
+  * Make directory completions, if it is the first word of a run
+    completion, work so that users can easily find scripts they may be
+    trying to run.
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 17 Oct 2011 14:15:04 -0500
+
 vyatta-cfg (0.99.47) unstable; urgency=low
 
   * Provide accessor for the net_prefix hash
