@@ -801,6 +801,7 @@ vyatta_config_complete ()
   
   local current_word=$3
   local current_prefix=$2
+  local comp_cword=$COMP_CWORD #mutable copy of COMP_CWORD so we can modify it for copy and rename
   
   if [[ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
@@ -896,6 +897,7 @@ vyatta_config_complete ()
       return
     elif (( COMP_CWORD > 3 && COMP_CWORD < 6 )); then
       # If parsing index 4 or 5, start completion at <param2>.
+      (( comp_cword -= 3 ))
       api_args=("$command" "${COMP_WORDS[@]:4}")
     elif (( COMP_CWORD > 5 )); then
       # If parsing after index 5, there are no more valid parameters
@@ -924,9 +926,9 @@ vyatta_config_complete ()
      [[ -n "$last_comp" ]] &&
      [[ ! "$current_word" =~ "$last_comp"  ]]; then 
      if [[ -n "$current_prefix" ]];then
-       api_args=( "${api_args[@]:0:$[$COMP_CWORD]}" "$current_prefix" )
+       api_args=( "${api_args[@]:0:$[$comp_cword]}" "$current_prefix" )
      else
-       api_args=( "${api_args[@]:0:$COMP_CWORD}" "" )
+       api_args=( "${api_args[@]:0:$comp_cword}" "" )
      fi
   fi
   if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
