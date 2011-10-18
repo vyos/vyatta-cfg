@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.49) unstable; urgency=low
+
+  * Fix broken completion for copy and rename second parameter
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 18 Oct 2011 18:52:13 -0500
+
 vyatta-cfg (0.99.48) unstable; urgency=low
 
   * Make directory completions, if it is the first word of a run
