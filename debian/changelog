@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.50) unstable; urgency=low
+
+  * Workaround for bug 7570, turning echo on manually when running a
+    templated command should fix the majority of the problems. It would
+    be better to fix the readline/less interaction in the future
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 20 Oct 2011 16:49:59 -0500
+
 vyatta-cfg (0.99.49) unstable; urgency=low
 
   * Fix broken completion for copy and rename second parameter
