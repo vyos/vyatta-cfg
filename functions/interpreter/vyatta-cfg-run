@@ -507,6 +507,9 @@ vyatta_cfg_run ()
   local found
   is_elem_of "${cmd}" _vyatta_cfg_cmds
   found=$?
+  stty echo # turn echo on, this is a workaround for bug 7570
+            # not a fix we need to look at why the readline library 
+            # is getting confused on paged help text.
   if [[ "${#filtered_cmds[@]}" == "0" ]]; then
     echo -ne "\n  Invalid command: [$cmd]\n\n"
     return 1
