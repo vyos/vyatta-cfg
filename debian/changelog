@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.52) unstable; urgency=low
+
+  * Fix a few config completion mistakes: help text was no longer being
+    paged (this differed from op mode). Fix the Invalid top level
+    command help text
+
+ -- John Southworth <john.southworth@vyatta.com>  Sat, 22 Oct 2011 11:45:28 -0700
+
 vyatta-cfg (0.99.51) unstable; urgency=low
 
   * Don't show an error message when we can't turn echo on
