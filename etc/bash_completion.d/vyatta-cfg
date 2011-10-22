@@ -593,7 +593,7 @@ vyatta_do_complete ()
     vyatta_do_help=false
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
-    printf "$vyatta_help_text"
+    printf "$vyatta_help_text" | ${VYATTA_PAGER:-cat}
     COMPREPLY=( "" " " )
   fi
   vyatta_help_text="\\nNo help text available"
@@ -671,7 +671,7 @@ vyatta_simple_complete ()
      vyatta_do_help=false 
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
-    printf "$vyatta_help_text"
+    printf "$vyatta_help_text" | ${VYATTA_PAGER:-cat}
     COMPREPLY=( "" " " )
   fi
   vyatta_help_text="\\nNo help text available"
@@ -843,7 +843,10 @@ vyatta_config_complete ()
     get_help_text
     vyatta_completions=( "${_get_help_text_items[@]}" )
     if [[ ${#vyatta_completions[@]} -eq 0 ]]; then
-       vyatta_help_text="\n\n  Invalid command: [${COMP_WORDS[COMP_CWORD]}]"
+       echo -ne "\n\n  Invalid command: [${COMP_WORDS[COMP_CWORD]}]"
+       COMPREPLY=( "" " " )
+       eval $restore_shopts
+       return
     fi
     vyatta_do_complete "$@"
     eval $restore_shopts
