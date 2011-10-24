@@ -527,6 +527,34 @@ Cstore::getEditResetEnv(string& env)
   return true;
 }
 
+void
+Cstore::getAllowedVarRef(string& astr){
+  size_t varloc = 0;
+  size_t strloc = 0;
+  vtw_type_e vtype = ERROR_TYPE;
+  string exe_string = ""; 
+  string varref = ""; 
+  size_t first_paren, second_paren;
+  while(true) {
+    varloc = astr.find("$VAR", strloc); 
+    if (varloc == string::npos){
+      varloc = astr.size();
+      exe_string += astr.substr(strloc, (varloc-strloc+1));
+      break;
+    }   
+    exe_string += astr.substr(strloc, (varloc-strloc));
+    strloc = varloc;
+    first_paren = astr.find('(', strloc);
+    second_paren = astr.find(')', strloc);
+    varref = astr.substr((first_paren+1), (second_paren-first_paren-1));
+    varref = string(getVarRef(varref.c_str(), vtype, false));
+    strloc = second_paren+1;
+    exe_string += varref;
+  }
+  astr = exe_string;
+  return;
+}
+
 /* set "env" arg to the environment string needed for "completion".
  * return true if successful.
  *
@@ -688,6 +716,7 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
       } else {
         string astr = def->getAllowed();
         shell_escape_squotes(astr);
+        getAllowedVarRef(astr);
         cmd_str += "_cstore_internal_allowed () { eval '";
         cmd_str += astr;
         cmd_str += "'; }; _cstore_internal_allowed";

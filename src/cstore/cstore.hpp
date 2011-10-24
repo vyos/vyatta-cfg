@@ -504,6 +504,7 @@ private:
                            va_list alist);
   static void voutput_internal(const char *fmt, va_list alist);
   static void vexit_internal(const char *fmt, va_list alist);
+  void getAllowedVarRef(string& astr);
 };
 
 } // end namespace cstore
