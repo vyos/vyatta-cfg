@@ -487,7 +487,17 @@ vyatta_cfg_cmd ()
   local -a expanded_api_args=()
   local editlvl=$(cli-shell-api getEditLevelStr)
   vyatta_config_expand_compwords "${args[@]}"
-  if cli-shell-api validateTmplPath -- ${editlvl[*]} "${expanded_api_args[@]:1}"; then
+  if [[ "${expanded_api_args[@]:$[${#expanded_api_args[@]}-1]}" == "-all" ]] &&
+     [[ "${expanded_api_args[0]}" == "show" ]]; then
+    if [[ $[${#expanded_api_args[@]}-2] -eq 0 ]]; then
+      vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+    elif cli-shell-api validateTmplPath -- ${editlvl[*]} \
+         "${expanded_api_args[@]:1:$[${#expanded_api_args[@]}-2]}"; then
+      vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+    else
+      vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+    fi
+  elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${expanded_api_args[@]:1}"; then
     vyatta_cfg_cmd_run "${expanded_api_args[@]}"
   else
     # find broken portion of command
