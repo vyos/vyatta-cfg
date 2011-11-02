@@ -1,3 +1,12 @@
+vyatta-cfg (0.99.54) unstable; urgency=low
+
+  [ Stig Thormodsrud ]
+  * vrrp restart not working. fix pid filename for 1.2.2
+
+  [ Bob Gilligan ]
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Tue, 01 Nov 2011 17:55:50 -0700
+
 vyatta-cfg (0.99.53) unstable; urgency=low
 
   * Add VarRef translation to the allowed field for config mode
