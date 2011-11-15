@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.55) unstable; urgency=low
+
+  * Bug 7411: exporting isValidPortNumber API from Misc.pm, used in
+    conntrack for validating ports entered
+
+ -- Gaurav Sinha <gaurav.sinha@vyatta.com>  Mon, 14 Nov 2011 16:26:26 -0800
+
 vyatta-cfg (0.99.54) unstable; urgency=low
 
   [ Stig Thormodsrud ]
