@@ -210,7 +210,7 @@ sub _ppp_intf {
 	chomp;
 	# looking for line like:
 	# pty "/usr/sbin/pppoe -m 1412 -I eth1"
-	next unless /^pty\s.*-I\s*(\w+)"/;
+	next unless /pty\s.*-I\s*(\w+)"/;
 	$intf = $1;
 	last;
     }
