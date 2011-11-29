@@ -135,8 +135,9 @@ load_bootfile ()
 #
 cleanup_raid()
 {
-    MD_MODULES='linear multipath raid0 raid1 raid456 raid5 raid6 raid10'
-    rmmod -s $MD_MODULES
+    rmmod raid0 raid1 raid10 raid456 raid6_pq \
+	async_raid6_recov async_pq async_xor async_memcpy async_tx \
+	linear multipath xor md_mod >/dev/null 2>&1
 }
 
 # 
