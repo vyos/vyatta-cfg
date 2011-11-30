@@ -1,3 +1,15 @@
+vyatta-cfg (0.99.57) unstable; urgency=low
+
+  * init: unload unneeded raid modules
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Tue, 29 Nov 2011 13:56:44 -0800
+
+vyatta-cfg (0.99.56) unstable; urgency=low
+
+  * Return vmac interface configuration state in vrrp_get_config()
+
+ -- Bob Gilligan <gilligan@vyatta.com>  Mon, 28 Nov 2011 18:04:31 -0800
+
 vyatta-cfg (0.99.55) unstable; urgency=low
 
   * Bug 7411: exporting isValidPortNumber API from Misc.pm, used in

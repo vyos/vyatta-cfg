@@ -249,13 +249,19 @@ sub vrrp_get_config {
     if (!defined $advert_int) {
 	$advert_int = 1;
     }
+    my $vmac_interface = $config->existsOrig("interface");
+    if (!defined $vmac_interface) {
+	$vmac_interface = 0;
+    }
+
     $config->setLevel("$path vrrp vrrp-group $group authentication");
     my $auth_type = $config->returnOrigValue("type");
     if (!defined $auth_type) {
 	$auth_type = "none";
     } 
 
-    return ($primary_addr, $priority, $preempt, $advert_int, $auth_type, @vips);
+    return ($primary_addr, $priority, $preempt, $advert_int, $auth_type,
+	    $vmac_interface, @vips);
 }
 
 sub snoop_for_master {
