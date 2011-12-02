@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.59) unstable; urgency=low
+
+  * raid: leave modules intact
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Fri, 02 Dec 2011 13:44:15 -0800
+
 vyatta-cfg (0.99.58) unstable; urgency=low
 
   * Add vrrp interface support to Interface library
