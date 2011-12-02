@@ -138,7 +138,32 @@ sub get_all_cfg_interfaces {
       }
     }
   }
-
+  # special case for vrrp
+  for my $eth ($cfg->$vfunc('interfaces ethernet')) {
+    for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vrrp vrrp-group")) {
+      push @ret_ifs, { 'name' => $eth."v".$vrid,
+                       'path' => "interfaces ethernet $eth vrrp vrrp-group $vrid interface" };
+    }
+    for my $vif ($cfg->$vfunc("interfaces ethernet $eth vif")) {
+      for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vif $vif vrrp vrrp-group")) {
+        push @ret_ifs, { 'name' => $eth.".".$vif."v".$vrid,
+                         'path' => "interfaces ethernet $eth vif $vif vrrp vrrp-group $vrid interface" };
+      }
+    }
+  }
+  for my $bond ($cfg->$vfunc('interfaces bonding')) {
+    for my $vrid ($cfg->$vfunc("interfaces bonding $bond vrrp vrrp-group")) {
+      push @ret_ifs, { 'name' => $bond."v".$vrid,
+                       'path' => "interfaces bonding $bond vrrp vrrp-group $vrid interface" };
+    }
+    for my $vif ($cfg->$vfunc("interfaces bonding $bond vif")) {
+      for my $vrid ($cfg->$vfunc("interfaces bonding $bond vif $vif vrrp vrrp-group")) {
+        push @ret_ifs, { 'name' => $bond.".".$vif."v".$vrid,
+                         'path' => "interfaces bonding $bond vif $vif vrrp vrrp-group $vrid interface" };
+      }
+    }
+  }
+  
   # now special cases for pppo*/adsl
   for my $eth ($cfg->$vfunc('interfaces ethernet')) {
     for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
@@ -221,7 +246,7 @@ sub new {
     my $that  = shift;
     my $name  = pop;
     my $class = ref($that) || $that;
-    my ($dev, $vif);
+    my ($dev, $vif, $vrid);
 
     # need argument to constructor
     return unless $name;
@@ -240,7 +265,14 @@ sub new {
     }
 
     # Strip off vif from name
-    if ( $name =~ m/(\w+)\.(\d+)/ ) {
+    if ( $name =~ m/(\w+)\.(\d+)v(\d+)/ ){
+        $dev = $1;
+        $vif = $2;
+        $vrid = $3;
+    } elsif ( $name =~ m/(\w+)\v(\d+)/ ) {
+        $dev = $1;
+        $vrid = $2;
+    } elsif ( $name =~ m/(\w+)\.(\d+)/ ) {
         $dev = $1;
         $vif = $2;
     } else {
@@ -260,6 +292,7 @@ sub new {
 
         my $path = "interfaces $type $dev";
         $path .= " $vifpath $vif" if $vif;
+        $path .= " vrrp vrrp-group $vrid interface" if $vrid;
 
 	my $self = {
 	    name => $name,
