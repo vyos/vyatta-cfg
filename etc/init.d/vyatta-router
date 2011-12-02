@@ -128,18 +128,6 @@ load_bootfile ()
     )
 }
 
-
-# Unload the RAID modules that we are not using.  It is safe to try to
-# unload all of the RAID modules.   The kernel will refuse to unload any
-# that we are actually using.
-#
-cleanup_raid()
-{
-    rmmod raid0 raid1 raid10 raid456 raid6_pq \
-	async_raid6_recov async_pq async_xor async_memcpy async_tx \
-	linear multipath xor md_mod >/dev/null 2>&1
-}
-
 # 
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
@@ -227,7 +215,6 @@ start ()
     disabled configure || load_bootfile
     log_end_msg $?
 
-    cleanup_raid
     telinit q
     bind_mount_boot
     chmod g-w,o-w /
