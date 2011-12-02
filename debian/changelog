@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.58) unstable; urgency=low
+
+  * Add vrrp interface support to Interface library
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 02 Dec 2011 11:21:29 -0800
+
 vyatta-cfg (0.99.57) unstable; urgency=low
 
   * init: unload unneeded raid modules
