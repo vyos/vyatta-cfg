@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.60) unstable; urgency=low
+
+  * Fix bug in vrrp interface handling
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 05 Dec 2011 12:02:22 -0800
+
 vyatta-cfg (0.99.59) unstable; urgency=low
 
   * raid: leave modules intact
