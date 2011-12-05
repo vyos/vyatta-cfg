@@ -60,10 +60,13 @@ my %net_prefix = (
 		      vif => 'vif',    },
     '^bond[\d]+$'  => { path => 'bonding',
 		      vif => 'vif', },
+    '^bond[\d]+v[\d]+$' => { path => 'vrrp' },
     '^br[\d]+$'    => { path => 'bridge',
 		      vif => 'vif' },
     '^eth[\d]+$'   => { path => 'ethernet',
 		      vif => 'vif', },
+    '^eth[\d]+v[\d]+$' => { path => 'vrrp' },
+    '^eth[\d]+.[\d]+v[\d]+$' => { path => 'vrrp' },
     '^lo$'         => { path => 'loopback' },
     '^ml[\d]+$'    => { path => 'multilink',
 		      vif => 'vif', },
@@ -264,14 +267,14 @@ sub new {
 	return $self;
     }
 
-    # Strip off vif from name
     if ( $name =~ m/(\w+)\.(\d+)v(\d+)/ ){
         $dev = $1;
-        $vif = $2;
+        $vif = $2; 
         $vrid = $3;
     } elsif ( $name =~ m/(\w+)\v(\d+)/ ) {
         $dev = $1;
         $vrid = $2;
+    # Strip off vif from name
     } elsif ( $name =~ m/(\w+)\.(\d+)/ ) {
         $dev = $1;
         $vif = $2;
@@ -285,7 +288,7 @@ sub new {
         my $vifpath = $net_prefix{$prefix}{vif};
 
         # Interface name has vif, but this type doesn't support vif!
-        return if ( $vif && !$vifpath );
+        return if ( $vif && !$vifpath && !$vrid);
 
         # Check path if given
         return if ( $#_ >= 0 && join( ' ', @_ ) ne $type );
@@ -293,6 +296,7 @@ sub new {
         my $path = "interfaces $type $dev";
         $path .= " $vifpath $vif" if $vif;
         $path .= " vrrp vrrp-group $vrid interface" if $vrid;
+        $type = 'vrrp' if $vrid;
 
 	my $self = {
 	    name => $name,
@@ -300,6 +304,7 @@ sub new {
 	    path => $path,
 	    dev  => $dev,
 	    vif  => $vif,
+            vrid => $vrid
 	};
 
         bless $self, $class;
@@ -328,6 +333,11 @@ sub path {
 sub vif {
     my $self = shift;
     return $self->{vif};
+}
+
+sub vrid {
+    my $self = shift;
+    return $self->{vrid};
 }
 
 sub physicalDevice {
