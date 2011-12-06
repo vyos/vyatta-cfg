@@ -253,6 +253,10 @@ sub vrrp_get_config {
     if (!defined $vmac_interface) {
 	$vmac_interface = 0;
     }
+    if ($vmac_interface && $primary_addr eq "0.0.0.0"){
+      $primary_addr = $vips[0];
+      $primary_addr =~ s/(.*?)\/.*/$1/;
+    }
 
     $config->setLevel("$path vrrp vrrp-group $group authentication");
     my $auth_type = $config->returnOrigValue("type");
