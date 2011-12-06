@@ -271,7 +271,7 @@ sub new {
         $dev = $1;
         $vif = $2; 
         $vrid = $3;
-    } elsif ( $name =~ m/(\w+)\v(\d+)/ ) {
+    } elsif ( $name =~ m/(\w+)v(\d+)/ ) {
         $dev = $1;
         $vrid = $2;
     # Strip off vif from name
