@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.61) unstable; urgency=low
+
+  * Fix typo in vrid split in Interfaces module
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 05 Dec 2011 17:38:05 -0800
+
 vyatta-cfg (0.99.60) unstable; urgency=low
 
   * Fix bug in vrrp interface handling
