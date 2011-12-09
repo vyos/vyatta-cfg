@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.63) unstable; urgency=low
+
+  * Fix default completions for configuration mode
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 09 Dec 2011 12:21:28 -0800
+
 vyatta-cfg (0.99.62) unstable; urgency=low
 
   * Fix source address display problem in address owner case for vrrp
