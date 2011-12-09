@@ -1011,7 +1011,8 @@ vyatta_config_default_complete ()
 {
   local wc=${#COMP_WORDS[@]}
   if (( wc < 2 )) ||
-     [[ $COMP_CWORD -eq 0 ]]; then
+     [[ $COMP_CWORD -eq 0 ]] ||
+     [[ $1 == $2 ]]; then
     vyatta_config_complete "$@"
   else
     # after the first word => cannot be vyatta command so use original default
