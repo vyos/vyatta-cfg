@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.64) unstable; urgency=low
+
+  * Adjust default displayed priority to reflect actual default priority
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 12 Dec 2011 16:49:30 -0800
+
 vyatta-cfg (0.99.63) unstable; urgency=low
 
   * Fix default completions for configuration mode
