@@ -239,7 +239,7 @@ sub vrrp_get_config {
     my @vips = $config->returnOrigValues("virtual-address");
     my $priority = $config->returnOrigValue("priority");
     if (!defined $priority) {
-	$priority = 1;
+	$priority = 100;
     }
     my $preempt = $config->returnOrigValue("preempt");
     if (!defined $preempt) {
