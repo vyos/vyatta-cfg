@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.65) unstable; urgency=low
+
+  * Add support for dataplane config
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 16 Dec 2011 13:21:56 -0800
+
 vyatta-cfg (0.99.64) unstable; urgency=low
 
   * Adjust default displayed priority to reflect actual default priority
