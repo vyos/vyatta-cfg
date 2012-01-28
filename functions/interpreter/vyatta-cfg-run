@@ -376,9 +376,9 @@ vyatta_cfg_validate_cmd ()
           local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
           local vyatta_help_text=''
           if [[ $opath == '' ]]; then 
-            echo -ne "\n  Configuration path: [$arg] is ambiguous\n"
+            echo -ne "\n  Configuration path: [$arg] is ambiguous\n" >&2
           else
-            echo -ne "\n  Configuration path: $opath [$arg] is ambiguous\n"
+            echo -ne "\n  Configuration path: $opath [$arg] is ambiguous\n" >&2
           fi
           get_help_text
           echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
@@ -386,9 +386,9 @@ vyatta_cfg_validate_cmd ()
           break
         else
           if [[ $opath == '' ]]; then 
-            echo -ne "\n  Configuration path: [$arg] is not valid\n  ${cmd^} failed\n\n"
+            echo -ne "\n  Configuration path: [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
           else
-            echo -ne "\n  Configuration path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n"
+            echo -ne "\n  Configuration path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
           fi
           break
         fi
@@ -416,7 +416,7 @@ vyatta_config_copy ()
     vyatta_config_expand_compwords "${param2[@]}"
     param2=( "${expanded_api_args[@]}" )
     if [[ "${args[3]}" != "to" ]]; then
-        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n"
+        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n" >&2
     elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}" &&
        cli-shell-api validateTmplPath -- ${editlvl[*]} "${param2[@]:1}" ; then
       cmd="/opt/vyatta/sbin/my_$cmd"
@@ -430,23 +430,23 @@ vyatta_config_copy ()
         vyatta_cli_shell_api getCompletionEnv $cmd ${param1[1]}
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
            && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
-          echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n"
-          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n"
+          echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n" >&2
+          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
         else
-          echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n"
+          echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n" >&2
         fi
       elif ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:2}"; then
         _cli_shell_api_comp_values=()
         vyatta_cli_shell_api getCompletionEnv $cmd "${param2[1]}" 
         if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
            && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
-          echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n"
-          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n"
+          echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n" >&2
+          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
         else
-          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n"
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n" >&2
         fi
       else
-        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n"
+        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n" >&2
       fi
     fi
 }
@@ -521,10 +521,10 @@ vyatta_cfg_run ()
                          # not a fix we need to look at why the readline library 
                          # is getting confused on paged help text.
   if [[ "${#filtered_cmds[@]}" == "0" ]]; then
-    echo -ne "\n  Invalid command: [$cmd]\n\n"
+    echo -ne "\n  Invalid command: [$cmd]\n\n" >&2
     return 1
   elif [[ "${#filtered_cmds[@]}" != "1" && "$found" == "1" ]];  then
-    echo -ne "\n  Ambiguous command: [$cmd]\n"
+    echo -ne "\n  Ambiguous command: [$cmd]\n" >&2
     local -a fitems=()
     local -a fstrs=()
     local -a _get_help_text_items=( "${_vyatta_cfg_cmds[@]}" )

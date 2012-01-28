@@ -23,6 +23,7 @@
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
+#include <cstore/util.hpp>
 #include <cnode/cnode.hpp>
 #include <cnode/cnode-algorithm.hpp>
 #include <commit/commit-algorithm.hpp>
@@ -226,6 +227,84 @@ static void
 existsEffective(Cstore& cstore, const Cpath& args)
 {
   exit(cstore.cfgPathEffective(args) ? 0 : 1);
+}
+
+/* isMulti */
+static void
+isMulti(Cstore& cstore, const Cpath& args)
+{
+  MapT<string, string> tmap;
+  cstore.getParsedTmpl(args, tmap, 0);
+  string multi = tmap["multi"];
+  exit((multi == "1") ? 0 : 1);
+}
+
+/* isTag */
+static void
+isTag(Cstore& cstore, const Cpath& args)
+{
+  MapT<string, string> tmap;
+  cstore.getParsedTmpl(args, tmap, 0);
+  string tag = tmap["tag"];
+  exit((tag == "1") ? 0 : 1);
+}
+
+/* isValue */
+static void
+isValue(Cstore& cstore, const Cpath& args)
+{
+  MapT<string, string> tmap;
+  cstore.getParsedTmpl(args, tmap, 0);
+  string is_value = tmap["is_value"];
+  exit((is_value == "1") ? 0 : 1);
+}
+
+/* isLeaf */
+static void
+isLeaf(Cstore& cstore, const Cpath& args)
+{
+  MapT<string, string> tmap;
+  bool is_leaf_typeless = false;
+  tmap["type"] = "";
+  cstore.getParsedTmpl(args, tmap, 0);
+  string is_value = tmap["is_value"];
+  string tag = tmap["tag"];
+  string type = tmap["type"];
+  vector<string> tcnodes;
+  cstore.tmplGetChildNodes(args, tcnodes);
+  if (tcnodes.size() == 0) {
+    // typeless leaf node
+    is_leaf_typeless = true;
+  }
+  exit(((is_value != "1") && (tag != "1") && (type != "" || is_leaf_typeless)) ? 0 : 1);
+}
+
+static void getNodeType(Cstore& cstore, const Cpath& args) {
+  MapT<string, string> tmap;
+  bool is_leaf_typeless = false;
+  tmap["type"] = "";
+  cstore.getParsedTmpl(args, tmap, 0);
+  string is_value = tmap["is_value"];
+  string tag = tmap["tag"];
+  string type = tmap["type"];
+  string multi = tmap["multi"];
+  vector<string> tcnodes;
+  cstore.tmplGetChildNodes(args, tcnodes);
+  if (tcnodes.size() == 0) {
+    // typeless leaf node
+    is_leaf_typeless = true;
+  }
+  if (tag == "1") {
+    printf("tag");
+  } else if (!((is_value != "1") && (tag != "1") && (type != "" || is_leaf_typeless))) {
+    printf("non-leaf");
+  } else if (multi == "1") {
+    printf("multi");
+  } else {
+    printf("leaf");
+  }
+  exit(0);
+  
 }
 
 /* same as listNodes() in Perl API.
@@ -578,6 +657,12 @@ static OpT ops[] = {
   OP(listNodes, -1, NULL, -1, NULL, false),
   OP(listActiveNodes, -1, NULL, -1, NULL, false),
   OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path", false),
+
+  OP(isMulti, -1, NULL, 1, "Must specify config path", false),
+  OP(isTag,  -1, NULL, 1, "Must specify config path", false),
+  OP(isLeaf, -1, NULL, 1, "Must specify config path", false),
+  OP(isValue, -1, NULL, 1, "Must specify config path", false),
+  OP(getNodeType, -1, NULL, 1, "Must specify config path", false),
 
   OP(returnValue, -1, NULL, 1, "Must specify config path", false),
   OP(returnActiveValue, -1, NULL, 1, "Must specify config path", false),
