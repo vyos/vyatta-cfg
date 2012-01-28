@@ -459,13 +459,29 @@ get_help_text ()
 {
   vyatta_help_text="\\nPossible completions:"
   for (( idx = 0; idx < ${#_get_help_text_items[@]}; idx++ )); do
-    vyatta_help_text+="\\n\\x20\\x20"
-    if [ ${#_get_help_text_items[idx]} -lt 6 ]; then
+    vyatta_help_text+="\\n"
+    if (( ${#COMP_WORDS[@]} < 2 )) ||
+       [[ $COMP_CWORD -eq 0 ]]; then
+      vyatta_help_text+="\\x20\\x20\\x20"
+    else
+      if [[ ${#_get_help_text_items[@]} == 1 ]]; then
+        local nodeType=$(cli-shell-api getNodeType ${api_args[@]:1:${comp_cword}})
+      else
+        local nodeType=$(cli-shell-api getNodeType ${api_args[@]:1:${comp_cword}} ${_get_help_text_items[idx]})
+      fi
+      case  "$nodeType" in
+        tag) vyatta_help_text+="+> " ;;
+        non-leaf) vyatta_help_text+=" > " ;;
+        multi) vyatta_help_text+="+  " ;; 
+        *) vyatta_help_text+="   " ;; 
+      esac
+    fi
+    if [ ${#_get_help_text_items[idx]} -lt 5 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t"
-    elif [ ${#_get_help_text_items[idx]} -lt 14 ]; then
+    elif [ ${#_get_help_text_items[idx]} -lt 13 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t"
     else
-      vyatta_help_text+="${_get_help_text_items[idx]}\\n\\x20\\x20\\t\\t"
+      vyatta_help_text+="${_get_help_text_items[idx]}\\n\\x20\\x20\\x20\\t\\t"
     fi
     vyatta_help_text+="${_get_help_text_helps[idx]}"
   done
