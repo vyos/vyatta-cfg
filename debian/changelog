@@ -1,3 +1,11 @@
+vyatta-cfg (0.99.67) unstable; urgency=low
+
+  * Add ability to differentiate between node types in help text
+  * Fix some bugs in config path helpers
+  * Fix an inconsistency with single non-completion cases
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 03 Feb 2012 09:12:51 -0800
+
 vyatta-cfg (0.99.66) unstable; urgency=low
 
   * manually force rebuild
