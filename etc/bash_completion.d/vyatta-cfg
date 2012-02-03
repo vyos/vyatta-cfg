@@ -467,13 +467,7 @@ get_help_text ()
       vyatta_help_text+="\\x20\\x20"
     else
       if [[ $print_node_type -ne 0 ]]; then
-        if [[ ${#_get_help_text_items[@]} == 1 ]]; then
-          local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:${comp_cword}})
-          #echo -e "\n $@ 1 $editlvl ${api_args[@]:1:$[${comp_cword}-1]} $nodeType\n"
-        else
-          local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} ${_get_help_text_items[idx]})
-          #echo -e "\n $@  $editlvl ${api_args[@]:1:$[${comp_cword}-1]} ${_get_help_text_items[idx]} $nodeType\n"
-        fi
+        local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} ${_get_help_text_items[idx]})
         case  "$nodeType" in
           tag) vyatta_help_text+="+> " ;;
           non-leaf) vyatta_help_text+=" > " ;;
