@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.68) unstable; urgency=low
+
+  * Bug fix for 4718 - Log successful commits in messages file.
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Wed, 22 Feb 2012 08:39:45 -0800
+
 vyatta-cfg (0.99.67) unstable; urgency=low
 
   * Add ability to differentiate between node types in help text
