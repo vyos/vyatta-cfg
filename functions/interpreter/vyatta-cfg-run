@@ -101,6 +101,9 @@ vyatta_config_show ()
     | eval "${VYATTA_PAGER:-cat}"
 }
 
+declare cur_tty=$(ps -o tty= |head -n1)
+declare cur_user=$(id -un)
+
 vyatta_config_commit ()
 {
   if ! vyatta_cli_shell_api sessionChanged; then
@@ -127,6 +130,12 @@ vyatta_config_commit ()
   export COMMIT_COMMENT="$comment"
   export COMMIT_VIA=cli
   /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1
+  local ret_value=$?
+
+  if [ "$ret_value" == "0" ]; then
+    logger -p warning -t commit "Active configuration has been changed by user\
+ '$cur_user' on '$cur_tty'" 
+  fi 
   unset COMMIT_VIA
   unset COMMIT_COMMENT
 }
