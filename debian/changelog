@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.69) unstable; urgency=low
+
+  * Revert "Bug fix for 4718 - Log successful commits in messages file."
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Tue, 28 Feb 2012 05:56:19 -0800
+
 vyatta-cfg (0.99.68) unstable; urgency=low
 
   * Bug fix for 4718 - Log successful commits in messages file.
