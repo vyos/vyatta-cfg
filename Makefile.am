@@ -102,6 +102,7 @@ sbin_SCRIPTS  += scripts/vyatta-load-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-strip-migration-comments.pl
+sbin_SCRIPTS  += scripts/vyatta-log-commit.pl
 
 share_perl5_DATA = lib/Vyatta/Config.pm
 share_perl5_DATA += lib/Vyatta/File.pm

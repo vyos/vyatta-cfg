@@ -1,3 +1,29 @@
+vyatta-cfg (0.99.73) unstable; urgency=low
+
+  * Fix curl command in save
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 17:03:23 +0000
+
+vyatta-cfg (0.99.72) unstable; urgency=low
+
+  * Bugfix 7555: Allow users to import ssh keys when running 'save'
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 01:40:37 +0000
+
+vyatta-cfg (0.99.71) unstable; urgency=low
+
+  * Bugfix 7555: Allow users to import keys when using the 'load'
+    command from config mode
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 00:02:16 +0000
+
+vyatta-cfg (0.99.70) unstable; urgency=low
+
+  * bug fix for 4718 - enhancement that will log commits in syslog for
+    all
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Tue, 28 Feb 2012 08:23:40 -0800
+
 vyatta-cfg (0.99.69) unstable; urgency=low
 
   * Revert "Bug fix for 4718 - Log successful commits in messages file."
