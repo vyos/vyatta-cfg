@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.73) unstable; urgency=low
+
+  * Fix curl command in save
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 17:03:23 +0000
+
 vyatta-cfg (0.99.72) unstable; urgency=low
 
   * Bugfix 7555: Allow users to import ssh keys when running 'save'
