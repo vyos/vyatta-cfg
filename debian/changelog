@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.71) unstable; urgency=low
+
+  * Bugfix 7555: Allow users to import keys when using the 'load'
+    command from config mode
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 00:02:16 +0000
+
 vyatta-cfg (0.99.70) unstable; urgency=low
 
   * bug fix for 4718 - enhancement that will log commits in syslog for
