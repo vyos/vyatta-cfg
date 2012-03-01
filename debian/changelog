@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.72) unstable; urgency=low
+
+  * Bugfix 7555: Allow users to import ssh keys when running 'save'
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 01 Mar 2012 01:40:37 +0000
+
 vyatta-cfg (0.99.71) unstable; urgency=low
 
   * Bugfix 7555: Allow users to import keys when using the 'load'
