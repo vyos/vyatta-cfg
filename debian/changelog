@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.74) unstable; urgency=low
+
+  * new branch
+
+ -- Deepti Kulkarni <deepti@vyatta.com>  Sat, 03 Mar 2012 02:25:28 -0800
+
 vyatta-cfg (0.99.73) unstable; urgency=low
 
   * Fix curl command in save
