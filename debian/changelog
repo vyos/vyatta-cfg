@@ -1,3 +1,19 @@
+vyatta-cfg (0.99.73+oxnard2) unstable; urgency=low
+
+  * adjust pppoe interface detection for non-userland
+  * Add vrrp interface support to Interface library
+  * Fix bug in vrrp interface handling
+  * Fix typo in vrid split in Interfaces module
+  * Fix source address display problem in address owner case for vrrp
+  * Fix default completions for configuration mode
+  * Adjust default displayed priority to reflect actual default priority
+  * Add ability to differentiate between node types in help text
+  * Fix some bugs in config path helpers
+  * Fix an inconsistency with single non-completion cases
+  * Bugfix 7267: make inodes allocate dynamically
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 22 Mar 2012 13:53:38 -0700
+
 vyatta-cfg (0.99.73+oxnard1) unstable; urgency=low
 
   * new branch
