@@ -47,7 +47,8 @@ const string UnionfsCstore::C_DEF_CFG_ROOT
   = "/opt/vyatta/config";
 const string UnionfsCstore::C_DEF_ACTIVE_ROOT
   = UnionfsCstore::C_DEF_CFG_ROOT + "/active";
-const string UnionfsCstore::C_DEF_CHANGE_PREFIX = "/tmp/changes_only_";
+const string UnionfsCstore::C_DEF_CHANGE_PREFIX 
+  = UnionfsCstore::C_DEF_CFG_ROOT + "/tmp/changes_only_";
 const string UnionfsCstore::C_DEF_WORK_PREFIX
   = UnionfsCstore::C_DEF_CFG_ROOT + "/tmp/new_config_";
 const string UnionfsCstore::C_DEF_TMP_PREFIX
