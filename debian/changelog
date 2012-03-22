@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.73+oxnard2) unstable; urgency=low
+
+  * Rerelease package due to being on the wrong branch
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 22 Mar 2012 13:56:10 -0700
+
 vyatta-cfg (0.99.73+oxnard1) unstable; urgency=low
 
   * new branch
