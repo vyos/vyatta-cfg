@@ -184,14 +184,7 @@ start ()
     # of the system memory.
     local tmem=$(sed -n 's/^MemTotal: \+\([0-9]\+\) kB$/\1/p' /proc/meminfo)
     local tpages
-    local max_inodes=300000
-    if [ -n "$tmem" ]; then
-      (( tpages = tmem / 4 ))
-      if (( tpages > max_inodes )); then
-        (( max_inodes = tpages ))
-      fi
-    fi
-    local tmpfs_opts="nosuid,nodev,mode=775,nr_inodes=$max_inodes"
+    local tmpfs_opts="nosuid,nodev,mode=775,nr_inodes=0" #automatically allocate inodes
     mount -o $tmpfs_opts -t tmpfs none ${vyatta_configdir} \
       && chgrp ${GROUP} ${vyatta_configdir}
     log_action_end_msg $?
