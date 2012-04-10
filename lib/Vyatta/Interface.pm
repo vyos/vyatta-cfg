@@ -24,10 +24,12 @@ use warnings;
 use Vyatta::Config;
 use Vyatta::Misc;
 use base 'Exporter';
+use Socket;
+require 'sys/ioctl.ph';
+
 our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK
 	          IFF_POINTOPOINT IFF_RUNNING IFF_NOARP
 		  IFF_PROMISC IFF_MULTICAST);
-
 
 use constant {
     IFF_UP		=> 0x1,		# interface is up
@@ -210,7 +212,7 @@ sub _ppp_intf {
 	chomp;
 	# looking for line like:
 	# pty "/usr/sbin/pppoe -m 1412 -I eth1"
-	next unless /pty\s.*-I\s*(\w+)"/;
+	next unless /^pty\s.*-I\s*(\w+)"/;
 	$intf = $1;
 	last;
     }
@@ -404,34 +406,29 @@ sub address {
     return Vyatta::Misc::getIP($self->{name}, $type);
 }
 
+# Do SIOCGIFFLAGS ioctl in perl
+sub flags {
+    my $self  = shift;
+
+    my $SIOCGIFFLAGS = &SIOCGIFFLAGS;
+    die "SIOCGIFFLAGS not found"
+	unless defined($SIOCGIFFLAGS);
+
+    socket (my $sock, AF_INET, SOCK_DGRAM, 0)
+	or die "open UDP socket failed: $!";
+
+    my $ifreq = pack('a16', $self->{name});
+    ioctl($sock, $SIOCGIFFLAGS, $ifreq)
+	or return; #undef
+
+    my (undef, $flags) = unpack('a16s', $ifreq);
+    return $flags;
+}
+
 sub exists {
     my $self = shift;
-
-    return ( -d "/sys/class/net/$self->{name}" );
-}
-
-sub flags {
-    my $self = shift;
-
-    open my $flags, '<', "/sys/class/net/$self->{name}/flags"
-	or return;
-
-    my $val = <$flags>;
-    chomp $val;
-    close $flags;
-    return hex($val);
-}
-
-sub carrier {
-    my $self = shift;
-    open my $carrier, '<', "/sys/class/net/$self->{name}/carrier"
-	or return;
-
-    my $val = <$carrier>;
-    $val = 0 if ! defined $val;  # proc entry not readable on down interface
-    chomp $val;
-    close $carrier;
-    return $val;
+    my $flags = $self->flags();
+    return defined($flags);
 }
 
 sub hw_address {
@@ -471,7 +468,7 @@ sub up {
     my $self  = shift;
     my $flags = $self->flags();
 
-    return $flags && ( $flags & IFF_UP );
+    return defined($flags) && ( $flags & IFF_UP );
 }
 
 # device exists and is running (ie carrier present)
@@ -479,7 +476,7 @@ sub running {
     my $self  = shift;
     my $flags = $self->flags();
 
-    return $flags && ( $flags & IFF_RUNNING );
+    return defined($flags) && ( $flags & IFF_RUNNING );
 }
 
 # device description information in kernel (future use)
