@@ -21,7 +21,7 @@
 
 use strict;
 use warnings;
-
+use File::Copy;
 
 # Looking for a comment something like this...
 #
@@ -38,15 +38,17 @@ if (!defined $file) {
     $file = "/opt/vyatta/etc/config/config.boot";
 }
 
-print "copying original configuration file to $file.boot.strip-migration-comments-bu\n";
-`cp $file $file.boot.strip-migration-comments-bu`;
+my $backup = "$file.boot.strip-migration-comments-bu";
+print "copying original configuration $file to $backup\n";
+cp($file, $backup)
+    or die "Error! Unable to copy $file to $backup: $!";
 
-open(MYINPUTFILE, "<$file")
+open(my $inputfile, '<', $file)
     or die "Error! Unable to open file for input \"$file\". $!";
 
 my $contents = "";
 my $in_mig_com = 0;
-while(<MYINPUTFILE>) {
+while(<$inputfile>) {
     if ($_ =~ /CONFIGURATION COMMENTED OUT DURING MIGRATION BELOW/) {
 	$in_mig_com = 1;
     }
@@ -60,12 +62,12 @@ while(<MYINPUTFILE>) {
 	$contents .= $_;
     }
 }
-close(MYINPUTFILE);
+close($inputfile);
 
-open(MYOUTPUTFILE, ">$file")
+open(my $outputfile, '>', $file)
     or die "Error! Unable to open file for output \"$file\". $!";
 
-print MYOUTPUTFILE $contents;
-close(MYOUTPUTFILE);
+print $outputfile $contents;
+close($outputfile);
 
 print "done\n";
