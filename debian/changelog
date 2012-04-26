@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.73+oxnard4) unstable; urgency=low
+
+  * Bugfix: 8057 fix call to commit in commit-confirm function
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 26 Apr 2012 14:31:37 -0700
+
 vyatta-cfg (0.99.73+oxnard3) unstable; urgency=low
 
   * Rerelease package due to being on the wrong branch
