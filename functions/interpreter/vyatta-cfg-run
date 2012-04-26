@@ -156,7 +156,7 @@ vyatta_config_commit-confirm ()
                                                --minutes=$minutes"
   eval "sudo sg vyattacfg \"$cmd\" "
   if [ $? = 0 ]; then
-    commit "$@"
+    vyatta_config_commit "$@"
   fi
 }
 
