@@ -298,6 +298,9 @@ sub new {
 
         my $path = "interfaces $type $dev";
         $path .= " $vifpath $vif" if $vif;
+        # add the vif 1 to multilink paths since they don't have vif interfaces
+        # denoted by <if>.<vif> and only allow 1 vif to be set
+        $path .= " vif 1" if ($dev =~ m/ml[\d]+$/); 
         $path .= " vrrp vrrp-group $vrid interface" if $vrid;
         $type = 'vrrp' if $vrid;
 
