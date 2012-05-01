@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.79) unstable; urgency=low
+
+  * Match from beginning of the line for multilink device
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 30 Apr 2012 17:05:46 -0700
+
 vyatta-cfg (0.99.78) unstable; urgency=low
 
   * Bugfix 8017:
