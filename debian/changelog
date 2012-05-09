@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.81) unstable; urgency=low
+
+  * Add functions to get calling terminal size to Vyatta::Misc
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 09 May 2012 08:50:29 -0700
+
 vyatta-cfg (0.99.80) unstable; urgency=low
 
   * Enable snmp support for vrrp
