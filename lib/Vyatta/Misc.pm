@@ -23,12 +23,15 @@ package Vyatta::Misc;
 use strict;
 
 require Exporter;
+require 'sys/ioctl.ph';
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
 		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
 		 isIpAddress is_ip_v4_or_v6 interface_description
 		 is_local_address is_primary_address get_ipnet_intf_hash
-                 isValidPortNumber);
+     isValidPortNumber get_terminal_size get_terminal_height 
+     get_terminal_width );
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
 		    getInterfacesIPadresses
 		    getPortRuleString
@@ -520,6 +523,30 @@ sub interface_description {
     chomp $description if $description;
 
     return $description;
+}
+
+# returns (rows, columns) for terminal size
+sub get_terminal_size {
+    my $winsize = '';
+    open(my $TTY, '>', '/dev/tty');
+    # undefined if output not going to terminal
+    return unless (ioctl($TTY, &TIOCGWINSZ, $winsize));
+    close($TTY);
+
+    my ($rows, $cols, undef, undef) = unpack('S4', $winsize);
+    return ($rows, $cols);
+}
+
+# return only terminal width
+sub get_terminal_width {
+   my ($rows, $cols) = get_terminal_size;
+   return $cols;
+}
+
+# return only terminal height
+sub get_terminal_height {
+   my ($rows, $cols) = get_terminal_size;
+   return $rows;
 }
 
 1;
