@@ -38,7 +38,7 @@ sub get_terminal_size {
 
 #Do SIOCGIFFLAGS ioctl in perl
 sub get_interface_flags {
-    my $self  = shift;
+    my $name  = shift;
 
     my $SIOCGIFFLAGS = &SIOCGIFFLAGS;
     die "SIOCGIFFLAGS not found"
@@ -47,7 +47,7 @@ sub get_interface_flags {
     socket (my $sock, AF_INET, SOCK_DGRAM, 0)
 	or die "open UDP socket failed: $!";
 
-    my $ifreq = pack('a16', $self->{name});
+    my $ifreq = pack('a16', $name);
     ioctl($sock, $SIOCGIFFLAGS, $ifreq)
 	or return; #undef
 
