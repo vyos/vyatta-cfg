@@ -23,9 +23,9 @@ use strict;
 use warnings;
 use Vyatta::Config;
 use Vyatta::Misc;
+use Vyatta::ioctl;
 use base 'Exporter';
 use Socket;
-require 'sys/ioctl.ph';
 
 our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK
 	          IFF_POINTOPOINT IFF_RUNNING IFF_NOARP
@@ -411,21 +411,8 @@ sub address {
 
 # Do SIOCGIFFLAGS ioctl in perl
 sub flags {
-    my $self  = shift;
-
-    my $SIOCGIFFLAGS = &SIOCGIFFLAGS;
-    die "SIOCGIFFLAGS not found"
-	unless defined($SIOCGIFFLAGS);
-
-    socket (my $sock, AF_INET, SOCK_DGRAM, 0)
-	or die "open UDP socket failed: $!";
-
-    my $ifreq = pack('a16', $self->{name});
-    ioctl($sock, $SIOCGIFFLAGS, $ifreq)
-	or return; #undef
-
-    my (undef, $flags) = unpack('a16s', $ifreq);
-    return $flags;
+  my $self = shift;
+  return Vyatta::ioctl::get_interface_flags($self->{name});
 }
 
 sub exists {

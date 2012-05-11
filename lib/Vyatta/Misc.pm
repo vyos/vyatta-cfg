@@ -21,9 +21,9 @@
 
 package Vyatta::Misc;
 use strict;
+use Vyatta::ioctl;
 
 require Exporter;
-require 'sys/ioctl.ph';
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
@@ -527,14 +527,7 @@ sub interface_description {
 
 # returns (rows, columns) for terminal size
 sub get_terminal_size {
-    my $winsize = '';
-    open(my $TTY, '>', '/dev/tty');
-    # undefined if output not going to terminal
-    return unless (ioctl($TTY, &TIOCGWINSZ, $winsize));
-    close($TTY);
-
-    my ($rows, $cols, undef, undef) = unpack('S4', $winsize);
-    return ($rows, $cols);
+  return Vyatta::ioctl::get_terminal_size();
 }
 
 # return only terminal width

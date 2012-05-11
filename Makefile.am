@@ -107,6 +107,7 @@ sbin_SCRIPTS  += scripts/vyatta-log-commit.pl
 share_perl5_DATA = lib/Vyatta/Config.pm
 share_perl5_DATA += lib/Vyatta/File.pm
 share_perl5_DATA += lib/Vyatta/Misc.pm
+share_perl5_DATA += lib/Vyatta/ioctl.pm
 share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
