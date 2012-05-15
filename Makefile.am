@@ -112,7 +112,6 @@ share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
 share_perl5_DATA += lib/Vyatta/ConfigLoad.pm
-share_perl5_DATA += lib/Vyatta/Keepalived.pm
 
 enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
