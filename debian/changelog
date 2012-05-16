@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.84) unstable; urgency=low
+
+  * Support for VTI.
+
+ -- Saurabh Mohan <saurabh@vyatta.com>  Wed, 16 May 2012 16:38:05 -0700
+
 vyatta-cfg (0.99.83) unstable; urgency=low
 
   * Move VRRP to its own package
