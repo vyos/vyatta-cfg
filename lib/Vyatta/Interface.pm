@@ -77,6 +77,7 @@ my %net_prefix = (
 		      vif  => ( 'cisco-hdlc vif', 'ppp vif',
 				'frame-relay vif' ), },
     '^tun[\d]+$'   => { path => 'tunnel' },
+    '^vti[\d]+$'   => { path => 'vti' },
     '^wlm[\d]+$'   => { path => 'wireless-modem' },
     '^peth[\d]+$'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
