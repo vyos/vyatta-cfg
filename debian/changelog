@@ -1,3 +1,41 @@
+vyatta-cfg (0.99.83) unstable; urgency=low
+
+  * Move VRRP to its own package
+  * Remove vrrp files from Makefile
+
+ -- John Southworth <john.southworth@vyatta.com>  Tue, 15 May 2012 20:46:31 -0700
+
+vyatta-cfg (0.99.82) unstable; urgency=low
+
+  * Bugfix 8079: fix require sys/ioctl.ph confilcts
+  * Fix variable use in last commit
+
+ -- John Southworth <john.southworth@vyatta.com>  Thu, 10 May 2012 18:21:43 -0700
+
+vyatta-cfg (0.99.81) unstable; urgency=low
+
+  * Add functions to get calling terminal size to Vyatta::Misc
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 09 May 2012 08:50:29 -0700
+
+vyatta-cfg (0.99.80) unstable; urgency=low
+
+  * Enable snmp support for vrrp
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 07 May 2012 18:06:06 -0700
+
+vyatta-cfg (0.99.79) unstable; urgency=low
+
+  * Match from beginning of the line for multilink device
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 30 Apr 2012 17:05:46 -0700
+
+vyatta-cfg (0.99.78) unstable; urgency=low
+
+  * Bugfix 8017:
+
+ -- John Southworth <john.southworth@vyatta.com>  Mon, 30 Apr 2012 16:41:23 -0700
+
 vyatta-cfg (0.99.77) unstable; urgency=low
 
   * Bugfix: 8057 fix call to commit in commit-confirm function
