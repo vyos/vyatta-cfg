@@ -249,7 +249,7 @@ sub vrrp_get_config {
     if (!defined $advert_int) {
 	$advert_int = 1;
     }
-    my $vmac_interface = $config->existsOrig("interface");
+    my $vmac_interface = $config->existsOrig("rfc3768-compatibility");
     if (!defined $vmac_interface) {
 	$vmac_interface = 0;
     }
