@@ -1,3 +1,10 @@
+vyatta-cfg (0.99.73+oxnard5) unstable; urgency=low
+
+  * Enable snmp support for vrrp
+  * Adjust config parameter for new config mode value
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 18 May 2012 10:39:02 -0700
+
 vyatta-cfg (0.99.73+oxnard4) unstable; urgency=low
 
   * Bugfix: 8057 fix call to commit in commit-confirm function
