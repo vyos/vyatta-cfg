@@ -1114,6 +1114,7 @@ static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean form
 	status = regexec(&myreg, left.cnt?
 			 left.vals[ii]:left.val,
 			 0, 0, 0);
+	regfree(&myreg);
 	if(status) {
 	  ret = FALSE;
 	  break;
