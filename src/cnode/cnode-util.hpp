@@ -27,7 +27,11 @@ public:
   typedef typename nodes_vec_type::iterator nodes_iter_type;
 
   TreeNode() : _parent(0) {}
-  virtual ~TreeNode() {}
+  virtual ~TreeNode() { 
+    for ( nodes_iter_type it = _child_nodes.begin(); it != _child_nodes.end(); ++it ) 
+      delete * it;
+    _child_nodes.clear();
+  }
 
   const nodes_vec_type& getChildNodes() const { return _child_nodes; }
   size_t numChildNodes() const {

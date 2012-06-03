@@ -1827,6 +1827,7 @@ Cstore::loadFile(const char *filename)
 
   // get the config tree from the file
   CfgNode *froot = cparse::parse_file(fin, *this);
+  fclose(fin);
   if (!froot) {
     output_user("Failed to parse specified config file\n");
     return false;
@@ -1842,6 +1843,7 @@ Cstore::loadFile(const char *filename)
   vector<Cpath> com_list;
   get_cmds_diff(aroot, *froot, del_list, set_list, com_list);
 
+  delete froot;
   // "apply" the changes to the working config
   for (size_t i = 0; i < del_list.size(); i++) {
     if (!deleteCfgPath(del_list[i])) {

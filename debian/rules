@@ -10,6 +10,7 @@ cfg_opts += --mandir=\$${prefix}/share/man
 cfg_opts += --infodir=\$${prefix}/share/info
 cfg_opts += CFLAGS="$(CFLAGS)"
 cfg_opts += LDFLAGS="-Wl,-z,defs"
+cfg_opts += CXXFLAGS="$(CXXFLAGS)"
 inst_opts := --sourcedir=debian/tmp
 
 clean:
