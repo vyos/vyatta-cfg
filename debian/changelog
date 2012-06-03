@@ -1,3 +1,9 @@
+vyatta-cfg (0.99.86) unstable; urgency=low
+
+  * Fix more load/commit memory leaks
+
+ -- John Southworth <john.southworth@vyatta.com>  Sun, 03 Jun 2012 10:33:53 -0700
+
 vyatta-cfg (0.99.85) unstable; urgency=low
 
   * Partial bugfix 8111
