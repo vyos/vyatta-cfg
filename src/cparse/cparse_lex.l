@@ -61,6 +61,18 @@ set_ret_str()
   str_ptr = str_buf;
 }
 
+static void
+free_str()
+{
+  free(str_buf);
+  free(out_buf);
+  node_deactivated = 0;
+  str_buf = NULL;
+  out_buf = NULL;
+  str_ptr = NULL;
+  str_buf_len = 0;
+}
+
 %}
 
 %%
@@ -98,6 +110,7 @@ set_ret_str()
     ++tmp;
   }
   cparse_lval.str = strdup(tmp);
+  free_str();
   BEGIN(INITIAL);
   return COMMENT;
 }
@@ -170,6 +183,7 @@ set_ret_str()
 <sQStr>\" {
   set_ret_str();
   cparse_lval.str = strdup(out_buf);
+  free_str();
   BEGIN(sValue);
   return VALUE;
 }

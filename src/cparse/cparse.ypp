@@ -49,6 +49,29 @@ static vector<CfgNode *> cur_path;
 static Cpath pcomps;
 static vector<bool> pcomp_is_value;
 
+static void 
+cparse_init()
+{
+  cstore_ = NULL; 
+  ndeact = 0;
+  ncomment = NULL;
+  nname = NULL;
+  nval = NULL;
+  node_map.clear();
+  pcomps.clear();
+  pcomp_is_value.clear();
+  cur_path.clear();
+  cur_node = NULL;
+}
+
+static void
+cparse_cleanup()
+{
+    delete cur_parent;
+    delete cur_node;
+    cparse_init();
+}
+
 static void
 add_node()
 {
@@ -100,6 +123,15 @@ add_node()
 }
 
 static void
+cleanup_node()
+{
+  free(nval); 
+  free(nname); 
+  free(ncomment); 
+  nval = ncomment = nname = NULL;
+}
+
+static void
 go_down()
 {
   cur_path.push_back(cur_parent);
@@ -147,17 +179,21 @@ forest:     /* empty */
 
 tree:       node {
               add_node();
+              cleanup_node();
             }
           | node {
               add_node();
             } LEFTB {
               go_down();
+              cleanup_node();
             } forest comment RIGHTB {
               go_up();
             }
 ;
 
 node:       nodec {
+              if (nval)
+                free(nval);
               nval = NULL;
             }
           | nodec VALUE {
@@ -166,6 +202,8 @@ node:       nodec {
 ;
 
 nodec:      NODE {
+              if (ncomment)
+                free(ncomment);
               ncomment = NULL;
               nname = $1.str;
               ndeact = $1.deactivated;
@@ -192,25 +230,19 @@ cparse::parse_file(FILE *fin, Cstore& cs)
 #endif // ENABLE_PARSER_TRACE
 
   // initial state
+  cparse_init();
   cparse_set_in(fin);
   cstore_ = &cs;
-  ndeact = 0;
-  ncomment = NULL;
-  nname = NULL;
-  nval = NULL;
-  node_map.clear();
-  pcomps.clear();
-  pcomp_is_value.clear();
-  cur_path.clear();
-  cur_node = NULL;
   cur_parent = new CfgNode(pcomps, nname, nval, ncomment, ndeact, cstore_);
 
   if (cparse_parse() != 0) {
     // parsing failed
+    cparse_cleanup();
     return NULL;
   }
   if (cur_path.size() > 0) {
     // didn't return to top-level => invalid
+    cparse_cleanup();
     return NULL;
   }
   return cur_parent;
@@ -219,10 +251,14 @@ cparse::parse_file(FILE *fin, Cstore& cs)
 CfgNode *
 cparse::parse_file(const char *fname, Cstore& cs)
 {
+  CfgNode *ret;
   FILE *fin = fopen(fname, "r");
   if (!fin) {
     return NULL;
   }
-  return parse_file(fin, cs);
+  ret = parse_file(fin, cs);
+  cparse_init();
+  fclose(fin);
+  return ret;
 }
 
