@@ -67,8 +67,10 @@ cparse_init()
 static void
 cparse_cleanup()
 {
-    delete cur_parent;
     delete cur_node;
+    free(nval); 
+    free(nname); 
+    free(ncomment); 
     cparse_init();
 }
 
