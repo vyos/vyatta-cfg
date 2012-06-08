@@ -1,3 +1,12 @@
+vyatta-cfg (0.99.73+oxnard6) unstable; urgency=low
+
+  * Bugfix 7267: make inodes allocate dynamically
+  * Partial bugfix 8111
+  * Fix more load/commit memory leaks
+  * Fix memory problem on bad config file
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 08 Jun 2012 14:40:23 -0700
+
 vyatta-cfg (0.99.73+oxnard5) unstable; urgency=low
 
   * Enable snmp support for vrrp
