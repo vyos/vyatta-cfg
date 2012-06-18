@@ -20,14 +20,23 @@
 package Vyatta::ioctl;
 
 use strict;
+use warnings;
 use Socket;
 use Socket6;
+
 require 'sys/ioctl.ph';
+
+our @EXPORT = qw(get_terminal_size get_interface_flags);
+use base qw(Exporter);
+
 
 # returns (rows, columns) for terminal size;
 sub get_terminal_size {
+    # undefined if not terminal attached
+    open(my $TTY, '>', '/dev/tty')
+	or return;
+
     my $winsize = '';
-    open(my $TTY, '>', '/dev/tty');
     # undefined if output not going to terminal
     return unless (ioctl($TTY, &TIOCGWINSZ, $winsize));
     close($TTY);
@@ -40,15 +49,11 @@ sub get_terminal_size {
 sub get_interface_flags {
     my $name  = shift;
 
-    my $SIOCGIFFLAGS = &SIOCGIFFLAGS;
-    die "SIOCGIFFLAGS not found"
-	unless defined($SIOCGIFFLAGS);
-
     socket (my $sock, AF_INET, SOCK_DGRAM, 0)
 	or die "open UDP socket failed: $!";
 
     my $ifreq = pack('a16', $name);
-    ioctl($sock, $SIOCGIFFLAGS, $ifreq)
+    ioctl($sock, &SIOCGIFFLAGS, $ifreq)
 	or return; #undef
 
     my (undef, $flags) = unpack('a16s', $ifreq);
