@@ -1,3 +1,11 @@
+vyatta-cfg (0.100.1) unstable; urgency=low
+
+  * Make indentation consistent
+  * More indentation cleanup
+  * Add new function to find hash of configured addresses
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Fri, 22 Jun 2012 15:50:12 -0700
+
 vyatta-cfg (0.99.88) unstable; urgency=low
 
   * ioctl interface improvements
