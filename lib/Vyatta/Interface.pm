@@ -101,22 +101,22 @@ sub is_uniq_address {
   my $ip = pop(@_);
   my @cfgifs = get_all_cfg_interfaces();
   my $config = new Vyatta::Config;
-  my %addr_hash = (); 
-  foreach my $intf ( @cfgifs ) { 
+  my %addr_hash = ();
+  foreach my $intf ( @cfgifs ) {
     my $addrs = [ ];
     my $path = "$intf->{'path'}";
     if ($path =~ /openvpn/) {
-      $addrs = [$config->listNodes("$path local-address")]; 
+      $addrs = [$config->listNodes("$path local-address")];
     } else {
       $addrs = [$config->returnValues("$path address")];
     }
     foreach my $addr ( @{$addrs} ){
       if (not exists $addr_hash{$addr}){
         $addr_hash{$addr} = { _intf => [ $intf->{name} ] };
-      } else { 
-        $addr_hash{$addr}->{_intf} = 
+      } else {
+        $addr_hash{$addr}->{_intf} =
            [ @{$addr_hash{$addr}->{_intf}}, $intf->{name} ];
-      }   
+      }
     }
   }
   return ((scalar @{$addr_hash{$ip}->{_intf}}) <= 1);
@@ -170,7 +170,7 @@ sub get_all_cfg_interfaces {
       }
     }
   }
-  
+
   # now special cases for pppo*/adsl
   for my $eth ($cfg->$vfunc('interfaces ethernet')) {
     for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
@@ -273,7 +273,7 @@ sub new {
 
     if ( $name =~ m/(\w+)\.(\d+)v(\d+)/ ){
         $dev = $1;
-        $vif = $2; 
+        $vif = $2;
         $vrid = $3;
     } elsif ( $name =~ m/(\w+)v(\d+)/ ) {
         $dev = $1;
@@ -301,7 +301,7 @@ sub new {
         $path .= " $vifpath $vif" if $vif;
         # add the vif 1 to multilink paths since they don't have vif interfaces
         # denoted by <if>.<vif> and only allow 1 vif to be set
-        $path .= " vif 1" if ($dev =~ m/^ml[\d]+$/); 
+        $path .= " vif 1" if ($dev =~ m/^ml[\d]+$/);
         $path .= " vrrp vrrp-group $vrid interface" if $vrid;
         $type = 'vrrp' if $vrid;
 
