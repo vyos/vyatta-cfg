@@ -49,15 +49,16 @@ use Socket6;
 # only works for ipv4
 #
 sub get_ipaddr_intf_hash {
-  my %config_ipaddrs = ();
-  my @lines = `ip addr show | grep 'inet '`;
-  chomp @lines;
-  foreach my $line (@lines) {
-    if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-        $config_ipaddrs{$1} = $2;
+    my %config_ipaddrs = ();
+    my @lines = `ip addr show | grep 'inet '`;
+    chomp @lines;
+    foreach my $line (@lines) {
+	if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+	    $config_ipaddrs{$1} = $2;
+	}
     }
-  }
-  return \%config_ipaddrs;
+
+    return \%config_ipaddrs;
 }
 
 #
@@ -71,8 +72,8 @@ sub get_ipnet_intf_hash {
     my %config_ipaddrs = ();
 
     open my $ipcmd, '-|'
-      or exec @args
-      or die "ip addr command failed: $!";
+	or exec @args
+	or die "ip addr command failed: $!";
 
     my $iface = "";
     while (<$ipcmd>) {
@@ -91,39 +92,39 @@ sub get_ipnet_intf_hash {
 
 # Check whether an address is the primary address on some interface
 sub is_primary_address {
-  my $ip_address = shift;
+    my $ip_address = shift;
 
-  my $ref = get_ipaddr_intf_hash();
-  my %hash = %{$ref};
-  if (!defined $hash{$ip_address}) {
+    my $ref = get_ipaddr_intf_hash();
+    my %hash = %{$ref};
+    if (!defined $hash{$ip_address}) {
+	return;
+    }
+
+    my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
+    chomp($line);
+    my $primary_address = undef;
+    if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+	$primary_address = $1;
+    }
+
+    return 1 if ($ip_address eq $primary_address);
     return;
-  }
-
-  my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
-  chomp($line);
-  my $primary_address = undef;
-  if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-    $primary_address = $1;
-  }
-
-  return 1 if ($ip_address eq $primary_address);
-  return;
 }
 
 # remove '/opt/vyatta/etc' from begining of config directory path
 sub get_short_config_path {
-  my $cfg_path = shift;
-  my $shortened_cfg_path = "";
-  $shortened_cfg_path = $cfg_path if defined $cfg_path;
-  $shortened_cfg_path =~ s/^\/opt\/vyatta\/etc//;
-  return $shortened_cfg_path;
+    my $cfg_path = shift;
+    my $shortened_cfg_path = "";
+    $shortened_cfg_path = $cfg_path if defined $cfg_path;
+    $shortened_cfg_path =~ s/^\/opt\/vyatta\/etc//;
+    return $shortened_cfg_path;
 }
 
 sub get_sysfs_value {
     my ( $intf, $name ) = @_;
 
     open( my $statf, '<', "/sys/class/net/$intf/$name" )
-      or die "Can't open statistics file /sys/class/net/$intf/$name";
+	or die "Can't open statistics file /sys/class/net/$intf/$name";
 
     my $value = <$statf>;
     chomp $value if defined $value;
@@ -183,12 +184,12 @@ sub generate_dhclient_intf_files {
 #  and wireless control interfaces
 sub getInterfaces {
     opendir( my $sys_class, '/sys/class/net' )
-      or die "can't open /sys/class/net: $!";
+	or die "can't open /sys/class/net: $!";
     my @interfaces = grep { ( !/^\./ ) && 
-			    ( $_ ne 'bonding_masters' ) &&
-			    ! ( $_ =~ '^mon.wlan\d$') &&
-			    ! ( $_ =~ '^wmaster\d+$')
-			  } readdir $sys_class;
+				( $_ ne 'bonding_masters' ) &&
+				! ( $_ =~ '^mon.wlan\d$') &&
+				! ( $_ =~ '^wmaster\d+$')
+    } readdir $sys_class;
     closedir $sys_class;
     return @interfaces;
 }
@@ -228,8 +229,8 @@ sub getIP {
     push @args, ('dev', $name) if $name;
 
     open my $ipcmd, '-|'
-      or exec @args
-      or die "ip addr command failed: $!";
+	or exec @args
+	or die "ip addr command failed: $!";
 
     <$ipcmd>;
     while (<$ipcmd>) {
@@ -252,7 +253,7 @@ my %type_hash = (
     'multicast'    => 'is_multicast',
     'pointtopoint' => 'is_pointtopoint',
     'loopback'     => 'is_loopback',
-);
+    );
 
 # getInterfacesIPadresses() returns IPv4 addresses for the interface type
 # possible type of interfaces : 'broadcast', 'pointtopoint', 'multicast', 'all'
@@ -267,7 +268,7 @@ sub getInterfacesIPadresses {
     if ( $type ne 'all' ) {
         $type_func = $type_hash{$type};
         die "Invalid type specified to retreive IP addresses for: $type"
-          unless $type_func;
+	    unless $type_func;
     }
 
     foreach my $name ( getInterfaces() ) {
@@ -338,7 +339,7 @@ sub isClusterIP {
     my @cluster_groups = $vc->listNodes('cluster group');
     foreach my $cluster_group (@cluster_groups) {
         my @services =
-          $vc->returnValues("cluster group $cluster_group service");
+	    $vc->returnValues("cluster group $cluster_group service");
         foreach my $service (@services) {
 	    if ($service =~ /\//) {
 		$service = substr( $service, 0, index( $service, '/' ));
@@ -393,9 +394,9 @@ sub isClusteringEnabled {
 sub isValidPortNumber {
     my $str = shift;
     return ( undef, "\"$str\" is not a valid port number" )
-      if ( !( $str =~ /^\d+$/ ) );
+	if ( !( $str =~ /^\d+$/ ) );
     return ( undef, "invalid port \"$str\" (must be between 1 and 65535)" )
-      if ( $str < 1 || $str > 65535 );
+	if ( $str < 1 || $str > 65535 );
     return ( 1, undef );
 }
 
@@ -408,14 +409,14 @@ sub isValidPortRange {
     my $str = shift;
     my $sep = shift;
     return ( undef, "\"$str\" is not a valid port range" )
-      if ( !( $str =~ /^(\d+)$sep(\d+)$/ ) );
+	if ( !( $str =~ /^(\d+)$sep(\d+)$/ ) );
     my ( $start, $end ) = ( $1, $2 );
     my ( $success, $err ) = isValidPortNumber($start);
     return ( undef, $err ) if ( !defined($success) );
     ( $success, $err ) = isValidPortNumber($end);
     return ( undef, $err ) if ( !defined($success) );
     return ( undef, "invalid port range ($end is not greater than $start)" )
-      if ( $end <= $start );
+	if ( $end <= $start );
     return ( 1, undef );
 }
 
@@ -428,13 +429,13 @@ sub isValidPortName {
     my $str   = shift;
     my $proto = shift;
     return ( undef, "\"\" is not a valid port name for protocol \"$proto\"" )
-      if ( $str eq '' );
+	if ( $str eq '' );
 
     my $port = getservbyname( $str, $proto );
     return ( 1, undef ) if $port;
 
     return ( undef,
-        "\"$str\" is not a valid port name for protocol \"$proto\"" );
+	     "\"$str\" is not a valid port name for protocol \"$proto\"" );
 }
 
 sub getPortRuleString {
@@ -474,13 +475,13 @@ sub getPortRuleString {
             }
         }
         if ($proto eq 'tcp_udp') {
-          ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
-          if (defined $success) {
-            # only do udp test if the tcp test was a success
-            ( $success, $err ) = isValidPortName( $port_spec, 'udp' )
-          }
+	    ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
+	    if (defined $success) {
+		# only do udp test if the tcp test was a success
+		( $success, $err ) = isValidPortName( $port_spec, 'udp' )
+	    }
         } else {
-          ( $success, $err ) = isValidPortName( $port_spec, $proto );
+	    ( $success, $err ) = isValidPortName( $port_spec, $proto );
         }
         if ( defined($success) ) {
             $num_ports += 1;
@@ -494,13 +495,13 @@ sub getPortRuleString {
     my $rule_str = '';
     if ( ( $num_ports > 0 ) && ( !$can_use_port ) ) {
         return ( undef,
-                "ports can only be specified when protocol is \"tcp\" "
-              . "or \"udp\" (currently \"$proto\")" );
+		 "ports can only be specified when protocol is \"tcp\" "
+		 . "or \"udp\" (currently \"$proto\")" );
     }
     if ( $num_ports > 15 ) {
         return ( undef,
-                "source/destination port specification only supports "
-              . "up to 15 ports (port range counts as 2)" );
+		 "source/destination port specification only supports "
+		 . "up to 15 ports (port range counts as 2)" );
     }
     if ( $num_ports > 1 ) {
         $rule_str = " -m multiport $negate --${prefix}ports ${port_str}";
@@ -527,19 +528,19 @@ sub interface_description {
 
 # returns (rows, columns) for terminal size
 sub get_terminal_size {
-  return Vyatta::ioctl::get_terminal_size();
+    return Vyatta::ioctl::get_terminal_size();
 }
 
 # return only terminal width
 sub get_terminal_width {
-   my ($rows, $cols) = get_terminal_size;
-   return $cols;
+    my ($rows, $cols) = get_terminal_size;
+    return $cols;
 }
 
 # return only terminal height
 sub get_terminal_height {
-   my ($rows, $cols) = get_terminal_size;
-   return $rows;
+    my ($rows, $cols) = get_terminal_size;
+    return $rows;
 }
 
 1;
