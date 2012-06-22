@@ -88,7 +88,7 @@ my %net_prefix = (
 );
 
 sub get_net_prefix {
-  return %net_prefix;
+    return %net_prefix;
 }
 
 # get list of interface types (only used in usage function)
@@ -99,107 +99,107 @@ sub interface_types {
 
 # check to see if an address is unique in the working configuration
 sub is_uniq_address {
-  my $ip = pop(@_);
-  my @cfgifs = get_all_cfg_interfaces();
-  my $config = new Vyatta::Config;
-  my %addr_hash = ();
-  foreach my $intf ( @cfgifs ) {
-    my $addrs = [ ];
-    my $path = "$intf->{'path'}";
-    if ($path =~ /openvpn/) {
-      $addrs = [$config->listNodes("$path local-address")];
-    } else {
-      $addrs = [$config->returnValues("$path address")];
+    my $ip = pop(@_);
+    my @cfgifs = get_all_cfg_interfaces();
+    my $config = new Vyatta::Config;
+    my %addr_hash = ();
+    foreach my $intf ( @cfgifs ) {
+	my $addrs = [ ];
+	my $path = "$intf->{'path'}";
+	if ($path =~ /openvpn/) {
+	    $addrs = [$config->listNodes("$path local-address")];
+	} else {
+	    $addrs = [$config->returnValues("$path address")];
+	}
+	foreach my $addr ( @{$addrs} ){
+	    if (not exists $addr_hash{$addr}){
+		$addr_hash{$addr} = { _intf => [ $intf->{name} ] };
+	    } else {
+		$addr_hash{$addr}->{_intf} =
+		    [ @{$addr_hash{$addr}->{_intf}}, $intf->{name} ];
+	    }
+	}
     }
-    foreach my $addr ( @{$addrs} ){
-      if (not exists $addr_hash{$addr}){
-        $addr_hash{$addr} = { _intf => [ $intf->{name} ] };
-      } else {
-        $addr_hash{$addr}->{_intf} =
-           [ @{$addr_hash{$addr}->{_intf}}, $intf->{name} ];
-      }
-    }
-  }
-  return ((scalar @{$addr_hash{$ip}->{_intf}}) <= 1);
+    return ((scalar @{$addr_hash{$ip}->{_intf}}) <= 1);
 }
 
 # get all configured interfaces (in active or working configuration)
 sub get_all_cfg_interfaces {
-  my ($in_active) = @_;
-  my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
+    my ($in_active) = @_;
+    my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
 
-  my $cfg = new Vyatta::Config;
-  my @ret_ifs = ();
-  for my $pfx (keys %net_prefix) {
-    my ($type, $vif) = ($net_prefix{$pfx}->{path}, $net_prefix{$pfx}->{vif});
-    my @vifs = (defined($vif)
-                ? ((ref($vif) eq 'ARRAY') ? @{$vif}
-                                            : ($vif))
-                  : ());
-    for my $tif ($cfg->$vfunc("interfaces $type")) {
-      push @ret_ifs, { 'name' => $tif, 'path' => "interfaces $type $tif" };
-      for my $vpath (@vifs) {
-        for my $vnum ($cfg->$vfunc("interfaces $type $tif $vpath")) {
-          push @ret_ifs, { 'name' => "$tif.$vnum",
-                           'path' => "interfaces $type $tif $vpath $vnum" };
-        }
-      }
+    my $cfg = new Vyatta::Config;
+    my @ret_ifs = ();
+    for my $pfx (keys %net_prefix) {
+	my ($type, $vif) = ($net_prefix{$pfx}->{path},
+			    $net_prefix{$pfx}->{vif});
+	my @vifs = (defined($vif)
+		    ? ((ref($vif) eq 'ARRAY') ? @{$vif}
+		       : ($vif))
+		    : ());
+	for my $tif ($cfg->$vfunc("interfaces $type")) {
+	    push @ret_ifs, { 'name' => $tif,
+			     'path' => "interfaces $type $tif" };
+	    for my $vpath (@vifs) {
+		for my $vnum ($cfg->$vfunc("interfaces $type $tif $vpath")) {
+		    push @ret_ifs, { 'name' => "$tif.$vnum",
+				     'path' => "interfaces $type $tif $vpath $vnum" };
+		}
+	    }
+	}
     }
-  }
-  # special case for vrrp
-  for my $eth ($cfg->$vfunc('interfaces ethernet')) {
-    for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vrrp vrrp-group")) {
-      push @ret_ifs, { 'name' => $eth."v".$vrid,
-                       'path' => "interfaces ethernet $eth vrrp vrrp-group $vrid interface" };
+    # special case for vrrp
+    for my $eth ($cfg->$vfunc('interfaces ethernet')) {
+	for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vrrp vrrp-group")) {
+	    push @ret_ifs, { 'name' => $eth."v".$vrid,
+			     'path' => "interfaces ethernet $eth vrrp vrrp-group $vrid interface" };
+	}
+	for my $vif ($cfg->$vfunc("interfaces ethernet $eth vif")) {
+	    for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vif $vif vrrp vrrp-group")) {
+		push @ret_ifs, { 'name' => $eth.".".$vif."v".$vrid,
+				 'path' => "interfaces ethernet $eth vif $vif vrrp vrrp-group $vrid interface" };
+	    }
+	}
     }
-    for my $vif ($cfg->$vfunc("interfaces ethernet $eth vif")) {
-      for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vif $vif vrrp vrrp-group")) {
-        push @ret_ifs, { 'name' => $eth.".".$vif."v".$vrid,
-                         'path' => "interfaces ethernet $eth vif $vif vrrp vrrp-group $vrid interface" };
-      }
+    for my $bond ($cfg->$vfunc('interfaces bonding')) {
+	for my $vrid ($cfg->$vfunc("interfaces bonding $bond vrrp vrrp-group")) {
+	    push @ret_ifs, { 'name' => $bond."v".$vrid,
+			     'path' => "interfaces bonding $bond vrrp vrrp-group $vrid interface" };
+	}
+	for my $vif ($cfg->$vfunc("interfaces bonding $bond vif")) {
+	    for my $vrid ($cfg->$vfunc("interfaces bonding $bond vif $vif vrrp vrrp-group")) {
+		push @ret_ifs, { 'name' => $bond.".".$vif."v".$vrid,
+				 'path' => "interfaces bonding $bond vif $vif vrrp vrrp-group $vrid interface" };
+	    }
+	}
     }
-  }
-  for my $bond ($cfg->$vfunc('interfaces bonding')) {
-    for my $vrid ($cfg->$vfunc("interfaces bonding $bond vrrp vrrp-group")) {
-      push @ret_ifs, { 'name' => $bond."v".$vrid,
-                       'path' => "interfaces bonding $bond vrrp vrrp-group $vrid interface" };
-    }
-    for my $vif ($cfg->$vfunc("interfaces bonding $bond vif")) {
-      for my $vrid ($cfg->$vfunc("interfaces bonding $bond vif $vif vrrp vrrp-group")) {
-        push @ret_ifs, { 'name' => $bond.".".$vif."v".$vrid,
-                         'path' => "interfaces bonding $bond vif $vif vrrp vrrp-group $vrid interface" };
-      }
-    }
-  }
 
-  # now special cases for pppo*/adsl
-  for my $eth ($cfg->$vfunc('interfaces ethernet')) {
-    for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
-      push @ret_ifs, { 'name' => "pppoe$ep",
-                       'path' => "interfaces ethernet $eth pppoe $ep" };
+    # now special cases for pppo*/adsl
+    for my $eth ($cfg->$vfunc('interfaces ethernet')) {
+	for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
+	    push @ret_ifs, { 'name' => "pppoe$ep",
+			     'path' => "interfaces ethernet $eth pppoe $ep" };
+	}
     }
-  }
-  for my $a ($cfg->$vfunc('interfaces adsl')) {
-    for my $p ($cfg->$vfunc("interfaces adsl $a pvc")) {
-      for my $t ($cfg->$vfunc("interfaces adsl $a pvc $p")) {
-        if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
-          # classical-ipoa or bridged-ethernet
-          push @ret_ifs,
-            { 'name' => $a,
-              'path' => "interfaces adsl $a pvc $p $t" };
-          next;
-        }
-        # pppo[ea]
-        for my $i ($cfg->$vfunc("interfaces adsl $a pvc $p $t")) {
-          push @ret_ifs,
-            { 'name' => "$t$i",
-              'path' => "interfaces adsl $a pvc $p $t $i" };
-        }
-      }
+    for my $a ($cfg->$vfunc('interfaces adsl')) {
+	for my $p ($cfg->$vfunc("interfaces adsl $a pvc")) {
+	    for my $t ($cfg->$vfunc("interfaces adsl $a pvc $p")) {
+		if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
+		    # classical-ipoa or bridged-ethernet
+		    push @ret_ifs, { 'name' => $a,
+				     'path' => "interfaces adsl $a pvc $p $t" };
+		    next;
+		}
+		# pppo[ea]
+		for my $i ($cfg->$vfunc("interfaces adsl $a pvc $p $t")) {
+		    push @ret_ifs, { 'name' => "$t$i",
+				     'path' => "interfaces adsl $a pvc $p $t $i" };
+		}
+	    }
+	}
     }
-  }
 
-  return @ret_ifs;
+    return @ret_ifs;
 }
 
 # Read ppp config to fine associated interface for ppp device
