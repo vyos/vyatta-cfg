@@ -58,31 +58,31 @@ use constant {
 #   path: configuration level below interfaces
 #   vif:  places to look for vif (if any)
 my %net_prefix = (
-    '^adsl[\d]+$'  => { path => 'adsl',
+    '^adsl\d+$'  => { path => 'adsl',
 		      vif => 'vif',    },
-    '^bond[\d]+$'  => { path => 'bonding',
+    '^bond\d+$'  => { path => 'bonding',
 		      vif => 'vif', },
-    '^bond[\d]+v[\d]+$' => { path => 'vrrp' },
-    '^br[\d]+$'    => { path => 'bridge',
+    '^bond\d+v\d+$' => { path => 'vrrp' },
+    '^br\d+$'    => { path => 'bridge',
 		      vif => 'vif' },
-    '^eth[\d]+$'   => { path => 'ethernet',
+    '^eth\d+$'   => { path => 'ethernet',
 		      vif => 'vif', },
-    '^eth[\d]+v[\d]+$' => { path => 'vrrp' },
-    '^eth[\d]+.[\d]+v[\d]+$' => { path => 'vrrp' },
+    '^eth\d+v\d+$' => { path => 'vrrp' },
+    '^eth\d+.\d+v\d+$' => { path => 'vrrp' },
     '^lo$'         => { path => 'loopback' },
-    '^ml[\d]+$'    => { path => 'multilink',
+    '^ml\d+$'    => { path => 'multilink',
 		      vif => 'vif', },
-    '^vtun[\d]+$'  => { path => 'openvpn' },
-    '^wan[\d]+$'   => { path => 'serial',
+    '^vtun\d+$'  => { path => 'openvpn' },
+    '^wan\d+$'   => { path => 'serial',
 		      vif  => ( 'cisco-hdlc vif', 'ppp vif',
 				'frame-relay vif' ), },
-    '^tun[\d]+$'   => { path => 'tunnel' },
-    '^vti[\d]+$'   => { path => 'vti' },
-    '^wlm[\d]+$'   => { path => 'wireless-modem' },
-    '^peth[\d]+$'  => { path => 'pseudo-ethernet',
+    '^tun\d+$'   => { path => 'tunnel' },
+    '^vti\d+$'   => { path => 'vti' },
+    '^wlm\d+$'   => { path => 'wireless-modem' },
+    '^peth\d+$'  => { path => 'pseudo-ethernet',
 		      vif => 'vif', },
-    '^wlan[\d]+$'  => { path => 'wireless', vif => 'vif' },
-    '^ifb[\d]+$'   => { path => 'input' },
+    '^wlan\d+$'  => { path => 'wireless', vif => 'vif' },
+    '^ifb\d+$'   => { path => 'input' },
     '^dp\d+p\d+p\d+$' => { path => 'dataplane', vif => 'vif' },
     '^dp\d+em\d+$' => { path => 'dataplane', vif => 'vif' },
 );
@@ -302,7 +302,7 @@ sub new {
         $path .= " $vifpath $vif" if $vif;
         # add the vif 1 to multilink paths since they don't have vif interfaces
         # denoted by <if>.<vif> and only allow 1 vif to be set
-        $path .= " vif 1" if ($dev =~ m/^ml[\d]+$/);
+        $path .= " vif 1" if ($dev =~ m/^ml\d+$/);
         $path .= " vrrp vrrp-group $vrid interface" if $vrid;
         $type = 'vrrp' if $vrid;
 
