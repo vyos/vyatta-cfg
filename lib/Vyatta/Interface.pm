@@ -97,33 +97,46 @@ sub interface_types {
     return @types;
 }
 
-# check to see if an address is unique in the working configuration
-sub is_uniq_address {
-    my $ip = pop(@_);
-    my @cfgifs = get_all_cfg_interfaces();
+# get map of current addresses on the system
+# returns reference to hash of form:
+#   ( "192.168.1.1" => { 'eth0', 'eth2' } )
+sub get_cfg_addresses {
     my $config = new Vyatta::Config;
-    my %addr_hash = ();
+    my @cfgifs = get_all_cfg_interfaces();
+    my %ahash;
+
     foreach my $intf ( @cfgifs ) {
-	my $addrs = [ ];
-	my $path = "$intf->{'path'}";
-	if ($path =~ /openvpn/) {
-	    $addrs = [$config->listNodes("$path local-address")];
+	my $name = $intf->{'name'};
+
+	# workaround openvpn wart
+	my @addrs;
+	$config->setLevel($intf->{'path'});
+	if ($name =~ /^vtun/) {
+	    @addrs = $config->listNodes('local-address');
 	} else {
-	    $addrs = [$config->returnValues("$path address")];
+	    @addrs = $config->returnValues('address');
 	}
-	foreach my $addr ( @{$addrs} ){
-	    if (not exists $addr_hash{$addr}){
-		$addr_hash{$addr} = { _intf => [ $intf->{name} ] };
+
+	foreach my $addr ( @addrs ){
+	    next if ($addr =~ /^dhcp/);
+
+	    # put interface into 
+	    my $aif = $ahash{$addr};
+	    if ($aif) {
+		push @{$aif}, $name;
 	    } else {
-		$addr_hash{$addr}->{_intf} =
-		    [ @{$addr_hash{$addr}->{_intf}}, $intf->{name} ];
+		$ahash{$addr} = [ $name ];
 	    }
 	}
     }
-    return ((scalar @{$addr_hash{$ip}->{_intf}}) <= 1);
+
+    return \%ahash;
 }
 
 # get all configured interfaces (in active or working configuration)
+# return a hash of:
+#   'name' => ethX
+#   'path' => "interfaces ethernet ethX"
 sub get_all_cfg_interfaces {
     my ($in_active) = @_;
     my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
