@@ -1,3 +1,9 @@
+vyatta-cfg (0.100.2) unstable; urgency=low
+
+  * Make dataplane matching less restrictive
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Tue, 26 Jun 2012 14:03:29 -0700
+
 vyatta-cfg (0.100.1) unstable; urgency=low
 
   * Make indentation consistent
