@@ -1236,10 +1236,13 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   DelPrioQueueT dpq;
   _get_commit_prio_queue(&proot, pq, dpq);
   size_t s = 0, f = 0;
+  
   while (!dpq.empty()) {
     PrioNode *p = dpq.top();
     if (!_commit_exec_prio_subtree(cs, p)) {
       // prio subtree failed
+      OUTPUT_USER("delete [ %s ] failed\n", 
+		  p->getCommitPath().to_string().c_str());
       ++f;
     } else {
       // succeeded
@@ -1251,6 +1254,8 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
     PrioNode *p = pq.top();
     if (!_commit_exec_prio_subtree(cs, p)) {
       // prio subtree failed
+      OUTPUT_USER("[[%s]] failed\n",
+		  p->getCommitPath().to_string().c_str());
       ++f;
     } else {
       // succeeded
