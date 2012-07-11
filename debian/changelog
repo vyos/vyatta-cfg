@@ -1,3 +1,11 @@
+vyatta-cfg (0.100.3) unstable; urgency=low
+
+  * Log node of commit failure
+  * Don't leak file descriptors to action
+  * Minor code cleanup
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Wed, 11 Jul 2012 12:23:27 -0700
+
 vyatta-cfg (0.100.2) unstable; urgency=low
 
   * Make dataplane matching less restrictive
