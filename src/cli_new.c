@@ -5,9 +5,19 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+/* Workaround for features present in current kernel but
+   missing from old includes (glibc) in Debian Squeeze */
+#ifndef O_CLOEXEC
+#define O_CLOEXEC	02000000
+#endif
+#ifndef F_DUPFD_CLOEXEC
+#define F_DUPFD_CLOEXEC	0x406
+#endif
+
+#include <sys/wait.h>
 #include <dirent.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -2043,9 +2053,9 @@ static int set_reference_environment(const char* var_reference,
 
 /*** output ***/
 
+#define OUT_FD_MIN	16
 int out_fd = -1;
 FILE *out_stream = NULL;
-
 int err_fd = -1;
 FILE *err_stream = NULL;
 int new_out_fd = -1;
@@ -2054,35 +2064,55 @@ int new_err_fd = -1;
 int
 initialize_output(const char *op)
 {
-  if ((out_fd = dup(STDOUT_FILENO)) == -1) {
-    return -1;
-  }
-  if ((out_stream = fdopen(out_fd, "a")) == NULL) {
-    return -1;
-  }
-  if ((err_fd = dup(STDOUT_FILENO)) == -1) {
-    return -1;
-  }
-  if ((err_stream = fdopen(err_fd, "a")) == NULL) {
-    return -1;
+  out_fd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, OUT_FD_MIN);
+  if (out_fd < 0)
+    goto err1;
+
+  out_stream = fdopen(out_fd, "w");
+  if (out_stream == NULL) {
+    close(out_fd);
+    goto err1;
   }
 
-  new_out_fd = open(LOGFILE_STDOUT, O_WRONLY | O_CREAT, 0660);
-  new_err_fd = open(LOGFILE_STDERR, O_WRONLY | O_CREAT, 0660);
-  if (new_out_fd == -1 || new_err_fd == -1) {
-    return -1;
+  err_fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, OUT_FD_MIN);
+  if (err_fd < 0)
+    goto err2;
+
+  err_stream = fdopen(err_fd, "w");
+  if (err_stream == NULL) {
+    close(err_fd);
+    goto err2;
   }
-  if ((lseek(new_out_fd, 0, SEEK_END) == ((off_t) -1))
-      || (lseek(new_err_fd, 0, SEEK_END) == ((off_t) -1))) {
-    return -1;
-  }
+
+  new_out_fd = open(LOGFILE_STDOUT,
+		    O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0660);
+  if (new_out_fd < 0)
+    goto err3;
+
+  new_err_fd = open(LOGFILE_STDERR,
+		    O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0660);
+  if (new_err_fd < 0)
+    goto err4;
+
   if ((dup2(new_out_fd, STDOUT_FILENO) == -1)
-      || (dup2(new_err_fd, STDERR_FILENO) == -1)) {
-    return -1;
-  }
+      || (dup2(new_err_fd, STDERR_FILENO) == -1))
+    goto err5;
 
   cli_operation_name = op;
   return 0;
+
+err5:
+  close(new_err_fd); new_err_fd = -1;
+err4:
+  close(new_out_fd); new_out_fd = -1;
+err3:
+  fclose(err_stream);
+  err_stream = NULL; err_fd = -1;
+err2:
+  fclose(out_stream);
+  out_stream = NULL; out_fd = -1;
+err1:
+  return -1;
 }
 
 int
@@ -2139,11 +2169,14 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
     int waited = 0;
     int prepend = 1;
 
+    close(pfd[1]);
+
     if (cpid == -1) {
+      close(pfd[0]);
+      fprintf(stderr, "fork failed\n");
       return -1;
     }
 
-    close(pfd[1]);
     while (1) {
       int sret;
       fd_set readfds;
@@ -2278,6 +2311,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
         /* XXX XXX XXX END emulating original "error" location handling */
         if (out_stream != NULL) {
           if (fwrite(out, count, 1, out_stream) != 1) {
+	    close(pfd[0]);
             return -1;
           }
           fflush(out_stream);
@@ -2311,6 +2345,7 @@ system_out(char *cmd, const char *prepend_msg, boolean eloc)
         || (ret = dup2(pfd[1], STDERR_FILENO)) < 0) {
       exit(1);
     }
+    close(pfd[1]);
     char *eargs[] = { "sh", "-c", cmd, NULL };
     execv("/bin/sh", eargs);
     return -1; /* should not get here */

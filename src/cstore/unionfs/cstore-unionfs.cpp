@@ -20,7 +20,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/mount.h>
 
 #include <cli_cstore.h>
@@ -701,7 +703,10 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
 bool
 UnionfsCstore::getCommitLock()
 {
-  int fd = creat(C_COMMIT_LOCK_FILE.c_str(), 0777);
+  int fd;
+
+  fd = open(C_COMMIT_LOCK_FILE.c_str(),
+	    O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC, 0666);
   if (fd < 0) {
     // should not happen since all commit processes should have write access
     output_internal("getCommitLock() failed to open lock file\n");
