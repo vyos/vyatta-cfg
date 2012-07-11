@@ -60,7 +60,7 @@ sys_cp(const char *src_file, const char *dst_file)
 }
 
 static inline void
-sys_umount_session()
+sys_umount_session(void)
 {
   if (umount(get_mdirp()) != 0) {
     perror("umount");
@@ -68,7 +68,7 @@ sys_umount_session()
 }
 
 static inline void
-sys_mount_session()
+sys_mount_session(void)
 {
   char mopts[MAX_LENGTH_DIR_PATH * 2];
   snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
@@ -81,16 +81,16 @@ sys_mount_session()
 void
 set_path(char *path, boolean config);
 
-struct VyattaNode*
+static struct VyattaNode*
 copy_vyatta_node(struct VyattaNode* vn);
 
-void
+static void
 get_term_data_values(GNode *node);
 
-void
+static void
 dlist_test_func(GQuark key_id,gpointer data,gpointer user_data);
 
-GNode*
+static GNode*
 insert_sibling_in_order(GNode *parent, GNode *child);
 
 static gboolean
@@ -119,7 +119,7 @@ piecewise_copy(GNode *root_node, boolean test_mode);
  *
  * This should allow a combined data/config tree
  **/
-char*
+static char *
 get_config_path(GNode *node)
 {
   if (node == NULL) {
@@ -168,7 +168,7 @@ get_config_path(GNode *node)
 /**
  *
  **/
-void
+static void
 retrieve_data(char* rel_data_path, GNode *node, const char* root, 
               NODE_OPERATION op)
 {
@@ -514,7 +514,7 @@ retrieve_data(char* rel_data_path, GNode *node, const char* root,
  *
  **/
 GNode*
-common_get_local_session_data()
+common_get_local_session_data(void)
 {
   //get root directory
   char *data_path = malloc(sizeof(char)*MAX_LENGTH_DIR_PATH);
@@ -541,7 +541,7 @@ common_get_local_session_data()
  *
  **/
 boolean
-value_exists(char *path)
+value_exists(const char *path)
 {
   char buf[MAX_LENGTH_DIR_PATH];
   sprintf(buf, "%s/%s",path,VAL_NAME);
@@ -887,7 +887,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
 /**
  *
  **/
-struct VyattaNode*
+static struct VyattaNode*
 copy_vyatta_node(struct VyattaNode* vn)
 {
   struct VyattaNode *new_vn = calloc(1,sizeof(struct VyattaNode));
@@ -919,7 +919,7 @@ copy_vyatta_node(struct VyattaNode* vn)
 /**
  *
  **/
-void
+static void
 get_term_data_values(GNode *node)
 {
   struct VyattaNode* vn = (struct VyattaNode*)node->data;
@@ -1020,7 +1020,7 @@ get_term_data_values(GNode *node)
 /**
  *
  **/
-void
+static void
 dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
 {
   if (key_id == 0) {
@@ -1079,7 +1079,7 @@ dlist_test_func(GQuark key_id,gpointer data,gpointer user_data)
 /**
  *
  **/
-GNode*
+static GNode*
 insert_sibling_in_order(GNode *parent, GNode *child)
 {
   //find alphabetical order to insert child into sibling

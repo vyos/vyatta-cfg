@@ -295,7 +295,7 @@ get_shell_command_output(const char *cmd, char *buf, unsigned int buf_size)
 #define COMMIT_CMD "/opt/vyatta/sbin/my_commit"
 
 void
-release_config_lock()
+release_config_lock(void)
 {
   unlink(LOCK_FILE);
   /* error ignored */
@@ -303,7 +303,7 @@ release_config_lock()
 
 /* try to clean up orphaned lock file. return -1 if failed */
 static int
-try_lock_cleanup()
+try_lock_cleanup(void)
 {
   char buf[128];
   char proc[128];
@@ -388,7 +388,7 @@ create_lock_file(int try_cleanup)
 }
 
 int
-get_config_lock()
+get_config_lock(void)
 {
   int fd = -1;
   FILE *lfile = NULL;
@@ -970,7 +970,7 @@ static int change_var_value(const char* var_reference,const char* value, int act
   return ret;
 }
 
-int system_out(char *command, const char *prepend_msg, boolean eloc);
+static int system_out(char *command, const char *prepend_msg, boolean eloc);
 
 /****************************************************
  check_syn:
@@ -978,7 +978,8 @@ int system_out(char *command, const char *prepend_msg, boolean eloc);
    returns TRUE if all checks are OK,
    returns FALSE if check fails.
 ****************************************************/
-static boolean check_syn_func(vtw_node *cur,const char *prepend_msg,boolean format,const char* func,int line)
+static boolean check_syn_func(vtw_node *cur, const char *prepend_msg,
+			      boolean format, const char* func, int line)
 {
   int status;
   int ret;
@@ -2126,7 +2127,7 @@ redirect_output()
 }
 
 int
-restore_output()
+restore_output(void)
 {
   if ((dup2(out_fd, STDOUT_FILENO) == -1)
       || (dup2(err_fd, STDERR_FILENO) == -1)) {
@@ -2135,7 +2136,7 @@ restore_output()
   return 0;
 }
 
-int
+static int
 system_out(char *cmd, const char *prepend_msg, boolean eloc)
 {
   int pfd[2];

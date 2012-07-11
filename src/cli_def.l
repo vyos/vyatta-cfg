@@ -89,7 +89,7 @@ append_str(char *text)
 }
 
 static int
-return_action()
+return_action(void)
 {
   *action_ptr = 0;
   yy_cli_parse_lval.strp = strdup(action_buf);
@@ -465,7 +465,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|enumera
 %%
 
 static void
-init_bufs()
+init_bufs(void)
 {
   action_buf = malloc(BUF_INCREMENT);
   action_ptr = action_buf;
@@ -482,7 +482,7 @@ init_bufs()
 }
 
 int
-yy_cli_def_lex()
+yy_cli_def_lex(void)
 {
   if (!action_buf) {
     init_bufs();

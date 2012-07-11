@@ -20,7 +20,7 @@ extern "C" {
 #define MAX_LENGTH_HELP_STR 4096
 
 boolean
-value_exists(char *path);
+value_exists(const char *path);
 
 struct PriData {
   unsigned long _pri;
