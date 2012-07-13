@@ -26,33 +26,25 @@
 # Description: Script to log active configuration commits to syslog.
 #
 # **** End License ****
-#
-
 
 use strict;
 use warnings;
-use lib '/opt/vyatta/share/perl5/';
 
-use Vyatta::Config;
 use Sys::Syslog qw(:standard :macros);
 use POSIX qw(ttyname);
 
 #
 # main
 #
-my $commit_status;
-my $cur_tty = ttyname(0);
-my $cur_user = getlogin() || getpwuid($<) || "unknown";
 my $status = $ENV{'COMMIT_STATUS'};
-
-chomp($cur_tty);
-chomp($cur_user);
-
-$commit_status = 'Successful' if ($status eq 'SUCCESS');
+my $commit_status = 'Successful' if ($status eq 'SUCCESS');
 #open log for logging commit details
 if (defined $commit_status) {
-  openlog("commit", "", LOG_USER);
-  syslog ("alert", "$commit_status change to active configuration by user $cur_user on $cur_tty");
-  closelog();
+    my $cur_tty = ttyname(0);
+    my $cur_user = getlogin() || getpwuid($<) || "unknown";
+
+    openlog("commit", "", LOG_USER);
+    syslog (LOG_NOTICE, "$commit_status change to active configuration by user $cur_user on $cur_tty");
+    closelog();
 }
 #end of script
