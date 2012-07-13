@@ -35,13 +35,14 @@ use lib '/opt/vyatta/share/perl5/';
 
 use Vyatta::Config;
 use Sys::Syslog qw(:standard :macros);
+use POSIX qw(ttyname);
 
 #
 # main
 #
 my $commit_status;
-my $cur_tty=`ps -o tty= |head -n1`;
-my $cur_user=`id -un`;
+my $cur_tty = ttyname(0);
+my $cur_user = getlogin() || getpwuid($<) || "unknown";
 my $status = $ENV{'COMMIT_STATUS'};
 
 chomp($cur_tty);
