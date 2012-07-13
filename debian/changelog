@@ -1,3 +1,11 @@
+vyatta-cfg (0.100.4) unstable; urgency=low
+
+  * Restore original lock file semantics
+  * Optimize commit logging
+  * Fix syslog level for commit messages
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Fri, 13 Jul 2012 15:22:59 -0700
+
 vyatta-cfg (0.100.3) unstable; urgency=low
 
   * Log node of commit failure
