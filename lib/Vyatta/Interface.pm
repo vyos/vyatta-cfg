@@ -84,6 +84,7 @@ my %net_prefix = (
     '^wlan\d+$'  => { path => 'wireless', vif => 'vif' },
     '^ifb\d+$'   => { path => 'input' },
     '^dp\d+'     => { path => 'dataplane', vif => 'vif' },
+    '^vsw\d+$'	 => { path => 'vswitch', vif => 'vif' },
 );
 
 sub get_net_prefix {
