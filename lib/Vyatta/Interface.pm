@@ -21,11 +21,11 @@ package Vyatta::Interface;
 
 use strict;
 use warnings;
-use Vyatta::Config;
+
 use Vyatta::Misc;
 use Vyatta::ioctl;
+use Vyatta::Config;
 use base 'Exporter';
-use Socket;
 
 our @EXPORT = qw(IFF_UP IFF_BROADCAST IFF_DEBUG IFF_LOOPBACK
 	          IFF_POINTOPOINT IFF_RUNNING IFF_NOARP
@@ -53,166 +53,159 @@ use constant {
     IFF_ECHO		=> 0x40000,	# echo sent packets
 };
 
-#
-# Mapping from name to attributes
-#   path: configuration level below interfaces
-#   vif:  places to look for vif (if any)
-my %net_prefix = (
-    '^adsl\d+$'  => { path => 'adsl',
-		      vif => 'vif',    },
-    '^bond\d+$'  => { path => 'bonding',
-		      vif => 'vif', },
-    '^bond\d+v\d+$' => { path => 'vrrp' },
-    '^br\d+$'    => { path => 'bridge',
-		      vif => 'vif' },
-    '^eth\d+$'   => { path => 'ethernet',
-		      vif => 'vif', },
-    '^eth\d+v\d+$' => { path => 'vrrp' },
-    '^eth\d+.\d+v\d+$' => { path => 'vrrp' },
-    '^lo$'         => { path => 'loopback' },
-    '^ml\d+$'    => { path => 'multilink',
-		      vif => 'vif', },
-    '^vtun\d+$'  => { path => 'openvpn' },
-    '^wan\d+$'   => { path => 'serial',
-		      vif  => ( 'cisco-hdlc vif', 'ppp vif',
-				'frame-relay vif' ), },
-    '^tun\d+$'   => { path => 'tunnel' },
-    '^vti\d+$'   => { path => 'vti' },
-    '^wlm\d+$'   => { path => 'wireless-modem' },
-    '^peth\d+$'  => { path => 'pseudo-ethernet',
-		      vif => 'vif', },
-    '^wlan\d+$'  => { path => 'wireless', vif => 'vif' },
-    '^ifb\d+$'   => { path => 'input' },
-    '^dp\d+'     => { path => 'dataplane', vif => 'vif' },
-    '^vsw\d+$'	 => { path => 'vswitch', vif => 'vif' },
-);
+# Build list of known interface types
+my $NETDEV    = '/opt/vyatta/etc/netdevice';
 
-sub get_net_prefix {
-    return %net_prefix;
+# Hash of interface types
+# ex: $net_prefix{"eth"} = "ethernet"
+my %net_prefix;
+
+sub parse_netdev_file {
+    my $filename = shift;
+
+    open (my $in, '<', $filename)
+	or return;
+
+    while (<$in>) {
+	chomp;
+
+	# remove text after # as comment
+	s/#.*$//;
+
+	my ($prefix, $type) = split;
+
+	# ignore blank lines or missing patterns
+	next unless defined($prefix) && defined($type);
+
+	$net_prefix{$prefix} = $type;
+    }
+    close $in;
 }
+
+# read /opt/vyatta/etc/netdevice
+parse_netdev_file($NETDEV);
+
+# look for optional package interfaces in /opt/vyatta/etc/netdevice.d
+my $dirname = $NETDEV . '.d';
+if (opendir(my $netd, $dirname)) {
+    foreach my $pkg (sort readdir $netd) {
+	parse_netdev_file($dirname . '/' . $pkg);
+    }
+    closedir $netd;
+}
+
 
 # get list of interface types (only used in usage function)
 sub interface_types {
-    my @types = map { $net_prefix{$_}{path} } keys %net_prefix;
-    return @types;
+    return values %net_prefix;
 }
 
-# get map of current addresses on the system
-# returns reference to hash of form:
-#   ( "192.168.1.1" => { 'eth0', 'eth2' } )
-sub get_cfg_addresses {
+# new interface description object
+sub new {
+    my $that  = shift;
+    my $name   = pop;
+    my $class = ref($that) || $that;
+
+    my ($vif, $vrid);
+    my $dev = $name;
+
+    # remove VRRP id suffix
+    if ($dev =~ /^(.*)v(\d+)$/) {
+	$dev = $1;
+	$vrid = $2;
+    }
+
+    # remove VLAN suffix
+    if ($dev =~ /^(.*)\.(\d+)/) {
+	$dev = $1;
+	$vif = $2;
+    }
+
+    return unless ($dev =~ /^([a-z]+)/);
+
+    # convert from prefix 'eth' to type 'ethernet'
+    my $type = $net_prefix{$1};
+    return unless $type;	# unknown network interface type
+
+    my $self = {
+	name => $name,
+	type => $type,
+	dev  => $dev,
+	vif  => $vif,
+	vrid => $vrid,
+    };
+    bless $self, $class;
+    return $self;
+}
+
+## Field accessors
+sub name {
+    my $self = shift;
+    return $self->{name};
+}
+
+sub path {
+    my $self = shift;
     my $config = new Vyatta::Config;
-    my @cfgifs = get_all_cfg_interfaces();
-    my %ahash;
 
-    foreach my $intf ( @cfgifs ) {
-	my $name = $intf->{'name'};
+    if ($self->{name} =~ /^(pppo[ae])(\d+)/) {
+	# For ppp need to look in config file to find where used
+	my $type = $1;
+	my $id = $2;
 
-	# workaround openvpn wart
-	my @addrs;
-	$config->setLevel($intf->{'path'});
-	if ($name =~ /^vtun/) {
-	    @addrs = $config->listNodes('local-address');
-	} else {
-	    @addrs = $config->returnValues('address');
+	my $intf = _ppp_intf($self->{name});
+	return unless $intf;
+
+	if ($type eq 'pppoe') {
+	    return "interfaces ethernet $intf pppoe $id";
 	}
 
-	foreach my $addr ( @addrs ){
-	    next if ($addr =~ /^dhcp/);
-
-	    # put interface into 
-	    my $aif = $ahash{$addr};
-	    if ($aif) {
-		push @{$aif}, $name;
-	    } else {
-		$ahash{$addr} = [ $name ];
-	    }
+	my $adsl = "interfaces adsl $intf pvc";
+	my $config = new Vyatta::Config;
+	foreach my $pvc ($config->listNodes($adsl)) {
+	    my $path = "$adsl $pvc $type $id";
+	    return $path if $config->exists($path);
 	}
     }
+    elsif ($self->{name} =~ /^(wan\d+)\.(\d+)/) {
+	# guesswork for wan devices
+	my $dev = $1;
+	my $vif = $2;
+	foreach my $type (qw(cisco-hdlc ppp frame-relay)) {
+	    my $path = "interfaces serial $dev $type vif $vif";
+	    return $path if $config->exists($path);
+	}
+    }
+    else {
+	# normal device
+	my $path = "interfaces $self->{type} $self->{dev}";
+	$path .= " vrrp $self->{vrid}" if $self->{vrid};
+	$path .= " vif $self->{vif}" if $self->{vif};
 
-    return \%ahash;
+	return $path;
+    }
+
+    return;     # undefined (not in config)
 }
 
-# get all configured interfaces (in active or working configuration)
-# return a hash of:
-#   'name' => ethX
-#   'path' => "interfaces ethernet ethX"
-sub get_all_cfg_interfaces {
-    my ($in_active) = @_;
-    my $vfunc = ($in_active ? 'listOrigNodes' : 'listNodes');
+sub type {
+    my $self = shift;
+    return $self->{type};
+}
 
-    my $cfg = new Vyatta::Config;
-    my @ret_ifs = ();
-    for my $pfx (keys %net_prefix) {
-	my ($type, $vif) = ($net_prefix{$pfx}->{path},
-			    $net_prefix{$pfx}->{vif});
-	my @vifs = (defined($vif)
-		    ? ((ref($vif) eq 'ARRAY') ? @{$vif}
-		       : ($vif))
-		    : ());
-	for my $tif ($cfg->$vfunc("interfaces $type")) {
-	    push @ret_ifs, { 'name' => $tif,
-			     'path' => "interfaces $type $tif" };
-	    for my $vpath (@vifs) {
-		for my $vnum ($cfg->$vfunc("interfaces $type $tif $vpath")) {
-		    push @ret_ifs, { 'name' => "$tif.$vnum",
-				     'path' => "interfaces $type $tif $vpath $vnum" };
-		}
-	    }
-	}
-    }
-    # special case for vrrp
-    for my $eth ($cfg->$vfunc('interfaces ethernet')) {
-	for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vrrp vrrp-group")) {
-	    push @ret_ifs, { 'name' => $eth."v".$vrid,
-			     'path' => "interfaces ethernet $eth vrrp vrrp-group $vrid interface" };
-	}
-	for my $vif ($cfg->$vfunc("interfaces ethernet $eth vif")) {
-	    for my $vrid ($cfg->$vfunc("interfaces ethernet $eth vif $vif vrrp vrrp-group")) {
-		push @ret_ifs, { 'name' => $eth.".".$vif."v".$vrid,
-				 'path' => "interfaces ethernet $eth vif $vif vrrp vrrp-group $vrid interface" };
-	    }
-	}
-    }
-    for my $bond ($cfg->$vfunc('interfaces bonding')) {
-	for my $vrid ($cfg->$vfunc("interfaces bonding $bond vrrp vrrp-group")) {
-	    push @ret_ifs, { 'name' => $bond."v".$vrid,
-			     'path' => "interfaces bonding $bond vrrp vrrp-group $vrid interface" };
-	}
-	for my $vif ($cfg->$vfunc("interfaces bonding $bond vif")) {
-	    for my $vrid ($cfg->$vfunc("interfaces bonding $bond vif $vif vrrp vrrp-group")) {
-		push @ret_ifs, { 'name' => $bond.".".$vif."v".$vrid,
-				 'path' => "interfaces bonding $bond vif $vif vrrp vrrp-group $vrid interface" };
-	    }
-	}
-    }
+sub vif {
+    my $self = shift;
+    return $self->{vif};
+}
 
-    # now special cases for pppo*/adsl
-    for my $eth ($cfg->$vfunc('interfaces ethernet')) {
-	for my $ep ($cfg->$vfunc("interfaces ethernet $eth pppoe")) {
-	    push @ret_ifs, { 'name' => "pppoe$ep",
-			     'path' => "interfaces ethernet $eth pppoe $ep" };
-	}
-    }
-    for my $a ($cfg->$vfunc('interfaces adsl')) {
-	for my $p ($cfg->$vfunc("interfaces adsl $a pvc")) {
-	    for my $t ($cfg->$vfunc("interfaces adsl $a pvc $p")) {
-		if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
-		    # classical-ipoa or bridged-ethernet
-		    push @ret_ifs, { 'name' => $a,
-				     'path' => "interfaces adsl $a pvc $p $t" };
-		    next;
-		}
-		# pppo[ea]
-		for my $i ($cfg->$vfunc("interfaces adsl $a pvc $p $t")) {
-		    push @ret_ifs, { 'name' => "$t$i",
-				     'path' => "interfaces adsl $a pvc $p $t $i" };
-		}
-	    }
-	}
-    }
+sub vrid {
+    my $self = shift;
+    return $self->{vrid};
+}
 
-    return @ret_ifs;
+sub physicalDevice {
+    my $self = shift;
+    return $self->{dev};
 }
 
 # Read ppp config to fine associated interface for ppp device
@@ -234,141 +227,6 @@ sub _ppp_intf {
     close $ppp;
 
     return $intf;
-}
-
-# Go path hunting to find ppp device
-sub ppp_path {
-    my $self = shift;
-
-    return unless ($self->{name} =~ /^(pppo[ae])(\d+)/);
-    my $type = $1;
-    my $id = $2;
-
-    my $intf = _ppp_intf($self->{name});
-    return unless $intf;
-
-    my $config = new Vyatta::Config;
-    if ($type eq 'pppoe') {
-       my $path = "interfaces ethernet $intf pppoe $id";
-       return $path if $config->exists($path);
-    }
-
-    my $adsl = "interfaces adsl $intf pvc";
-    foreach my $pvc ($config->listNodes($adsl)) {
-       my $path = "$adsl $pvc $type $id";
-       return $path if $config->exists($path);
-    }
-
-    return;
-}
-
-# new interface description object
-sub new {
-    my $that  = shift;
-    my $name  = pop;
-    my $class = ref($that) || $that;
-    my ($dev, $vif, $vrid);
-
-    # need argument to constructor
-    return unless $name;
-
-    # Special case for ppp devices
-    if ($name =~ /^(pppo[ae])(\d+)/) {
-	my $type = $1;
-
-	my $self = {
-	    name   => $name,
-	    type   => $type,
-	    dev    => $name,
-	};
-	bless $self, $class;
-	return $self;
-    }
-
-    if ( $name =~ m/(\w+)\.(\d+)v(\d+)/ ){
-        $dev = $1;
-        $vif = $2;
-        $vrid = $3;
-    } elsif ( $name =~ m/(\w+)v(\d+)/ ) {
-        $dev = $1;
-        $vrid = $2;
-    # Strip off vif from name
-    } elsif ( $name =~ m/(\w+)\.(\d+)/ ) {
-        $dev = $1;
-        $vif = $2;
-    } else {
-        $dev = $name;
-    }
-
-    foreach my $prefix (keys %net_prefix) {
-        next unless $dev =~ /$prefix/;
-        my $type    = $net_prefix{$prefix}{path};
-        my $vifpath = $net_prefix{$prefix}{vif};
-
-        # Interface name has vif, but this type doesn't support vif!
-        return if ( $vif && !$vifpath && !$vrid);
-
-        # Check path if given
-        return if ( $#_ >= 0 && join( ' ', @_ ) ne $type );
-
-        my $path = "interfaces $type $dev";
-        $path .= " $vifpath $vif" if $vif;
-        # add the vif 1 to multilink paths since they don't have vif interfaces
-        # denoted by <if>.<vif> and only allow 1 vif to be set
-        $path .= " vif 1" if ($dev =~ m/^ml\d+$/);
-        $path .= " vrrp vrrp-group $vrid interface" if $vrid;
-        $type = 'vrrp' if $vrid;
-
-	my $self = {
-	    name => $name,
-	    type => $type,
-	    path => $path,
-	    dev  => $dev,
-	    vif  => $vif,
-            vrid => $vrid
-	};
-
-        bless $self, $class;
-        return $self;
-    }
-
-    return; # nothing
-}
-
-## Field accessors
-sub name {
-    my $self = shift;
-    return $self->{name};
-}
-
-sub path {
-    my $self = shift;
-    my $path = $self->{path};
-
-    return $path if defined($path);
-
-    # Go path hunting to find ppp device
-    return ppp_path($self);
-}
-
-sub vif {
-    my $self = shift;
-    return $self->{vif};
-}
-
-sub vrid {
-    my $self = shift;
-    return $self->{vrid};
-}
-
-sub physicalDevice {
-    my $self = shift;
-    return $self->{dev};
-}
-
-sub type {
-    my $self = shift;
-    return $self->{type};
 }
 
 ## Configuration checks
@@ -489,6 +347,176 @@ sub description {
     my $self = shift;
 
     return interface_description($self->{name});
+}
+
+## Utility functions
+
+# enumerate vrrp slave devices
+sub get_vrrp_interfaces {
+    my ($cfg, $vfunc, $dev, $path) = @_;
+    my @ret_ifs;
+
+    foreach my $vrid ($cfg->$vfunc("$path vrrp vrrp-group")) {
+	my $vrdev = $dev."v".$vrid;
+	my $vrpath = "$path vrrp vrrp-group $vrid interface";
+
+	push @ret_ifs, { name => $vrdev,
+			 type => 'vrrp',
+			 path => $vrpath,
+	};
+    }
+
+    return @ret_ifs;
+}
+
+# enumerate vif devies
+sub get_vif_interfaces {
+    my ($cfg, $vfunc, $dev, $type, $path) = @_;
+    my @ret_ifs;
+
+    foreach my $vnum ($cfg->$vfunc("$path vif")) {
+	my $vifdev = "$dev.$vnum";
+	my $vifpath = "$path vif $vnum";
+	push @ret_ifs, { name => $vifdev,
+			 type => $type,
+			 path => $vifpath };
+	push @ret_ifs, get_vrrp_interfaces($cfg, $vfunc, $vifdev, $vifpath);
+    }
+
+    return @ret_ifs;
+}
+
+sub get_pppoe_interfaces {
+    my ($cfg, $vfunc, $dev, $path) = @_;
+    my @ret_ifs;
+
+    foreach my $ep ($cfg->$vfunc("$path pppoe")) {
+	my $pppdev = "pppoe$ep";
+	my $ppppath = "$path pppoe $ep";
+
+	push @ret_ifs, { name => $pppdev,
+			 type => 'pppoe',
+			 path => $ppppath };
+    }
+
+    return @ret_ifs;
+}
+
+# special cases for adsl
+sub get_adsl_interfaces {
+    my ($cfg, $vfunc) = @_;
+    my @ret_ifs;
+
+    for my $p ($cfg->$vfunc("interfaces adsl $a $a pvc")) {
+	for my $t ($cfg->$vfunc("interfaces adsl $a $a pvc $p")) {
+	    if ($t eq 'classical-ipoa' or $t eq 'bridged-ethernet') {
+		# classical-ipoa or bridged-ethernet
+		push @ret_ifs, { name => $a,
+				 type => 'adsl',
+				 path => "interfaces adsl $a $a pvc $p $t" };
+		next;
+	    }
+
+	    # pppo[ea]
+	    for my $i ($cfg->$vfunc("interfaces adsl $a $a pvc $p $t")) {
+		push @ret_ifs, { name => "$t$i",
+				 type => 'adsl-pppo[ea]',
+				 path => "interfaces adsl $a $a pvc $p $t $i" };
+	    }
+	}
+    }
+    return @ret_ifs;
+}
+
+# get all configured interfaces from configuration
+# parameter is virtual function (see Config.pm)
+#
+# return a hash of:
+#   name => ethX
+#   type => "ethernet"
+#   path => "interfaces ethernet ethX"
+#
+# Don't use this function directly, use wrappers below instead
+sub get_config_interfaces {
+    my $vfunc = shift;
+    my $cfg = new Vyatta::Config;
+    my @ret_ifs;
+
+    foreach my $type ($cfg->$vfunc("interfaces")) {
+	if ($type eq 'adsl') {
+	    push @ret_ifs, get_adsl_interfaces($cfg, $vfunc);
+	    next;
+	}
+
+	foreach my $dev ($cfg->$vfunc("interfaces $type")) {
+	    my $path = "interfaces $type $dev";
+
+	    push @ret_ifs, { name => $dev,
+			     type => $type,
+			     path => $path };
+	    push @ret_ifs, get_vrrp_interfaces($cfg, $vfunc, $dev, $path);
+	    push @ret_ifs, get_vif_interfaces($cfg, $vfunc, $dev, $type, $path);
+
+	    push @ret_ifs, get_pppoe_interfaces($cfg, $vfunc, $dev, $path)
+		if ($type eq 'ethernet');
+	}
+
+    }
+
+    return @ret_ifs;
+}
+
+# get array of hash for interfaces in working config
+sub get_interfaces {
+    return get_config_interfaces('listNodes');
+}
+
+# get array of hash for interfaces in configuration
+# when used outside of config mode.
+sub get_effective_interfaces {
+    return get_config_interfaces('listEffectiveNodes');
+}
+
+# get array of hash for interfaces in original config
+# only makes sense in configuration mode
+sub get_original_interfaces {
+    return get_config_interfaces('listOrigNodes');
+}
+
+# get map of current addresses on the system
+# returns reference to hash of form:
+#   ( "192.168.1.1" => { 'eth0', 'eth2' } )
+sub get_cfg_addresses {
+    my $config = new Vyatta::Config;
+    my @cfgifs = get_interfaces();
+    my %ahash;
+
+    foreach my $intf ( @cfgifs ) {
+	my $name = $intf->{'name'};
+
+	# workaround openvpn wart
+	my @addrs;
+	$config->setLevel($intf->{'path'});
+	if ($name =~ /^vtun/) {
+	    @addrs = $config->listNodes('local-address');
+	} else {
+	    @addrs = $config->returnValues('address');
+	}
+
+	foreach my $addr ( @addrs ){
+	    next if ($addr =~ /^dhcp/);
+
+	    # put interface into
+	    my $aif = $ahash{$addr};
+	    if ($aif) {
+		push @{$aif}, $name;
+	    } else {
+		$ahash{$addr} = [ $name ];
+	    }
+	}
+    }
+
+    return \%ahash;
 }
 
 1;
