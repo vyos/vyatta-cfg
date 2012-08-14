@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.0) unstable; urgency=low
+
+  * Rewrite interface prefix matching
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Tue, 14 Aug 2012 10:48:11 -0700
+
 vyatta-cfg (0.100.5) unstable; urgency=low
 
   * Add support for vswitch
