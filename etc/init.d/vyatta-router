@@ -173,6 +173,7 @@ mount_slash_config ()
 	fi
 	mount --bind /opt/vyatta/etc/config /config
     fi
+    chgrp -R ${GROUP} /config
 }
 
 start ()
