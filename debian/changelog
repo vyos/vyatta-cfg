@@ -1,3 +1,10 @@
+vyatta-cfg (0.101.1) unstable; urgency=low
+
+  * Bugfix 8183: Make sure files in /config are owned by the vyattacfg
+    group
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 22 Aug 2012 13:02:43 -0700
+
 vyatta-cfg (0.101.0) unstable; urgency=low
 
   * Rewrite interface prefix matching
