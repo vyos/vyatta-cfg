@@ -28,6 +28,8 @@ int cstore_validate_tmpl_path(void *handle, const char *path_comps[],
                               int num_comps, int validate_tags);
 int cstore_cfg_path_exists(void *handle, const char *path_comps[],
                            int num_comps);
+int cstore_cfg_path_exists_effective(void *handle, const char *path_comps[],
+                                     int num_comps);
 int cstore_cfg_path_deactivated(void *handle, const char *path_comps[],
                                 int num_comps, int in_active);
 

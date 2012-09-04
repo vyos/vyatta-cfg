@@ -62,6 +62,17 @@ cstore_cfg_path_exists(void *handle, const char *path_comps[], int num_comps)
 }
 
 int
+cstore_cfg_path_exists_effective(void *handle, const char *path_comps[], int num_comps)
+{
+  if (handle) {
+    Cpath p(path_comps, num_comps);
+    Cstore *cs = (Cstore *) handle;
+    return (cs->cfgPathEffective(p) ? 1 : 0);
+  }
+  return 0;
+}
+
+int
 cstore_get_var_ref(void *handle, const char *ref_str, vtw_type_e *type,
                    char **val, int from_active)
 {
