@@ -129,7 +129,6 @@ vyatta_config_commit ()
   /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1
   unset COMMIT_VIA
   unset COMMIT_COMMENT
-  [[ -x ${vyatta_sbindir}/vclient ]] && sudo ${vyatta_sbindir}/vclient -l
 }
 
 vyatta_config_commit-confirm ()
