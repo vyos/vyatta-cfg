@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.4) unstable; urgency=low
+
+  * Revert "If vclient exists, run it"
+
+ -- James Davidson <james.davidson@vyatta.com>  Tue, 04 Sep 2012 17:33:27 -0700
+
 vyatta-cfg (0.101.3) unstable; urgency=low
 
   * Add cstore_cfg_path_exists_effective C interface
