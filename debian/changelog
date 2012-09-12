@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.5) unstable; urgency=low
+
+  * Fix a few completion bugs
+
+ -- John Southworth <john.southworth@vyatta.com>  Wed, 12 Sep 2012 13:22:18 -0700
+
 vyatta-cfg (0.101.4) unstable; urgency=low
 
   * Revert "If vclient exists, run it"
