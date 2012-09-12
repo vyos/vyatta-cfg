@@ -694,7 +694,7 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
      *   "enumeration"
      *   "$VAR(@) in ..."
      */
-    if (def->getEnumeration() || def->getAllowed()) {
+    if (!exists_only && (def->getEnumeration() || def->getAllowed())) {
       /* do "enumeration" or "allowed".
        * note: emulate original implementation and set up COMP_WORDS and
        *       COMP_CWORD environment variables. these are needed by some
@@ -741,7 +741,7 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
        * shell into an array of values.
        */
       free(buf);
-    } else if (def->getActions(syntax_act)) {
+    } else if (!exists_only && def->getActions(syntax_act)) {
       // look for "self ref in values" from syntax
       const valstruct *vals
         = get_syntax_self_in_valstruct(def->getActions(syntax_act));

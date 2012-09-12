@@ -603,6 +603,9 @@ vyatta_do_complete ()
   if [ ${#COMPREPLY[@]} -eq 1 ]; then 
      COMPREPLY=( "${COMPREPLY[0]} " )
   fi
+  if [ -z "$cur" ];then
+    vyatta_do_help=true
+  fi
   # don't show help text if its the same word 
   # keeps completions from getting stuck
   if [ ${#vyatta_completions[@]} -eq 1 ] &&
@@ -676,7 +679,13 @@ vyatta_simple_complete ()
     echo "cur: $cur"
     echo "f_comps: ${f_comps[@]}"
   fi
-
+  
+  # show help text on first completion
+  # this solves the confusion of not displaying the
+  # non-completion values first
+  if [ -z "$cur" ]; then
+    vyatta_do_help=true
+  fi
   # don't show help text if its the same word 
   # keeps completions from getting stuck
   if [ ${#f_comps[@]} -eq 1 ] &&
@@ -820,6 +829,8 @@ vyatta_config_complete ()
   local current_word=$3
   local current_prefix=$2
   local comp_cword=$COMP_CWORD #mutable copy of COMP_CWORD so we can modify it for copy and rename
+  local -a tmp_comp_list
+  local exists_only=0
   
   if [[ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
@@ -875,6 +886,13 @@ vyatta_config_complete ()
   ### Expand top level commands
   command=$(vyatta_cfg_expand_top_level $command)
   local last_comp="${COMP_WORDS[COMP_CWORD]}"
+  if [[ "$command" == "show" ]] ||
+     [[ "$command" == "comment" ]] ||
+     [[ "$command" == "activate" ]] ||
+     [[ "$command" == "deactivate" ]] ||
+     [[ "$command" == "delete" ]]; then
+    exists_only=1
+  fi
 
   # handle "exit"
   if [[ "$command" == "exit" ]]; then
@@ -940,6 +958,13 @@ vyatta_config_complete ()
     echo -e "Last comp: $last_comp"
 
   fi
+
+  # only do this for the second comp
+  local nodeType="non-leaf"
+  if [[ ${#api_args[@]} -gt 2 ]]; then
+    nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]})
+  fi
+ 
   # Change the api arguments when we are dealing with a non last word
   # completion, this allows for completions to work when in the middle 
   # of a string without requiring the user input additional spaces.
@@ -960,7 +985,12 @@ vyatta_config_complete ()
     return
   fi
   vyatta_cfg_comp_help=$_cli_shell_api_comp_help
-  _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+  if [[ $exists_only == 1 ]] &&
+     [[ $nodeType == "tag" || $nodeType == "leaf"  || $nodeType == "multi" ]]; then
+    _get_help_text_helps=( );
+  else 
+    _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+  fi
   if $_cli_shell_api_last_comp_val; then
     # last component is a "value". need to do the following:
     #   use comp_help if exists
@@ -975,10 +1005,15 @@ vyatta_config_complete ()
       echo -e "Help String: ${_cli_shell_api_hstrs[@]}\n"
     fi
     _get_help_text_items=()
+    if [[ $exists_only == 1 ]] &&
+       [[ $nodeType == "tag" || $nodeType == "leaf"  || $nodeType == "multi" ]]; then
+      _get_help_text_items=()
+    else
     for ((i = 0; i < ${#_cli_shell_api_hitems[@]}; i++)); do
       local t=$(get_value_format_string "${_cli_shell_api_hitems[i]}")
       _get_help_text_items+=("$t")
     done
+    fi
     vyatta_completions=()
     for ((i = 0; i < ${#_cli_shell_api_comp_values[@]}; i++)); do
       if [[ -z "$current_prefix" ]] \
@@ -987,8 +1022,12 @@ vyatta_config_complete ()
       elif [[ -z "$last_comp" ]] \
            || [[ "${_cli_shell_api_comp_values[i]}" = "$current_prefix"* ]]; then
         vyatta_completions+=("${_cli_shell_api_comp_values[i]}")
+        if ! is_elem_of ${_cli_shell_api_comp_values[i]} _get_help_text_items; then
+          tmp_comp_list+=("${_cli_shell_api_comp_values[i]}")
+        fi
       fi
     done
+    _get_help_text_items+=( $(printf "%s\n" "${tmp_comp_list[@]}" | sort -u) )
   else
     _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
     vyatta_completions=( "${_cli_shell_api_comp_values[@]}" )
