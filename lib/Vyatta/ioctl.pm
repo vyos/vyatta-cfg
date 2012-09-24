@@ -24,7 +24,10 @@ use warnings;
 use Socket;
 use Socket6;
 
-require 'sys/ioctl.ph';
+{
+    local $^W = 0;
+    require 'sys/ioctl.ph';
+}
 
 our @EXPORT = qw(get_terminal_size get_interface_flags);
 use base qw(Exporter);

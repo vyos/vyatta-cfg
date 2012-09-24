@@ -21,7 +21,6 @@
 
 package Vyatta::Misc;
 use strict;
-use Vyatta::ioctl;
 
 require Exporter;
 
