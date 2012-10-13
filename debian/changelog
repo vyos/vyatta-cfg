@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7) unstable; urgency=low
+
+  * new branch
+
+ -- John Southworth <john.southworth@vyatta.com>  Fri, 12 Oct 2012 19:46:46 -0700
+
 vyatta-cfg (0.101.6) unstable; urgency=low
 
   * Fix get_terminal_size redefinition warning
