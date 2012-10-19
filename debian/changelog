@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.8) unstable; urgency=low
+
+  * Add support for overlayfs and start using it
+
+ -- James Davidson <james.davidson@vyatta.com>  Fri, 19 Oct 2012 13:49:59 -0700
+
 vyatta-cfg (0.101.7) unstable; urgency=low
 
   * new branch
