@@ -9,8 +9,11 @@ etc_shell_leveldir = $(sysconfdir)/shell/level
 dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
 enumdir = $(datadir)/enumeration
 
-AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
-AM_CXXFLAGS = -I src -Wall -Werror
+if USE_OVERLAYFS
+USE_OVERLAYFS = -DUSE_OVERLAYFS=1
+endif
+AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include $(USE_OVERLAYFS)
+AM_CXXFLAGS = -I src -Wall -Werror $(USE_OVERLAYFS)
 AM_CXXFLAGS += -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c

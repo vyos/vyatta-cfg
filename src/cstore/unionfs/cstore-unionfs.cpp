@@ -1477,14 +1477,26 @@ bool
 UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                         const FsPath& mdir)
 {
-  string mopts = "dirs=";
+  const char *fstype;
+  string mopts;
+
+#ifdef USE_OVERLAYFS
+  fstype = "overlayfs";
+  mopts = "upperdir=";
+  mopts += rwdir.path_cstr();
+  mopts += ",lowerdir=";
+  mopts += rdir.path_cstr();
+#else
+  fstype = "unionfs";
+  mopts = "dirs=";
   mopts += rwdir.path_cstr();
   mopts += "=rw:";
   mopts += rdir.path_cstr();
   mopts += "=ro";
-  if (mount("unionfs", mdir.path_cstr(), "unionfs", 0, mopts.c_str()) != 0) {
-    output_internal("union mount failed [%s][%s]\n",
-                    strerror(errno), mdir.path_cstr());
+#endif
+  if (mount(fstype, mdir.path_cstr(), fstype, 0, mopts.c_str()) != 0) {
+    output_internal("union mount failed [%s][%s][%s]\n",
+                    strerror(errno), mdir.path_cstr(), mopts.c_str());
     return false;
   }
   return true;

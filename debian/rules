@@ -8,6 +8,7 @@ cfg_opts += --libdir=/usr/lib
 cfg_opts += --includedir=/usr/include
 cfg_opts += --mandir=\$${prefix}/share/man
 cfg_opts += --infodir=\$${prefix}/share/info
+cfg_opts += --enable-overlayfs
 cfg_opts += CFLAGS="$(CFLAGS)"
 cfg_opts += LDFLAGS="-Wl,-z,defs"
 cfg_opts += CXXFLAGS="$(CXXFLAGS)"

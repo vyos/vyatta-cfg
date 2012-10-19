@@ -71,9 +71,20 @@ static inline void
 sys_mount_session(void)
 {
   char mopts[MAX_LENGTH_DIR_PATH * 2];
-  snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
+  const char *fstype;
+  const char *moptfmt;
+  int local_errno;
+
+#ifdef USE_OVERLAYFS
+  fstype = "overlayfs";
+  moptfmt = "upperdir=%s,lowerdir=%s";
+#else
+  fstype = "unionfs";
+  moptfmt = "dirs=%s=rw:%s=ro";
+#endif
+  snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, moptfmt,
            get_cdirp(), get_adirp());
-  if (mount("unionfs", get_mdirp(), "unionfs", 0, mopts) != 0) {
+  if (mount(fstype, get_mdirp(), fstype, 0, mopts) != 0) {
     perror("mount");
   }
 }
