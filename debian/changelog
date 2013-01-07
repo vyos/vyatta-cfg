@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7+daisy2) unstable; urgency=low
+
+  * Fix compiler warnings
+
+ -- James Davidson <james.davidson@vyatta.com>  Mon, 07 Jan 2013 09:35:44 -0800
+
 vyatta-cfg (0.101.7+daisy1) unstable; urgency=low
 
   * create daisy branch
