@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <sys/time.h>
 #include <string.h>
-
+#include <glib-object.h>  /* g_type_init */
 
 void recurse(char *cur_dir,FILE *out);
 

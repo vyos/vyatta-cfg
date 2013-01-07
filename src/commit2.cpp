@@ -5,7 +5,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <sys/time.h>
-#include <glib-2.0/glib.h>
+#include <glib-object.h>  /* g_type_init */
 #include "common/common.h"
 #include "cli_path_utils.h"
 
@@ -28,8 +28,6 @@ boolean g_print_error_location_all = FALSE;
 boolean g_old_print_output = FALSE;
 
 #define g_num_actions 5
-
-extern "C" void g_type_init();
 
 // this uses the vtw_act_type enum
 const int ActionOrder[g_num_actions] = {
