@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.9) unstable; urgency=low
+
+  * Fix compiler warnings
+
+ -- James Davidson <james.davidson@vyatta.com>  Tue, 08 Jan 2013 15:44:57 -0800
+
 vyatta-cfg (0.101.8) unstable; urgency=low
 
   * Add support for overlayfs and start using it
