@@ -38,7 +38,7 @@ use POSIX qw(ttyname);
 #
 my $status = $ENV{'COMMIT_STATUS'};
 my $commit_status;
-$commmit_status = 'Successful' if ($status eq 'SUCCESS');
+$commit_status = 'Successful' if ($status eq 'SUCCESS');
 #open log for logging commit details
 if (defined $commit_status) {
     my $cur_tty = ttyname(0);
