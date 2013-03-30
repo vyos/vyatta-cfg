@@ -1,3 +1,10 @@
+vyatta-cfg (0.101.10) unstable; urgency=low
+
+  * commit_log: fix questionable code
+  * fix last typo
+
+ -- Stephen Hemminger <shemming@brocade.com>  Fri, 29 Mar 2013 17:22:30 -0700
+
 vyatta-cfg (0.101.9) unstable; urgency=low
 
   * Fix compiler warnings
