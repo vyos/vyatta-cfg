@@ -618,6 +618,15 @@ sub isTagNode {
   return (defined($href) and $href->{tag});
 }
 
+## isMultiNode("path")
+# whether specified path is a "multi leaf node", i.e., multi-value node.
+sub isMultiNode {
+  my ($self, $path) = @_;
+  my $href = $self->parseTmplAll($path, 1);
+  return (defined($href) and !$href->{is_value} and $href->{type}
+          and $href->{multi});
+}
+
 ## isLeafNode("path")
 # whether specified path is a "leaf node", i.e., single-/multi-value node.
 sub isLeafNode {
