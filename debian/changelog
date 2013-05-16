@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7+daisy3) unstable; urgency=low
+
+  * Add isMultiNode perl CLI API
+
+ -- James Davidson <james.davidson@vyatta.com>  Thu, 16 May 2013 13:11:14 -0700
+
 vyatta-cfg (0.101.7+daisy2) unstable; urgency=low
 
   * Fix compiler warnings
