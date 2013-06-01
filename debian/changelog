@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7+daisy4) unstable; urgency=low
+
+  * allow optional dependency on vyatta-unicast
+
+ -- Robert Bays <robert@vyatta.com>  Sat, 01 Jun 2013 16:40:16 -0700
+
 vyatta-cfg (0.101.7+daisy3) unstable; urgency=low
 
   * Add isMultiNode perl CLI API
