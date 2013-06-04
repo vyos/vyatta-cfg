@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7+daisy5) unstable; urgency=low
+
+  * update init file to require vyatta-unicast
+
+ -- Robert Bays <robert@vyatta.com>  Mon, 03 Jun 2013 17:54:06 -0700
+
 vyatta-cfg (0.101.7+daisy4) unstable; urgency=low
 
   * allow optional dependency on vyatta-unicast
