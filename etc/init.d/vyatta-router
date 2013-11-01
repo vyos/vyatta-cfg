@@ -178,7 +178,7 @@ mount_slash_config ()
 
 start ()
 {
-    log_action_begin_msg "Mounting Vyatta Config"
+    log_action_begin_msg "Mounting VyOS Config"
     # ensure the vyatta_configdir supports a large number of inodes since
     # the config hierarchy is often inode-bound (instead of size).
     # impose a minimum and then scale up dynamically with the actual size
@@ -194,7 +194,7 @@ start ()
 
     mount_slash_config
 
-    log_daemon_msg "Starting Vyatta router"
+    log_daemon_msg "Starting VyOS router"
     disabled migrate || migrate_bootfile
     for s in ${subinit[@]} ; do
 	if ! disabled $s; then 
@@ -217,7 +217,7 @@ start ()
 stop()
 {
     local -i status=0
-    log_daemon_msg "Stopping Vyatta router"
+    log_daemon_msg "Stopping VyOS router"
     for ((i=${#sub_inits[@]} - 1; i >= 0; i--)) ; do
 	s=${subinit[$i]}
 	log_progress_msg $s
