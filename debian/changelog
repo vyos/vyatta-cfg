@@ -1,3 +1,9 @@
+vyatta-cfg (0.101.7+daisy6) unstable; urgency=low
+
+  * Replace s/Vyatta/VyOS/ in init script
+
+ -- Daniil Baturin <daniil@baturin.org>  Fri, 01 Nov 2013 21:42:32 +0100
+
 vyatta-cfg (0.101.7+daisy5) unstable; urgency=low
 
   * update init file to require vyatta-unicast
