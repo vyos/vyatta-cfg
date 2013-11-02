@@ -66,23 +66,6 @@ disabled () {
 
 # if necessary, provide initial config
 init_bootfile () {
-    if [ -b /dev/fd0 ] && [ ! -d /media/floppy/config ]
-    then
-        [ -d /media/floppy ] || mkdir -p /media/floppy
-
-	# This mount will try ext2 or fat format
-	# and it will fail if no floppy present
-	# Note: no good way to test for floppy present without causing I/O error
-	mount /dev/fd0 /media/floppy \
-	    -o sync,dirsync,noexec,nodev,noatime,nodiratime,nosuid 2>/dev/null
-    fi
-
-    if [ -d /media/floppy/config ]; then
-	mount -o bind /media/floppy/config /opt/vyatta/etc/config
-	mkdir -p /config
-	mount -o bind /media/floppy/config /config
-    fi
-
     if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
 			    $BOOTFILE >&/dev/null; then
 	CURTIME=$(date +%F-%H%M%S)
