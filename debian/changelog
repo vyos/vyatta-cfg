@@ -1,3 +1,19 @@
+vyatta-cfg (0.102.0+hydrogen2) unstable; urgency=low
+
+  * Remove support for /config on punched card^W^W floppy drive
+  * Remove some XORP-related checks.
+  * Some more missed Vyatta occurences.
+  * Rename novyatta-$foo kernel command line option to no-vyos-$foo
+  * Add kernel commandline option to boot with specific config.
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 03 Nov 2013 18:27:50 +0100
+
+vyatta-cfg (0.102.0+hydrogen1) unstable; urgency=low
+
+  * Fix branch name
+
+ -- Daniil Baturin <daniil@baturin.org>  Fri, 01 Nov 2013 21:44:26 +0100
+
 vyatta-cfg (0.101.7+daisy7) unstable; urgency=low
 
   * Force release
