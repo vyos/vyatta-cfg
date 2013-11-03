@@ -5,8 +5,8 @@
 # Required-Stop:     $syslog $time $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Vyatta Router
-# Description:       Debian init script for the Vyatta Router
+# Short-Description: VyOS Router
+# Description:       Debian init script for the VyOS Router
 ### END INIT INFO
 # **** License ****
 # This program is free software; you can redistribute it and/or modify
@@ -193,7 +193,7 @@ stop()
 	let status\|=$?
     done
     log_end_msg $status
-    log_action_begin_msg "Un-mounting Vyatta Config"
+    log_action_begin_msg "Un-mounting VyOS Config"
     umount ${vyatta_configdir}
     log_action_end_msg $?
 }
