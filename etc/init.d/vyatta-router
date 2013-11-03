@@ -38,6 +38,18 @@ declare action=$1; shift
 
 declare -x BOOTFILE=$vyatta_sysconfdir/config/config.boot
 
+# If vyos-config= boot option is present, use that file instead
+VYOS_CONFIG=$(cat /proc/cmdline | grep -Eo '\bvyos-config=(\S+)\b' /proc/cmdline | awk -F'=' '{print $2}')
+
+if [ ! -z "$VYOS_CONFIG" ]; then
+    if [ -r "$VYOS_CONFIG" ]; then
+        echo "Config selected manually: $VYOS_CONFIG"
+        declare -x BOOTFILE="$VYOS_CONFIG"
+    else
+        echo "WARNING: Could not read selected config file, using default!"
+    fi
+fi
+
 declare -a subinit
 declare -a all_subinits=(
     rl-system
