@@ -51,13 +51,9 @@ else
     for s in ${all_subinits[@]} ; do
 	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
     done
-    if [ -x ${vyatta_sbindir}/rtrmgr.init ] ; then
-	subinit+=( rtrmgr )
-	GROUP=xorp
-    else
-	GROUP=vyattacfg
-    fi
 fi
+
+GROUP=vyattacfg
 
 # check if bootup of this portion is disabled
 disabled () {
@@ -66,12 +62,7 @@ disabled () {
 
 # if necessary, provide initial config
 init_bootfile () {
-    if [ -f $BOOTFILE ] && grep -q '/\*XORP Configuration File, v1.0\*/' \
-			    $BOOTFILE >&/dev/null; then
-	CURTIME=$(date +%F-%H%M%S)
-	mv $BOOTFILE $BOOTFILE.pre-glendale.$CURTIME
-    fi
-    if [ ! -r $BOOTFILE ] ; then
+   if [ ! -r $BOOTFILE ] ; then
 	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
 	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
         else
@@ -80,12 +71,6 @@ init_bootfile () {
 
 	chgrp ${GROUP} $BOOTFILE
 	chmod 660 $BOOTFILE
-    fi
-
-    if grep -q -x 'rtrmgr {' $BOOTFILE ; then
-        ## remove the unnecessary and potentially conflicting
-        ## config-directory statement (i.e. /mnt/floppy vs. /media/floppy)
-	sed -i '/^rtrmgr {$/,/^}$/d' $BOOTFILE
     fi
 }
 
