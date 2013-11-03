@@ -57,7 +57,7 @@ GROUP=vyattacfg
 
 # check if bootup of this portion is disabled
 disabled () {
-    grep -q -w novyatta-$1 /proc/cmdline
+    grep -q -w no-vyos-$1 /proc/cmdline
 }
 
 # if necessary, provide initial config
