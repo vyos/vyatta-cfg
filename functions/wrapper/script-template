@@ -1,0 +1,166 @@
+#!/bin/vbash
+#
+# Set up aliases and functions for running Vyatta commands from scripts
+#
+# Copyright (C) 2012 Vyatta, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Authors: John Southworth, Daniil Baturin
+#
+# Usage: source /opt/vyatta/etc/functions/script-template
+
+export _OFR_CONFIGURE='ok'
+source /etc/bash_completion.d/vyatta-cfg
+unset _OFR_CONFIGURE
+
+shopt -s expand_aliases
+
+SBIN_PATH=/opt/vyatta/sbin
+BIN_PATH=/opt/vyatta/bin
+
+API=/bin/cli-shell-api
+
+# "pipe" functions
+count ()
+{
+  wc -l
+}
+
+match ()
+{
+  grep -E -e "$1"
+}
+
+no-match ()
+{
+  grep -E -v -e "$1"
+}
+
+no-more ()
+{
+  cat
+}
+
+function vyatta_configure()
+{
+  session_env=$($API getSessionEnv $PPID)
+  eval $session_env
+  $API setupSession
+  echo $session_env
+}
+
+function list()
+{
+   local -a expanded_api_args
+   local -a args=( "$@" )
+   local path='/opt/vyatta/share/vyatta-cfg/templates'
+   vyatta_config_expand_compwords show "${args[@]}"
+   for elem in "${expanded_api_args[@]:1}"; do
+     path+="/$elem"
+   done
+   if [[ ! -f $path/node.def ]]; then
+     return 1
+   fi
+   if grep -q -e 'tag:' "$path/node.def"; then
+     echo $($API listEffectiveNodes "${expanded_api_args[@]:1}")
+   elif grep -q -e 'multi:' "$path/node.def"; then
+     echo $($API returnEffectiveValues "${expanded_api_args[@]:1}")  
+   else
+     echo $($API returnEffectiveValue "${expanded_api_args[@]:1}")  
+   fi
+}
+
+function vyatta_exit_configure ()
+{
+  $API teardownSession
+  echo -n 'export -n VYATTA_CONFIG_TMP; '
+  echo -n 'export -n VYATTA_CHANGES_ONLY_DIR; '
+  echo -n 'export -n VYATTA_ACTIVE_CONFIGURATION_DIR; '
+  echo -n 'export -n VYATTA_TEMPLATE_LEVEL; '
+  echo -n 'export -n VYATTA_CONFIG_TEMPLATE; '
+  echo -n 'export -n VYATTA_TEMP_CONFIG_DIR; '
+  echo -n 'export -n VYATTA_EDIT_LEVEL; '
+}
+
+function load ()
+{
+  if [[ $# -eq 0 ]]; then
+    echo -e "You must provide a file name to load the config from"
+    return 1
+  fi 
+
+  # don't load if there are uncommitted changes.
+  if $API sessionChanged; then
+    echo "Cannot load: configuration modified."
+    echo "Commit or discard the changes before loading a config file."
+    return 1
+  fi
+  # return to top level.
+  reset_edit_level
+  ${vyatta_sbindir}/vyatta-load-config.pl "$@"
+} 
+
+function save ()
+{
+  if [[ $# -eq 0 ]]; then
+    echo -e "You must provide a file name to save the config to"
+    return 1
+  fi 
+  if $API sessionChanged; then
+    echo -e "Warning: you have uncommitted changes that will not be saved.\n"
+  fi
+  # return to top level.
+  reset_edit_level
+  # transform individual args into quoted strings
+  local arg=''
+  local save_cmd="${vyatta_sbindir}/vyatta-save-config.pl"
+  for arg in "$@"; do
+    save_cmd+=" '$arg'"
+  done
+  eval "sudo sg vyattacfg \"umask 0002 ; $save_cmd\""
+  $API unmarkSessionUnsaved
+} 
+
+function reset_edit_level ()
+{
+  edit_env=$($API getEditResetEnv)
+  eval $edit_env
+  return $?
+} 
+
+function edit ()
+{
+  edit_env=$($API getEditEnv "$@")
+  eval $edit_env
+}
+
+function top ()
+{
+  if $API editLevelAtRoot; then
+    echo "Already at the top level"
+    return 0
+  fi
+
+  # go to the top level.
+  reset_edit_level
+}
+
+function up ()
+{
+  edit_env=$($API getEditUpEnv "$@")
+  eval $edit_env
+}
+
+alias configure='eval $(vyatta_configure)'
+alias exit='eval $(vyatta_exit_configure)'

@@ -23,6 +23,9 @@ logrotate_DATA = etc/logrotate.d/vyatta-config-logs
 interpdir = $(datadir)/vyatta-cfg/functions/interpreter/
 interp_DATA = functions/interpreter/vyatta-cfg-run
 
+wrapperdir = /opt/vyatta/etc/functions/
+wrapper_DATA = functions/wrapper/script-template
+
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
 
