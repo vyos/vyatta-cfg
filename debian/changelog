@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+hydrogen3) unstable; urgency=low
+
+  * Bug #25: Add template for running conf and op mode commands
+
+ -- Daniil Baturin <daniil@baturin.org>  Sat, 16 Nov 2013 14:59:58 +0100
+
 vyatta-cfg (0.102.0+hydrogen2) unstable; urgency=low
 
   * Remove support for /config on punched card^W^W floppy drive
