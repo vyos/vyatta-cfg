@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos1+helium1) unstable; urgency=low
+
+  * Add missing build dependencies.
+
+ -- Daniil Baturin <daniil@baturin.org>  Sat, 15 Feb 2014 15:55:05 +0100
+
 vyatta-cfg (0.102.0+hydrogen3) unstable; urgency=low
 
   * Bug #25: Add template for running conf and op mode commands
