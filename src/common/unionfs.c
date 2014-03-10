@@ -62,9 +62,21 @@ sys_cp(const char *src_file, const char *dst_file)
 static inline void
 sys_umount_session(void)
 {
+#ifdef USE_UNIONFSFUSE
+  char umountcmd[MAX_LENGTH_DIR_PATH * 2];
+  const char *fusermount_call;
+  const char *umountfmt;
+  fusermount_call = "/usr/bin/fusermount -u ";
+  umountfmt = "%s %s";
+  snprintf(umountcmd, MAX_LENGTH_DIR_PATH * 4, umountfmt, fusermount_call, get_mdirp());
+  if (system(umountcmd) != 0) {
+    perror("umount");
+  }
+#else
   if (umount(get_mdirp()) != 0) {
     perror("umount");
   }
+#endif
 }
 
 static inline void

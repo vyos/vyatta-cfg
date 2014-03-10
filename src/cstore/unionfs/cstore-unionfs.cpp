@@ -1511,11 +1511,23 @@ UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
 bool
 UnionfsCstore::do_umount(const FsPath& mdir)
 {
+#ifdef USE_UNIONFSFUSE
+    string umount_cmd = "/usr/bin/fusermount -u ";
+    umount_cmd += mdir.path_cstr();
+
+    if (system(umount_cmd.c_str()) != 0)
+    {
+      output_internal("union umount failed [%s][%s]\n",
+                      strerror(errno), mdir.path_cstr());
+      return(false);
+    }
+#else
   if (umount(mdir.path_cstr()) != 0) {
     output_internal("union umount failed [%s][%s]\n",
                     strerror(errno), mdir.path_cstr());
     return false;
   }
+#endif
   return true;
 }
 
