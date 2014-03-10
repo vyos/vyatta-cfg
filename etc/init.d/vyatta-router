@@ -50,6 +50,17 @@ if [ ! -z "$VYOS_CONFIG" ]; then
     fi
 fi
 
+# Nothing will work without unionfs-fuse
+# In squeeze fuse.conf is not world readable by default,
+# ensure it's readable and includes "user_allow_other"
+# for correct config operations.
+# XXX: Is there a better way to do that?
+echo "user_allow_other" > /etc/fuse.conf
+chmod 644 /etc/fuse.conf
+
+# XXX: And a better way to do this? There should be.
+chmod 777 /dev/fuse
+
 declare -a subinit
 declare -a all_subinits=(
     rl-system
