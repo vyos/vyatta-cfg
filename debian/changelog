@@ -1,3 +1,13 @@
+vyatta-cfg (0.102.0+vyos1+helium2) unstable; urgency=low
+
+  * Import and adapt Kim Hagen's changes for union-fs support.
+  * Some dirty workarounds to get unionfs-fuse to work.
+  * fusermount in squeeze is not executable for non-members of fuse, fix
+    it at boot.
+  * Add umount functions for unionfs-fuse.
+
+ -- Daniil Baturin <daniil@baturin.org>  Mon, 10 Mar 2014 04:26:39 +0100
+
 vyatta-cfg (0.102.0+vyos1+helium1) unstable; urgency=low
 
   * Add missing build dependencies.
