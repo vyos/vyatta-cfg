@@ -26,6 +26,7 @@ Depends: sed (>= 4.1.5),
  curl,
  libsocket6-perl,
  libvyatta-cfg1 (=${binary:Version}),
+ unionfs-fuse,
  ${perl:Depends}, ${shlibs:Depends}
 Replaces: vyatta-cfg-firewall, 
  vyatta-cfg-quagga

@@ -29,6 +29,12 @@ AC_ARG_ENABLE([nostrip],
 	[include -nostrip option during packaging]),
 	[NOSTRIP=-nostrip], [NOSTRIP=])
 
+AC_ARG_ENABLE([unionfsfuse],
+	AC_HELP_STRING([--enable-unionfsfuse],
+	[use unionfsfuse instead of unionfs (default is no)]),
+	[enable_unionfsfuse=yes], [enable_unionfsfuse=no])
+AM_CONDITIONAL([USE_UNIONFSFUSE], [test "$enable_unionfsfuse" != no])
+
 AC_CONFIG_FILES(
 	[Makefile]
 	[perl_dmod/Makefile]

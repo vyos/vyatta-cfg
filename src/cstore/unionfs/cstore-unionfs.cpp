@@ -1477,6 +1477,23 @@ bool
 UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                         const FsPath& mdir)
 {
+#ifdef USE_UNIONFSFUSE
+  string mopts = "/usr/bin/unionfs-fuse ";
+  mopts += "-o cow -o allow_other ";
+  mopts += rwdir.path_cstr();
+  mopts += "=RW:";
+  mopts += rdir.path_cstr();
+  mopts += "=RO";
+  mopts += " ";
+  mopts += mdir.path_cstr();
+
+  if (system(mopts.c_str()) != 0)
+  {
+    output_internal("union mount failed [%s][%s][%s]\n",
+                    strerror(errno), mdir.path_cstr(), mopts.c_str());
+    return false;
+  }
+#else
   string mopts = "dirs=";
   mopts += rwdir.path_cstr();
   mopts += "=rw:";
@@ -1487,6 +1504,7 @@ UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                     strerror(errno), mdir.path_cstr());
     return false;
   }
+#endif
   return true;
 }
 

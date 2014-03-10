@@ -70,12 +70,26 @@ sys_umount_session(void)
 static inline void
 sys_mount_session(void)
 {
+#ifdef USE_UNIONFSFUSE
+  char mopts[MAX_LENGTH_DIR_PATH * 2];
+  const char *fstype;
+  const char *moptfmt;
+  int local_errno;
+  fstype = "/usr/bin/unionfs-fuse -o cow -o allow_other";
+  moptfmt = "%s %s=RW:%s=RO %s";
+  snprintf(mopts, MAX_LENGTH_DIR_PATH * 4, moptfmt,
+         fstype, get_cdirp(), get_adirp(), get_mdirp());
+  if (system(mopts) != 0) {
+    perror("system");
+  }
+#else
   char mopts[MAX_LENGTH_DIR_PATH * 2];
   snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
            get_cdirp(), get_adirp());
   if (mount("unionfs", get_mdirp(), "unionfs", 0, mopts) != 0) {
     perror("mount");
   }
+#endif
 }
 
 void
