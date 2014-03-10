@@ -60,6 +60,7 @@ chmod 644 /etc/fuse.conf
 
 # XXX: And a better way to do this? There should be.
 chmod 777 /dev/fuse
+chmod go+rx /usr/bin/fusermount
 
 declare -a subinit
 declare -a all_subinits=(
