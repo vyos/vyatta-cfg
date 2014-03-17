@@ -121,7 +121,7 @@ sub new {
 	$vif = $2;
     }
 
-    return unless ($dev =~ /^([a-z]+)/);
+    return unless ($dev =~ /^(l2tpeth|[a-z]+)/);
 
     # convert from prefix 'eth' to type 'ethernet'
     my $type = $net_prefix{$1};
