@@ -1,3 +1,12 @@
+vyatta-cfg (0.102.0+vyos1+helium3) unstable; urgency=low
+
+  [ higebu ]
+  * Add support for l2tpv3
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 06 Apr 2014 13:45:53 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium2) unstable; urgency=low
 
   * Import and adapt Kim Hagen's changes for union-fs support.
