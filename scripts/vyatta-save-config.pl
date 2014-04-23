@@ -121,27 +121,36 @@ fsync $save;
 close $save;
 
 if ($mode eq 'url') {
-  my $rc = system("curl -# -T $url_tmp_file $save_file");
-  if ($proto eq 'scp' && ($rc >> 8) == 51){
+
+  my $rc = 0;
+  if ($proto eq 'scp' ){
       $save_file =~ m/scp:\/\/(.*?)\//;
       my $host = $1;
-      if ($host =~ m/.*@(.*)/) {
-        $host = $1;
+      my $user = getpwuid($<);
+      if ($host =~ m/(.*)@(.*)/) {
+        $user = $1;
+        $host = $2;
       }
-      my $rsa_key = `ssh-keyscan -t rsa $host 2>/dev/null`;
-      print "The authenticity of host '$host' can't be established.\n";
-      my $fingerprint = `ssh-keygen -lf /dev/stdin <<< \"$rsa_key\" | awk {' print \$2 '}`;
-      chomp $fingerprint;
-      print "RSA key fingerprint is $fingerprint.\n";
-      if (prompt("Are you sure you want to continue connecting (yes/no) [Yes]? ", -tynd=>"y")) {
-          mkdir "~/.ssh/";
-          open(my $known_hosts, ">>", "$ENV{HOME}/.ssh/known_hosts") 
-            or die "Cannot open known_hosts: $!";
-          print $known_hosts "$rsa_key\n";
-          close($known_hosts);
-          $rc = system("curl -# -T $url_tmp_file $save_file");
-          print "\n";
-      }
+
+      $rc = system("curl -u $user -# -T $url_tmp_file $save_file");
+      if( $rc >> 8 == 51 ){
+	my $rsa_key = `ssh-keyscan -t rsa $host 2>/dev/null`;
+	print "The authenticity of host '$host' can't be established.\n";
+	my $fingerprint = `ssh-keygen -lf /dev/stdin <<< \"$rsa_key\" | awk {' print \$2 '}`;
+	chomp $fingerprint;
+	print "RSA key fingerprint is $fingerprint.\n";
+	if (prompt("Are you sure you want to continue connecting (yes/no) [Yes]? ", -tynd=>"y")) {
+	    mkdir "$ENV{HOME}/.ssh/",0700 unless -d "$ENV{HOME}/.ssh";
+	    open(my $known_hosts, ">>", "$ENV{HOME}/.ssh/known_hosts")
+	      or die "Cannot open known_hosts: $!";
+	    print $known_hosts "$rsa_key\n";
+	    close($known_hosts);
+	    $rc = system("curl -u $user -# -T $url_tmp_file $save_file");
+	    print "\n";
+	}
+     }
+  } else {
+    $rc = system("curl -# -T $url_tmp_file $save_file");
   }
   system("rm -f $url_tmp_file");
   if ($rc) {
