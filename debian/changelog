@@ -1,3 +1,15 @@
+vyatta-cfg (0.102.0+hydrogen4) unstable; urgency=low
+
+  [ Daniil Baturin ]
+  * Add missing build dependencies.
+
+  [ Hiroyuki Sato ]
+  * Bug #180 save config using scp fails.
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 27 Apr 2014 02:25:35 +0200
+
 vyatta-cfg (0.102.0+hydrogen3) unstable; urgency=low
 
   * Bug #25: Add template for running conf and op mode commands
