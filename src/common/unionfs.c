@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
+#include <sys/wait.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <glib-2.0/glib.h>
@@ -17,6 +18,10 @@ boolean g_debug;
 
 extern vtw_path m_path;
 extern vtw_path t_path;
+
+pid_t pid;
+int status;
+int commpipe[2];
 
 /*** functions for filesystem operations ***/
 /* these functions replace the system() invocations that were a major source
@@ -63,14 +68,34 @@ static inline void
 sys_umount_session(void)
 {
 #ifdef USE_UNIONFSFUSE
-  char umountcmd[MAX_LENGTH_DIR_PATH * 2];
-  const char *fusermount_call;
-  const char *umountfmt;
-  fusermount_call = "/usr/bin/fusermount -u ";
-  umountfmt = "%s %s";
-  snprintf(umountcmd, MAX_LENGTH_DIR_PATH * 4, umountfmt, fusermount_call, get_mdirp());
-  if (system(umountcmd) != 0) {
-    perror("umount");
+  const char *fusermount_path, *fusermount_prog;
+  const char *fusermount_umount;
+
+  fusermount_path = "/usr/bin/fusermount";
+  fusermount_prog = "fusermount";
+  fusermount_umount = "-u";
+
+  if(pipe(commpipe)){
+    fprintf(stderr,"Pipe error!\n");
+    perror("pipe");
+  }
+
+  if((pid = fork()) == -1) {
+    perror("pid");
+  }
+
+  if(pid) {
+    dup2(commpipe[1],1);
+    close(commpipe[0]);
+    setvbuf(stdout,(char*)NULL,_IONBF,0);
+    wait(&status);
+  }
+  else {
+    dup2(commpipe[0],0);
+    close(commpipe[1]);
+    if (execl(fusermount_path, fusermount_prog, fusermount_umount, get_mdirp(), NULL) != 0) {
+      perror("execl");
+    }
   }
 #else
   if (umount(get_mdirp()) != 0) {
@@ -84,15 +109,41 @@ sys_mount_session(void)
 {
 #ifdef USE_UNIONFSFUSE
   char mopts[MAX_LENGTH_DIR_PATH * 2];
-  const char *fstype;
+  const char *fusepath, *fuseprog;
+  const char *fuseoptinit;
+  const char *fuseopt1, *fuseopt2;
   const char *moptfmt;
-  int local_errno;
-  fstype = "/usr/bin/unionfs-fuse -o cow -o allow_other";
-  moptfmt = "%s %s=RW:%s=RO %s";
-  snprintf(mopts, MAX_LENGTH_DIR_PATH * 4, moptfmt,
-         fstype, get_cdirp(), get_adirp(), get_mdirp());
-  if (system(mopts) != 0) {
-    perror("system");
+
+  fusepath = "/usr/bin/unionfs-fuse";
+  fuseprog = "unionfs-fuse";
+  fuseoptinit = "-o";
+  fuseopt1 = "cow";
+  fuseopt2 = "allow_other";
+  moptfmt = "%s=RW:%s=RO";
+
+  if(pipe(commpipe)){
+    fprintf(stderr,"Pipe error!\n");
+    perror("pipe");
+  }
+
+  if((pid = fork()) == -1) {
+    perror("pid");
+  }
+
+  if(pid) {
+    dup2(commpipe[1],1);
+    close(commpipe[0]);
+    setvbuf(stdout,(char*)NULL,_IONBF,0);
+    wait(&status);
+  }
+  else {
+    dup2(commpipe[0],0);
+    close(commpipe[1]);
+    snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, moptfmt,
+             get_cdirp(), get_adirp());
+    if (execl(fusepath, fuseprog, fuseoptinit, fuseopt1, fuseoptinit, fuseopt2, mopts, get_mdirp(), NULL) != 0) {
+      perror("execl");
+    }
   }
 #else
   char mopts[MAX_LENGTH_DIR_PATH * 2];
