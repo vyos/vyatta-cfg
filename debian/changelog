@@ -1,3 +1,18 @@
+vyatta-cfg (0.102.0+vyos1+helium4) unstable; urgency=low
+
+  [ Hiroyuki Sato ]
+  * Bug #180 save config using scp fails.
+
+  [ Kim Hagen ]
+  * Removed part of dirty workaround, chmod of of /dev/fuse and
+    /usr/bin/fusermount
+  * Removed dirty workaround for fuse completely.
+
+  [ Daniil Baturin ]
+  * Bug #251: add dirty hack for taking config from stdin
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 02 Jul 2014 05:22:56 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium3) unstable; urgency=low
 
   [ higebu ]
