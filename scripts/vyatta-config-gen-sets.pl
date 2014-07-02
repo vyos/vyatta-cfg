@@ -27,11 +27,36 @@ use strict;
 use lib "/opt/vyatta/share/perl5/";
 use Vyatta::ConfigLoad;
 
+sub error
+{
+    my $error = shift;
+    print "$error\n";
+    exit(1);
+}
+
 my $conf_file;
 my $conf_tmp = "/tmp/config.boot.$$";
 
 if (defined $ARGV[0]) {
-    $conf_file = $ARGV[0];
+    if ($ARGV[0] eq "-") {
+         # The case for using it in a pipe
+
+         # The loader can't handle uncommited changes, 
+         # it treats -/+/> as part of the config and produces garbage
+         system("cli-shell-api sessionChanged")
+           or error("Please commit or discard your changes before using \"commands\" filter!");
+
+         my $input = "";
+         while (<>) {
+             $input .= $_;
+         }
+         open(my $fh, '>', $conf_tmp) or die "Could not open file '$conf_tmp' $!";
+         print $fh $input;
+         close $fh;
+         $conf_file = $conf_tmp;
+    } else {
+        $conf_file = $ARGV[0];
+    }
 } else {
     system("cli-shell-api showCfg --show-active-only  > $conf_tmp");
     $conf_file = $conf_tmp;
