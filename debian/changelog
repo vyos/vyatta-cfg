@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos1+helium5) unstable; urgency=low
+
+  * Update maintainer address.
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 27 Jul 2014 10:42:14 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium4) unstable; urgency=low
 
   [ Hiroyuki Sato ]
