@@ -1,7 +1,7 @@
 Source: vyatta-cfg
 Section: contrib/net
 Priority: extra
-Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
+Maintainer: VyOS Package Maintainers <maintainers@vyos.net>
 Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
  libboost-filesystem1.42-dev, libapt-pkg-dev, libtool, flex,
  bison, libperl-dev
