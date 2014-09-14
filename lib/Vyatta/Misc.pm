@@ -519,7 +519,24 @@ sub interface_description {
 
     my $description = <$ifalias>;
     close $ifalias;
-    chomp $description if $description;
+
+    # If the interface has a description set then just use that, if not then check
+    # the active config to see if one is configured there.  Used for interfaces
+    # that can be destroyed and recreated during opertion, but then don't have
+    # their description reset.
+    
+    if ($description){
+        chomp $description;
+    } else {
+        my $intf = new Vyatta::Interface($name);
+        my $config = new Vyatta::Config;
+
+        $config->setLevel( $intf->path() );
+        
+        if ($config->existsOrig('description')) {
+            $description = $config->returnOrigValue('description');
+        }
+    }
 
     return $description;
 }
