@@ -26,14 +26,14 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
-		 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
-		 isIpAddress is_ip_v4_or_v6 interface_description
-		 is_local_address is_primary_address get_ipnet_intf_hash
-     isValidPortNumber get_terminal_size get_terminal_height 
-     get_terminal_width );
+                 is_address_enabled is_dhcp_enabled get_ipaddr_intf_hash
+                 isIpAddress is_ip_v4_or_v6 interface_description
+                 is_local_address is_primary_address get_ipnet_intf_hash
+                 isValidPortNumber get_terminal_size get_terminal_height 
+                 get_terminal_width );
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
-		    getInterfacesIPadresses
-		    getPortRuleString
+                    getInterfacesIPadresses
+                    getPortRuleString
                     get_short_config_path);
 
 use Vyatta::Config;
@@ -52,9 +52,9 @@ sub get_ipaddr_intf_hash {
     my @lines = `ip addr show | grep 'inet '`;
     chomp @lines;
     foreach my $line (@lines) {
-	if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-	    $config_ipaddrs{$1} = $2;
-	}
+        if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+            $config_ipaddrs{$1} = $2;
+        }
     }
 
     return \%config_ipaddrs;
@@ -71,8 +71,8 @@ sub get_ipnet_intf_hash {
     my %config_ipaddrs = ();
 
     open my $ipcmd, '-|'
-	or exec @args
-	or die "ip addr command failed: $!";
+        or exec @args
+        or die "ip addr command failed: $!";
 
     my $iface = "";
     while (<$ipcmd>) {
@@ -82,9 +82,10 @@ sub get_ipnet_intf_hash {
             chop($iface);
         }
         next unless ( $proto =~ /inet/ );
-	$config_ipaddrs{$addr} = $iface;
+        $config_ipaddrs{$addr} = $iface;
     }
     close $ipcmd;
+
     return \%config_ipaddrs;
 }
 
@@ -96,14 +97,14 @@ sub is_primary_address {
     my $ref = get_ipaddr_intf_hash();
     my %hash = %{$ref};
     if (!defined $hash{$ip_address}) {
-	return;
+        return;
     }
 
     my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
     chomp($line);
     my $primary_address = undef;
     if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-	$primary_address = $1;
+        $primary_address = $1;
     }
 
     return 1 if ($ip_address eq $primary_address);
@@ -116,6 +117,7 @@ sub get_short_config_path {
     my $shortened_cfg_path = "";
     $shortened_cfg_path = $cfg_path if defined $cfg_path;
     $shortened_cfg_path =~ s/^\/opt\/vyatta\/etc//;
+
     return $shortened_cfg_path;
 }
 
@@ -123,11 +125,12 @@ sub get_sysfs_value {
     my ( $intf, $name ) = @_;
 
     open( my $statf, '<', "/sys/class/net/$intf/$name" )
-	or die "Can't open statistics file /sys/class/net/$intf/$name";
+        or die "Can't open statistics file /sys/class/net/$intf/$name";
 
     my $value = <$statf>;
     chomp $value if defined $value;
     close $statf;
+
     return $value;
 }
 
@@ -166,15 +169,15 @@ sub is_address_enabled {
 
 # return dhclient related files for interface
 sub generate_dhclient_intf_files {
-    my $intf         = shift;
+    my $intf = shift;
     my $dhclient_dir = '/var/lib/dhcp3/';
 
     $intf =~ s/\./_/g;
     my $intf_config_file     = $dhclient_dir . 'dhclient_' . $intf . '.conf';
     my $intf_process_id_file = $dhclient_dir . 'dhclient_' . $intf . '.pid';
     my $intf_leases_file     = $dhclient_dir . 'dhclient_' . $intf . '.leases';
+    
     return ( $intf_config_file, $intf_process_id_file, $intf_leases_file );
-
 }
 
 # get list of interfaces on the system via sysfs
@@ -183,13 +186,14 @@ sub generate_dhclient_intf_files {
 #  and wireless control interfaces
 sub getInterfaces {
     opendir( my $sys_class, '/sys/class/net' )
-	or die "can't open /sys/class/net: $!";
+        or die "can't open /sys/class/net: $!";
     my @interfaces = grep { ( !/^\./ ) && 
-				( $_ ne 'bonding_masters' ) &&
-				! ( $_ =~ '^mon.wlan\d$') &&
-				! ( $_ =~ '^wmaster\d+$')
-    } readdir $sys_class;
+                            ( $_ ne 'bonding_masters' ) &&
+                           !( $_ =~ '^mon.wlan\d$') &&
+                           !( $_ =~ '^wmaster\d+$')
+                          } readdir $sys_class;
     closedir $sys_class;
+
     return @interfaces;
 }
 
@@ -200,19 +204,19 @@ sub is_local_address {
     my $addr = shift;
     my $ip = new NetAddr::IP $addr;
     die "$addr: not a valid IP address"
-	unless $ip;
+        unless $ip;
 
     my ($pf, $sockaddr);
     if ($ip->version() == 4) {
-	$pf = PF_INET;
-	$sockaddr = sockaddr_in(0, $ip->aton());
+        $pf = PF_INET;
+        $sockaddr = sockaddr_in(0, $ip->aton());
     } else {
-	$pf = PF_INET6;
-	$sockaddr = sockaddr_in6(0, $ip->aton());
+        $pf = PF_INET6;
+        $sockaddr = sockaddr_in6(0, $ip->aton());
     }
 
     socket( my $sock, $pf, SOCK_STREAM, 0)
-	or die "socket failed\n";
+        or die "socket failed\n";
 
     return bind($sock, $sockaddr);
 }
@@ -228,8 +232,8 @@ sub getIP {
     push @args, ('dev', $name) if $name;
 
     open my $ipcmd, '-|'
-	or exec @args
-	or die "ip addr command failed: $!";
+        or exec @args
+        or die "ip addr command failed: $!";
 
     <$ipcmd>;
     while (<$ipcmd>) {
@@ -267,7 +271,7 @@ sub getInterfacesIPadresses {
     if ( $type ne 'all' ) {
         $type_func = $type_hash{$type};
         die "Invalid type specified to retreive IP addresses for: $type"
-	    unless $type_func;
+            unless $type_func;
     }
 
     foreach my $name ( getInterfaces() ) {
@@ -280,6 +284,7 @@ sub getInterfacesIPadresses {
         my @addresses = $intf->address(4);
         push @ips, @addresses;
     }
+    
     return @ips;
 }
 
@@ -305,8 +310,6 @@ sub is_ip_v4_or_v6 {
 
     my $vers = $ip->version();
     if ( $vers == 4 ) {
-
-        #
         # NetAddr::IP will accept short forms 1.1 and hostnames
         # so check if all 4 octets are defined
         return 4 unless ( $addr !~ /\d+\.\d+\.\d+\.\d+/ );    # undef
@@ -337,12 +340,11 @@ sub isClusterIP {
 
     my @cluster_groups = $vc->listNodes('cluster group');
     foreach my $cluster_group (@cluster_groups) {
-        my @services =
-	    $vc->returnValues("cluster group $cluster_group service");
+        my @services = $vc->returnValues("cluster group $cluster_group service");
         foreach my $service (@services) {
-	    if ($service =~ /\//) {
-		$service = substr( $service, 0, index( $service, '/' ));
-	    }
+            if ($service =~ /\//) {
+                $service = substr( $service, 0, index( $service, '/' ));
+            }
             if ( $ip eq $service ) {
                 return 1;
             }
@@ -393,9 +395,9 @@ sub isClusteringEnabled {
 sub isValidPortNumber {
     my $str = shift;
     return ( undef, "\"$str\" is not a valid port number" )
-	if ( !( $str =~ /^\d+$/ ) );
+        if ( !( $str =~ /^\d+$/ ) );
     return ( undef, "invalid port \"$str\" (must be between 1 and 65535)" )
-	if ( $str < 1 || $str > 65535 );
+        if ( $str < 1 || $str > 65535 );
     return ( 1, undef );
 }
 
@@ -408,14 +410,14 @@ sub isValidPortRange {
     my $str = shift;
     my $sep = shift;
     return ( undef, "\"$str\" is not a valid port range" )
-	if ( !( $str =~ /^(\d+)$sep(\d+)$/ ) );
+        if ( !( $str =~ /^(\d+)$sep(\d+)$/ ) );
     my ( $start, $end ) = ( $1, $2 );
     my ( $success, $err ) = isValidPortNumber($start);
     return ( undef, $err ) if ( !defined($success) );
     ( $success, $err ) = isValidPortNumber($end);
     return ( undef, $err ) if ( !defined($success) );
     return ( undef, "invalid port range ($end is not greater than $start)" )
-	if ( $end <= $start );
+        if ( $end <= $start );
     return ( 1, undef );
 }
 
@@ -428,13 +430,12 @@ sub isValidPortName {
     my $str   = shift;
     my $proto = shift;
     return ( undef, "\"\" is not a valid port name for protocol \"$proto\"" )
-	if ( $str eq '' );
+        if ( $str eq '' );
 
     my $port = getservbyname( $str, $proto );
     return ( 1, undef ) if $port;
 
-    return ( undef,
-	     "\"$str\" is not a valid port name for protocol \"$proto\"" );
+    return ( undef, "\"$str\" is not a valid port name for protocol \"$proto\"" );
 }
 
 sub getPortRuleString {
@@ -474,13 +475,13 @@ sub getPortRuleString {
             }
         }
         if ($proto eq 'tcp_udp') {
-	    ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
-	    if (defined $success) {
-		# only do udp test if the tcp test was a success
-		( $success, $err ) = isValidPortName( $port_spec, 'udp' )
-	    }
+            ( $success, $err ) = isValidPortName( $port_spec, 'tcp' );
+            if (defined $success) {
+                # only do udp test if the tcp test was a success
+                ( $success, $err ) = isValidPortName( $port_spec, 'udp' )
+            }
         } else {
-	    ( $success, $err ) = isValidPortName( $port_spec, $proto );
+            ( $success, $err ) = isValidPortName( $port_spec, $proto );
         }
         if ( defined($success) ) {
             $num_ports += 1;
@@ -493,14 +494,12 @@ sub getPortRuleString {
 
     my $rule_str = '';
     if ( ( $num_ports > 0 ) && ( !$can_use_port ) ) {
-        return ( undef,
-		 "ports can only be specified when protocol is \"tcp\" "
-		 . "or \"udp\" (currently \"$proto\")" );
+        return ( undef, "ports can only be specified when protocol is \"tcp\" "
+                      . "or \"udp\" (currently \"$proto\")" );
     }
     if ( $num_ports > 15 ) {
-        return ( undef,
-		 "source/destination port specification only supports "
-		 . "up to 15 ports (port range counts as 2)" );
+        return ( undef, "source/destination port specification only supports "
+                      . "up to 15 ports (port range counts as 2)" );
     }
     if ( $num_ports > 1 ) {
         $rule_str = " -m multiport $negate --${prefix}ports ${port_str}";
@@ -516,11 +515,28 @@ sub interface_description {
     my $name = shift;
 
     open my $ifalias, '<', "/sys/class/net/$name/ifalias"
-	or return;
+        or return;
 
     my $description = <$ifalias>;
     close $ifalias;
-    chomp $description if $description;
+
+    # If the interface has a description set then just use that, if not then check
+    # the active config to see if one is configured there.  Used for interfaces
+    # that can be destroyed and recreated during opertion, but then don't have
+    # their description reset.
+    
+    if ($description){
+        chomp $description;
+    } else {
+        my $intf = new Vyatta::Interface($name);
+        my $config = new Vyatta::Config;
+
+        $config->setLevel( $intf->path() );
+        
+        if ($config->existsOrig('description')) {
+            $description = $config->returnOrigValue('description');
+        }
+    }
 
     return $description;
 }
