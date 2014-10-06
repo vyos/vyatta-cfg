@@ -208,7 +208,7 @@ sub physicalDevice {
     return $self->{dev};
 }
 
-# Read ppp config to fine associated interface for ppp device
+# Read ppp config to find the associated interface for the ppp device
 sub _ppp_intf {
     my $dev = shift;
     my $intf;
@@ -216,14 +216,13 @@ sub _ppp_intf {
     open(my $ppp, '<', "/etc/ppp/peers/$dev")
         or return;	# no such device
 
-    while (<$ppp>) {
-        chomp;
-
-        # looking for line like:
-        # pty "/usr/sbin/pppoe -m 1412 -I eth1"
-        next unless /^pty\s.*-I\s*(\w+)"/;
-        $intf = $1;
-        last;
+    while (my $line = <$ppp>) {
+        # looking for a line like: #pty "/usr/sbin/pppoe -m 1412 -I eth1"
+        # and stop after the first occurence of this line
+        if ($line =~ /^#pty\s.*-I\s*(\w+)"/) {
+            $intf = $1;
+            last;
+        }
     }
     close $ppp;
 
