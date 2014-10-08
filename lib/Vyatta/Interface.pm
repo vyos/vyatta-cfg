@@ -105,7 +105,7 @@ sub new {
     my $name   = pop;
     my $class = ref($that) || $that;
 
-    my ($vif, $vrid);
+    my ($vif, $vif_c, $vrid);
     my $dev = $name;
 
     # remove VRRP id suffix
@@ -114,8 +114,12 @@ sub new {
         $vrid = $2;
     }
 
-    # remove VLAN suffix
-    if ($dev =~ /^(.*)\.(\d+)/) {
+    # QinQ or usual VLAN
+    if ($dev =~ /^([^\.]+)\.(\d+)\.(\d+)/) {
+        $dev = $1;
+        $vif = $2;
+        $vif_c = $3;
+    } elsif ($dev =~ /^(.*)\.(\d+)/) {
         $dev = $1;
         $vif = $2;
     }
@@ -131,6 +135,7 @@ sub new {
         type => $type,
         dev  => $dev,
         vif  => $vif,
+        vif_c => $vif_c,
         vrid => $vrid,
     };
     bless $self, $class;
@@ -180,7 +185,10 @@ sub path {
         # normal device
         my $path = "interfaces $self->{type} $self->{dev}";
         $path .= " vrrp $self->{vrid}" if $self->{vrid};
-        $path .= " vif $self->{vif}" if $self->{vif};
+        $path .= " vif $self->{vif}" if ($self->{vif} && !$self->{vif_c});
+        $path .= " vif-s $self->{vif} vif-c $self->{vif_c}" if
+            ($self->{vif} && $self->{vif_c});
+
 
         return $path;
     }
