@@ -1,3 +1,15 @@
+vyatta-cfg (0.102.0+vyos1+helium7) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: formatting changes for style consistency
+  * vyatta-cfg: display openvpn interface descriptions after they reset
+  * vyatta-cfg: formatting changes for style consistency
+  * vyatta-cfg: return correct path for pppoe or pppoa interfaces
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 08 Oct 2014 16:29:39 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium6) unstable; urgency=low
 
   * Replace some old Vyatta names.
