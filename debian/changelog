@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos1+helium8) unstable; urgency=low
+
+  * Add QinQ support to the intf name to path function.
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 08 Oct 2014 21:12:10 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium7) unstable; urgency=low
 
   [ Alex Harpin ]
