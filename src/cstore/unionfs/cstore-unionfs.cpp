@@ -62,6 +62,7 @@ const string UnionfsCstore::C_MARKER_DEF_VALUE  = "def";
 const string UnionfsCstore::C_MARKER_DEACTIVATE = ".disable";
 const string UnionfsCstore::C_MARKER_CHANGED = ".modified";
 const string UnionfsCstore::C_MARKER_UNSAVED = ".unsaved";
+const string UnionfsCstore::C_MARKER_UNIONFS = ".unionfs";
 const string UnionfsCstore::C_COMMITTED_MARKER_FILE = ".changes";
 const string UnionfsCstore::C_COMMENT_FILE = ".comment";
 const string UnionfsCstore::C_TAG_NAME = "node.tag";
@@ -640,6 +641,9 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
 bool
 UnionfsCstore::commitConfig(commit::PrioNode& node)
 {
+  FsPath active_unionfs = active_root;
+  active_unionfs.push(C_MARKER_UNIONFS);
+  
   // make a copy of current "work" dir
   try {
     if (path_exists(tmp_work_root)) {
@@ -651,6 +655,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     }
     output_internal("cp[%s]->[%s]\n", work_root.path_cstr(),
                     tmp_work_root.path_cstr());
+
     recursive_copy_dir(work_root, tmp_work_root, true);
   } catch (const b_fs::filesystem_error& e) {
     output_internal("cp w->tw failed[%s]\n", e.what());
@@ -699,6 +704,18 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
       || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
     output_user("failed to remove temp directories\n");
     return false;
+  }
+  try {
+    b_fs::remove_all(active_unionfs.path_cstr());
+  } catch (const b_fs::filesystem_error& e) {
+    output_internal("rm active unionfs failed[%s]\n", e.what());
+    return false;
+  } catch (...) {
+    output_internal("rm active unionfs[unknown exception]\n");
+    return false;
+  }
+  if (path_exists(active_unionfs)) {
+    output_internal("failed to remove unionfs directories from active config\n");
   }
   // all done
   return true;
