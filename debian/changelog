@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium3) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: fix for "failed to generate commited config"
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sun, 11 Jan 2015 19:49:16 +0000
+ 
 vyatta-cfg (0.102.0+vyos2+lithium2) unstable; urgency=low
 
   * Force release
