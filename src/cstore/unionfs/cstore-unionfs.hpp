@@ -78,6 +78,7 @@ private:
   static const string C_MARKER_DEACTIVATE;
   static const string C_MARKER_CHANGED;
   static const string C_MARKER_UNSAVED;
+  static const string C_MARKER_UNIONFS;
   static const string C_COMMITTED_MARKER_FILE;
   static const string C_COMMENT_FILE;
   static const string C_TAG_NAME;
