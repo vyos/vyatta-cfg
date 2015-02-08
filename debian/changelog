@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium4) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: set the path for a vrrp interface correctly
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sun, 08 Feb 2015 12:12:49 +0000
+ 
 vyatta-cfg (0.102.0+vyos2+lithium3) unstable; urgency=low
 
   [ Alex Harpin ]
