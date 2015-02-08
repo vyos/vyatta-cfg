@@ -184,7 +184,7 @@ sub path {
 
         # normal device
         my $path = "interfaces $self->{type} $self->{dev}";
-        $path .= " vrrp $self->{vrid}" if $self->{vrid};
+        $path .= " vrrp vrrp-group $self->{vrid}" if $self->{vrid};
         $path .= " vif $self->{vif}" if ($self->{vif} && !$self->{vif_c});
         $path .= " vif-s $self->{vif} vif-c $self->{vif_c}" if
             ($self->{vif} && $self->{vif_c});
