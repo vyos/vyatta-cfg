@@ -109,8 +109,15 @@ sub is_primary_address {
     my $line = `ip address show $hash{$ip_address} | grep 'inet' | head -n 1`;
     chomp($line);
     my $primary_address = undef;
-    if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-        $primary_address = $1;
+    
+    if ($line =~ /vtun|wan/) {
+        if ($line =~ /inet\s+([0-9.]+).*\s([\w.]+)$/) {
+            $primary_address = $1;
+        }
+    } else {
+        if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+            $primary_address = $1;
+        }    
     }
 
     return 1 if ($ip_address eq $primary_address);
