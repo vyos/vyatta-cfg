@@ -52,8 +52,14 @@ sub get_ipaddr_intf_hash {
     my @lines = `ip addr show | grep 'inet '`;
     chomp @lines;
     foreach my $line (@lines) {
-        if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
-            $config_ipaddrs{$1} = $2;
+        if ($line =~ /vtun|wan/) {
+            if ($line =~ /inet\s+([0-9.]+).*\s([\w.]+)$/) {
+                $config_ipaddrs{$1} = $2;
+            }
+        } else {
+            if ($line =~ /inet\s+([0-9.]+)\/.*\s([\w.]+)$/) {
+                $config_ipaddrs{$1} = $2;
+            }
         }
     }
 
