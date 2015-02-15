@@ -1,3 +1,11 @@
+vyatta-cfg (0.102.0+vyos2+lithium5) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: update get_ipaddr_int_hash for vtun and wan interfaces
+  * vyatta-cfg: update is_primary_address for vtun and wan interfaces
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sun, 15 Feb 2015 13:25:19 +0000
+ 
 vyatta-cfg (0.102.0+vyos2+lithium4) unstable; urgency=low
 
   [ Alex Harpin ]
