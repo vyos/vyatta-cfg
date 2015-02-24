@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos1+helium12) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: update get_ipaddr_int_hash for vtun and wan interfaces
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Tue, 24 Feb 2015 22:40:10 +0000
+ 
 vyatta-cfg (0.102.0+vyos1+helium11) unstable; urgency=low
 
   [ Alex Harpin ]
