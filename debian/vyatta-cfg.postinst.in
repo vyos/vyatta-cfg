@@ -46,3 +46,7 @@ rm -f /etc/bash_completion.d/20vyatta-cfg
 
 # create symlink for post commit hook
 ln -sf /opt/vyatta/sbin/vyatta-log-commit.pl /etc/commit/post-hooks.d/10vyatta-log-commit.pl
+
+ln -s /opt/vyatta/sbin/vyos-user-precommit-hooks.sh /etc/commit/pre-hooks.d/99vyos-user-precommit-hooks
+ln -s /opt/vyatta/sbin/vyos-user-postcommit-hooks.sh /etc/commit/pre-hooks.d/99vyos-user-postcommit-hooks
+
