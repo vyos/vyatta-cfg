@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos2+lithium7) unstable; urgency=low
+
+  * Force release
+
+ -- Daniil Baturin <daniil@baturin.org>  Fri, 03 Apr 2015 20:15:13 +0200
+
 vyatta-cfg (0.102.0+vyos2+lithium6) unstable; urgency=low
 
   * Bug #538: add scripts for running user commit hooks.
