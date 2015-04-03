@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos2+lithium6) unstable; urgency=low
+
+  * Bug #538: add scripts for running user commit hooks.
+
+ -- Daniil Baturin <daniil@baturin.org>  Fri, 03 Apr 2015 20:14:38 +0200
+
 vyatta-cfg (0.102.0+vyos2+lithium5) unstable; urgency=low
 
   [ Alex Harpin ]
