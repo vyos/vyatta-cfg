@@ -5,7 +5,7 @@ Maintainer: VyOS Package Maintainers <maintainers@vyos.net>
 Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
  libboost-filesystem1.42-dev, libapt-pkg-dev, libtool, flex,
  bison, libperl-dev
-Standards-Version: 3.7.2
+Standards-Version: 3.9.1
 
 Package: vyatta-cfg
 Architecture: any
@@ -13,23 +13,13 @@ Depends: sed (>= 4.1.5),
  procps (>= 1:3.2.7-3),
  coreutils (>= 5.97-5.3),
  vyatta-bash | bash (>= 4.1),
- vyatta-unicast | vyatta-quagga | quagga,
- vyatta-op,
  vyatta-config-migrate, 
- vyatta-cfg-system (>= 0.18),
- parted,
- dhcp3-client | vyatta-dhcp3-client,
  bsdutils (>=1:2.13),
- vlan,
- ethtool,
- iproute,
  curl,
  libsocket6-perl,
  libvyatta-cfg1 (=${binary:Version}),
  unionfs-fuse,
  ${perl:Depends}, ${shlibs:Depends}
-Replaces: vyatta-cfg-firewall, 
- vyatta-cfg-quagga
 Suggests: util-linux (>= 2.13-5),
  net-tools,
  ncurses-bin (>= 5.5-5),
@@ -56,4 +46,3 @@ Depends: libvyatta-cfg1 (=${binary:Version}),
 Description: libvyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
  library.
-
