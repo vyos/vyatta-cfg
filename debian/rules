@@ -23,7 +23,7 @@ binary binary-arch binary-indep: install
 	dh_perl /opt/vyatta/share/perl5 /opt/vyatta/share/perl5/Vyatta
 	dh binary --after dh_perl --before dh_gencontrol
 	rm -f debian/*/DEBIAN/conffiles
-	if [ -f "../.VYATTA_DEV_BUILD" ]; then \
+	if [ -f "../.VYOS_DEV_BUILD" ]; then \
 		dh_gencontrol -- -v999.dev; \
 	else \
 		dh_gencontrol; \
