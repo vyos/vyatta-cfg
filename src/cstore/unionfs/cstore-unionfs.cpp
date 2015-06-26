@@ -1585,7 +1585,7 @@ UnionfsCstore::do_umount(const FsPath& mdir)
     dup2(commpipe[0],0);
     close(commpipe[1]);
     if (execl(fusermount_path, fusermount_prog, fusermount_umount, mdir.path_cstr(), NULL) != 0) {
-        output_internal("union mount failed [%s][%s]\n",
+        output_internal("union umount failed [%s][%s]\n",
                    strerror(errno), mdir.path_cstr());
         return false;
     }
