@@ -478,7 +478,7 @@ get_help_text ()
         vyatta_help_text+="\\x20\\x20"
       fi
     fi
-    if [ ${#_get_help_text_items[idx]} -lt 5 ]; then
+    if [ ${#_get_help_text_items[idx]} -lt 6 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t"
     elif [ ${#_get_help_text_items[idx]} -lt 13 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t"
