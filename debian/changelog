@@ -1,3 +1,11 @@
+vyatta-cfg (0.102.0+vyos2+lithium12) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: fix formatting issue with top level cli merge command
+  * vyatta-cfg: remove unused unionfs mounts following unclean config exits
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Tue, 07 Jul 2015 07:27:27 +0100
+ 
 vyatta-cfg (0.102.0+vyos2+lithium11) unstable; urgency=low
 
   * vyatta-cfg: correct UnionfsCstore::do_umount error message
