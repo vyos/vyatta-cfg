@@ -53,7 +53,7 @@ public:
   FsPath& operator/=(const FsPath& p) {
     _data /= p._data;
     return *this;
-  }
+  };
   FsPath operator/(const FsPath& rhs) {
     FsPath lhs(*this);
     lhs /= rhs;

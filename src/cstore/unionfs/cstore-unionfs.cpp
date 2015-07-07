@@ -25,6 +25,10 @@
 #include <fcntl.h>
 #include <sys/mount.h>
 #include <wait.h>
+#include <dirent.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -163,6 +167,42 @@ _unescape_path_name(const string& path)
   return npath;
 }
 
+vector<int> getActiveCommits()
+{
+  string process_name = "vbash";
+  vector<int> pids;
+
+  DIR *dp = opendir("/proc");
+  if (dp != NULL) {
+    struct dirent *dirp;
+    while ((dirp = readdir(dp))) {
+      int pid = atoi(dirp->d_name);
+      if (pid > 0) {
+        string command_path = string("/proc/") + dirp->d_name + "/cmdline";
+        ifstream command_file(command_path.c_str());
+        string command_line;
+        getline(command_file, command_line);
+        if (!command_line.empty()) {
+          size_t pos = command_line.find('\0');
+          if (pos != string::npos) {
+            command_line = command_line.substr(0, pos);
+          }
+          pos = command_line.rfind('/');
+          if (pos != string::npos) {
+            command_line = command_line.substr(pos + 1);
+          }
+          if (process_name == command_line) {
+            pids.push_back(pid);
+          }
+        }
+      }
+    }
+  }
+
+  closedir(dp);
+
+  return pids;
+}
 
 ////// constructor/destructor
 /* "current session" constructor.
@@ -202,7 +242,6 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
   if ((val = getenv(C_ENV_CHANGE_ROOT.c_str()))) {
     change_root = val;
   }
-
   /* note: the original perl API module does not use the edit levels
    *       from environment. only the actual CLI operations use them.
    *       so here make it an option.
@@ -342,6 +381,29 @@ UnionfsCstore::sessionChanged()
 bool
 UnionfsCstore::setupSession()
 {
+  vector<FsPath> directories;
+  vector<int> pids;
+  vector<int> old_pids;
+  FsPath old_config;
+  FsPath work_base;
+
+  string work_string = work_root.path_cstr();
+  work_base = work_string.erase(work_string.find_last_of("/"));
+
+  try {
+    b_fs::directory_iterator di(work_base.path_cstr());
+    for (; di != b_fs::directory_iterator(); ++di) {
+      old_config = di->path().file_string().c_str();
+      if (path_is_directory(old_config)) {
+        directories.push_back(old_config);
+      }
+    }
+  } catch (...) {
+    if (path_exists(active_root)) {
+      output_internal("no session directories found [%s]\n", work_root.path_cstr());
+    }
+  }
+
   if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
@@ -362,10 +424,75 @@ UnionfsCstore::setupSession()
       return false;
     }
   } else if (!path_is_directory(work_root)) {
-    output_internal("setup session not dir [%s]\n",
-                    work_root.path_cstr());
+    output_internal("setup session not dir [%s]\n", work_root.path_cstr());
     return false;
   }
+
+  pids = getActiveCommits();
+
+  struct stat config_info;
+  stat(work_root.path_cstr(), &config_info);
+  int current_uid = (int) config_info.st_uid;
+  bool failed = false;
+
+  for (size_t i = 0; i < directories.size(); i++) {
+    struct stat directory_info;
+    int directory_uid;
+    int current_pid = 0;
+
+    // find uid for the current directory and the active config directory
+
+    stat(directories[i].path_cstr(), &directory_info);
+    directory_uid = (int) directory_info.st_uid;
+
+    // remove old config session directories but only for the current user
+
+    if (directory_uid == current_uid) {
+      string config_match = work_base.path_cstr() + std::string("/new_config_");
+      string current_path = directories[i].path_cstr();
+
+      if (current_path.find(config_match) != std::string::npos) {
+        current_pid = atoi(current_path.erase(current_path.find(config_match), config_match.length()).c_str());
+
+        // umount only inactive config session directory, don't touch active sessions
+
+        if (std::find(pids.begin(), pids.end(), current_pid) == pids.end()) {
+          old_pids.push_back(current_pid);
+          output_internal("found inactive config [%d]\n", current_pid);
+          output_internal("umount [%s]\n", directories[i].path_cstr());
+          if (!do_umount(directories[i])) {
+            failed = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!old_pids.empty()) {
+    for (size_t i = 0; i < directories.size(); i++) {
+
+      int current_pid;
+      string current_path;
+
+      current_path = directories[i].path_cstr();
+      current_pid = atoi(current_path.erase(0, (current_path.find_last_of("_")) + 1).c_str());
+
+      if (std::find(old_pids.begin(), old_pids.end(), current_pid) != old_pids.end()) {
+        try {
+          if (b_fs::remove_all(directories[i].path_cstr()) == 0) {
+            failed = true;
+          }
+        } catch (...) {
+          failed = true;
+        }
+      }
+    }
+  }
+
+  if (failed) {
+    output_internal("failed to remove old config session directories\n");
+  }
+
   return true;
 }
 
