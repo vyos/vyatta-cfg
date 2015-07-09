@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium13) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: updated fix for formatting top level cli merge command
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Thu, 09 Jul 2015 21:07:07 +0100
+ 
 vyatta-cfg (0.102.0+vyos2+lithium12) unstable; urgency=low
 
   [ Alex Harpin ]
