@@ -460,6 +460,7 @@ get_help_text ()
   vyatta_help_text="\\nPossible completions:"
   local print_node_type=$1
   local editlvl=$(cli-shell-api getEditLevelStr)
+  local node=0;
   for (( idx = 0; idx < ${#_get_help_text_items[@]}; idx++ )); do
     vyatta_help_text+="\\n"
     if (( ${#COMP_WORDS[@]} < 2 )) ||
@@ -474,11 +475,12 @@ get_help_text ()
           multi) vyatta_help_text+="+  " ;; 
           *) vyatta_help_text+="   " ;; 
         esac
+        node=1;
       else
         vyatta_help_text+="\\x20\\x20"
       fi
     fi
-    if [ ${#_get_help_text_items[idx]} -lt 6 ]; then
+    if [ ${#_get_help_text_items[idx]} -lt $((6 - $node)) ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t"
     elif [ ${#_get_help_text_items[idx]} -lt 13 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t"
