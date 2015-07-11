@@ -8,12 +8,12 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # This code was originally developed by Vyatta, Inc.
 # Portions created by Vyatta are Copyright (C) 2006, 2007, 2008 Vyatta, Inc.
 # All Rights Reserved.
@@ -40,11 +40,11 @@ umask 0002;
 # Set up logging
 openlog("config-loader", "nofail", LOG_LOCAL0);
 
-open (STDIN, '<', "/dev/null")
+open(STDIN, '<', "/dev/null")
     or die "Can't open /dev/null : $!";
-open (STDOUT, '>>', $CONFIG_LOG)
+open(STDOUT, '>>', $CONFIG_LOG)
     or die "Can't open $CONFIG_LOG : $!";
-open (STDERR, '>&STDOUT')
+open(STDERR, '>&STDOUT')
     or die "Can't redirect stderr: $!";
 
 sub trace {
@@ -55,7 +55,7 @@ sub trace {
 
 # get a list of all config statement in the startup config file
 my %cfg_hier = Vyatta::ConfigLoad::getStartupConfigStatements($ARGV[0],'true');
-my @all_nodes    = @{ $cfg_hier{'set'} };
+my @all_nodes    = @{$cfg_hier{'set'}};
 
 # empty configuration?
 die "Empty configuration!\n"
@@ -76,28 +76,28 @@ foreach (@all_nodes) {
     my @pr = @$path_ref;
 
     if ($pr[0] =~ /^comment$/) {
-	my $ct = 0;
-	my $rel_path;
-	foreach my $rp (@pr[1..$#pr]) {
-	    $ct++;
-	    my $tmp_path = $rel_path . "/" . $rp;
-	    my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/"
-			   . $tmp_path . "/node.def";
+        my $ct = 0;
+        my $rel_path;
+        foreach my $rp (@pr[1..$#pr]) {
+            $ct++;
+            my $tmp_path = $rel_path . "/" . $rp;
+            my $node_path = "/opt/vyatta/share/vyatta-cfg/templates/". $tmp_path . "/node.def";
 
-	    last if ($rp eq '"');
-	    last if ($rp eq '""');
+            last if ($rp eq '"');
+            last if ($rp eq '""');
 
-	    if ( !-e $node_path ) {
-		#pop this element
-		delete $pr[$ct];
-		last;
-	    }
-	    $rel_path = $tmp_path;
-      }
+            if (!-e $node_path) {
 
-      my $comment_cmd = "$CWRAPPER " . join(" ",@pr) ;
-      `$comment_cmd`;
-      next;
+                #pop this element
+                delete $pr[$ct];
+                last;
+            }
+            $rel_path = $tmp_path;
+        }
+
+        my $comment_cmd = "$CWRAPPER " . join(" ",@pr);
+        `$comment_cmd`;
+        next;
     }
 
     my $cmd = 'set ' . join(' ', @pr);
@@ -105,8 +105,8 @@ foreach (@all_nodes) {
     # Show all commands in log
     trace $cmd;
     unless (system("$CWRAPPER $cmd") == 0) {
-	warn "*** %s failed: %d\n", $cmd, $?;
-	syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
+        warn "*** %s failed: %d\n", $cmd, $?;
+        syslog(LOG_NOTICE, "[[%s]] failed", $cmd);
     }
 }
 
@@ -116,7 +116,7 @@ syslog(LOG_INFO, "Configuration took %d seconds.", $commit_start - $start);
 
 unless (system($COMMIT_CMD) == 0) {
     warn "*** Commit failed: %d\n", $?;
-    syslog (LOG_WARNING, "Commit failed at boot");
+    syslog(LOG_WARNING, "Commit failed at boot");
 
     system($CLEANUP_CMD);
     system($END_CMD);
@@ -124,27 +124,26 @@ unless (system($COMMIT_CMD) == 0) {
 }
 
 my $commit_end = time;
-syslog(LOG_INFO, "Commit succeeded took %d seconds.",
-       $commit_end - $commit_start);
+syslog(LOG_INFO, "Commit succeeded took %d seconds.",$commit_end - $commit_start);
 
 # Now process any deactivate nodes
-my @deactivate_nodes = @{ $cfg_hier{'deactivate'} };
+my @deactivate_nodes = @{$cfg_hier{'deactivate'}};
 if (@deactivate_nodes) {
     foreach (@deactivate_nodes) {
-	my $cmd = "deactivate " . $_;
-	trace $cmd;
+        my $cmd = "deactivate " . $_;
+        trace $cmd;
 
-	unless (system("$CWRAPPER $cmd") == 0) {
-	    warn "*** %s failed: %d\n", $cmd, $?;
-	    syslog(LOG_WARNING, "[[%s]] failed", $cmd);
-	    last;
-	}
+        unless (system("$CWRAPPER $cmd") == 0) {
+            warn "*** %s failed: %d\n", $cmd, $?;
+            syslog(LOG_WARNING, "[[%s]] failed", $cmd);
+            last;
+        }
     }
 
     unless (system($COMMIT_CMD) == 0) {
-	warn  "deactivate commit failed: %d\n", $?;
-	syslog(LOG_NOTICE, "Commit deactivate failed at boot");
-	system($CLEANUP_CMD);
+        warn  "deactivate commit failed: %d\n", $?;
+        syslog(LOG_NOTICE, "Commit deactivate failed at boot");
+        system($CLEANUP_CMD);
     }
 }
 
