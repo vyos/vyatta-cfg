@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium14) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: formatting changes for style consistency
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sat, 11 Jul 2015 15:36:02 +0100
+ 
 vyatta-cfg (0.102.0+vyos2+lithium13) unstable; urgency=low
 
   [ Alex Harpin ]
