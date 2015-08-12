@@ -1,3 +1,13 @@
+vyatta-cfg (0.102.0+vyos1+helium13) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: fix formatting issue with top level cli merge command
+  * vyatta-cfg: updated fix for formatting top level cli merge command
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 12 Aug 2015 04:05:34 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium12) unstable; urgency=low
 
   [ Alex Harpin ]
