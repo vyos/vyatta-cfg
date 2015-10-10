@@ -170,6 +170,16 @@ free_str()
   append_str(cparse_text);
 }
 
+<sQStr>\\\"\n {
+  append_str("\\");
+  set_ret_str();
+  cparse_lval.str = strdup(out_buf);
+  free_str();
+  ++cparse_lineno;
+  BEGIN(INITIAL);
+  return VALUE;
+}
+
 <sQStr>\\. {
   /* this will consume the \" sequence */
   append_str(cparse_text);
