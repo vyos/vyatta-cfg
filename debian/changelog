@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium15) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: double quoted config values ending in \ are not reboot safe
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sat, 10 Oct 2015 15:05:08 +0100
+ 
 vyatta-cfg (0.102.0+vyos2+lithium14) unstable; urgency=low
 
   [ Alex Harpin ]
