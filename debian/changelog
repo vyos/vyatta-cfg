@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+lithium16) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: add port checking routine to misc.pm
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Sat, 17 Oct 2015 17:11:54 +0100
+
 vyatta-cfg (0.102.0+vyos2+lithium15) unstable; urgency=low
 
   [ Alex Harpin ]
