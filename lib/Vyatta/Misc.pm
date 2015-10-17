@@ -30,7 +30,7 @@ our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
                  isIpAddress is_ip_v4_or_v6 interface_description
                  is_local_address is_primary_address get_ipnet_intf_hash
                  isValidPortNumber get_terminal_size get_terminal_height 
-                 get_terminal_width );
+                 get_terminal_width is_port_available );
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
                     getInterfacesIPadresses
                     getPortRuleString
@@ -229,6 +229,20 @@ sub is_local_address {
     }
 
     socket( my $sock, $pf, SOCK_STREAM, 0)
+        or die "socket failed\n";
+
+    return bind($sock, $sockaddr);
+}
+
+# Test if the given port is currently in use by attempting
+# to bind to it, success shows the port is currently free.
+sub is_port_available {
+    my $port = shift;
+    my $family = PF_INET;
+    my $sockaddr = sockaddr_in($port, INADDR_ANY);
+    my $proto  = getprotobyname('tcp');
+
+    socket(my $sock, $family, SOCK_STREAM, $proto)
         or die "socket failed\n";
 
     return bind($sock, $sockaddr);
