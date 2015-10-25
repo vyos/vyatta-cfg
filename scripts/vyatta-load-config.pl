@@ -129,7 +129,7 @@ elsif ( $mode eq 'url' ) {
     }
     my $rc = system("curl -# -o $url_tmp_file $load_file");
     if ($proto =~ /^(scp|sftp)$/ && ($rc >> 8) == 51){
-        $load_file =~ m/(scp|sftp):\/\/(.*?)\//;
+        $load_file =~ m/(?:scp|sftp):\/\/(.*?)\//;
         my $host = $1;
         if ($host =~ m/.*@(.*)/) {
           $host = $1;

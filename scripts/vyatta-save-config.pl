@@ -125,7 +125,7 @@ if ($mode eq 'url') {
 
     my $rc = 0;
     if ($proto =~ /^(scp|sftp)$/){
-        $save_file =~ m/(scp|sftp):\/\/(.*?)\//;
+        $save_file =~ m/(?:scp|sftp):\/\/(.*?)\//;
         my $host = $1;
         my $user = getpwuid($<);
         if ($host =~ m/(.*)@(.*)/) {
