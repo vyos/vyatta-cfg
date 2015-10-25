@@ -60,6 +60,7 @@ if ($save_file =~ /^[^\/]\w+:\//) {
         if ($proto eq 'tftp') {
         } elsif ($proto eq 'ftp') {
         } elsif ($proto eq 'scp') {
+        } elsif ($proto eq 'sftp') {
         } else {
             print "Invalid url protocol [$proto]\n";
             exit 1;
@@ -123,8 +124,8 @@ close $save;
 if ($mode eq 'url') {
 
     my $rc = 0;
-    if ($proto eq 'scp'){
-        $save_file =~ m/scp:\/\/(.*?)\//;
+    if ($proto =~ /^(scp|sftp)$/){
+        $save_file =~ m/(scp|sftp):\/\/(.*?)\//;
         my $host = $1;
         my $user = getpwuid($<);
         if ($host =~ m/(.*)@(.*)/) {

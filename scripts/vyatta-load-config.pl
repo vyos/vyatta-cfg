@@ -78,7 +78,8 @@ if ( $load_file =~ /^[^\/]\w+:\// ) {
         unless( $proto eq 'tftp' ||
 		$proto eq 'ftp'  ||
 		$proto eq 'http' ||
-		$proto eq 'scp' ) {
+		$proto eq 'scp'  ||
+		$proto eq 'sftp' ) {
 	    die "Invalid url protocol [$proto]\n";
         }
     } else {
@@ -127,8 +128,8 @@ elsif ( $mode eq 'url' ) {
         }
     }
     my $rc = system("curl -# -o $url_tmp_file $load_file");
-    if ($proto eq 'scp' && ($rc >> 8) == 51){
-        $load_file =~ m/scp:\/\/(.*?)\//;
+    if ($proto =~ /^(scp|sftp)$/ && ($rc >> 8) == 51){
+        $load_file =~ m/(scp|sftp):\/\/(.*?)\//;
         my $host = $1;
         if ($host =~ m/.*@(.*)/) {
           $host = $1;
