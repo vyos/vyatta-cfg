@@ -1,3 +1,13 @@
+vyatta-cfg (0.102.0+vyos2+lithium17) unstable; urgency=low
+
+  [ Elon ]
+  * Bug 584 - Allow sftp as copy and commit-archive location destination
+  * Prevent grouping from capturing
+  
+  [ Alex Harpin ]
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Mon, 26 Oct 2015 22:39:36 +0000
+ 
 vyatta-cfg (0.102.0+vyos2+lithium16) unstable; urgency=low
 
   [ Alex Harpin ]
