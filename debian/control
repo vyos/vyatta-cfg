@@ -17,7 +17,7 @@ Depends: sed (>= 4.1.5),
  bsdutils (>=1:2.13),
  curl,
  libsocket6-perl,
- libvyatta-cfg1 (=${binary:Version}),
+ libvyatta-cfg1 (>=${binary:Version}),
  unionfs-fuse,
  ${perl:Depends}, ${shlibs:Depends}
 Suggests: util-linux (>= 2.13-5),
@@ -41,7 +41,7 @@ Package: libvyatta-cfg-dev
 Architecture: any
 Priority: optional
 Section: libdevel
-Depends: libvyatta-cfg1 (=${binary:Version}),
+Depends: libvyatta-cfg1 (>=${binary:Version}),
  libboost-filesystem1.42-dev
 Description: libvyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
