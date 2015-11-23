@@ -13,11 +13,12 @@ if USE_UNIONFSFUSE
 USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
 endif
 
-AM_CFLAGS = -I src -Wall -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include $(USE_UNIONFSFUSE)
-AM_CXXFLAGS = -I src -Wall -Werror $(USE_UNIONFSFUSE)
-AM_CXXFLAGS += -I /usr/include/glib-2.0 -I /usr/lib/glib-2.0/include
+AM_CFLAGS = -g -I src -Wall `pkg-config --cflags gio-2.0 gobject-2.0 glib-2.0` $(USE_UNIONFSFUSE)
+AM_CXXFLAGS = -g -I src -Wall -Werror $(USE_UNIONFSFUSE)
+AM_CXXFLAGS += `pkg-config --cflags gio-2.0 gobject-2.0 glib-2.0`
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
+AM_LDFLAGS = `pkg-config --libs gio-2.0 gobject-2.0 glib-2.0`
 
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
@@ -37,8 +38,9 @@ src/cparse/cparse_lex.c: src/cparse/cparse_lex.l src/cparse/cparse.cpp
 	flex -P cparse_ -o $@ $<
 
 lib_LTLIBRARIES = src/libvyatta-cfg.la
-src_libvyatta_cfg_la_LIBADD = /usr/lib/libglib-2.0.la
-src_libvyatta_cfg_la_LIBADD += /usr/lib/libgio-2.0.la
+src_libvyatta_cfg_la_LIBADD = -lglib-2.0
+src_libvyatta_cfg_la_LIBADD += -lgio-2.0
+src_libvyatta_cfg_la_LIBADD += -lgobject-2.0
 src_libvyatta_cfg_la_LIBADD += -lboost_system
 src_libvyatta_cfg_la_LIBADD += -lboost_filesystem
 src_libvyatta_cfg_la_LIBADD += -lapt-pkg
@@ -61,7 +63,7 @@ CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 CLEANFILES += src/cparse/cparse.cpp src/cparse/cparse.h
 CLEANFILES += src/cparse/cparse_lex.c
 LDADD = src/libvyatta-cfg.la
-LDADD += /usr/lib/libglib-2.0.la
+#LDADD += /usr/lib/libglib-2.0.la
 
 vincludedir = $(includedir)/vyatta-cfg
 vinclude_HEADERS = src/cli_cstore.h

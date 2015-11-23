@@ -393,7 +393,7 @@ UnionfsCstore::setupSession()
   try {
     b_fs::directory_iterator di(work_base.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
-      old_config = di->path().file_string().c_str();
+      old_config = di->path().c_str();
       if (path_is_directory(old_config)) {
         directories.push_back(old_config);
       }
@@ -1211,12 +1211,12 @@ UnionfsCstore::unmark_deactivated_descendants()
       vector<b_fs::path> markers;
       b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
       for (; di != b_fs::recursive_directory_iterator(); ++di) {
-        if (!path_is_regular(di->path().file_string().c_str())
+        if (!path_is_regular(di->path().c_str())
             || di->path().filename() != C_MARKER_DEACTIVATE) {
           // not marker
           continue;
         }
-        const char *ppath = di->path().parent_path().file_string().c_str();
+        const char *ppath = di->path().parent_path().c_str();
         if (strcmp(ppath, get_work_path().path_cstr()) == 0) {
           // don't unmark the node itself
           continue;
@@ -1279,7 +1279,7 @@ UnionfsCstore::unmark_changed_with_descendants()
     vector<b_fs::path> markers;
     b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
     for (; di != b_fs::recursive_directory_iterator(); ++di) {
-      if (!path_is_regular(di->path().file_string().c_str())
+      if (!path_is_regular(di->path().c_str())
           || di->path().filename() != C_MARKER_CHANGED) {
         // not marker
         continue;
@@ -1338,7 +1338,7 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     // iterate through all entries in change root
     b_fs::directory_iterator di(change_root.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
-      if (path_is_directory(di->path().file_string().c_str())) {
+      if (path_is_directory(di->path().c_str())) {
         directories.push_back(di->path());
       } else {
         files.push_back(di->path());
@@ -1471,10 +1471,10 @@ UnionfsCstore::check_dir_entries(const FsPath& root, vector<string> *cnodes,
   try {
     b_fs::directory_iterator di(root.path_cstr());
     for (; di != b_fs::directory_iterator(); ++di) {
-      string cname = di->path().filename();
+      string cname = di->path().filename().c_str();
       if (filter_nodes) {
         // must be directory
-        if (!path_is_directory(di->path().file_string().c_str())) {
+        if (!path_is_directory(di->path().c_str())) {
           continue;
         }
         // name cannot start with "."
@@ -1573,14 +1573,14 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
 
   b_fs::recursive_directory_iterator di(src_str);
   for (; di != b_fs::recursive_directory_iterator(); ++di) {
-    const char *oname = di->path().file_string().c_str();
+    const char *oname = di->path().c_str();
     string nname = oname;
     nname.replace(0, src_str.length(), dst_str);
     if (path_is_directory(oname)) {
       b_fs::create_directory(nname);
     } else {
       if (filter_dot_entries) {
-        string of = di->path().filename();
+        string of = di->path().filename().c_str();
         if (!of.empty() && of.at(0) == '.') {
           // filter dot files (with exceptions)
           if (of != C_COMMENT_FILE) {

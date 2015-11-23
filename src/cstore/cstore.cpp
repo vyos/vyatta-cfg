@@ -28,6 +28,7 @@
 // for debian's version comparison algorithm
 #define APT_COMPATIBILITY 986
 #include <apt-pkg/version.h>
+#include <apt-pkg/debversion.h>
 
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
@@ -2023,7 +2024,14 @@ Cstore::assert_internal(bool cond, const char *fmt, ...)
 bool
 Cstore::sort_func_deb_version(string a, string b)
 {
-  return (pkgVersionCompare(a, b) < 0);
+  debVersioningSystem debVersioning;
+
+  const char* A = a.c_str();
+  const char* B = b.c_str();
+  const char* Aend = A + a.length();
+  const char* Bend = B + b.length();
+
+  return debVersioning.DoCmpVersion(A, Aend, B, Bend) > 0;
 }
 
 void
@@ -2987,6 +2995,7 @@ Cstore::vexit_internal(const char *fmt, va_list alist)
   char buf[256];
   vsnprintf(buf, 256, fmt, alist);
   output_internal("%s\n", buf);
+  fprintf(stderr, "DEBUG vexit_internal: %s\n", buf); // DEBUG
   if (Perl_get_context()) {
     /* we're in a perl context. do a croak to provide more information.
      * note that the message should not end in "\n", or the croak message

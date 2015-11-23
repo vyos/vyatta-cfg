@@ -686,7 +686,7 @@ static OpT ops[] = {
   OP(cfReturnValue, -1, NULL, 2, "Must specify config file and path", false),
   OP(cfReturnValues, -1, NULL, 2, "Must specify config file and path", false),
 
-  {NULL, -1, NULL, -1, NULL, NULL, false}
+  {NULL, -1, NULL, -1, NULL, false, NULL}
 };
 #define OP_exact_args  ops[op_idx].op_exact_args
 #define OP_min_args    ops[op_idx].op_min_args
@@ -716,6 +716,12 @@ struct option options[] = {
 int
 main(int argc, char **argv)
 {
+  fprintf(stderr, "DEBUG %s", argv[0]);
+  for (int i = 1; i < argc; i++) {
+    fprintf(stderr, " '%s'", argv[i]); // DEBUG
+  }
+  fprintf(stderr, "\n"); // DEBUG
+
   // handle options first
   int c = 0;
   while ((c = getopt_long(argc, argv, "", options, NULL)) != -1) {
