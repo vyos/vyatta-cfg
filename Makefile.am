@@ -13,12 +13,11 @@ if USE_UNIONFSFUSE
 USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
 endif
 
-AM_CFLAGS = -g -I src -Wall `pkg-config --cflags gio-2.0 gobject-2.0 glib-2.0` $(USE_UNIONFSFUSE)
-AM_CXXFLAGS = -g -I src -Wall -Werror $(USE_UNIONFSFUSE)
-AM_CXXFLAGS += `pkg-config --cflags gio-2.0 gobject-2.0 glib-2.0`
+AM_CFLAGS = -I src -Wall $(GOBJECT_CFLAGS)
+AM_CXXFLAGS = -I src -Wall -Werror $(USE_UNIONFSFUSE)
+AM_CXXFLAGS += $(GOBJECT_CFLAGS)
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
-AM_LDFLAGS = `pkg-config --libs gio-2.0 gobject-2.0 glib-2.0`
 
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
@@ -63,7 +62,7 @@ CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 CLEANFILES += src/cparse/cparse.cpp src/cparse/cparse.h
 CLEANFILES += src/cparse/cparse_lex.c
 LDADD = src/libvyatta-cfg.la
-#LDADD += /usr/lib/libglib-2.0.la
+LDADD += $(GOBJECT_LIBS)
 
 vincludedir = $(includedir)/vyatta-cfg
 vinclude_HEADERS = src/cli_cstore.h
@@ -148,4 +147,5 @@ install-exec-hook:
 	mkdir -p $(DESTDIR)/bin
 	cd $(DESTDIR)/bin ; \
 	  $(LN_S) $(sbindir)/my_cli_shell_api cli-shell-api
+
 
