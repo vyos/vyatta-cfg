@@ -641,52 +641,52 @@ static OpT ops[] = {
      2, "Must specify command and at least one component", true),
   OP(getEditLevelStr, 0, "No argument expected", -1, NULL, true),
 
-  OP(markSessionUnsaved, 0, "No argument expected", -1, NULL, false),
-  OP(unmarkSessionUnsaved, 0, "No argument expected", -1, NULL, false),
-  OP(sessionUnsaved, 0, "No argument expected", -1, NULL, false),
-  OP(sessionChanged, 0, "No argument expected", -1, NULL, false),
+  OP(markSessionUnsaved, 0, "No argument expected", -1, NULL, NULL),
+  OP(unmarkSessionUnsaved, 0, "No argument expected", -1, NULL, NULL),
+  OP(sessionUnsaved, 0, "No argument expected", -1, NULL, NULL),
+  OP(sessionChanged, 0, "No argument expected", -1, NULL, NULL),
 
-  OP(teardownSession, 0, "No argument expected", -1, NULL, false),
-  OP(setupSession, 0, "No argument expected", -1, NULL, false),
-  OP(inSession, 0, "No argument expected", -1, NULL, false),
+  OP(teardownSession, 0, "No argument expected", -1, NULL, NULL),
+  OP(setupSession, 0, "No argument expected", -1, NULL, NULL),
+  OP(inSession, 0, "No argument expected", -1, NULL, NULL),
 
-  OP(exists, -1, NULL, 1, "Must specify config path", false),
-  OP(existsActive, -1, NULL, 1, "Must specify config path", false),
-  OP(existsEffective, -1, NULL, 1, "Must specify config path", false),
+  OP(exists, -1, NULL, 1, "Must specify config path", NULL),
+  OP(existsActive, -1, NULL, 1, "Must specify config path", NULL),
+  OP(existsEffective, -1, NULL, 1, "Must specify config path", NULL),
 
-  OP(listNodes, -1, NULL, -1, NULL, false),
-  OP(listActiveNodes, -1, NULL, -1, NULL, false),
-  OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path", false),
+  OP(listNodes, -1, NULL, -1, NULL, NULL),
+  OP(listActiveNodes, -1, NULL, -1, NULL, NULL),
+  OP(listEffectiveNodes, -1, NULL, 1, "Must specify config path", NULL),
 
-  OP(isMulti, -1, NULL, 1, "Must specify config path", false),
-  OP(isTag,  -1, NULL, 1, "Must specify config path", false),
-  OP(isLeaf, -1, NULL, 1, "Must specify config path", false),
-  OP(isValue, -1, NULL, 1, "Must specify config path", false),
-  OP(getNodeType, -1, NULL, 1, "Must specify config path", false),
+  OP(isMulti, -1, NULL, 1, "Must specify config path", NULL),
+  OP(isTag,  -1, NULL, 1, "Must specify config path", NULL),
+  OP(isLeaf, -1, NULL, 1, "Must specify config path", NULL),
+  OP(isValue, -1, NULL, 1, "Must specify config path", NULL),
+  OP(getNodeType, -1, NULL, 1, "Must specify config path", NULL),
 
-  OP(returnValue, -1, NULL, 1, "Must specify config path", false),
-  OP(returnActiveValue, -1, NULL, 1, "Must specify config path", false),
-  OP(returnEffectiveValue, -1, NULL, 1, "Must specify config path", false),
+  OP(returnValue, -1, NULL, 1, "Must specify config path", NULL),
+  OP(returnActiveValue, -1, NULL, 1, "Must specify config path", NULL),
+  OP(returnEffectiveValue, -1, NULL, 1, "Must specify config path", NULL),
 
-  OP(returnValues, -1, NULL, 1, "Must specify config path", false),
-  OP(returnActiveValues, -1, NULL, 1, "Must specify config path", false),
-  OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path", false),
+  OP(returnValues, -1, NULL, 1, "Must specify config path", NULL),
+  OP(returnActiveValues, -1, NULL, 1, "Must specify config path", NULL),
+  OP(returnEffectiveValues, -1, NULL, 1, "Must specify config path", NULL),
 
-  OP(validateTmplPath, -1, NULL, 1, "Must specify config path", false),
-  OP(validateTmplValPath, -1, NULL, 1, "Must specify config path", false),
+  OP(validateTmplPath, -1, NULL, 1, "Must specify config path", NULL),
+  OP(validateTmplValPath, -1, NULL, 1, "Must specify config path", NULL),
 
   OP(showCfg, -1, NULL, -1, NULL, true),
   OP(showConfig, -1, NULL, -1, NULL, true),
-  OP(loadFile, 1, "Must specify config file", -1, NULL, false),
+  OP(loadFile, 1, "Must specify config file", -1, NULL, NULL),
 
-  OP(getPreCommitHookDir, 0, "No argument expected", -1, NULL, false),
-  OP(getPostCommitHookDir, 0, "No argument expected", -1, NULL, false),
+  OP(getPreCommitHookDir, 0, "No argument expected", -1, NULL, NULL),
+  OP(getPostCommitHookDir, 0, "No argument expected", -1, NULL, NULL),
 
-  OP(cfExists, -1, NULL, 2, "Must specify config file and path", false),
-  OP(cfReturnValue, -1, NULL, 2, "Must specify config file and path", false),
-  OP(cfReturnValues, -1, NULL, 2, "Must specify config file and path", false),
+  OP(cfExists, -1, NULL, 2, "Must specify config file and path", NULL),
+  OP(cfReturnValue, -1, NULL, 2, "Must specify config file and path", NULL),
+  OP(cfReturnValues, -1, NULL, 2, "Must specify config file and path", NULL),
 
-  {NULL, -1, NULL, -1, NULL, false, NULL}
+  {NULL, -1, NULL, -1, NULL, NULL, NULL}
 };
 #define OP_exact_args  ops[op_idx].op_exact_args
 #define OP_min_args    ops[op_idx].op_min_args
@@ -716,12 +716,6 @@ struct option options[] = {
 int
 main(int argc, char **argv)
 {
-  fprintf(stderr, "DEBUG %s", argv[0]);
-  for (int i = 1; i < argc; i++) {
-    fprintf(stderr, " '%s'", argv[i]); // DEBUG
-  }
-  fprintf(stderr, "\n"); // DEBUG
-
   // handle options first
   int c = 0;
   while ((c = getopt_long(argc, argv, "", options, NULL)) != -1) {
@@ -773,4 +767,5 @@ main(int argc, char **argv)
   delete cstore;
   exit(0);
 }
+
 
