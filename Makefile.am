@@ -42,7 +42,6 @@ src_libvyatta_cfg_la_LIBADD += -lgio-2.0
 src_libvyatta_cfg_la_LIBADD += -lgobject-2.0
 src_libvyatta_cfg_la_LIBADD += -lboost_system
 src_libvyatta_cfg_la_LIBADD += -lboost_filesystem
-src_libvyatta_cfg_la_LIBADD += -lapt-pkg
 src_libvyatta_cfg_la_LIBADD += -lperl
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
 src_libvyatta_cfg_la_SOURCES = src/cli_parse.y src/cli_def.l src/cli_val.l
