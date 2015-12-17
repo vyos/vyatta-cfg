@@ -25,6 +25,9 @@
 #include <sstream>
 #include <memory>
 
+#include <apt-pkg/version.h>
+#include <apt-pkg/debversion.h>
+
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -2019,7 +2022,7 @@ Cstore::assert_internal(bool cond, const char *fmt, ...)
 bool
 Cstore::sort_func_deb_version(string a, string b)
 {
-  return strcmp(a.c_str(), b.c_str()) > 0;
+  return debVS.CmpVersion(a, b) > 0;
 }
 
 void
