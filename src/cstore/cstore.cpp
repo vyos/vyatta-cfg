@@ -2022,7 +2022,7 @@ Cstore::assert_internal(bool cond, const char *fmt, ...)
 bool
 Cstore::sort_func_deb_version(string a, string b)
 {
-  return debVS.CmpVersion(a, b) > 0;
+  return debVS.CmpVersion(a, b) < 0;
 }
 
 void
