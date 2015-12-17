@@ -25,11 +25,6 @@
 #include <sstream>
 #include <memory>
 
-// for debian's version comparison algorithm
-#define APT_COMPATIBILITY 986
-#include <apt-pkg/version.h>
-#include <apt-pkg/debversion.h>
-
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -2024,14 +2019,7 @@ Cstore::assert_internal(bool cond, const char *fmt, ...)
 bool
 Cstore::sort_func_deb_version(string a, string b)
 {
-  debVersioningSystem debVersioning;
-
-  const char* A = a.c_str();
-  const char* B = b.c_str();
-  const char* Aend = A + a.length();
-  const char* Bend = B + b.length();
-
-  return debVersioning.DoCmpVersion(A, Aend, B, Bend) > 0;
+  return strcmp(a.c_str(), b.c_str()) > 0;
 }
 
 void
