@@ -1,3 +1,19 @@
+vyatta-cfg (0.102.0+vyos2+current1) unstable; urgency=medium
+
+  [ Thomas Jepp ]
+  * Fix missing build depends and runtime depends. Add a runtime dependency on vyatta-quagga to ensure packages are configured in the right order.
+  * Build fixes for updated libraries on Jessie.
+  * More fixes to cstore-unionfs & cli_shell_api.
+  * Update Makefile.am and configure.ac to properly add GObject linking.
+  * Replace dpkg version comparisions with strcmp.
+  * Remove the dependency on apt.
+  * Go back to using the apt version comparison for node sorting.
+  * Fix the reversed sort order for nodes.
+
+  [ Kim Hagen ]
+
+ -- Kim Hagen <kim.sidney@gmail.com>  Sun, 24 Jan 2016 14:57:54 -0500
+
 vyatta-cfg (0.102.0+vyos2+lithium18) unstable; urgency=low
 
   [ Alex Harpin ]
