@@ -30,7 +30,7 @@ our @EXPORT = qw(getInterfaces getIP getNetAddIP get_sysfs_value
                  isIpAddress is_ip_v4_or_v6 interface_description
                  is_local_address is_primary_address get_ipnet_intf_hash
                  isValidPortNumber get_terminal_size get_terminal_height 
-                 get_terminal_width is_port_available );
+                 get_terminal_width is_port_available is_dhcp_4or6_enabled );
 our @EXPORT_OK = qw(generate_dhclient_intf_files 
                     getInterfacesIPadresses
                     getPortRuleString
@@ -148,6 +148,8 @@ sub get_sysfs_value {
 }
 
 # check if interface is configured to get an IP address using dhcp
+# this function ignores DHCPv6, and should not be used in most cases
+# it is left here while code is migrated away from it and to is_dhcp_4or6_enabled
 sub is_dhcp_enabled {
     my ( $name, $outside_cli ) = @_;
     my $intf = new Vyatta::Interface($name);
@@ -165,6 +167,24 @@ sub is_dhcp_enabled {
     return;
 }
 
+# check if interface is configured to get an IP address using DHCPv4 or DHCPv6
+# this is a replacement for is_dhcp_enabled, which only checks DHCPv4
+sub is_dhcp_4or6_enabled {
+    my $ifname = shift;
+    my $intf = new Vyatta::Interface($ifname);
+    return unless $intf;
+
+    my $config = new Vyatta::Config;
+    $config->setLevel($intf->path());
+
+    # the "effective" observers can be used both inside and outside config sessions
+    foreach my $address ($config->returnEffectiveValues('address')) {
+        return 1 if ($address and ($address eq 'dhcp' or $address eq 'dhcpv6'));
+    }
+
+    return;
+}
+
 # check if any non-dhcp addresses configured
 sub is_address_enabled {
     my $name = shift;
@@ -174,7 +194,7 @@ sub is_address_enabled {
     my $config = new Vyatta::Config;
     $config->setLevel( $intf->path() );
     foreach my $addr ( $config->returnOrigValues('address') ) {
-        return 1 if ( $addr && $addr ne 'dhcp' );
+        return 1 if ( $addr && $addr ne 'dhcp' && $addr ne 'dhcpv6' );
     }
 
     return;
