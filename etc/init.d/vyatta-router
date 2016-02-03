@@ -115,24 +115,31 @@ load_bootfile ()
 # system-wide grub directory so that tools that edit the grub.cfg
 # file will find it in the expected location.
 #
-bind_mount_boot()
+bind_mount_boot ()
 {
-    if [ -e /live/image/boot ]; then
-	image_name=`cat /proc/cmdline | sed -e s+^.*vyatta-union=/boot/++ | sed -e 's/ .*$//'`
-	if [ -n "$image_name" ]; then
-	    mount --bind /live/image/boot/$image_name /boot
-	    if [ $? -ne 0 ]; then
-		echo "Couldn't bind mount /boot"
-	    fi
-	    if [ ! -d /boot/grub ]; then
-		mkdir /boot/grub
-	    fi
-	    mount --bind /live/image/boot/grub /boot/grub
-	    if [ $? -ne 0 ]; then
-		echo "Couldn't bind mount /boot/grub"
-	    fi
+	persist_path=`/opt/vyatta/sbin/vyos-persistpath`
+	if [ $? == 0 ]; then
+		if [ -e $persist_path/boot ]; then
+			image_name=`cat /proc/cmdline | sed -e s+^.*vyatta-union=/boot/++ | sed -e 's/ .*$//'`
+			
+			if [ -n "$image_name" ]; then
+				mount --bind $persist_path/boot/$image_name /boot
+				
+				if [ $? -ne 0 ]; then
+					echo "Couldn't bind mount /boot"
+				fi
+				
+				if [ ! -d /boot/grub ]; then
+					mkdir /boot/grub
+				fi
+				
+				mount --bind $persist_path/boot/grub /boot/grub
+				if [ $? -ne 0 ]; then
+					echo "Couldn't bind mount /boot/grub"
+				fi
+			fi
+		fi
 	fi
-    fi
 }
 
 #
