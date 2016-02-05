@@ -120,7 +120,7 @@ bind_mount_boot ()
 	persist_path=`/opt/vyatta/sbin/vyos-persistpath`
 	if [ $? == 0 ]; then
 		if [ -e $persist_path/boot ]; then
-			image_name=`cat /proc/cmdline | sed -e s+^.*vyatta-union=/boot/++ | sed -e 's/ .*$//'`
+			image_name=`cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//'`
 			
 			if [ -n "$image_name" ]; then
 				mount --bind $persist_path/boot/$image_name /boot
