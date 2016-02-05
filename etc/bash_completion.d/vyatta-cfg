@@ -129,7 +129,7 @@ vyatta_run_complete ()
   COMP_WORDS=( "${COMP_WORDS[@]:1}" )
   (( COMP_CWORD -= 1 ))
   if [[ ${COMP_WORDS[0]} =~ "/" ]]; then
-    _filedir_xspec
+    _filedir_xspec_vyos
   else
     shopt -s extglob nullglob
     _vyatta_op_expand "$@"
@@ -1080,8 +1080,51 @@ vyatta_config_default_complete ()
   else
     # after the first word => cannot be vyatta command so use original default
     compopt -o filenames
-    _filedir_xspec
+    _filedir_xspec_vyos
   fi
+}
+
+_filedir_xspec_vyos()
+
+{
+    local cur prev words cword
+    _init_completion || return
+
+    _tilde "$cur" || return 0
+
+    local IFS=$'\n' xspec=${_xspec[${1##*/}]} tmp
+    local -a toks
+
+    toks=( $(
+        compgen -d -- "$(quote_readline "$cur")" | {
+        while read -r tmp; do
+            printf '%s\n' $tmp
+        done
+        }
+        ))
+
+    # Munge xspec to contain uppercase version too
+    # http://thread.gmane.org/gmane.comp.shells.bash.bugs/15294/focus=15306
+    eval xspec="${xspec}"
+    local matchop=!
+    if [[ $xspec == !* ]]; then
+        xspec=${xspec#!}
+        matchop=@
+    fi
+    xspec="$matchop($xspec|${xspec^^})"
+
+    toks+=( $(
+        eval compgen -f -X "!$xspec" -- "\$(quote_readline "\$cur")" | {
+        while read -r tmp; do
+            [[ -n $tmp ]] && printf '%s\n' $tmp
+        done
+        }
+        ))
+
+    if [[ ${#toks[@]} -ne 0 ]]; then
+        compopt -o filenames
+        COMPREPLY=( "${toks[@]}" )
+    fi
 }
 
 _vyatta_cfg_init 
