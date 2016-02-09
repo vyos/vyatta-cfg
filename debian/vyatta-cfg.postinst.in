@@ -20,7 +20,7 @@ update-rc.d vyatta-router defaults 90 >/dev/null
 
 if [ "$sysconfdir" != "/etc" ]; then
   # remove the config files and replace with blank ones
-  for conf in dhcp3/dhclient.conf 
+  for conf in dhcp/dhclient.conf 
   do
     [ -f /etc/$conf ] && mv -f /etc/$conf /etc/$conf.vyatta-save
     touch /etc/$conf

@@ -23,7 +23,7 @@
 RUN="yes"
 
 if [ "$RUN" = "yes" ]; then
-        LOG=/var/lib/dhcp3/dhclient_"$interface"_lease
+        LOG=/var/lib/dhcp/dhclient_"$interface"_lease
         echo `date` > $LOG
 
         for i in reason interface new_expiry new_dhcp_lease_time medium \

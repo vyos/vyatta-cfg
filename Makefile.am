@@ -6,7 +6,7 @@ initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
-dhcphookdir = /etc/dhcp3/dhclient-exit-hooks.d
+dhcphookdir = /etc/dhcp/dhclient-exit-hooks.d
 enumdir = $(datadir)/enumeration
 
 if USE_UNIONFSFUSE

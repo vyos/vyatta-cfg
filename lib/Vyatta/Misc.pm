@@ -183,7 +183,7 @@ sub is_address_enabled {
 # return dhclient related files for interface
 sub generate_dhclient_intf_files {
     my $intf = shift;
-    my $dhclient_dir = '/var/lib/dhcp3/';
+    my $dhclient_dir = '/var/lib/dhcp/';
 
     $intf =~ s/\./_/g;
     my $intf_config_file     = $dhclient_dir . 'dhclient_' . $intf . '.conf';
