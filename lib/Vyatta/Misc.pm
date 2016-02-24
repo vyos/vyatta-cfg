@@ -40,7 +40,7 @@ use Vyatta::Config;
 use Vyatta::Interface;
 use NetAddr::IP;
 use Socket;
-use Socket6;
+Socket6->import(qw(inet_pton getaddrinfo));
 
 #
 # returns a hash of ipaddrs => interface

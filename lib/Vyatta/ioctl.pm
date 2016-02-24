@@ -22,7 +22,7 @@ package Vyatta::ioctl;
 use strict;
 use warnings;
 use Socket;
-use Socket6;
+Socket6->import(qw(inet_pton getaddrinfo));
 
 {
     local $^W = 0;
