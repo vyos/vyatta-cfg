@@ -18,15 +18,6 @@ done
 
 update-rc.d vyatta-router defaults 90 >/dev/null
 
-if [ "$sysconfdir" != "/etc" ]; then
-  # remove the config files and replace with blank ones
-  for conf in dhcp/dhclient.conf 
-  do
-    [ -f /etc/$conf ] && mv -f /etc/$conf /etc/$conf.vyatta-save
-    touch /etc/$conf
-  done
-fi
-
 # capability stuff
 for bin in my_cli_bin my_cli_shell_api; do
   touch -ac $sbindir/$bin
