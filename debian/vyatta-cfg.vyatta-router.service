@@ -1,1 +1,21 @@
-systemd/vyatta-router.service
+[Unit]
+SourcePath=/etc/init.d/vyatta-router
+Description=VyOS Router
+Before=runlevel2.target runlevel3.target runlevel4.target runlevel5.target shutdown.target getty@tty1.service getty@tty2.service getty@rrt3.service getty@tty4.service getty@tty5.service getty@tty6.service
+After=systemd-journald-dev-log.socket time-sync.target local-fs.target vyatta-unicast.service
+Conflicts=shutdown.target
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=yes
+SysVStartPriority=4
+ExecStart=/etc/init.d/vyatta-router start
+ExecStop=/etc/init.d/vyatta-router stop
+
+[Install]
+WantedBy=multi-user.target
