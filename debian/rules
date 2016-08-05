@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+export DH_OPTIONS
+
 ## uncomment to enable hardening
 #export DEB_BUILD_HARDENING=1
 
@@ -14,36 +16,33 @@ cfg_opts += LDFLAGS="-Wl,-z,defs"
 cfg_opts += CXXFLAGS="$(CXXFLAGS)"
 inst_opts := --sourcedir=debian/tmp
 
-clean:
-	dh clean
+%:
+	dh $@ --with=autoreconf,systemd
 
-binary binary-arch binary-indep: install
+autoreconf:
+	autoreconf -f -i
+
+override_dh_perl:
 	rm -f debian/files
-	dh binary --before dh_perl
 	dh_perl /opt/vyatta/share/perl5 /opt/vyatta/share/perl5/Vyatta
-	dh binary --after dh_perl --before dh_gencontrol
+
+override_dh_gencontrol:
 	rm -f debian/*/DEBIAN/conffiles
 	if [ -f "../.VYOS_DEV_BUILD" ]; then \
 		dh_gencontrol -- -v999.dev; \
 	else \
 		dh_gencontrol; \
 	fi
-	dh binary --after dh_gencontrol
 
-build: Makefile
-build:
+override_dh_auto_configure:
 	rm -f debian/*.debhelper*
-	dh build --before configure
-	dh build --after configure --before dh_auto_test
-	dh build --after dh_auto_test
-
-Makefile: Makefile.in
 	./configure $(cfg_opts)
 
-Makefile.in: Makefile.am configure.ac
-	autoreconf -i --force
+override_dh_auto_test:
 
-install: build
-	dh install --before dh_install
+override_dh_install:
 	dh_install $(inst_opts)
+
+override_dh_systemd_enable:
+	dh_systemd_enable -pvyatta-cfg --name vyatta-router vyatta-router.service
 
