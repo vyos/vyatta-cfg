@@ -17,6 +17,7 @@ for dir in $sysconfdir/config $prefix/config; do
 done
 
 update-rc.d vyatta-router defaults 90 >/dev/null
+systemctl enable vyatta-router.service >/dev/null
 
 # capability stuff
 for bin in my_cli_bin my_cli_shell_api; do
