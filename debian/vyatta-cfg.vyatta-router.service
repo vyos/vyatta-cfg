@@ -6,7 +6,7 @@ After=systemd-journald-dev-log.socket time-sync.target local-fs.target vyatta-un
 Conflicts=shutdown.target
 
 [Service]
-Type=forking
+Type=oneshot
 Restart=no
 TimeoutSec=5min
 IgnoreSIGPIPE=no
@@ -16,6 +16,7 @@ RemainAfterExit=yes
 SysVStartPriority=4
 ExecStart=/etc/init.d/vyatta-router start
 ExecStop=/etc/init.d/vyatta-router stop
+StandardOutput=journal+console
 
 [Install]
 WantedBy=multi-user.target
