@@ -5,6 +5,7 @@
 *.so
 *.libs
 *.deps
+*.pyc
 .dirstamp
 libtool
 aclocal.m4
