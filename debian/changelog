@@ -1,3 +1,10 @@
+vyatta-cfg (0.102.0+vyos2+current2) unstable; urgency=low
+
+  [ Jason Hendry ]
+  * Adding python-vyos-mgmt library to the vyatta-cfg package
+
+ -- Jason Hendry <jasonhendry1987@gmail.com>  Mon, 9 Jan 2017 10:18:00 +0000
+
 vyatta-cfg (0.102.0+vyos2+current1) unstable; urgency=medium
 
   [ Thomas Jepp ]
