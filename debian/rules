@@ -5,6 +5,9 @@ export DH_OPTIONS
 ## uncomment to enable hardening
 #export DEB_BUILD_HARDENING=1
 
+export PYBUILD_SYSTEM=distutils
+export PYBUILD_DIR=python
+
 cfg_opts := --prefix=/opt/vyatta
 cfg_opts += --libdir=/usr/lib
 cfg_opts += --includedir=/usr/include
@@ -41,6 +44,7 @@ override_dh_auto_configure:
 override_dh_auto_test:
 
 override_dh_install:
+	pybuild
 	dh_install $(inst_opts)
 
 override_dh_systemd_enable:
