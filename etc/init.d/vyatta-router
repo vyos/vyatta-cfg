@@ -117,10 +117,10 @@ load_bootfile ()
 #
 bind_mount_boot ()
 {
-	persist_path=`/opt/vyatta/sbin/vyos-persistpath`
+	persist_path=$(/opt/vyatta/sbin/vyos-persistpath)
 	if [ $? == 0 ]; then
 		if [ -e $persist_path/boot ]; then
-			image_name=`cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//'`
+			image_name=$(cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//')
 			
 			if [ -n "$image_name" ]; then
 				mount --bind $persist_path/boot/$image_name /boot
@@ -152,14 +152,14 @@ bind_mount_boot ()
 #
 mount_slash_config ()
 {
-    mounted=`mount | grep /opt/vyatta/etc/config`
+    mounted=$(mount | grep /opt/vyatta/etc/config)
 
-if [ -z "$mounted" ]; then
+    if [ -z "$mounted" ]; then
         if [ ! -d /config ]; then
             mkdir /config
         fi
         mount --bind /opt/vyatta/etc/config /config
-else
+    else
         if [ ! -d /config ]; then
             mkdir /config
             mount --bind /opt/vyatta/etc/config /config
