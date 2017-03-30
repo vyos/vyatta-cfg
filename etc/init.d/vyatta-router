@@ -154,11 +154,16 @@ mount_slash_config ()
 {
     mounted=`mount | grep /opt/vyatta/etc/config`
 
-    if [ -z "$mounted" ]; then
-	if [ ! -d /config ]; then
-	    mkdir /config
-	fi
-	mount --bind /opt/vyatta/etc/config /config
+if [ -z "$mounted" ]; then
+        if [ ! -d /config ]; then
+            mkdir /config
+        fi
+        mount --bind /opt/vyatta/etc/config /config
+else
+        if [ ! -d /config ]; then
+            mkdir /config
+            mount --bind /opt/vyatta/etc/config /config
+        fi
     fi
     chgrp -R ${GROUP} /config
 }
