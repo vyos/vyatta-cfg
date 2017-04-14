@@ -1,3 +1,94 @@
+vyatta-cfg (0.102.0+vyos1+helium13) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: fix formatting issue with top level cli merge command
+  * vyatta-cfg: updated fix for formatting top level cli merge command
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 12 Aug 2015 04:05:34 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium12) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: update get_ipaddr_int_hash for vtun and wan interfaces
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Tue, 24 Feb 2015 22:40:10 +0000
+ 
+vyatta-cfg (0.102.0+vyos1+helium11) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: set the path for a vrrp interface correctly
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Tue, 24 Feb 2015 21:30:32 +0000
+ 
+vyatta-cfg (0.102.0+vyos1+helium10) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: fix for "failed to generate commited config"
+
+ -- Alex Harpin <development@landsofshadow.co.uk>  Mon, 12 Jan 2015 23:26:10 +0000
+ 
+vyatta-cfg (0.102.0+vyos1+helium9) unstable; urgency=low
+
+  * Force release
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 08 Oct 2014 21:16:08 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium8) unstable; urgency=low
+
+  * Add QinQ support to the intf name to path function.
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 08 Oct 2014 21:12:10 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium7) unstable; urgency=low
+
+  [ Alex Harpin ]
+  * vyatta-cfg: formatting changes for style consistency
+  * vyatta-cfg: display openvpn interface descriptions after they reset
+  * vyatta-cfg: formatting changes for style consistency
+  * vyatta-cfg: return correct path for pppoe or pppoa interfaces
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 08 Oct 2014 16:29:39 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium6) unstable; urgency=low
+
+  * Replace some old Vyatta names.
+
+ -- Daniil Baturin <daniil@baturin.org>  Mon, 18 Aug 2014 01:06:34 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium5) unstable; urgency=low
+
+  * Update maintainer address.
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 27 Jul 2014 10:42:14 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium4) unstable; urgency=low
+
+  [ Hiroyuki Sato ]
+  * Bug #180 save config using scp fails.
+
+  [ Kim Hagen ]
+  * Removed part of dirty workaround, chmod of of /dev/fuse and
+    /usr/bin/fusermount
+  * Removed dirty workaround for fuse completely.
+
+  [ Daniil Baturin ]
+  * Bug #251: add dirty hack for taking config from stdin
+
+ -- Daniil Baturin <daniil@baturin.org>  Wed, 02 Jul 2014 05:22:56 +0200
+
+vyatta-cfg (0.102.0+vyos1+helium3) unstable; urgency=low
+
+  [ higebu ]
+  * Add support for l2tpv3
+
+  [ Daniil Baturin ]
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 06 Apr 2014 13:45:53 +0200
+
 vyatta-cfg (0.102.0+vyos1+helium2) unstable; urgency=low
 
   * Import and adapt Kim Hagen's changes for union-fs support.

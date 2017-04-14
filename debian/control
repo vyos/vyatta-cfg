@@ -1,7 +1,7 @@
 Source: vyatta-cfg
 Section: contrib/net
 Priority: extra
-Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
+Maintainer: VyOS Package Maintainers <maintainers@vyos.net>
 Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
  libboost-filesystem1.42-dev, libapt-pkg-dev, libtool, flex,
  bison, libperl-dev
@@ -34,8 +34,8 @@ Suggests: util-linux (>= 2.13-5),
  net-tools,
  ncurses-bin (>= 5.5-5),
  ntpdate
-Description: Vyatta configuration system
- This package provides the Vyatta configuration system, including the base
+Description: VyOS configuration system
+ This package provides the VyOS configuration system, including the base
  configuration templates and the config-mode CLI completion mechanism.
 
 Package: libvyatta-cfg1

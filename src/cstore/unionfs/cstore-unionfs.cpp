@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mount.h>
+#include <wait.h>
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -61,6 +62,7 @@ const string UnionfsCstore::C_MARKER_DEF_VALUE  = "def";
 const string UnionfsCstore::C_MARKER_DEACTIVATE = ".disable";
 const string UnionfsCstore::C_MARKER_CHANGED = ".modified";
 const string UnionfsCstore::C_MARKER_UNSAVED = ".unsaved";
+const string UnionfsCstore::C_MARKER_UNIONFS = ".unionfs";
 const string UnionfsCstore::C_COMMITTED_MARKER_FILE = ".changes";
 const string UnionfsCstore::C_COMMENT_FILE = ".comment";
 const string UnionfsCstore::C_TAG_NAME = "node.tag";
@@ -68,6 +70,9 @@ const string UnionfsCstore::C_VAL_NAME = "node.val";
 const string UnionfsCstore::C_DEF_NAME = "node.def";
 const string UnionfsCstore::C_COMMIT_LOCK_FILE = "/opt/vyatta/config/.lock";
 
+pid_t pid;
+int status;
+int commpipe[2];
 
 ////// static
 static MapT<char, string> _fs_escape_chars;
@@ -636,6 +641,9 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
 bool
 UnionfsCstore::commitConfig(commit::PrioNode& node)
 {
+  FsPath active_unionfs = active_root;
+  active_unionfs.push(C_MARKER_UNIONFS);
+  
   // make a copy of current "work" dir
   try {
     if (path_exists(tmp_work_root)) {
@@ -647,6 +655,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     }
     output_internal("cp[%s]->[%s]\n", work_root.path_cstr(),
                     tmp_work_root.path_cstr());
+
     recursive_copy_dir(work_root, tmp_work_root, true);
   } catch (const b_fs::filesystem_error& e) {
     output_internal("cp w->tw failed[%s]\n", e.what());
@@ -695,6 +704,18 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
       || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
     output_user("failed to remove temp directories\n");
     return false;
+  }
+  try {
+    b_fs::remove_all(active_unionfs.path_cstr());
+  } catch (const b_fs::filesystem_error& e) {
+    output_internal("rm active unionfs failed[%s]\n", e.what());
+    return false;
+  } catch (...) {
+    output_internal("rm active unionfs[unknown exception]\n");
+    return false;
+  }
+  if (path_exists(active_unionfs)) {
+    output_internal("failed to remove unionfs directories from active config\n");
   }
   // all done
   return true;
@@ -1478,20 +1499,45 @@ UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                         const FsPath& mdir)
 {
 #ifdef USE_UNIONFSFUSE
-  string mopts = "/usr/bin/unionfs-fuse ";
-  mopts += "-o cow -o allow_other ";
-  mopts += rwdir.path_cstr();
+  const char *fusepath, *fuseprog;
+  const char *fuseoptinit;
+  const char *fuseopt1, *fuseopt2;
+  string mopts;
+
+  fusepath = "/usr/bin/unionfs-fuse";
+  fuseprog = "unionfs-fuse";
+  fuseoptinit = "-o";
+  fuseopt1 = "cow";
+  fuseopt2 = "allow_other";
+  mopts = rwdir.path_cstr();
   mopts += "=RW:";
   mopts += rdir.path_cstr();
   mopts += "=RO";
-  mopts += " ";
-  mopts += mdir.path_cstr();
 
-  if (system(mopts.c_str()) != 0)
-  {
-    output_internal("union mount failed [%s][%s][%s]\n",
-                    strerror(errno), mdir.path_cstr(), mopts.c_str());
+  if(pipe(commpipe)){
+    output_internal("Pipe error!\n");
     return false;
+  }
+
+  if((pid = fork()) == -1) {
+    output_internal("*** ERROR: forking child process failed\n");
+    return false;
+  }
+
+  if(pid) {
+    dup2(commpipe[1],1);
+    close(commpipe[0]);
+    setvbuf(stdout,(char*)NULL,_IONBF,0);
+    wait(&status);
+  }
+  else {
+    dup2(commpipe[0],0);
+    close(commpipe[1]);
+    if (execl(fusepath, fuseprog, fuseoptinit, fuseopt1, fuseoptinit, fuseopt2, mopts.c_str(), mdir.path_cstr(), NULL) != 0) {
+        output_internal("union mount failed [%s][%s][%s]\n",
+                   strerror(errno), mdir.path_cstr(), mopts.c_str());
+        return false;
+    }
   }
 #else
   string mopts = "dirs=";
@@ -1512,15 +1558,38 @@ bool
 UnionfsCstore::do_umount(const FsPath& mdir)
 {
 #ifdef USE_UNIONFSFUSE
-    string umount_cmd = "/usr/bin/fusermount -u ";
-    umount_cmd += mdir.path_cstr();
+  const char *fusermount_path, *fusermount_prog;
+  const char *fusermount_umount;
 
-    if (system(umount_cmd.c_str()) != 0)
-    {
-      output_internal("union umount failed [%s][%s]\n",
-                      strerror(errno), mdir.path_cstr());
-      return(false);
+  fusermount_path = "/usr/bin/fusermount";
+  fusermount_prog = "fusermount";
+  fusermount_umount = "-u";
+
+  if(pipe(commpipe)){
+    output_internal("Pipe error!\n");
+    return false;
+  }
+
+  if((pid = fork()) == -1) {
+    output_internal("*** ERROR: forking child process failed\n");
+    return false;
+  }
+
+  if(pid) {
+    dup2(commpipe[1],1);
+    close(commpipe[0]);
+    setvbuf(stdout,(char*)NULL,_IONBF,0);
+    wait(&status);
+  }
+  else {
+    dup2(commpipe[0],0);
+    close(commpipe[1]);
+    if (execl(fusermount_path, fusermount_prog, fusermount_umount, mdir.path_cstr(), NULL) != 0) {
+        output_internal("union mount failed [%s][%s]\n",
+                   strerror(errno), mdir.path_cstr());
+        return false;
     }
+  }
 #else
   if (umount(mdir.path_cstr()) != 0) {
     output_internal("union umount failed [%s][%s]\n",
