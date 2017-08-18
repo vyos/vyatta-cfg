@@ -41,7 +41,6 @@ override_dh_auto_configure:
 override_dh_auto_test:
 
 override_dh_install:
-	pybuild
 	dh_install $(inst_opts)
 
 override_dh_systemd_enable:
