@@ -5,9 +5,6 @@ export DH_OPTIONS
 ## uncomment to enable hardening
 #export DEB_BUILD_HARDENING=1
 
-export PYBUILD_SYSTEM=distutils
-export PYBUILD_DIR=python
-
 cfg_opts := --prefix=/opt/vyatta
 cfg_opts += --libdir=/usr/lib
 cfg_opts += --includedir=/usr/include
