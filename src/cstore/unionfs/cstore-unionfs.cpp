@@ -179,7 +179,7 @@ vector<int> getActiveCommits()
       int pid = atoi(dirp->d_name);
       if (pid > 0) {
         string command_path = string("/proc/") + dirp->d_name + "/cmdline";
-        ifstream command_file(command_path.c_str());
+        std::ifstream command_file(command_path.c_str());
         string command_line;
         getline(command_file, command_line);
         if (!command_line.empty()) {
@@ -1513,8 +1513,8 @@ UnionfsCstore::write_file(const char *file, const string& data, bool append)
     b_fs::create_directories(ppath.path_cstr());
 
     // write the file
-    ofstream fout;
-    fout.exceptions(ofstream::failbit | ofstream::badbit);
+    std::ofstream fout;
+    fout.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     ios_base::openmode mflags = ios_base::out;
     mflags |= ((!append || !path_exists(file))
                ? ios_base::trunc : ios_base::app); // truncate or append
@@ -1543,7 +1543,7 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
     }
 
     stringbuf sbuf;
-    ifstream fin(fpath.path_cstr());
+    std::ifstream fin(fpath.path_cstr());
     fin >> &sbuf;
     fin.close();
     /* note: if file contains just a newline => (eof() && fail())
@@ -1605,7 +1605,7 @@ UnionfsCstore::find_line_in_file(const FsPath& file, const string& line)
 {
   bool ret = false;
   try {
-    ifstream fin(file.path_cstr());
+    std::ifstream fin(file.path_cstr());
     while (!fin.eof() && !fin.bad() && !fin.fail()) {
       string in;
       getline(fin, in);

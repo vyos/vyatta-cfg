@@ -4,6 +4,7 @@ export DH_OPTIONS
 
 ## uncomment to enable hardening
 #export DEB_BUILD_HARDENING=1
+CXXFLAGS += -Wno-deprecated-declarations
 
 cfg_opts := --prefix=/opt/vyatta
 cfg_opts += --libdir=/usr/lib
