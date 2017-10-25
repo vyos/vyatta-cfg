@@ -447,7 +447,7 @@ UnionfsCstore::setupSession()
 
     // remove old config session directories but only for the current user
 
-    if (directory_uid == current_uid && (directory_uid != 0 ) {
+    if (directory_uid == current_uid && directory_uid != 0 ) {
       string config_match = work_base.path_cstr() + std::string("/new_config_");
       string current_path = directories[i].path_cstr();
 
