@@ -47,7 +47,9 @@ main(int argc, char** argv)
   int ch;
 
   /* this is needed before calling certain glib functions */
+  #if !GLIB_CHECK_VERSION(2,35,0)
   g_type_init();
+  #endif
 
   //grab inputs
   while ((ch = getopt(argc, argv, "dvh")) != -1) {

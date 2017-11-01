@@ -35,7 +35,9 @@ main(int argc, char** argv)
   unsigned long act = 0;
 
   /* this is needed before calling certain glib functions */
+  #if !GLIB_CHECK_VERSION(2,35,0)
   g_type_init();
+  #endif
 
   //grab inputs
   while ((ch = getopt(argc, argv, "dhp:a:")) != -1) {
