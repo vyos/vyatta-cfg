@@ -340,7 +340,11 @@ private:
   virtual void pop_cfg_path(string& last) = 0;
   virtual void append_cfg_path(const Cpath& path_comps) = 0;
   virtual void reset_paths(bool to_root = false) = 0;
+  #if __GNUC__ < 6
+  virtual auto_ptr<SavePaths> create_save_paths() = 0;
+  #else
   virtual unique_ptr<SavePaths> create_save_paths() = 0;
+  #endif
   virtual bool cfg_path_at_root() = 0;
   virtual bool tmpl_path_at_root() = 0;
   // end path modifiers

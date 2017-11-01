@@ -186,9 +186,15 @@ private:
     FsPath cpath;
     FsPath tpath;
   };
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> create_save_paths() {
+    return auto_ptr<SavePaths>(new UnionfsSavePaths(this));
+  };
+  #else
   unique_ptr<SavePaths> create_save_paths() {
     return unique_ptr<SavePaths>(new UnionfsSavePaths(this));
   };
+  #endif
 
   bool cfg_path_at_root() {
     return (!mutable_cfg_path.has_parent_path());

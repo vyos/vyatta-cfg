@@ -560,7 +560,11 @@ UnionfsCstore::clearCommittedMarkers()
 bool
 UnionfsCstore::construct_commit_active(commit::PrioNode& node)
 {
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   reset_paths();
   append_cfg_path(node.getCommitPath());
 

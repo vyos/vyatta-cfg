@@ -215,7 +215,11 @@ void
 Cstore::tmplGetChildNodes(const Cpath& path_comps,
                           vector<string>& cnodes)
 {
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_tmpl_path(path_comps);
   get_all_tmpl_child_node_names(cnodes);
   sort_nodes(cnodes);
@@ -252,7 +256,11 @@ Cstore::deleteCfgPath(const Cpath& path_comps)
    */
   if (def->getDefault()) {
     // case 1. construct path for value file.
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     append_cfg_path(path_comps);
     if (def->isValue()) {
       // last comp is "value". need to go up 1 level.
@@ -287,7 +295,11 @@ Cstore::deleteCfgPath(const Cpath& path_comps)
    *       => remove node
    */
   bool ret = false;
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   if (!def->isValue()) {
     // sub-case (2)
@@ -333,7 +345,11 @@ Cstore::validateSetPath(const Cpath& path_comps)
     return false;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   if (!def->isValue()) {
     if (!def->isTypeless()) {
       /* disallow setting value node without value
@@ -383,7 +399,11 @@ Cstore::validateActivatePath(const Cpath& path_comps)
   if (def->isTagValue() && def->getTagLimit() > 0) {
     // we are activating a tag, and there is a limit on number of tags.
     vector<string> cnodes;
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     append_cfg_path(path_comps);
     string t;
     pop_cfg_path(t);
@@ -452,7 +472,11 @@ Cstore::getEditEnv(const Cpath& path_comps, string& env)
       return false;
     }
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   append_tmpl_path(path_comps);
   get_edit_env(env);
@@ -493,7 +517,11 @@ Cstore::getEditUpEnv(string& env)
     output_user("%s\n", terr.c_str());
     return false;
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   if (def->isTagValue()) {
     // edit level is at "tag value". go up 1 extra level.
     pop_cfg_path();
@@ -515,7 +543,11 @@ Cstore::getEditResetEnv(string& env)
 {
   ASSERT_IN_SESSION;
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   while (!edit_level_at_root()) {
     pop_cfg_path();
     pop_tmpl_path();
@@ -579,7 +611,11 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
   /* at this point, pcomps contains the command line arguments minus the
    * "command" and the last one.
    */
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   bool is_typeless = true;
   bool is_leaf_value = false;
   bool is_value = false;
@@ -657,7 +693,11 @@ Cstore::getCompletionEnv(const Cpath& comps, string& env)
      * so need to save current paths and reset them before (and restore them
      * after).
      */
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save1(create_save_paths());
+    #else
     unique_ptr<SavePaths> save1(create_save_paths());
+    #endif
     reset_paths();
     for (size_t i = 0; i < comp_vals.size(); i++) {
       pair<string, string> hpair(comp_vals[i], "");
@@ -918,7 +958,11 @@ Cstore::validateMoveArgs(const Cpath& args)
     output_user("Invalid move command\n");
     return false;
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(epath);
   append_tmpl_path(epath);
   return validate_rename_copy(nargs, "move");
@@ -936,7 +980,11 @@ Cstore::renameCfgPath(const Cpath& args)
   const char *otagnode = args[0];
   const char *otagval = args[1];
   const char *ntagval = args[4];
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   push_cfg_path(otagnode);
   if (!rename_child_node(otagval, ntagval)) {
     return false;
@@ -1038,7 +1086,11 @@ Cstore::commentCfgPath(const Cpath& args)
 
   bool ret = false;
   {
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     append_cfg_path(path_comps);
     if (comment == "") {
       // follow original impl: empty comment => remove it
@@ -1096,7 +1148,11 @@ Cstore::moveCfgPath(const Cpath& args)
     output_user("Invalid move command\n");
     return false;
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(epath);
   append_tmpl_path(epath);
   return renameCfgPath(nargs);
@@ -1178,7 +1234,11 @@ Cstore::cfgPathChanged(const Cpath& path_comps)
   if (cfgPathDeleted(path_comps) || cfgPathAdded(path_comps)) {
     return true;
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return cfg_node_changed();
 }
@@ -1296,7 +1356,11 @@ Cstore::cfgPathMarkedDeactivated(const Cpath& path_comps, bool active_cfg)
     ASSERT_IN_SESSION;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return marked_deactivated(active_cfg);
 }
@@ -1331,7 +1395,11 @@ Cstore::cfgPathGetChildNodesDA(const Cpath& path_comps, vector<string>& cnodes,
     return;
   }
   {
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     append_cfg_path(path_comps);
     get_all_child_node_names(cnodes, active_cfg, include_deactivated);
   }
@@ -1384,7 +1452,11 @@ Cstore::cfgPathGetValueDA(const Cpath& path_comps, string& value,
     return false;
   }
   vector<string> vvec;
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   if (read_value_vec(vvec, active_cfg)) {
     if (vvec.size() >= 1) {
@@ -1441,7 +1513,11 @@ Cstore::cfgPathGetValuesDA(const Cpath& path_comps, vector<string>& values,
     // specified node doesn't exist
     return false;
   }
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return read_value_vec(values, active_cfg);
 }
@@ -1460,7 +1536,11 @@ Cstore::cfgPathGetComment(const Cpath& path_comps, string& comment,
     ASSERT_IN_SESSION;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return get_comment(comment, active_cfg);
 }
@@ -1476,7 +1556,11 @@ Cstore::cfgPathDefault(const Cpath& path_comps, bool active_cfg)
     ASSERT_IN_SESSION;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return marked_display_default(active_cfg);
 }
@@ -1716,7 +1800,11 @@ Cstore::cfgPathGetEffectiveValues(const Cpath& path_comps,
 char *
 Cstore::getVarRef(const char *ref_str, vtw_type_e& type, bool from_active)
 {
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   VarRef vref(this, ref_str, from_active);
   string val;
   vtw_type_e t;
@@ -1752,7 +1840,11 @@ Cstore::setVarRef(const char *ref_str, const char *value, bool to_active)
    *       that's what the template specifies.
    *     * it only supports only single-value leaf nodes.
    */
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   VarRef vref(this, ref_str, to_active);
   Cpath pcomps;
   if (vref.getSetPath(pcomps)) {
@@ -1786,7 +1878,11 @@ Cstore::markCfgPathDeactivated(const Cpath& path_comps)
     return true;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   // note: also mark changed
   return (mark_deactivated() && unmark_deactivated_descendants()
@@ -1802,7 +1898,11 @@ Cstore::unmarkCfgPathDeactivated(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   // note: also mark changed
   return (unmark_deactivated() && mark_changed_with_ancestors());
@@ -1919,7 +2019,11 @@ Cstore::unmarkCfgPathChanged(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return unmark_changed_with_descendants();
 }
@@ -1935,7 +2039,11 @@ Cstore::executeTmplActions(char *at_str, const Cpath& path,
   sdisp += " ";
   set_at_string(at_str);
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path);
   append_tmpl_path(path);
 
@@ -1950,7 +2058,11 @@ Cstore::executeTmplActions(char *at_str, const Cpath& path,
 bool
 Cstore::cfgPathMarkedCommitted(const Cpath& path_comps, bool is_delete)
 {
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return marked_committed(is_delete);
 }
@@ -1958,7 +2070,11 @@ Cstore::cfgPathMarkedCommitted(const Cpath& path_comps, bool is_delete)
 bool
 Cstore::markCfgPathCommitted(const Cpath& path_comps, bool is_delete)
 {
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   append_cfg_path(path_comps);
   return mark_committed(is_delete);
 }
@@ -2105,7 +2221,11 @@ Cstore::get_parsed_tmpl(const Cpath& path_comps, bool validate_vals,
     }
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
 
   /* need at least 1 comp to work. 2 comps if last comp is value.
    * so pop tmpl_path and prepend them. note that path_comps remain
@@ -2375,7 +2495,11 @@ Cstore::cfg_path_exists(const Cpath& path_comps, bool active_cfg,
 {
   bool ret = false;
   {
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     append_cfg_path(path_comps);
     // first check if it's a "node".
     ret = cfg_node_exists(active_cfg);
@@ -2427,7 +2551,11 @@ Cstore::set_cfg_path(const Cpath& path_comps, bool output)
     }
 
     // paths have not been changed up to this point. now save them.
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
 
     path_exists = false;
 
@@ -2479,7 +2607,11 @@ Cstore::set_cfg_path(const Cpath& path_comps, bool output)
   }
 
   if (ret && def->isValue() && def->getDefault()) {
+    #if __GNUC__ < 6
+    auto_ptr<SavePaths> save(create_save_paths());
+    #else
     unique_ptr<SavePaths> save(create_save_paths());
+    #endif
     /* a node with default has been explicitly set. needs to be marked
      * as non-default for display purposes.
      *
@@ -2630,7 +2762,11 @@ Cstore::get_child_nodes_status_da(const Cpath& path_comps,
         && cfg_path_exists(ppath, false, true)) {
       cmap[work_nodes[i]] = C_NODE_STATUS_ADDED;
     } else {
+      #if __GNUC__ < 6
+      auto_ptr<SavePaths> save(create_save_paths());
+      #else
       unique_ptr<SavePaths> save(create_save_paths());
+      #endif
       append_cfg_path(ppath);
       if (cfg_node_changed()) {
         cmap[work_nodes[i]] = C_NODE_STATUS_CHANGED;
@@ -2739,7 +2875,11 @@ Cstore::validate_val(const tr1::shared_ptr<Ctemplate>& def, const char *value)
   }
 
   // validate_value() may change "value". make a copy first.
+  #if __GNUC__ < 6
+  auto_ptr<char> vbuf(strdup(value));
+  #else
   unique_ptr<char> vbuf(strdup(value));
+  #endif
 
   /* set the handle to be used during validate_value() for var ref
    * processing. this is a global var in cli_new.c.
@@ -2861,7 +3001,11 @@ Cstore::create_default_children(const Cpath& path_comps)
   bool ret = true;
   Cpath pcomps(path_comps);
   // need to save/reset/restore paths for get_parsed_tmpl()
+  #if __GNUC__ < 6
+  auto_ptr<SavePaths> save(create_save_paths());
+  #else
   unique_ptr<SavePaths> save(create_save_paths());
+  #endif
   reset_paths();
   for (size_t i = 0; i < tcnodes.size(); i++) {
     pcomps.push(tcnodes[i]);

@@ -313,7 +313,11 @@ _exec_node_actions(Cstore& cs, CfgNode& node, vtw_act_type act,
     nop = true;
   }
 
+  #if __GNUC__ < 6
+  auto_ptr<char> at_str;
+  #else
   unique_ptr<char> at_str;
+  #endif
   Cpath pcomps(node.getCommitPath());
   tr1::shared_ptr<Cpath> pdisp(new Cpath(pcomps));
   bool add_parent_to_committed = false;
@@ -428,7 +432,11 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
       continue;
     }
     string v = _get_commit_multi_value_at(node, i);
+    #if __GNUC__ < 6
+    auto_ptr<char> at_str(strdup(v.c_str()));
+    #else
     unique_ptr<char> at_str(strdup(v.c_str()));
+    #endif
     tr1::shared_ptr<Cpath> pdisp(new Cpath(pcomps));
     pdisp->push(v);
 
@@ -1216,7 +1224,11 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
      * chance to clean up any intermediate state that are no longer needed.
      */
     Cpath rp;
+    #if __GNUC__ < 6
+    auto_ptr<CfgNode> cn(new CfgNode(rp, NULL, NULL, NULL, 0, &cs, false));
+    #else
     unique_ptr<CfgNode> cn(new CfgNode(rp, NULL, NULL, NULL, 0, &cs, false));
+    #endif
     PrioNode pn(cn.get());
     pn.setSucceeded(true);
     if (!cs.commitConfig(pn)) {
