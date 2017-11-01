@@ -20,7 +20,6 @@ Depends: sed (>= 4.1.5),
  libvyatta-cfg1 (>=${binary:Version}),
  unionfs-fuse,
  libboost-filesystem1.55.0 | libboost-filesystem1.62.0,
- vyatta-quagga,
  libapt-pkg4.12,
  ${perl:Depends}, ${shlibs:Depends}
 Suggests: util-linux (>= 2.13-5),
@@ -47,5 +46,5 @@ Section: libdevel
 Depends: libvyatta-cfg1 (>=${binary:Version}),
  libboost-filesystem1.55-dev | libboost-filesystem1.62-dev
 Description: libvyatta-cfg development package
- Development header and library files for the Vyatta configuration back-end
+ Development header and library files for the VyOS configuration back-end
  library.
