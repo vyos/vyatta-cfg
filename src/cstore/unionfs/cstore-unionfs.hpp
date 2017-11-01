@@ -186,8 +186,8 @@ private:
     FsPath cpath;
     FsPath tpath;
   };
-  auto_ptr<SavePaths> create_save_paths() {
-    return auto_ptr<SavePaths>(new UnionfsSavePaths(this));
+  unique_ptr<SavePaths> create_save_paths() {
+    return unique_ptr<SavePaths>(new UnionfsSavePaths(this));
   };
 
   bool cfg_path_at_root() {
