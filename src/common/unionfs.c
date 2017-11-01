@@ -810,7 +810,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
     fflush(NULL);
   }
   if (test_mode == FALSE) {
-    system(command);
+    if(system(command));
   }
 
   //mkdir temp merge
@@ -821,7 +821,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
     fflush(NULL);
   }
   if (test_mode == FALSE) {
-    system(command);
+    if(system(command));
   }
 
 
@@ -834,7 +834,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
     fflush(NULL);
   }
   if (test_mode == FALSE) {
-    system(command);
+    if(system(command));
   }
 
   // unmount the session dir
@@ -850,7 +850,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
       fflush(NULL);
     }
     if (test_mode == FALSE) {
-      system(command);
+      if(system(command));
     }
     sprintf(command, format1point1, tbuf_root, abuf_root);
     if (g_debug) {
@@ -859,7 +859,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
       fflush(NULL);
     }
     if (test_mode == FALSE) {
-      system(command);
+      if(system(command));
     }
   }
   else {
@@ -948,7 +948,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
     fflush(NULL);
   }
   if (test_mode == FALSE) {
-    system(command);
+    if(system(command));
   }
 
   if (test_mode == FALSE) {
@@ -956,7 +956,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   }
 
   /* notify other users in config mode */
-  system("/opt/vyatta/sbin/vyatta-cfg-notify");
+  if(system("/opt/vyatta/sbin/vyatta-cfg-notify"));
 
   free(command);
 }
@@ -1339,7 +1339,7 @@ delete_func(GNode *node, gpointer data)
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
-      system(command);
+      if(system(command));
     }
   }
 
@@ -1359,7 +1359,7 @@ delete_func(GNode *node, gpointer data)
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
-      system(command);
+      if(system(command));
     }
     //if delete then remove entry in active configuration!
     sprintf(command,format_force_delete,sd->_dst,path,sd->_dst,path);
@@ -1369,7 +1369,7 @@ delete_func(GNode *node, gpointer data)
       fflush(NULL);
     }
     if (sd->_test_mode == FALSE) {
-      system(command);
+      if(system(command));
     }
   }
   free(command);
@@ -1416,7 +1416,7 @@ delete_wh_func(GNode *node, gpointer data)
         fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
-        system(command);
+        if(system(command));
       }
 
     }
@@ -1435,7 +1435,7 @@ delete_wh_func(GNode *node, gpointer data)
         fflush(NULL);
       }
       if (sd->_test_mode == FALSE) {
-        system(command);
+        if(system(command));
       }
     }
   }
