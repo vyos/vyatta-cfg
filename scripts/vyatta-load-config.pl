@@ -107,15 +107,14 @@ elsif ( $mode eq 'url' ) {
     if ( $proto eq 'http' or $proto eq 'https' ) {
         #
         # error codes are send back in html, so 1st try a header
-        # and look for "HTTP/1.1 200 OK"
+        # and look for "HTTP/1.1 200 OK" or "HTTP/1.1 301 Moved Permanently"
         #
-        my $rc = `curl -q -I $load_file 2>&1`;
+        my $rc = `curl -L -q -I $load_file 2>&1`;
         if ( $rc =~ /HTTP\/\d+\.?\d\s+(\d+)\s+(.*)$/mi ) {
             my $rc_code   = $1;
             my $rc_string = $2;
-            if ( $rc_code == 200 ) {
-
-                # good resonse
+            if ( $rc_code == 200 or $rc_code == 301 ) {
+                # good response
             }
             else {
                 print "http error: [$rc_code] $rc_string\n";
