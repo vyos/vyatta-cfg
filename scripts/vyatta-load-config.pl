@@ -75,11 +75,12 @@ if ( $load_file =~ /^[^\/]\w+:\// ) {
     if ( $load_file =~ /^(\w+):\/\/\w/ ) {
         $mode  = 'url';
         $proto = lc($1);
-        unless( $proto eq 'tftp' ||
-		$proto eq 'ftp'  ||
-		$proto eq 'http' ||
-		$proto eq 'scp'  ||
-		$proto eq 'sftp' ) {
+        unless( $proto eq 'tftp'  ||
+		$proto eq 'ftp'   ||
+		$proto eq 'http'  ||
+		$proto eq 'https' ||
+		$proto eq 'scp'   ||
+		$proto eq 'sftp'  ) {
 	    die "Invalid url protocol [$proto]\n";
         }
     } else {
@@ -104,7 +105,6 @@ elsif ( $mode eq 'url' ) {
         exit 1;
     }
     if ( $proto eq 'http' ) {
-
         #
         # error codes are send back in html, so 1st try a header
         # and look for "HTTP/1.1 200 OK"
