@@ -104,7 +104,7 @@ elsif ( $mode eq 'url' ) {
         print "Package [curl] not installed\n";
         exit 1;
     }
-    if ( $proto eq 'http' ) {
+    if ( $proto eq 'http' or $proto eq 'https' ) {
         #
         # error codes are send back in html, so 1st try a header
         # and look for "HTTP/1.1 200 OK"
