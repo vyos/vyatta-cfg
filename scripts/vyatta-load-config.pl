@@ -75,11 +75,12 @@ if ( $load_file =~ /^[^\/]\w+:\// ) {
     if ( $load_file =~ /^(\w+):\/\/\w/ ) {
         $mode  = 'url';
         $proto = lc($1);
-        unless( $proto eq 'tftp' ||
-		$proto eq 'ftp'  ||
-		$proto eq 'http' ||
-		$proto eq 'scp'  ||
-		$proto eq 'sftp' ) {
+        unless( $proto eq 'tftp'  ||
+		$proto eq 'ftp'   ||
+		$proto eq 'http'  ||
+		$proto eq 'https' ||
+		$proto eq 'scp'   ||
+		$proto eq 'sftp'  ) {
 	    die "Invalid url protocol [$proto]\n";
         }
     } else {
@@ -103,19 +104,17 @@ elsif ( $mode eq 'url' ) {
         print "Package [curl] not installed\n";
         exit 1;
     }
-    if ( $proto eq 'http' ) {
-
+    if ( $proto eq 'http' or $proto eq 'https' ) {
         #
         # error codes are send back in html, so 1st try a header
-        # and look for "HTTP/1.1 200 OK"
+        # and look for "HTTP/1.1 200 OK" or "HTTP/1.1 301 Moved Permanently"
         #
-        my $rc = `curl -q -I $load_file 2>&1`;
+        my $rc = `curl -L -q -I $load_file 2>&1`;
         if ( $rc =~ /HTTP\/\d+\.?\d\s+(\d+)\s+(.*)$/mi ) {
             my $rc_code   = $1;
             my $rc_string = $2;
-            if ( $rc_code == 200 ) {
-
-                # good resonse
+            if ( $rc_code == 200 or $rc_code == 301 ) {
+                # good response
             }
             else {
                 print "http error: [$rc_code] $rc_string\n";
