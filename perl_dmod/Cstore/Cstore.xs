@@ -45,6 +45,10 @@ OUTPUT:
   RETVAL
 
 
+void
+Cstore::DESTROY()
+
+
 bool
 Cstore::cfgPathExists(CPATH *pref, bool active_cfg)
 PREINIT:

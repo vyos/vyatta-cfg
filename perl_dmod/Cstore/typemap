@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Cstore *      O_CPPOBJ
+Cstore *      O_OBJECT
 STRVEC *      T_STRVEC_REF
 CPATH *       T_CPATH_REF
 STRSTRMAP *   T_STRSTRMAP_REF
@@ -20,7 +20,7 @@ STRSTRMAP *   T_STRSTRMAP_REF
 
 ############################################################
 OUTPUT
-O_CPPOBJ
+O_OBJECT
   sv_setref_pv($arg, CLASS, (void *) $var);
 
 T_STRVEC_REF
@@ -44,7 +44,7 @@ T_STRSTRMAP_REF
 
 ############################################################
 INPUT
-O_CPPOBJ
+O_OBJECT
   if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG)) {
     $var = ($type) SvIV((SV *) SvRV($arg));
   } else {
