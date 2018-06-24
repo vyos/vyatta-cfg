@@ -102,7 +102,6 @@ sbin_SCRIPTS += scripts/vyatta-validate-type.pl
 sbin_SCRIPTS += scripts/vyatta-find-type.pl
 sbin_SCRIPTS += scripts/priority.pl
 sbin_SCRIPTS  += scripts/vyatta-boot-config-loader
-sbin_SCRIPTS  += scripts/vyatta-config-gen-sets.pl
 sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl
 sbin_SCRIPTS  += scripts/vyatta-output-config.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
