@@ -1,6 +1,8 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 
+AC_CONFIG_MACRO_DIR([m4])
+
 m4_define([VERSION_ID], [m4_esyscmd([
 	if test -f .version ; then
 	    head -n 1 .version | tr -d \\n

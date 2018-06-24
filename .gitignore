@@ -36,6 +36,8 @@ src/my_delete
 src/check_tmpl
 src/dump
 src/exe_action
+src/vyatta-validate-type
+src/ipset-check-member
 src/priority
 src/net_set
 src/cli_def.c

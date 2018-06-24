@@ -19,6 +19,8 @@ AM_CXXFLAGS += $(GOBJECT_CFLAGS)
 AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
+ACLOCAL_AMFLAGS = -I m4
+
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
@@ -83,12 +85,21 @@ vninc_HEADERS += src/cnode/cnode-algorithm.hpp
 vpincdir = $(vincludedir)/cparse
 vpinc_HEADERS = src/cparse/cparse.hpp
 
+src_ipset_check_member_SOURCES = utils/ipset-check-member.c
+src_ipset_check_member_SOURCES += utils/misc.c
+src_ipset_check_member_SOURCES += utils/type_check.c
+src_vyatta_validate_type_SOURCES = utils/vyatta-validate-type.c
+src_vyatta_validate_type_SOURCES += utils/misc.c
+src_vyatta_validate_type_SOURCES += utils/type_check.c
+
 sbin_PROGRAMS = src/priority
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
 sbin_PROGRAMS += src/check_tmpl
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
+sbin_PROGRAMS += src/ipset-check-member
+sbin_PROGRAMS += src/vyatta-validate-type
 
 src_priority_SOURCES = src/priority.c
 src_exe_action_SOURCES = src/exe_action.c
