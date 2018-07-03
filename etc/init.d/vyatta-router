@@ -108,6 +108,14 @@ load_bootfile ()
     )
 }
 
+# execute the pre-config script
+run_preconfig_script ()
+{
+    if [ -x /config/scripts/vyos-preconfig-bootup.script ]; then
+        /config/scripts/vyos-preconfig-bootup.script
+    fi
+}
+
 # 
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
@@ -188,6 +196,9 @@ start ()
 
     log_daemon_msg "Starting VyOS router"
     disabled migrate || migrate_bootfile
+
+    run_preconfig_script
+
     for s in ${subinit[@]} ; do
 	if ! disabled $s; then 
 	    log_progress_msg $s
