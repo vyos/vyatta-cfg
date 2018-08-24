@@ -17,7 +17,7 @@ fi
 is_admin=0
 is_users=0
 VYATTA_LEVEL_GROUP_ADMIN=vyattacfg
-VYATTA_LEVEL_GROUP_USERS=quaggavty
+VYATTA_LEVEL_GROUP_USERS=frrvty
 local -a groups=( $(id -Gn) )
 for g in "${groups[@]}"; do
   if [ "$g" == "$VYATTA_LEVEL_GROUP_ADMIN" ]; then
