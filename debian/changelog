@@ -1,3 +1,9 @@
+vyatta-cfg (0.102.0+vyos2+current4) unstable; urgency=medium
+
+  * Adjust for replacement of Quagga with FRR.
+
+ -- Daniil Baturin <daniil@baturin.org>  Sun, 26 Aug 2018 17:00:12 +0200
+
 vyatta-cfg (0.102.0+vyos2+current3) unstable; urgency=low
   * Move the python-vyos-mgmt library out of this package
 
