@@ -152,6 +152,16 @@ bind_mount_boot ()
 
 start ()
 {
+    # Fixup for FRR
+
+    # In 5.1 master, zebra thinks existence of /var/run/netns is
+    # a requirement for netns support
+    mkdir /var/run/netns
+
+    # Since systemd doesn't work without watchfrr and watchfrr restarts
+    # all daemons if just one failed, do the start manually
+    /usr/lib/frr/frr start
+
     log_action_begin_msg "Mounting VyOS Config"
     # ensure the vyatta_configdir supports a large number of inodes since
     # the config hierarchy is often inode-bound (instead of size).
@@ -203,6 +213,8 @@ stop()
     log_action_begin_msg "Un-mounting VyOS Config"
     umount ${vyatta_configdir}
     log_action_end_msg $?
+
+    /usr/lib/frr/frr stop
 }
 
 case "$action" in
