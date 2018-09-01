@@ -21,7 +21,7 @@
 # Portions created by Vyatta are Copyright (C) 2010 Vyatta, Inc.
 # All Rights Reserved.
 #
-# Author: Deepti Kulkarni	 
+# Author: Deepti Kulkarni
 # Date: Feb 2012
 # Description: Script to log active configuration commits to syslog.
 #
@@ -40,7 +40,7 @@ my $status = $ENV{'COMMIT_STATUS'};
 my $commit_status = 'Successful' if ($status eq 'SUCCESS');
 #open log for logging commit details
 if (defined $commit_status) {
-    my $cur_tty = ttyname(0);
+    my $cur_tty = POSIX::ttyname(0) || "unknown";
     my $cur_user = getlogin() || getpwuid($<) || "unknown";
 
     openlog("commit", "", LOG_USER);
