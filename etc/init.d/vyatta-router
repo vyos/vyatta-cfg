@@ -116,6 +116,21 @@ run_preconfig_script ()
     fi
 }
 
+run_postupgrade_script ()
+{
+    if [ -f /config/.upgraded ]; then
+        # Run the system script
+        /usr/libexec/vyos/system/post-upgrade
+
+        # Run user scripts
+        if [ -d /config/scripts/post-upgrade.d ]; then
+            run-parts /config/scripts/post-upgrade.d
+        fi
+
+        rm -f /config/.upgraded
+    fi
+}
+
 # 
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
@@ -180,6 +195,8 @@ start ()
     disabled migrate || migrate_bootfile
 
     run_preconfig_script
+
+    run_postupgrade_script
 
     for s in ${subinit[@]} ; do
 	if ! disabled $s; then 
