@@ -3,7 +3,7 @@ set -f
 
 LOG=""
 DEBUG_LEVEL=1
-LOG_D="/run/cloud-init"
+LOG_D="/run/vyos-router"
 ENABLE="enabled"
 DISABLE="disabled"
 FOUND="found"
