@@ -1,13 +1,4 @@
 #!/bin/bash
-### BEGIN INIT INFO
-# Provides:          vyatta-router
-# Required-Start:    $syslog $time $local_fs
-# Required-Stop:     $syslog $time $local_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: VyOS Router
-# Description:       Debian init script for the VyOS Router
-### END INIT INFO
 # **** License ****
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -93,19 +84,6 @@ migrate_bootfile ()
         log_progress_msg migrate
         sg ${GROUP} -c "$vyatta_sbindir/vyatta_config_migrate.pl $BOOTFILE"
     fi
-}
-
-# load the initial config
-load_bootfile ()
-{
-    log_progress_msg configure
-    (
-      if [ -f /etc/default/vyatta-load-boot ]; then
-        # build-specific environment for boot-time config loading
-        source /etc/default/vyatta-load-boot
-      fi
-      sg ${GROUP} -c "$vyatta_sbindir/vyatta-boot-config-loader $BOOTFILE"
-    )
 }
 
 # execute the pre-config script
@@ -208,7 +186,6 @@ start ()
 	fi
     done
 
-    disabled configure || load_bootfile
     log_end_msg $?
 
     telinit q

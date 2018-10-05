@@ -1,0 +1,15 @@
+[Unit]
+Description=VyOS Router Initialization
+
+[Service]
+Type=oneshot
+Restart=no
+TimeoutSec=5min
+KillMode=process
+RemainAfterExit=yes
+ExecStart=/usr/libexec/vyos/init/vyos-initialize start
+ExecStop=/usr/libexec/vyos/init/vyos-initialize stop
+StandardOutput=journal+console
+
+[Install]
+WantedBy=vyos.target

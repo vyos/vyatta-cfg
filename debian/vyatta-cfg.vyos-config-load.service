@@ -1,0 +1,15 @@
+[Unit]
+Description=VyOS Config Loader
+Before=systemd-user-sessions.service
+After=vyos-initialize.service
+
+[Service]
+Type=oneshot
+Restart=no
+TimeoutSec=5min
+KillMode=process
+ExecStart=/usr/libexec/vyos/init/config-loader.sh
+StandardOutput=journal+console
+
+[Install]
+WantedBy=vyos.target

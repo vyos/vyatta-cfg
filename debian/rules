@@ -1,5 +1,9 @@
 #!/usr/bin/make -f
 
+DIR := debian/vyatta-cfg
+VYOS_LIBEXEC_DIR := usr/libexec/vyos
+SYSTEM_GENERATORS_DIR := lib/systemd/system-generators
+
 export DH_OPTIONS
 
 ## uncomment to enable hardening
@@ -43,6 +47,17 @@ override_dh_auto_test:
 override_dh_install:
 	dh_install $(inst_opts)
 
+override_dh_auto_install:
+	dh_install -pvyatta-cfg
+
+	# Install systemd init scripts
+	mkdir -p $(DIR)/$(VYOS_LIBEXEC_DIR)/init
+	cp -r scripts/init/* $(DIR)/$(VYOS_LIBEXEC_DIR)/init
+
+	# Install vyos systemd generator
+	cp -r scripts/system-generators/* $(DIR)/$(SYSTEM_GENERATORS_DIR)/
+
 override_dh_systemd_enable:
-	dh_systemd_enable -pvyatta-cfg --name vyatta-router vyatta-router.service
+	dh_systemd_enable -pvyatta-cfg --name vyos-initialize vyos-initialize.service
+	dh_systemd_enable -pvyatta-cfg --name vyos-config-load vyos-config-load.service
 
