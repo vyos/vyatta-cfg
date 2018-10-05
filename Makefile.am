@@ -31,6 +31,13 @@ interp_DATA = functions/interpreter/vyatta-cfg-run
 wrapperdir = /opt/vyatta/etc/functions/
 wrapper_DATA = functions/wrapper/script-template
 
+systemdinitdir = /usr/libexec/vyos/init/
+systemdinit_SCRIPTS = scripts/init/vyos-initialize
+systemdinit_SCRIPTS += scripts/init/config-loader.sh
+
+systemdgeneratordir = /lib/systemd/system-generators/
+systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
+
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
 
