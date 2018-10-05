@@ -22,7 +22,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 ACLOCAL_AMFLAGS = -I m4
 
 completion_DATA = etc/bash_completion.d/vyatta-cfg
-initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 logrotate_DATA = etc/logrotate.d/vyatta-config-logs
 logrotate_DATA += etc/logrotate.d/auth
