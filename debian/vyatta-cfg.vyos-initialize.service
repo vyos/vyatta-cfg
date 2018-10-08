@@ -1,5 +1,7 @@
 [Unit]
 Description=VyOS Router Initialization
+After=cloud-config.service
+Before=cloud-final.service
 
 [Service]
 Type=oneshot
