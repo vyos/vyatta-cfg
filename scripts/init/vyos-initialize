@@ -30,7 +30,10 @@ declare action=$1; shift
 declare -x BOOTFILE=$vyatta_sysconfdir/config/config.boot
 
 # If vyos-config= boot option is present, use that file instead
-VYOS_CONFIG=$(cat /proc/cmdline | grep -Eo '\bvyos-config=(\S+)\b' /proc/cmdline | awk -F'=' '{print $2}')
+for x in $(cat /proc/cmdline); do
+    [[ $x = vyos-config=* ]] || continue
+    VYOS_CONFIG="${x#vyos-config=}"
+done
 
 if [ ! -z "$VYOS_CONFIG" ]; then
     if [ -r "$VYOS_CONFIG" ]; then
