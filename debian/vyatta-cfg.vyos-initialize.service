@@ -1,7 +1,7 @@
 [Unit]
 Description=VyOS Router Initialization
-After=cloud-config.service
-Before=cloud-final.service
+After=systemd-journald-dev-log.socket time-sync.target local-fs.target
+Conflicts=shutdown.target
 
 [Service]
 Type=oneshot

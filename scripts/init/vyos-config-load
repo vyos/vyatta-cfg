@@ -15,7 +15,3 @@ if ! grep -q -w no-vyos-configure /proc/cmdline; then
     fi
     sg ${GROUP} -c "$vyatta_sbindir/vyatta-boot-config-loader $BOOTFILE" &
 fi
-
-while ps -ef | grep my_commit | grep -v grep; do
-    sleep 1
-done

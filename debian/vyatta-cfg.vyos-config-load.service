@@ -8,7 +8,7 @@ Type=oneshot
 Restart=no
 TimeoutSec=5min
 KillMode=process
-ExecStart=/usr/libexec/vyos/init/config-loader.sh
+ExecStart=/usr/libexec/vyos/init/vyos-config-load
 StandardOutput=journal+console
 
 [Install]
