@@ -35,7 +35,7 @@ wrapper_DATA = functions/wrapper/script-template
 
 systemdinitdir = /usr/libexec/vyos/init/
 systemdinit_SCRIPTS = scripts/init/vyos-router
-systemdinit_SCRIPTS += scripts/init/config-loader.sh
+systemdinit_SCRIPTS += scripts/init/vyos-config
 
 systemdgeneratordir = /lib/systemd/system-generators/
 systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
