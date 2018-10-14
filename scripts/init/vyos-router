@@ -225,7 +225,7 @@ stop()
     umount ${vyatta_configdir}
     log_action_end_msg $?
 
-     /usr/lib/frr/frr stop
+    /usr/lib/frr/frr stop
 }
 
 case "$action" in
