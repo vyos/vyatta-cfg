@@ -1,7 +1,6 @@
 SUBDIRS = . perl_dmod
 
 share_perl5dir = /opt/vyatta/share/perl5/Vyatta
-systemddir	 = /etc/systemd
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
@@ -22,7 +21,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 ACLOCAL_AMFLAGS = -I m4
 
-systemd_DATA = etc/systemd
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 logrotate_DATA = etc/logrotate.d/vyatta-config-logs
@@ -39,6 +37,9 @@ systemdinit_SCRIPTS += scripts/init/vyos-config
 
 systemdgeneratordir = /lib/systemd/system-generators/
 systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
+
+systemdgettydir = /etc/systemd/system/getty@.service.d/
+systemdgetty_DATA = etc/systemd/aftervyos.conf
 
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
