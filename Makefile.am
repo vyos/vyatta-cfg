@@ -1,6 +1,7 @@
 SUBDIRS = . perl_dmod
 
 share_perl5dir = /opt/vyatta/share/perl5/Vyatta
+systemddir	 = /etc/systemd
 completiondir	 = /etc/bash_completion.d
 initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
@@ -21,6 +22,7 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 ACLOCAL_AMFLAGS = -I m4
 
+systemd_DATA = etc/systemd
 completion_DATA = etc/bash_completion.d/vyatta-cfg
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 logrotate_DATA = etc/logrotate.d/vyatta-config-logs
