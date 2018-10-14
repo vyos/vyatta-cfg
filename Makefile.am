@@ -32,7 +32,7 @@ wrapperdir = /opt/vyatta/etc/functions/
 wrapper_DATA = functions/wrapper/script-template
 
 systemdinitdir = /usr/libexec/vyos/init/
-systemdinit_SCRIPTS = scripts/init/vyos-initialize
+systemdinit_SCRIPTS = scripts/init/vyos-router
 systemdinit_SCRIPTS += scripts/init/config-loader.sh
 
 systemdgeneratordir = /lib/systemd/system-generators/

@@ -89,6 +89,19 @@ migrate_bootfile ()
     fi
 }
 
+# load the initial config
+load_bootfile ()
+{
+    log_progress_msg configure
+    (
+      if [ -f /etc/default/vyatta-load-boot ]; then
+        # build-specific environment for boot-time config loading
+        source /etc/default/vyatta-load-boot
+      fi
+      sg ${GROUP} -c "$vyatta_sbindir/vyatta-boot-config-loader $BOOTFILE"
+    )
+}
+
 # execute the pre-config script
 run_preconfig_script ()
 {
@@ -152,7 +165,7 @@ start ()
 
     # In 5.1 master, zebra thinks existence of /var/run/netns is
     # a requirement for netns support
-    mkdir /var/run/netns
+    mkdir -p /var/run/netns
 
     # Since systemd doesn't work without watchfrr and watchfrr restarts
     # all daemons if just one failed, do the start manually
@@ -189,6 +202,7 @@ start ()
 	fi
     done
 
+    disabled configure || load_bootfile
     log_end_msg $?
 
     telinit q
@@ -211,7 +225,7 @@ stop()
     umount ${vyatta_configdir}
     log_action_end_msg $?
 
-    /usr/lib/frr/frr stop
+     /usr/lib/frr/frr stop
 }
 
 case "$action" in

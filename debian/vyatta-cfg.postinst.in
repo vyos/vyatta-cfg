@@ -16,8 +16,7 @@ for dir in $sysconfdir/config $prefix/config; do
   chgrp vyattacfg $dir 2>/dev/null
 done
 
-systemctl enable vyos-initialize.service >/dev/null
-systemctl enable vyos-config-load.service >/dev/null
+systemctl enable vyos-router.service >/dev/null
 
 # capability stuff
 for bin in my_cli_bin my_cli_shell_api; do
