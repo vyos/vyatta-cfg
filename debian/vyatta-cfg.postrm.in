@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
 if [ "$1" = "purge" ]; then
-  systemctl disable vyos-initialize.service >/dev/null || exit $?
-  systemctl disable vyos-config-load.service >/dev/null || exit $?
+  systemctl disable vyos-router.service >/dev/null || exit $?
 fi
-
