@@ -22,7 +22,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 ACLOCAL_AMFLAGS = -I m4
 
 completion_DATA = etc/bash_completion.d/vyatta-cfg
-initd_SCRIPTS	= etc/init.d/vyatta-router
 dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 logrotate_DATA = etc/logrotate.d/vyatta-config-logs
 logrotate_DATA += etc/logrotate.d/auth
@@ -31,6 +30,16 @@ interp_DATA = functions/interpreter/vyatta-cfg-run
 
 wrapperdir = /opt/vyatta/etc/functions/
 wrapper_DATA = functions/wrapper/script-template
+
+systemdinitdir = /usr/libexec/vyos/init/
+systemdinit_SCRIPTS = scripts/init/vyos-router
+systemdinit_SCRIPTS += scripts/init/vyos-config
+
+systemdgeneratordir = /lib/systemd/system-generators/
+systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
+
+systemdgettydir = /etc/systemd/system/getty@.service.d/
+systemdgetty_DATA = etc/systemd/aftervyos.conf
 
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<

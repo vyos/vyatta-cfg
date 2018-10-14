@@ -48,11 +48,15 @@ umask 0002
   # do commit
   trace '-- begin commit'
   ret=0
+  echo $ret > /tmp/vyos-config-status
+  sync
   export COMMIT_VIA=boot-config-loader
   if ! do_commit ; then
     do_log err 'Commit failed at boot.'
     trace '-- commit failed'
     ret=1
+    echo $ret > /tmp/vyos-config-status
+    sync
   else
     trace '-- commit succeeded'
   fi
@@ -69,4 +73,3 @@ umask 0002
 ) </dev/null >>$CLOG 2>&1
 
 exit $?
-
