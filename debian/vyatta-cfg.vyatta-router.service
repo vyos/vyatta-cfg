@@ -8,7 +8,7 @@ Conflicts=shutdown.target
 [Service]
 Type=oneshot
 Restart=no
-TimeoutSec=5min
+TimeoutSec=20min
 IgnoreSIGPIPE=no
 KillMode=process
 GuessMainPID=no
