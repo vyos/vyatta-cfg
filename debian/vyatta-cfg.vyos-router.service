@@ -7,7 +7,7 @@ Before=systemd-user-sessions.service
 [Service]
 Type=simple
 Restart=no
-TimeoutSec=5min
+TimeoutSec=20min
 KillMode=process
 RemainAfterExit=yes
 ExecStart=/usr/libexec/vyos/init/vyos-router start
