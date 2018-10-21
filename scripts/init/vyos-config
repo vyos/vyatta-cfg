@@ -1,9 +1,5 @@
 #!/bin/bash
 
-while ps -ef | grep my_commit | grep -q -v grep; do
-    sleep 1
-done
-
 while [ ! -f /tmp/vyos-config-status ]
 do
   sleep 1
@@ -11,8 +7,10 @@ done
 
 status=$(cat /tmp/vyos-config-status)
 
-if [ $status -ne 0 ]; then
-  echo "Configuration error"
-else
-  echo "Configuration success"
+if [ -z "$1" ]; then
+  if [ $status -ne 0 ]; then
+    echo "Configuration error"
+  else
+    echo "Configuration success"
+  fi
 fi

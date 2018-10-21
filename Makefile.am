@@ -38,8 +38,11 @@ systemdinit_SCRIPTS += scripts/init/vyos-config
 systemdgeneratordir = /lib/systemd/system-generators/
 systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
 
-systemdgettydir = /etc/systemd/system/getty@.service.d/
-systemdgetty_DATA = etc/systemd/aftervyos.conf
+systemdgettydir = /lib/systemd/system/getty@.service.d/
+systemdgetty_DATA = lib/systemd/aftervyos.conf
+
+systemdserialgettydir = /lib/systemd/system/serial-getty@.service.d/
+systemdserialgetty_DATA = lib/systemd/serial/aftervyos.conf
 
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
