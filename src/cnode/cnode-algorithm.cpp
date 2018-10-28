@@ -513,7 +513,12 @@ _diff_show_other(const CfgNode *cfg1, const CfgNode *cfg2, int level,
       _diff_print_indent(cfg1, cfg2, level, pfx_diff);
       if (is_value) {
         // at tag value
-        printf("%s %s", name.c_str(), value.c_str());
+        const char *quote = "";
+        size_t vlen = value.length();
+        if (strcspn(value.c_str(), "*}{;\011\012\013\014\015 ") < vlen) {
+          quote = "\"";
+        }
+        printf("%s %s%s%s", name.c_str(), quote, value.c_str(), quote);
       } else {
         // at intermediate node
         printf("%s", name.c_str());
