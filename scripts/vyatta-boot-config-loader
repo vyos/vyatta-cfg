@@ -65,8 +65,9 @@ umask 0002
     trace '-- teardown succeeded'
   fi
   trace '-- exiting'
+  echo $ret > /tmp/vyos-config-status
+  sync
   exit $ret
 ) </dev/null >>$CLOG 2>&1
 
 exit $?
-

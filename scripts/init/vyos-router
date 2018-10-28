@@ -1,13 +1,4 @@
 #!/bin/bash
-### BEGIN INIT INFO
-# Provides:          vyatta-router
-# Required-Start:    $syslog $time $local_fs
-# Required-Stop:     $syslog $time $local_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: VyOS Router
-# Description:       Debian init script for the VyOS Router
-### END INIT INFO
 # **** License ****
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -39,7 +30,10 @@ declare action=$1; shift
 declare -x BOOTFILE=$vyatta_sysconfdir/config/config.boot
 
 # If vyos-config= boot option is present, use that file instead
-VYOS_CONFIG=$(cat /proc/cmdline | grep -Eo '\bvyos-config=(\S+)\b' /proc/cmdline | awk -F'=' '{print $2}')
+for x in $(cat /proc/cmdline); do
+    [[ $x = vyos-config=* ]] || continue
+    VYOS_CONFIG="${x#vyos-config=}"
+done
 
 if [ ! -z "$VYOS_CONFIG" ]; then
     if [ -r "$VYOS_CONFIG" ]; then
@@ -171,7 +165,7 @@ start ()
 
     # In 5.1 master, zebra thinks existence of /var/run/netns is
     # a requirement for netns support
-    mkdir /var/run/netns
+    mkdir -p /var/run/netns
 
     # Since systemd doesn't work without watchfrr and watchfrr restarts
     # all daemons if just one failed, do the start manually

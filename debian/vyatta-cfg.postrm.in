@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
 if [ "$1" = "purge" ]; then
-  update-rc.d vyatta-router remove >/dev/null || exit $?
-  systemctl disable vyatta-router.service >/dev/null || exit $?
+  systemctl disable vyos-router.service >/dev/null || exit $?
 fi
-
