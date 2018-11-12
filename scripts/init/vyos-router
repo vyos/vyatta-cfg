@@ -202,11 +202,12 @@ start ()
 	fi
     done
 
+    bind_mount_boot
+
     disabled configure || load_bootfile
     log_end_msg $?
 
     telinit q
-    bind_mount_boot
     chmod g-w,o-w /
 }
 
