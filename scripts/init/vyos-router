@@ -110,6 +110,18 @@ run_preconfig_script ()
     fi
 }
 
+# execute the post-config scripts
+run_postconfig_scripts ()
+{
+    if [ -x /config/scripts/vyatta-postconfig-bootup.script ]; then
+        /config/scripts/vyatta-postconfig-bootup.script
+    fi
+
+    if [ -x /config/scripts/vyos-postconfig-bootup.script ]; then
+        /config/scripts/vyos-postconfig-bootup.script
+    fi
+}
+
 run_postupgrade_script ()
 {
     if [ -f /config/.upgraded ]; then
@@ -209,6 +221,8 @@ start ()
 
     telinit q
     chmod g-w,o-w /
+
+    run_postconfig_scripts
 }
 
 stop()
