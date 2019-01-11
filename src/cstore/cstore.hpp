@@ -84,7 +84,7 @@ public:
   static const string C_ENUM_SCRIPT_DIR;
   static const string C_LOGFILE_STDOUT;
 
-  static const size_t MAX_CMD_OUTPUT_SIZE = 4096;
+  static const size_t MAX_CMD_OUTPUT_SIZE = 40960;
 
   // for sorting
   /* apparently unordered_map template does not work with "enum" type, so
