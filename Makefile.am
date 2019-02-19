@@ -75,6 +75,7 @@ src_libvyatta_cfg_la_SOURCES += src/commit/commit-algorithm.cpp
 CLEANFILES = src/cli_parse.c src/cli_parse.h src/cli_def.c src/cli_val.c
 CLEANFILES += src/cparse/cparse.cpp src/cparse/cparse.h
 CLEANFILES += src/cparse/cparse_lex.c
+BUILT_SOURCES =  src/cli_parse.h src/cli_def.c src/cli_val.c
 LDADD = src/libvyatta-cfg.la
 LDADD += $(GOBJECT_LIBS)
 
