@@ -2049,9 +2049,21 @@ Cstore::executeTmplActions(char *at_str, const Cpath& path,
 
   var_ref_handle = (void *) this;
   // const_cast for legacy code
+
+  std::time_t start_time = std::time(0);
+
   bool ret = execute_list(const_cast<vtw_node *>(actions), def,
                           sdisp.c_str());
   var_ref_handle = NULL;
+
+  char* debug_on = getenv("VYOS_DEBUG");
+  if (debug_on != NULL)
+  {
+    std::time_t stop_time = std::time(0);
+    unsigned long int exec_time = stop_time - start_time;
+    output_internal("Action for \"%s\" took %u seconds to execute\n", sdisp.c_str(), exec_time);
+  }
+
   return ret;
 }
 
