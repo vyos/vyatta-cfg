@@ -179,9 +179,13 @@ start ()
     # a requirement for netns support
     mkdir -p /var/run/netns
 
+    # chown the config dir to give all admins access
+    chown -R root:frrvty /etc/frr
+    chmod 775 /etc/frr
+
     # Since systemd doesn't work without watchfrr and watchfrr restarts
     # all daemons if just one failed, do the start manually
-    /usr/lib/frr/frr start
+    /usr/lib/frr/frrinit.sh start
 
     log_action_begin_msg "Mounting VyOS Config"
     # ensure the vyatta_configdir supports a large number of inodes since
