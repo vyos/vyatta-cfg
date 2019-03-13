@@ -1,10 +1,3 @@
-vyatta-cfg (0.102.0+vyos2+current5) unstable; urgency=medium
-
-  * [frr-script] fixing frr-init parameter syntax
-    from commit: 3f551a2b4bbd5dfd90a98ce0e7434a9ff432a84d 
-
- -- hagbard <vyosdev@derith.de>  Wed, 13 Mar 2019 13:55:16 -0700
-
 vyatta-cfg (0.102.0+vyos2+current4) unstable; urgency=medium
 
   * Adjust for replacement of Quagga with FRR.
