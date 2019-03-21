@@ -3069,7 +3069,7 @@ Cstore::get_shell_prompt(const string& level)
   if (lvl.length() > 0) {
     lvl = " " + lvl;
   }
-  return ("[edit" + lvl + "]\\n\\u@\\h# ");
+  return ("[edit" + lvl + "]\\n\\u@\\H# ");
 }
 
 // escape the single quotes in the string for shell
