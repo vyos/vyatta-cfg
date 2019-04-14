@@ -16,13 +16,12 @@ do_log () {
 
 do_commit () {
   # Check if debug is enabled in the kernel command line
-  if [ ! grep vyos-debug /proc/cmdline > /dev/null ]; then
-    debug=""
+  grep vyos-debug /proc/cmdline > /dev/null
+  if [ $? == 0 ]; then
+    VYOS_DEBUG=$debug $COMMIT "$@" >>$COMMIT_LOG
   else
-    debug="yes"
+    $COMMIT "$@" >>$COMMIT_LOG
   fi
-
-  VYOS_DEBUG=$debug $COMMIT "$@" >>$COMMIT_LOG
 }
 
 trace () {
