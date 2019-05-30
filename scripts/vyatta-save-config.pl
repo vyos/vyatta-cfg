@@ -77,7 +77,7 @@ if ($mode eq 'local' and !($save_file =~ /^\//)) {
     $save_file = "$bootpath/$save_file";
 }
 
-my $version_str = `/opt/vyatta/sbin/vyatta_current_conf_ver.pl`;
+my $version_str = `/usr/libexec/vyos/system-versions-foot.py`;
 
 # when presenting to users, show shortened /config path
 my $shortened_save_file = get_short_config_path($save_file);
@@ -88,7 +88,7 @@ if ($mode eq 'local') {
 
     # first check if this file exists, and if so ensure this is a config file.
     if (-e $save_file) {
-        my $result = `grep ' === vyatta-config-version:' $save_file`;
+        my $result = `grep -e ' === vyatta-config-version:' -e '// vyos-config-version:' $save_file`;
         if (!defined $result || length($result) == 0) {
             print "File exists and is not a Vyatta configuration file, aborting save!\n";
             exit 1;

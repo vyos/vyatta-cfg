@@ -115,6 +115,9 @@ free_str()
   return COMMENT;
 }
 
+"//".* { /* Do nothing. */
+}
+
 <INITIAL>! {
   node_deactivated = 1;
 }

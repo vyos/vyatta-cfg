@@ -38,6 +38,7 @@ my $sbindir      = $ENV{vyatta_sbindir};
 my $bootpath     = $etcdir . "/config";
 my $load_file    = $bootpath . "/config.boot";
 my $url_tmp_file = $bootpath . "/config.boot.$$";
+my $vyos_libexec_dir = $ENV{vyos_libexec_dir};
 
 
 #
@@ -169,6 +170,10 @@ while (<$cfg>) {
         $valid_cfg = 1;
         last;
     }
+    elsif (/vyos-config-version/) {
+        $valid_cfg = 1;
+        last;
+    }
 }
 if ( $xorp_cfg or !$valid_cfg ) {
     if ($xorp_cfg) {
@@ -191,7 +196,7 @@ my $login = getlogin() || getpwuid($<) || "unknown";
 syslog( "warning", "Load config [$orig_load_file] by $login" );
 
 # do config migration
-system("$sbindir/vyatta_config_migrate.pl $load_file");
+system("$vyos_libexec_dir/run-config-migration.py $load_file");
 
 # note: "load" is now handled in the backend so only "merge" is actually
 # handled in this script. "merge" hasn't been moved into the backend since
