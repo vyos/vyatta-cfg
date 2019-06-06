@@ -83,9 +83,9 @@ init_bootfile () {
 # if necessary, migrate initial config
 migrate_bootfile ()
 {
-    if [ -x $vyatta_sbindir/vyatta_config_migrate.pl ]; then
+    if [ -x $vyos_libexec_dir/run-config-migration.py ]; then
         log_progress_msg migrate
-        sg ${GROUP} -c "$vyatta_sbindir/vyatta_config_migrate.pl $BOOTFILE"
+        sg ${GROUP} -c "$vyos_libexec_dir/run-config-migration.py $BOOTFILE"
     fi
 }
 
