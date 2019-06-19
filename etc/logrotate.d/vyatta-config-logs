@@ -3,4 +3,5 @@
 	size 1M
 	rotate 2
 	create 664 root vyattacfg
+        su root vyattacfg
 }
