@@ -98,7 +98,7 @@ load_bootfile ()
         # build-specific environment for boot-time config loading
         source /etc/default/vyatta-load-boot
       fi
-      sg ${GROUP} -c "$vyatta_sbindir/vyatta-boot-config-loader $BOOTFILE"
+      sg ${GROUP} -c "$vyos_libexec_dir/vyos-boot-config-loader.py $BOOTFILE"
     )
 }
 
