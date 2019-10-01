@@ -192,14 +192,14 @@ vyatta_loadsave_complete()
       echo
       echo "Possible completions:"
       if [ "$command" = "load" ]; then
-	  echo -e "  <Enter>\t\t\t\tLoad from system config file"
-	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
-	  echo -e "  scp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-	  echo -e "  sftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-	  echo -e "  ftp://<user>:<passwd>@<host>/<file>\tLoad from file on remote machine"
-	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
-	  echo -e "  https://<host>/<file>\t\t\tLoad from file on remote machine"
-	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
+	  echo -e "  <Enter>\t\t\t\t\tLoad from system config file"
+	  echo -e "  <file>\t\t\t\t\tLoad from file on local machine"
+	  echo -e "  scp://<user>[:<passwd>]@<host>/<file>\t\tLoad from file on remote machine"
+	  echo -e "  sftp://<user>[:<passwd>]@<host>/<file>\tLoad from file on remote machine"
+	  echo -e "  http://<host>/<file>\t\t\t\tLoad from file on remote machine"
+	  echo -e "  https://<host>/<file>\t\t\t\tLoad from file on remote machine"
+	  echo -e "  ftp://<user>[:<passwd>]@<host>/<file>\t\tLoad from file on remote machine"
+	  echo -e "  tftp://<host>/<file>\t\t\t\tLoad from file on remote machine"
       elif [ "$command" = "merge" ]; then
 	  echo -e "  <file>\t\t\t\t\tMerge from file on local machine"
 	  echo -e "  scp://<user>[:<passwd>]@<host>/<file>\t\tMerge from file on remote machine"

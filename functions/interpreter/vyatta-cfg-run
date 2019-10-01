@@ -229,7 +229,7 @@ vyatta_config_load ()
   fi
   # return to top level.
   reset_edit_level
-  ${vyatta_sbindir}/vyatta-load-config.pl "$@"
+  ${vyos_libexec_dir}/vyos-load-config.py "$@"
 }
 
 vyatta_config_merge ()
