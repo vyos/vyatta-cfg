@@ -81,7 +81,7 @@ case "$1" in
     exec ${vyatta_sbindir}/vyatta-save-config.pl "${@:2}"
     ;;
   load)
-    exec ${vyatta_sbindir}/vyatta-load-config.pl "${@:2}"
+    exec ${vyos_libexec_dir}/vyos-load-config.py "${@:2}"
     ;;
   rule-rename)
     # this option is to be used for renaming firewall and nat rules only

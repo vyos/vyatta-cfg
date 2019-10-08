@@ -72,7 +72,7 @@ init_bootfile () {
 	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
 	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
         else
-          $vyatta_sbindir/vyatta_current_conf_ver.pl > $BOOTFILE
+          $vyos_libexec_dir/system-versions-foot.py > $BOOTFILE
         fi
 
 	chgrp ${GROUP} $BOOTFILE
@@ -244,7 +244,7 @@ stop()
     umount ${vyatta_configdir}
     log_action_end_msg $?
 
-    /usr/lib/frr/frr stop
+    /usr/lib/frr/frrinit.sh stop
 }
 
 case "$action" in
