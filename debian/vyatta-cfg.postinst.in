@@ -32,6 +32,6 @@ mkdir -p /etc/commit/post-hooks.d
 ln -sf /opt/vyatta/sbin/vyatta-log-commit.pl /etc/commit/post-hooks.d/10vyatta-log-commit.pl
 
 # User pre/post-commit hook executors
-ln -s /opt/vyatta/sbin/vyos-user-precommit-hooks.sh /etc/commit/pre-hooks.d/99vyos-user-precommit-hooks
-ln -s /opt/vyatta/sbin/vyos-user-postcommit-hooks.sh /etc/commit/post-hooks.d/99vyos-user-postcommit-hooks
+ln -sf /opt/vyatta/sbin/vyos-user-precommit-hooks.sh /etc/commit/pre-hooks.d/99vyos-user-precommit-hooks
+ln -sf /opt/vyatta/sbin/vyos-user-postcommit-hooks.sh /etc/commit/post-hooks.d/99vyos-user-postcommit-hooks
 
