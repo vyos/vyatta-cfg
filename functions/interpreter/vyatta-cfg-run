@@ -509,6 +509,14 @@ vyatta_cfg_cmd ()
 ### Main run command ###
 vyatta_cfg_run ()
 {
+  # if run with bash builtin "set -/+*" run set and return
+  # this happens when a different completion script runs eval "set ..."
+  # (VyOS T1604)
+  if [[ "$1" == "set" && "$2" =~ ^(-|\+).* ]]; then
+    set "${@:2}"
+    return
+  fi
+
   # validate top level command and execute proper function
   local cmd=$1
   local -a args=( "$@" )
