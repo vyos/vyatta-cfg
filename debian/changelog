@@ -1,3 +1,9 @@
+vyatta-cfg (1.2.4) unstable; urgency=low
+
+  * New release.
+
+ -- VyOS maintainers <maintainers@vyos.io>  Tue, 10 Dec 2019 23:40:05 +0200
+
 vyatta-cfg (1.2.0-1) stable; urgency=medium
 
   * New branch.
