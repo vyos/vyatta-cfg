@@ -7,8 +7,8 @@ set -u
 
 # add groups for vyatta accounts
 if ! getent group vyattacfg >/dev/null; then
-	addgroup --system vyattacfg --gid 107
+	addgroup --system vyattacfg
 fi
 if ! getent group vyattaop >/dev/null; then
-	addgroup --system vyattaop --gid 108
+	addgroup --system vyattaop
 fi
