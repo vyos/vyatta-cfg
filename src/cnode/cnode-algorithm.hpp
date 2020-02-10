@@ -43,10 +43,10 @@ void cmp_non_leaf_nodes(const CfgNode *cfg1, const CfgNode *cfg2,
                         bool& is_leaf_typeless, std::string& name,
                         std::string& value);
 
-void show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
+int show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
                    cstore::Cpath& cur_path, bool show_def = false,
                    bool hide_secret = false, bool context_diff = false);
-void show_cfg(const CfgNode& cfg, bool show_def = false,
+int show_cfg(const CfgNode& cfg, bool show_def = false,
               bool hide_secret = false);
 
 void show_cmds_diff(const CfgNode& cfg1, const CfgNode& cfg2);
@@ -62,10 +62,10 @@ void get_cmds(const CfgNode& cfg, std::vector<cstore::Cpath>& set_list,
 extern const std::string ACTIVE_CFG;
 extern const std::string WORKING_CFG;
 
-void showConfig(const std::string& cfg1, const std::string& cfg2,
-                const cstore::Cpath& path, bool show_def = false,
-                bool hide_secret = false, bool context_diff = false,
-                bool show_cmds = false, bool ignore_edit = false);
+int showConfig(const std::string& cfg1, const std::string& cfg2,
+               const cstore::Cpath& path, bool show_def = false,
+               bool hide_secret = false, bool context_diff = false,
+               bool show_cmds = false, bool ignore_edit = false);
 
 /* these functions provide the functionality necessary for the "config
  * file" shell API. basically the API uses the "cparse" interface to

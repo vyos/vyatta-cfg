@@ -24,6 +24,8 @@
 #include <cparse/cparse.hpp>
 #include <cnode/cnode-algorithm.hpp>
 
+#include <vyos-errors.h>
+
 using namespace cnode;
 using namespace cstore;
 using namespace std;
@@ -851,31 +853,33 @@ _print_cmds_list(const char *op, vector<Cpath>& list)
 }
 
 ////// algorithms
-void
+int
 cnode::show_cfg_diff(const CfgNode& cfg1, const CfgNode& cfg2,
                      Cpath& cur_path, bool show_def, bool hide_secret,
                      bool context_diff)
 {
   if (cfg1.isInvalid() || cfg2.isInvalid()) {
     printf("Specified configuration path is not valid\n");
-    return;
+    return VYOS_INVALID_PATH;
   }
   if ((cfg1.isEmpty() && cfg2.isEmpty())
       || (!cfg1.exists() && !cfg2.exists())) {
     printf("Configuration under specified path is empty\n");
-    return;
+    return VYOS_EMPTY_CONFIG;
   }
   // use an invalid value for initial last_ctx
   Cpath last_ctx;
   _show_diff(&cfg1, &cfg2, -1, cur_path, last_ctx, show_def, hide_secret,
              context_diff);
+  return VYOS_SUCCESS;
 }
 
-void
+int
 cnode::show_cfg(const CfgNode& cfg, bool show_def, bool hide_secret)
 {
   Cpath cur_path;
-  show_cfg_diff(cfg, cfg, cur_path, show_def, hide_secret);
+  int res = show_cfg_diff(cfg, cfg, cur_path, show_def, hide_secret);
+  return res;
 }
 
 void
@@ -916,7 +920,7 @@ cnode::get_cmds(const CfgNode& cfg, vector<Cpath>& set_list,
   _get_cmds_diff(&cfg, &cfg, cur_path, del_list, set_list, com_list);
 }
 
-void
+int
 cnode::showConfig(const string& cfg1, const string& cfg2,
                   const Cpath& path, bool show_def, bool hide_secret,
                   bool context_diff, bool show_cmds, bool ignore_edit)
@@ -960,14 +964,16 @@ cnode::showConfig(const string& cfg1, const string& cfg2,
   }
   if (!croot1.get() || !croot2.get()) {
     printf("Cannot parse specified config file(s)\n");
-    return;
+    return 1;
   }
 
   if (show_cmds) {
     show_cmds_diff(*croot1, *croot2);
+    return 0;
   } else {
-    show_cfg_diff(*croot1, *croot2, cur_path, show_def, hide_secret,
-                  context_diff);
+    int res = show_cfg_diff(*croot1, *croot2, cur_path, show_def, hide_secret,
+                            context_diff);
+    return res;
   }
 }
 

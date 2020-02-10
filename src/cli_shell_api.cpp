@@ -31,6 +31,8 @@
 
 using namespace cstore;
 
+int exit_code = 0;
+
 /* This program provides an API for shell scripts (e.g., snippets in
  * templates, standalone scripts, etc.) to access the CLI cstore library.
  * It is installed in "/opt/vyatta/sbin", but a symlink "/bin/cli-shell-api"
@@ -537,9 +539,10 @@ showConfig(Cstore& cstore, const Cpath& args)
     // default
   }
 
-  cnode::showConfig(cfg1, cfg2, args, op_show_show_defaults,
+  int res = cnode::showConfig(cfg1, cfg2, args, op_show_show_defaults,
                     op_show_hide_secrets, op_show_context_diff,
                     op_show_commands, op_show_ignore_edit);
+  exit_code = res;
 }
 
 static void
@@ -765,7 +768,7 @@ main(int argc, char **argv)
   Cstore *cstore = Cstore::createCstore(OP_use_edit);
   OP_func(*cstore, args);
   delete cstore;
-  exit(0);
+  exit(exit_code);
 }
 
 
