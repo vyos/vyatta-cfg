@@ -8,6 +8,7 @@
 #include <glib-object.h>  /* g_type_init */
 #include "common/common.h"
 #include "cli_path_utils.h"
+#include "vyos-errors.h"
 
 #define cond_plog(cond, prio, fmt, ...) do { \
   if (cond) { \
@@ -408,7 +409,18 @@ main(int argc, char** argv)
   //remove tmp changes file as all the work is now done
   unlink(COMMIT_CHANGES_FILE);
 
-  exit (errors == 2 ? 0 : 1);
+  int vyos_exit_code;
+  if (errors == 2) {
+    vyos_exit_code = 0;
+  }
+  else if (errors == 3) {
+    vyos_exit_code = VYOS_PARTIAL_COMMIT;
+  }
+  else {
+    vyos_exit_code = VYOS_COMMIT_FAILURE;
+  }
+
+  exit (vyos_exit_code);
 }
 
 struct ExecuteHookData
