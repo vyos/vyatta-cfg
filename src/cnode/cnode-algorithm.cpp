@@ -964,7 +964,7 @@ cnode::showConfig(const string& cfg1, const string& cfg2,
   }
   if (!croot1.get() || !croot2.get()) {
     printf("Cannot parse specified config file(s)\n");
-    return 1;
+    return VYOS_CONFIG_PARSE_ERROR;
   }
 
   if (show_cmds) {
