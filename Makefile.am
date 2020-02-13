@@ -6,7 +6,6 @@ initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
-dhcphookdir = /etc/dhcp/dhclient-exit-hooks.d
 enumdir = $(datadir)/enumeration
 
 if USE_UNIONFSFUSE
@@ -22,7 +21,6 @@ AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 ACLOCAL_AMFLAGS = -I m4
 
 completion_DATA = etc/bash_completion.d/vyatta-cfg
-dhcphook_SCRIPTS = scripts/vyatta-dhclient-hook
 logrotate_DATA = etc/logrotate.d/vyatta-config-logs
 logrotate_DATA += etc/logrotate.d/auth
 interpdir = $(datadir)/vyatta-cfg/functions/interpreter/
