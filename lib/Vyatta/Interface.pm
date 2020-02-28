@@ -152,7 +152,7 @@ sub path {
     my $self = shift;
     my $config = new Vyatta::Config;
 
-    if ($self->{name} =~ /^(pppo[ae])(\d+)/) {
+    if ($self->{name} =~ /^(pppo[a])(\d+)/) {
 
         # For ppp need to look in config file to find where used
         my $type = $1;
@@ -160,10 +160,6 @@ sub path {
 
         my $intf = _ppp_intf($self->{name});
         return unless $intf;
-
-        if ($type eq 'pppoe') {
-            return "interfaces ethernet $intf pppoe $id";
-        }
 
         my $adsl = "interfaces adsl $intf pvc";
         my $config = new Vyatta::Config;
@@ -398,25 +394,6 @@ sub get_vif_interfaces {
     return @ret_ifs;
 }
 
-sub get_pppoe_interfaces {
-    my ($cfg, $vfunc, $dev, $path) = @_;
-    my @ret_ifs;
-
-    foreach my $ep ($cfg->$vfunc("$path pppoe")) {
-        my $pppdev = "pppoe$ep";
-        my $ppppath = "$path pppoe $ep";
-
-        push @ret_ifs,
-            {
-            name => $pppdev,
-            type => 'pppoe',
-            path => $ppppath
-            };
-    }
-
-    return @ret_ifs;
-}
-
 # special cases for adsl
 sub get_adsl_interfaces {
     my ($cfg, $vfunc) = @_;
@@ -481,9 +458,6 @@ sub get_config_interfaces {
                 };
             push @ret_ifs, get_vrrp_interfaces($cfg, $vfunc, $dev, $path);
             push @ret_ifs, get_vif_interfaces($cfg, $vfunc, $dev, $type, $path);
-
-            push @ret_ifs, get_pppoe_interfaces($cfg, $vfunc, $dev, $path)
-                if ($type eq 'ethernet');
         }
 
     }
