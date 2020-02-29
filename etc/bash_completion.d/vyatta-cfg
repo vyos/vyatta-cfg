@@ -118,7 +118,7 @@ vyatta_run_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   
-  local cur=${COMP_WORDS[COMP_CWORD]}
+  local cur="${COMP_WORDS[COMP_CWORD]}"
   
   if [[ $COMP_CWORD -eq 0 ]]; then
     vyatta_config_complete "$@"
@@ -128,7 +128,7 @@ vyatta_run_complete ()
 
   COMP_WORDS=( "${COMP_WORDS[@]:1}" )
   (( COMP_CWORD -= 1 ))
-  if [[ ${COMP_WORDS[0]} =~ "/" ]]; then
+  if [[ "${COMP_WORDS[0]}" =~ "/" ]]; then
     _filedir_xspec_vyos
   else
     shopt -s extglob nullglob
@@ -473,7 +473,7 @@ get_help_text ()
       vyatta_help_text+="\\x20\\x20"
     else
       if [[ $print_node_type -ne 0 ]]; then
-        local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} ${_get_help_text_items[idx]})
+        local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} "${_get_help_text_items[idx]}")
         case  "$nodeType" in
           tag) vyatta_help_text+="+> " ;;
           non-leaf) vyatta_help_text+=" > " ;;
@@ -646,13 +646,15 @@ vyatta_simple_complete ()
   # * "vyatta_help_text" is filled with the help text.
   # * "vyatta_completions" is an array of "filtered" possible completions
   #   (i.e., only those starting with the current last component).
-  local current_prefix=$2
+  local current_prefix="$2"
   compopt -o nospace
-  local cur=${COMP_WORDS[COMP_CWORD]}
+  local cur="${COMP_WORDS[COMP_CWORD]}"
   local -a f_comps=()
   get_prefix_filtered_list "$current_prefix" vyatta_completions f_comps
   if [[ ${#f_comps[@]} -ne 1 ]]; then
-    f_comps=( $(printf "%s\n" "${f_comps[@]}" | sort -u) )
+    local -a f_comps_sorted=()
+    readarray -t f_comps_sorted < <( printf '%s\n' "${f_comps[@]}" | LC_ALL=C sort -u )
+    f_comps=("${f_comps_sorted[@]}")
   fi
 
   COMPREPLY=( "${f_comps[@]}" )
@@ -1028,13 +1030,19 @@ vyatta_config_complete ()
         vyatta_completions+=("")
       elif [[ -z "$last_comp" ]] \
            || [[ "${_cli_shell_api_comp_values[i]}" = "$current_prefix"* ]]; then
+        # if the value has a space, surround it in quotes (this would be better done in getCompletionEnv)
+        if [[ "${_cli_shell_api_comp_values[i]}" =~ [[:space:]] ]]; then
+          _cli_shell_api_comp_values[i]="\"${_cli_shell_api_comp_values[i]}\""
+        fi
         vyatta_completions+=("${_cli_shell_api_comp_values[i]}")
-        if ! is_elem_of ${_cli_shell_api_comp_values[i]} _get_help_text_items; then
+        if ! is_elem_of "${_cli_shell_api_comp_values[i]}" _get_help_text_items; then
           tmp_comp_list+=("${_cli_shell_api_comp_values[i]}")
         fi
       fi
     done
-    _get_help_text_items+=( $(printf "%s\n" "${tmp_comp_list[@]}" | sort -u) )
+    local -a tmp_comp_list_sorted=()
+    readarray -t tmp_comp_list_sorted < <( printf '%s\n' "${tmp_comp_list[@]}" | LC_ALL=C sort -u )
+    _get_help_text_items+=( "${tmp_comp_list_sorted[@]}" )
   else
     _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
     vyatta_completions=( "${_cli_shell_api_comp_values[@]}" )
