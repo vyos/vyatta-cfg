@@ -173,6 +173,15 @@ bind_mount_boot ()
 
 start ()
 {
+    log_daemon_msg "Waiting for NIC's to settle down"
+    # On boot time udev migth take a long time to reorder nic's, this will ensure that
+    # all udev activity is completed and all nics presented at boot-time will have their
+    # final name before continuing with vyos-router initialization.
+    SECONDS=0
+    udevadm settle
+    STATUS=$?
+    log_progress_msg "setteled in ${SECONDS}sec."
+    log_end_msg ${STATUS}
     # Fixup for FRR
 
     # In 5.1 master, zebra thinks existence of /var/run/netns is
@@ -244,7 +253,7 @@ stop()
     umount ${vyatta_configdir}
     log_action_end_msg $?
 
-    /usr/lib/frr/frr stop
+    /usr/lib/frr/frrinit.sh stop
 }
 
 case "$action" in
