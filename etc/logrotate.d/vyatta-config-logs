@@ -1,7 +1,8 @@
-/var/log/vyatta/cfg-stderr.log /var/log/vyatta/cfg-stdout.log /var/log/vyatta/vyatta-commit.log /var/log/vyatta/vyatta-config-loader.log {
+/var/log/vyatta/cfg-stderr.log /var/log/vyatta/cfg-stdout.log /var/log/vyatta/vyos-boot-config-loader.log /var/log/vyatta/vyatta-commit.log /var/log/vyatta/vyatta-config-loader.log {
 	nocompress
 	size 1M
 	rotate 2
+	missingok
 	create 664 root vyattacfg
         su root vyattacfg
 }
