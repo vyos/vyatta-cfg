@@ -30,6 +30,21 @@ static first_seg f_seg_a;
 static first_seg f_seg_c;
 static first_seg f_seg_m;
 
+/****************** simple marker ***********************/
+
+static char *in_commit_file = "/var/tmp/in_commit";
+static char *initial_file = "/var/tmp/initial_in_commit";
+
+static int mark_by_file(char *p) {
+    int ret = mknod(p, S_IFREG|0664, 0);
+    return ret;
+}
+
+static int remove_mark(char *p) {
+    int ret = remove(p);
+    return ret;
+}
+
 /******************** Accessors: ************************/
 
 static char at_buffer[1024]={0};
@@ -73,6 +88,12 @@ boolean is_in_commit(void) {
 
 void set_in_commit(boolean b) {
   in_commit=b;
+  if (b == TRUE) {
+      mark_by_file(in_commit_file);
+      mark_by_file(initial_file);
+  } else {
+      remove_mark(in_commit_file);
+  }
 }
 
 boolean is_in_exec(void) {
