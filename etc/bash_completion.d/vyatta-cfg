@@ -39,6 +39,10 @@ if [ "$_OFR_CONFIGURE" != "ok" ]; then
   return 0
 fi
 
+if [ -r /etc/default/vyos-configd-env ]; then
+  source /etc/default/vyos-configd-env
+fi
+
 if [ -r /etc/default/vyatta ]; then
   source /etc/default/vyatta
 fi
