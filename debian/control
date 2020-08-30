@@ -19,6 +19,7 @@ Depends: sed (>= 4.1.5),
  libsocket6-perl,
  libvyatta-cfg1 (>=${binary:Version}),
  unionfs-fuse,
+ systemd,
  libboost-filesystem1.55.0 | libboost-filesystem1.62.0 | libboost-filesystem1.67.0,
  libapt-pkg4.12 | libapt-pkg5.0,
  ${perl:Depends}, ${shlibs:Depends}
