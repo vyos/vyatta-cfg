@@ -205,7 +205,7 @@ vyatta_config_rollback ()
     echo "Error: must include a revision # to rollback to"
     return 1;
   fi
-  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=rollback --revnum "$@"
+  sudo ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=rollback --revnum "$@"
 }
 
 shutdown ()
