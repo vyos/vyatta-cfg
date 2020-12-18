@@ -16,3 +16,8 @@ StandardOutput=journal+console
 
 [Install]
 WantedBy=vyos.target
+
+[Mount]
+Where=/sys/fs/bpf
+What=bpf
+Type=bpf
