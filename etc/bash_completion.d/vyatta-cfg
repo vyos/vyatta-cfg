@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -16,17 +16,17 @@
 # You can also obtain it by writing to the Free Software Foundation,
 # Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# 
+#
 # Author: Vyatta
 # Description: bash completion for Vyatta configuration commands
-# 
+#
 # **** End License ****
 
 # Turn on history logging
 export HISTCONTROL=
 export HISTFILESIZE=10000
 export HISTSIZE=10000
-export HISTTIMEFORMAT='%FT%T%z ' 
+export HISTTIMEFORMAT='%FT%T%z '
 export PROMPT_COMMAND='history -a'
 
 # remove colon from completion word seperators
@@ -121,9 +121,9 @@ done
 vyatta_run_complete ()
 {
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
-  
+
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  
+
   if [[ $COMP_CWORD -eq 0 ]]; then
     vyatta_config_complete "$@"
     eval $restore_shopts
@@ -138,7 +138,7 @@ vyatta_run_complete ()
     shopt -s extglob nullglob
     _vyatta_op_expand "$@"
   fi
-  
+
   if [ -z "$cur" ] ||
      [[ "${COMPREPLY[0]}" =~ "$cur" ]]; then
     for comp ; do
@@ -147,11 +147,11 @@ vyatta_run_complete ()
           COMPREPLY=( " " "" )
         elif _vyatta_cfg_compreply_needs_ambiguity ; then
           COMPREPLY+=( " " )
-        fi  
-      fi  
+        fi
+      fi
     done
-  fi   
-  
+  fi
+
   eval $restore_shopts
 }
 
@@ -245,10 +245,10 @@ vyatta_config_loadkey()
 
 vyatta_loadkey_complete()
 {
- 
+
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
- 
+
   if [[ $COMP_CWORD -eq 0 ]];then
     vyatta_config_complete "$@"
     eval $restore_shopts
@@ -323,13 +323,13 @@ vyatta_rollback_complete ()
 vyatta_compare_complete ()
 {
   # Generate completion help for the "compare" command
-  
+
   local current_prefix=$2
   local current_word=$3
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
   compopt -o nospace
-  
+
   if [[ $COMP_CWORD -eq 0 ]];then
     vyatta_config_complete "$@"
     eval $restore_shopts
@@ -357,7 +357,7 @@ vyatta_compare_complete ()
       echo -e "\n  Revisions:"
       print_commit_log
       COMPREPLY=( "" " " )
-  elif [[ -n "$current_prefix" ]]  && 
+  elif [[ -n "$current_prefix" ]]  &&
        [[ "saved" =~ "$current_prefix" ]] &&
        [[ $COMP_CWORD -eq 1 ]]; then
       COMPREPLY=( "saved " )
@@ -481,8 +481,8 @@ get_help_text ()
         case  "$nodeType" in
           tag) vyatta_help_text+="+> " ;;
           non-leaf) vyatta_help_text+=" > " ;;
-          multi) vyatta_help_text+="+  " ;; 
-          *) vyatta_help_text+="   " ;; 
+          multi) vyatta_help_text+="+  " ;;
+          *) vyatta_help_text+="   " ;;
         esac
         node=1;
       else
@@ -559,6 +559,9 @@ get_value_format_string ()
     macaddr)
       echo -n '<h:h:h:h:h:h>'
       ;;
+    hostname)
+      echo -n '<hostname>'
+      ;;
     *)
       echo -n "$vtype"
       ;;
@@ -604,20 +607,20 @@ vyatta_do_complete ()
             COMPREPLY=( " " "" )
           elif _vyatta_cfg_compreply_needs_ambiguity ; then
             COMPREPLY+=( " " )
-          fi  
-        fi  
+          fi
+        fi
       done
-  fi 
+  fi
   # If we didn't need ambiguity and there is only one element
   # in the compreply array then its the only available word,
   # append a space to finish the completion.
-  if [ ${#COMPREPLY[@]} -eq 1 ]; then 
+  if [ ${#COMPREPLY[@]} -eq 1 ]; then
      COMPREPLY=( "${COMPREPLY[0]} " )
   fi
   if [ -z "$cur" ];then
     vyatta_do_help=true
   fi
-  # don't show help text if its the same word 
+  # don't show help text if its the same word
   # keeps completions from getting stuck
   if [ ${#vyatta_completions[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
@@ -675,16 +678,16 @@ vyatta_simple_complete ()
             COMPREPLY=( " " "" )
           elif _vyatta_cfg_compreply_needs_ambiguity ; then
             COMPREPLY+=( " " )
-          fi  
-        fi  
+          fi
+        fi
       done
-  fi 
+  fi
 
   # If we didn't need ambiguity and there is only one element
   # in the compreply array then its the only available word,
   # append a space to finish the completion.
   if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
-    COMPREPLY=( "${COMPREPLY[0]} " ) 
+    COMPREPLY=( "${COMPREPLY[0]} " )
   fi
 
   if [[ $DBG_CFG_COMPS -eq 1 ]]; then
@@ -692,23 +695,23 @@ vyatta_simple_complete ()
     echo "cur: $cur"
     echo "f_comps: ${f_comps[@]}"
   fi
-  
+
   # show help text on first completion
   # this solves the confusion of not displaying the
   # non-completion values first
   if [ -z "$cur" ]; then
     vyatta_do_help=true
   fi
-  # don't show help text if its the same word 
+  # don't show help text if its the same word
   # keeps completions from getting stuck
   if [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$cur" ] &&
      [[ "${f_comps[0]}" =~ "$cur" ]]; then
-     vyatta_do_help=false 
+     vyatta_do_help=false
   elif [ ${#f_comps[@]} -eq 1 ] &&
      [ -n "$current_prefix" ] &&
      [[ "${f_comps[0]}" =~ "$current_prefix" ]]; then
-     vyatta_do_help=false 
+     vyatta_do_help=false
   elif $vyatta_do_help ||
        [ ${#vyatta_completions[@]} -eq 0 ]; then
     printf "$vyatta_help_text" | ${VYATTA_PAGER:-cat}
@@ -730,7 +733,7 @@ generate_pipe_help ()
 
 ### Expand config compwords ###
 vyatta_config_expand_compwords ()
-{ 
+{
     local cmd=$1
     cmd=$(vyatta_cfg_expand_top_level $cmd)
     expanded_api_args=( "$cmd" )
@@ -743,7 +746,7 @@ vyatta_config_expand_compwords ()
     for arg in "${@:2}"; do
         _cli_shell_api_comp_values=()
         _cli_shell_api_last_comp_val=''
-        if [[ -z $arg ]]; then 
+        if [[ -z $arg ]]; then
             path=( "${expanded_api_args[@]}" '' )
         else
             path=( "${expanded_api_args[@]}" "$arg" )
@@ -764,7 +767,7 @@ vyatta_config_expand_compwords ()
 
 vyatta_config_invalid_comp ()
 {
-  local cmd=$1 
+  local cmd=$1
   local -a expanded_api_args=( "$@" )
   local editlvl=$(cli-shell-api getEditLevelStr)
   local path=''
@@ -788,41 +791,41 @@ vyatta_config_invalid_comp ()
   else
     # find broken portion of command
     for arg in "${expanded_api_args[@]:1}"; do
-      if [[ "$path" == '' ]]; then 
+      if [[ "$path" == '' ]]; then
         path="$arg"
-      else 
+      else
         path="$path $arg"
-      fi   
-      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then 
+      fi
+      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then
         _cli_shell_api_comp_values=()
-        vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
-        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
-           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then 
+        vyatta_cli_shell_api getCompletionEnv $cmd ${path}
+        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
           local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
           local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
           local vyatta_help_text=''
-          if [[ $opath == '' ]]; then 
+          if [[ $opath == '' ]]; then
             echo -ne "\n\n  Configuration path: [$arg] is ambiguous\n"
           else
             echo -ne "\n\n  Configuration path: $opath [$arg] is ambiguous\n"
-          fi  
+          fi
           get_help_text 0
           echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
           failed=true
           break
         else
-          if [[ $opath == '' ]]; then 
+          if [[ $opath == '' ]]; then
             echo -ne "\n\n  Configuration path: [$arg] is not valid"
           else
             echo -ne "\n\n  Configuration path: $opath [$arg] is not valid"
-          fi  
+          fi
           failed=true
           break
-        fi  
-      else 
+        fi
+      else
         opath=$path
-      fi   
-    done 
+      fi
+    done
   fi
 }
 
@@ -838,13 +841,13 @@ vyatta_config_complete ()
   local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
   shopt -s extglob nullglob
   vyatta_cfg_comp_help=''
-  
+
   local current_word=$3
   local current_prefix=$2
   local comp_cword=$COMP_CWORD #mutable copy of COMP_CWORD so we can modify it for copy and rename
   local -a tmp_comp_list
   local exists_only=0
-  
+
   if [[ "$COMP_LINE" == "$VYATTA_COMP_LINE" ]]; then
     VYATTA_COMP_LINE=$VYATTA_COMP_LINE_EMPTY
     vyatta_do_help=true
@@ -869,13 +872,13 @@ vyatta_config_complete ()
     if (( ${#COMP_WORDS[@]} == 1 )); then
       declare -a fitems=()
       declare -a fstrs=()
-      # Get filtered word and help lists 
+      # Get filtered word and help lists
       # use the current comp word if current_word is empty
       # this only happens at the beginning of the line
       if [[ -z $current_word ]]; then
         get_prefix_filtered_list2 "${COMP_WORDS[0]}" \
           _get_help_text_items fitems _get_help_text_helps fstrs
-      else 
+      else
         get_prefix_filtered_list2 "${current_prefix}" \
           _get_help_text_items fitems _get_help_text_helps fstrs
       fi
@@ -977,13 +980,13 @@ vyatta_config_complete ()
   if [[ ${#api_args[@]} -gt 2 ]]; then
     nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]})
   fi
- 
+
   # Change the api arguments when we are dealing with a non last word
-  # completion, this allows for completions to work when in the middle 
+  # completion, this allows for completions to work when in the middle
   # of a string without requiring the user input additional spaces.
   if [[ -n "$current_word" ]] &&
      [[ -n "$last_comp" ]] &&
-     [[ ! "$current_word" =~ "$last_comp"  ]]; then 
+     [[ ! "$current_word" =~ "$last_comp"  ]]; then
      if [[ -n "$current_prefix" ]];then
        api_args=( "${api_args[@]:0:$[$comp_cword]}" "$current_prefix" )
      else
@@ -1001,7 +1004,7 @@ vyatta_config_complete ()
   if [[ $exists_only == 1 ]] &&
      [[ $nodeType == "tag" || $nodeType == "leaf"  || $nodeType == "multi" ]]; then
     _get_help_text_helps=( );
-  else 
+  else
     _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
   fi
   if $_cli_shell_api_last_comp_val; then
@@ -1140,7 +1143,7 @@ _filedir_xspec_vyos()
     fi
 }
 
-_vyatta_cfg_init 
+_vyatta_cfg_init
 
 # Local Variables:
 # mode: shell-script
