@@ -562,6 +562,9 @@ get_value_format_string ()
     hostname)
       echo -n '<hostname>'
       ;;
+    filename)
+      echo -n '<filename>'
+      ;;
     *)
       echo -n "$vtype"
       ;;
