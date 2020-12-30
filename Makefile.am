@@ -123,11 +123,9 @@ sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
 sbin_SCRIPTS += scripts/vyatta-find-type.pl
 sbin_SCRIPTS += scripts/priority.pl
-sbin_SCRIPTS  += scripts/vyatta-boot-config-loader
 sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl
 sbin_SCRIPTS  += scripts/vyatta-output-config.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
-sbin_SCRIPTS  += scripts/vyatta-load-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-strip-migration-comments.pl
@@ -142,7 +140,6 @@ share_perl5_DATA += lib/Vyatta/ioctl.pm
 share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
-share_perl5_DATA += lib/Vyatta/ConfigLoad.pm
 
 enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
