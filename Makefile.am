@@ -6,7 +6,6 @@ initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
-enumdir = $(datadir)/enumeration
 
 if USE_UNIONFSFUSE
 USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
@@ -121,14 +120,10 @@ src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS += scripts/vyatta-validate-type.pl
-sbin_SCRIPTS += scripts/vyatta-find-type.pl
 sbin_SCRIPTS += scripts/priority.pl
-sbin_SCRIPTS  += scripts/vyatta-cli-expand-var.pl
-sbin_SCRIPTS  += scripts/vyatta-output-config.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
-sbin_SCRIPTS  += scripts/vyatta-strip-migration-comments.pl
 sbin_SCRIPTS  += scripts/vyatta-log-commit.pl
 sbin_SCRIPTS  += scripts/vyos-user-precommit-hooks.sh
 sbin_SCRIPTS  += scripts/vyos-user-postcommit-hooks.sh
@@ -140,8 +135,6 @@ share_perl5_DATA += lib/Vyatta/ioctl.pm
 share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
-
-enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
 default_DATA = etc/default/vyatta-cfg
 default_DATA += etc/default/vyatta-load-boot
