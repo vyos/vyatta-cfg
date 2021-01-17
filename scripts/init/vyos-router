@@ -16,7 +16,7 @@
 # Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# Author:	Tom Grennan <tgrennan@vyatta.com>
+# Author:   Tom Grennan <tgrennan@vyatta.com>
 # **** End License ****
 
 . /lib/lsb/init-functions
@@ -45,17 +45,15 @@ if [ ! -z "$VYOS_CONFIG" ]; then
 fi
 
 declare -a subinit
-declare -a all_subinits=(
-    rl-system
-    firewall )
+declare -a all_subinits=( rl-system firewall )
 
 if [ $# -gt 0 ] ; then
     for s in $@ ; do
-	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
+        [ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
     done
 else
     for s in ${all_subinits[@]} ; do
-	[ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
+        [ -x ${vyatta_sbindir}/${s}.init ] && subinit[${#subinit}]=$s
     done
 fi
 
@@ -68,15 +66,14 @@ disabled () {
 
 # if necessary, provide initial config
 init_bootfile () {
-   if [ ! -r $BOOTFILE ] ; then
-	if [ -f $vyatta_sysconfdir/config.boot.default ]; then
-	  cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
+    if [ ! -r $BOOTFILE ] ; then
+        if [ -f $vyatta_sysconfdir/config.boot.default ]; then
+            cp $vyatta_sysconfdir/config.boot.default $BOOTFILE
         else
-          $vyos_libexec_dir/system-versions-foot.py > $BOOTFILE
+            $vyos_libexec_dir/system-versions-foot.py > $BOOTFILE
         fi
-
-	chgrp ${GROUP} $BOOTFILE
-	chmod 660 $BOOTFILE
+        chgrp ${GROUP} $BOOTFILE
+        chmod 660 $BOOTFILE
     fi
 }
 
@@ -94,13 +91,13 @@ load_bootfile ()
 {
     log_progress_msg configure
     (
-      if [ -f /etc/default/vyatta-load-boot ]; then
-        # build-specific environment for boot-time config loading
-        source /etc/default/vyatta-load-boot
-      fi
-      if [ -x $vyos_libexec_dir/vyos-boot-config-loader.py ]; then
-          sg ${GROUP} -c "$vyos_libexec_dir/vyos-boot-config-loader.py $BOOTFILE"
-      fi
+        if [ -f /etc/default/vyatta-load-boot ]; then
+            # build-specific environment for boot-time config loading
+            source /etc/default/vyatta-load-boot
+        fi
+        if [ -x $vyos_libexec_dir/vyos-boot-config-loader.py ]; then
+            sg ${GROUP} -c "$vyos_libexec_dir/vyos-boot-config-loader.py $BOOTFILE"
+        fi
     )
 }
 
@@ -118,7 +115,6 @@ run_postconfig_scripts ()
     if [ -x /config/scripts/vyatta-postconfig-bootup.script ]; then
         /config/scripts/vyatta-postconfig-bootup.script
     fi
-
     if [ -x /config/scripts/vyos-postconfig-bootup.script ]; then
         /config/scripts/vyos-postconfig-bootup.script
     fi
@@ -134,12 +130,11 @@ run_postupgrade_script ()
         if [ -d /config/scripts/post-upgrade.d ]; then
             run-parts /config/scripts/post-upgrade.d
         fi
-
         rm -f /config/.upgraded
     fi
 }
 
-# 
+#
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
 # files in the right place.  We also have to mount /boot/grub from the
@@ -148,29 +143,28 @@ run_postupgrade_script ()
 #
 bind_mount_boot ()
 {
-	persist_path=$(/opt/vyatta/sbin/vyos-persistpath)
-	if [ $? == 0 ]; then
-		if [ -e $persist_path/boot ]; then
-			image_name=$(cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//')
-			
-			if [ -n "$image_name" ]; then
-				mount --bind $persist_path/boot/$image_name /boot
-				
-				if [ $? -ne 0 ]; then
-					echo "Couldn't bind mount /boot"
-				fi
-				
-				if [ ! -d /boot/grub ]; then
-					mkdir /boot/grub
-				fi
-				
-				mount --bind $persist_path/boot/grub /boot/grub
-				if [ $? -ne 0 ]; then
-					echo "Couldn't bind mount /boot/grub"
-				fi
-			fi
-		fi
-	fi
+    persist_path=$(/opt/vyatta/sbin/vyos-persistpath)
+    if [ $? == 0 ]; then
+        if [ -e $persist_path/boot ]; then
+            image_name=$(cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//')
+
+            if [ -n "$image_name" ]; then
+                mount --bind $persist_path/boot/$image_name /boot
+                if [ $? -ne 0 ]; then
+                    echo "Couldn't bind mount /boot"
+                fi
+
+                if [ ! -d /boot/grub ]; then
+                    mkdir /boot/grub
+                fi
+
+                mount --bind $persist_path/boot/grub /boot/grub
+                if [ $? -ne 0 ]; then
+                    echo "Couldn't bind mount /boot/grub"
+                fi
+            fi
+        fi
+    fi
 }
 
 start ()
@@ -220,13 +214,13 @@ start ()
     run_postupgrade_script
 
     for s in ${subinit[@]} ; do
-	if ! disabled $s; then 
-	    log_progress_msg $s
-	    if ! ${vyatta_sbindir}/${s}.init start
-	    then log_failure_msg
-		 exit 1
-	    fi
-	fi
+    if ! disabled $s; then
+        log_progress_msg $s
+        if ! ${vyatta_sbindir}/${s}.init start
+        then log_failure_msg
+         exit 1
+        fi
+    fi
     done
 
     bind_mount_boot
@@ -245,10 +239,10 @@ stop()
     local -i status=0
     log_daemon_msg "Stopping VyOS router"
     for ((i=${#sub_inits[@]} - 1; i >= 0; i--)) ; do
-	s=${subinit[$i]}
-	log_progress_msg $s
-	${vyatta_sbindir}/${s}.init stop
-	let status\|=$?
+    s=${subinit[$i]}
+    log_progress_msg $s
+    ${vyatta_sbindir}/${s}.init stop
+    let status\|=$?
     done
     log_end_msg $status
     log_action_begin_msg "Un-mounting VyOS Config"
@@ -262,8 +256,8 @@ case "$action" in
     start) start ;;
     stop)  stop ;;
     restart|force-reload) stop && start ;;
-    *)	log_failure_msg "usage: $progname [ start|stop|restart ] [ subinit ... ]" ;
-	false ;;
+    *)  log_failure_msg "usage: $progname [ start|stop|restart ] [ subinit ... ]" ;
+    false ;;
 esac
 
 exit $?
