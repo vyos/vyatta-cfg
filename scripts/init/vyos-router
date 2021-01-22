@@ -264,7 +264,6 @@ start ()
     # reset and clean config files
     security_reset
 
-    update_interface_config
     clear_or_override_config_files || log_failure_msg "can\'t reset config files"
 
     log_action_begin_msg "Mounting VyOS Config"
@@ -289,6 +288,8 @@ start ()
     run_preconfig_script
 
     run_postupgrade_script
+
+    update_interface_config
 
     for s in ${subinit[@]} ; do
     if ! disabled $s; then
