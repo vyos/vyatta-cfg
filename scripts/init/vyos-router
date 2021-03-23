@@ -107,35 +107,35 @@ load_bootfile ()
 # execute the pre-config script
 run_preconfig_script ()
 {
-    if [ -x /config/scripts/vyos-preconfig-bootup.script ]; then
-        /config/scripts/vyos-preconfig-bootup.script
+    if [ -x $vyatta_sysconfdir/config/scripts/vyos-preconfig-bootup.script ]; then
+        $vyatta_sysconfdir/config/scripts/vyos-preconfig-bootup.script
     fi
 }
 
 # execute the post-config scripts
 run_postconfig_scripts ()
 {
-    if [ -x /config/scripts/vyatta-postconfig-bootup.script ]; then
-        /config/scripts/vyatta-postconfig-bootup.script
+    if [ -x $vyatta_sysconfdir/config/scripts/vyatta-postconfig-bootup.script ]; then
+        $vyatta_sysconfdir/config/scripts/vyatta-postconfig-bootup.script
     fi
 
-    if [ -x /config/scripts/vyos-postconfig-bootup.script ]; then
-        /config/scripts/vyos-postconfig-bootup.script
+    if [ -x $vyatta_sysconfdir/config/scripts/vyos-postconfig-bootup.script ]; then
+        $vyatta_sysconfdir/config/scripts/vyos-postconfig-bootup.script
     fi
 }
 
 run_postupgrade_script ()
 {
-    if [ -f /config/.upgraded ]; then
+    if [ -f $vyatta_sysconfdir/config/.upgraded ]; then
         # Run the system script
         /usr/libexec/vyos/system/post-upgrade
 
         # Run user scripts
-        if [ -d /config/scripts/post-upgrade.d ]; then
-            run-parts /config/scripts/post-upgrade.d
+        if [ -d $vyatta_sysconfdir/config/scripts/post-upgrade.d ]; then
+            run-parts $vyatta_sysconfdir/config/scripts/post-upgrade.d
         fi
 
-        rm -f /config/.upgraded
+        rm -f $vyatta_sysconfdir/config/.upgraded
     fi
 }
 
