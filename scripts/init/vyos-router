@@ -225,6 +225,15 @@ security_reset ()
     rm -f /etc/ppp/peers/pppoe* /etc/ppp/peers/wlm*
 }
 
+# As VyOS does not execute commands that are not present in the CLI we need this
+# workaround to reset the issue / motd files on boot to a sane default, probably
+# the same default as listed in the python script.
+issue_reset ()
+{
+    echo -e "Welcome to VyOS - \\\n \\\l\n" > /etc/issue
+    echo -e "Welcome to VyOS\n" > /etc/issue.net
+}
+
 start ()
 {
     # some legacy directories migrated over from old rl-system.init
@@ -270,9 +279,10 @@ start ()
     /usr/lib/frr/frrinit.sh start
 
     # reset and clean config files
-    security_reset
+    security_reset || log_failure_msg "security reset failed"
+    issue_reset || log_failure_msg "could not reset motd and issue files"
 
-    clear_or_override_config_files || log_failure_msg "can\'t reset config files"
+    clear_or_override_config_files || log_failure_msg "could not reset config files"
 
     log_action_begin_msg "Mounting VyOS Config"
     # ensure the vyatta_configdir supports a large number of inodes since
