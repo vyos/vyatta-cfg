@@ -278,6 +278,12 @@ start ()
     # all daemons if just one failed, do the start manually
     /usr/lib/frr/frrinit.sh start
 
+    # Mount a temporary filesystem for container networks.
+    # Configuration should be loaded from VyOS cli.
+    cni_dir="/etc/cni/net.d"
+    [ ! -d ${cni_dir} ] && mkdir -p ${cni_dir}
+    mount -t tmpfs none ${cni_dir}
+
     # reset and clean config files
     security_reset || log_failure_msg "security reset failed"
     issue_reset || log_failure_msg "could not reset motd and issue files"
