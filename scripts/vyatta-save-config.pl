@@ -57,7 +57,7 @@ if ($save_file =~ /^[^\/]\w+:\//) {
     if ($save_file =~ /^(\w+):\/\/\w/) {
         $mode = 'url';
         $proto = lc($1);
-	if (grep { lc($topdir) ne $_ } ("ftp", "tftp", "http", "https", "scp", "sftp")) {
+	if (grep { lc($proto) ne $_ } ("ftp", "tftp", "scp", "sftp")) {
             print "Invalid url protocol [$proto]\n";
             exit 1;
         }
