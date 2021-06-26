@@ -231,13 +231,11 @@ security_reset ()
     rm -rf /etc/ipsec.conf /etc/ipsec.secrets /etc/swanctl
 }
 
-# As VyOS does not execute commands that are not present in the CLI we need this
-# workaround to reset the issue / motd files on boot to a sane default, probably
-# the same default as listed in the python script.
+# As VyOS does not execute commands that are not present in the CLI we call
+# the script by hand to have a single source for the login banner and MOTD
 issue_reset ()
 {
-    echo -e "Welcome to VyOS - \\\n \\\l\n" > /etc/issue
-    echo -e "Welcome to VyOS\n" > /etc/issue.net
+    ${vyos_conf_scripts_dir}/system-login-banner.py
 }
 
 start ()
