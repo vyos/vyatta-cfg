@@ -133,7 +133,7 @@ if ($mode eq 'url') {
             $host = $2;
         }
 
-        $rc = system("curl -u $user -# -T $url_tmp_file $save_file");
+        $rc = system("curl --insecure -u $user -# -T $url_tmp_file $save_file");
         if($rc >> 8 == 51){
             my $rsa_key = `ssh-keyscan -t rsa $host 2>/dev/null`;
             print "The authenticity of host '$host' can't be established.\n";
