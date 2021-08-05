@@ -222,7 +222,8 @@ security_reset ()
     # PPPoE
     rm -f /etc/ppp/peers/pppoe* /etc/ppp/peers/wlm*
     # IPSec
-    rm -rf /etc/ipsec.conf /etc/ipsec.secrets /etc/swanctl
+    rm -rf /etc/ipsec.conf /etc/ipsec.secrets
+    find /etc/swanctl -type f | xargs rm -f
 }
 
 start ()
