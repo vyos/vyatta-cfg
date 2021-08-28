@@ -288,6 +288,15 @@ start ()
 
     clear_or_override_config_files || log_failure_msg "could not reset config files"
 
+    # enable some debugging before loading the configuration
+    if grep -q vyos-debug /proc/cmdline; then
+        log_action_begin_msg "Enable runtime debugging options"
+        touch /tmp/vyos.container.debug
+        touch /tmp/vyos.ifconfig.debug
+        touch /tmp/vyos.frr.debug
+        touch /tmp/vyos.container.debug
+    fi
+
     log_action_begin_msg "Mounting VyOS Config"
     # ensure the vyatta_configdir supports a large number of inodes since
     # the config hierarchy is often inode-bound (instead of size).
