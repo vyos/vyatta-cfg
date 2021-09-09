@@ -1,4 +1,5 @@
 etc
+opt/vyatta/share/enumeration
 opt/vyatta/share/vyatta-cfg/functions
 opt/vyatta/sbin
 opt/vyatta/etc

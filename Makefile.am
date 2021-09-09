@@ -6,6 +6,7 @@ initddir	 = /etc/init.d
 logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
+enumdir = $(datadir)/enumeration
 
 if USE_UNIONFSFUSE
 USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
@@ -135,6 +136,8 @@ share_perl5_DATA += lib/Vyatta/ioctl.pm
 share_perl5_DATA += lib/Vyatta/Interface.pm
 share_perl5_DATA += lib/Vyatta/TypeChecker.pm
 share_perl5_DATA += lib/Vyatta/ConfigOutput.pm
+
+enum_SCRIPTS  = scripts/enumeration/existing-interfaces
 
 default_DATA = etc/default/vyatta-cfg
 default_DATA += etc/default/vyatta-load-boot
