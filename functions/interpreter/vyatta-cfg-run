@@ -199,6 +199,11 @@ reboot ()
   echo "Exit from configure mode before rebooting."
 }
 
+poweroff ()
+{
+  echo "Exit from configure mode before shutting down."
+}
+
 vyatta_config_rollback ()
 {
   if [ $# != 1 ]; then
