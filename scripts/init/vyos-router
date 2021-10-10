@@ -173,6 +173,34 @@ bind_mount_boot ()
 	fi
 }
 
+# XXX: T3885 - generate persistend DHCPv6 DUID (Type4 - UUID based)
+gen_duid ()
+{
+    DUID_FILE="/var/lib/dhcpv6/dhcp6c_duid"
+    UUID_FILE="/sys/class/dmi/id/product_uuid"
+    if [ ! -f ${UUID_FILE} ]; then
+        return 1
+    fi
+
+    # DUID is based on the BIOS/EFI UUID. We omit additional - characters
+    UUID=$(cat ${UUID_FILE} | tr -d -)
+    # Add DUID type4 (UUID) information
+    DUID_TYPE="0004"
+
+    # The length-information (as per RFC6355 UUID is 128 bits long) is in big-endian
+    # format - beware when porting to ARM64. The length field consists out of the
+    # UUID (128 bit + 16 bits DUID type) resulting in hex 12.
+    DUID_LEN="0012"
+    if [ "$(echo -n I | od -to2 | head -n1 | cut -f2 -d" " | cut -c6 )" -eq 1 ]; then
+        # true on little-endian (x86) systems
+        DUID_LEN="1200"
+    fi
+
+    for i in $(echo -n ${DUID_LEN}${DUID_TYPE}${UUID} | sed 's/../& /g'); do
+        echo -ne "\x$i"
+    done > ${DUID_FILE}
+}
+
 start ()
 {
     log_daemon_msg "Waiting for NICs to settle down"
@@ -184,6 +212,10 @@ start ()
     STATUS=$?
     log_progress_msg "settled in ${SECONDS}sec."
     log_end_msg ${STATUS}
+
+    # Generate DHCPv6 DUID
+    gen_duid || log_failure_msg "could not generate DUID"
+
     # Fixup for FRR
 
     # In 5.1 master, zebra thinks existence of /var/run/netns is
