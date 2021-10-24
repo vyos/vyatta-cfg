@@ -178,12 +178,16 @@ gen_duid ()
 {
     DUID_FILE="/var/lib/dhcpv6/dhcp6c_duid"
     UUID_FILE="/sys/class/dmi/id/product_uuid"
-    if [ ! -f ${UUID_FILE} ]; then
+    UUID_FILE_ALT="/sys/class/dmi/id/product_serial"
+    if [ ! -f ${UUID_FILE} ] && [ ! -f ${UUID_FILE_ALT} ]; then
         return 1
     fi
 
     # DUID is based on the BIOS/EFI UUID. We omit additional - characters
     UUID=$(cat ${UUID_FILE} | tr -d -)
+    if [ -z ${UUID} ]; then
+        UUID=$(uuidgen --sha1 --namespace @dns --name $(cat ${UUID_FILE_ALT}) | tr -d -)
+    fi
     # Add DUID type4 (UUID) information
     DUID_TYPE="0004"
 
