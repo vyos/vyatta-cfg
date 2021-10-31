@@ -237,7 +237,9 @@ gen_duid ()
     fi
 
     # DUID is based on the BIOS/EFI UUID. We omit additional - characters
-    UUID=$(cat ${UUID_FILE} | tr -d -)
+    if [ -f ${UUID_FILE} ]; then
+        UUID=$(cat ${UUID_FILE} | tr -d -)
+    fi
     if [ -z ${UUID} ]; then
         UUID=$(uuidgen --sha1 --namespace @dns --name $(cat ${UUID_FILE_ALT}) | tr -d -)
     fi
