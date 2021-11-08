@@ -139,7 +139,7 @@ run_postupgrade_script ()
     fi
 }
 
-# 
+#
 # On image booted machines, we need to mount /boot from the image-specific
 # boot directory so that kernel package installation will put the
 # files in the right place.  We also have to mount /boot/grub from the
@@ -152,18 +152,18 @@ bind_mount_boot ()
 	if [ $? == 0 ]; then
 		if [ -e $persist_path/boot ]; then
 			image_name=$(cat /proc/cmdline | sed -e s+^.*vyos-union=/boot/++ | sed -e 's/ .*$//')
-			
+
 			if [ -n "$image_name" ]; then
 				mount --bind $persist_path/boot/$image_name /boot
-				
+
 				if [ $? -ne 0 ]; then
 					echo "Couldn't bind mount /boot"
 				fi
-				
+
 				if [ ! -d /boot/grub ]; then
 					mkdir /boot/grub
 				fi
-				
+
 				mount --bind $persist_path/boot/grub /boot/grub
 				if [ $? -ne 0 ]; then
 					echo "Couldn't bind mount /boot/grub"
@@ -278,7 +278,7 @@ start ()
     run_postupgrade_script
 
     for s in ${subinit[@]} ; do
-	if ! disabled $s; then 
+	if ! disabled $s; then
 	    log_progress_msg $s
 	    if ! ${vyatta_sbindir}/${s}.init start
 	    then log_failure_msg
