@@ -247,6 +247,7 @@ start ()
     # As VyOS does not execute commands that are not present in the CLI we call
     # the script by hand to have a single source for the login banner and MOTD
     ${vyos_conf_scripts_dir}/system_console.py || log_failure_msg "could not reset serial console"
+    ${vyos_conf_scripts_dir}/system-login-banner.py || log_failure_msg "could not reset motd and issue files"
 
     # enable some debugging before loading the configuration
     if grep -q vyos-debug /proc/cmdline; then
