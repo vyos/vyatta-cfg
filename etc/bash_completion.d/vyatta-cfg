@@ -350,6 +350,7 @@ vyatta_compare_complete ()
      [ $COMP_CWORD -eq 1 -a -z "$current_prefix" ]; then
       echo
       echo "Possible completions:"
+      echo -e "  commands\tCompare working & active configurations and show \"set\" commands"
       echo -e "  <Enter>\tCompare working & active configurations"
       echo -e "  saved\t\tCompare working & saved configurations"
       echo -e "  <N>\t\tCompare working with revision N"
