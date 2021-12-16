@@ -57,9 +57,13 @@ if ($save_file =~ /^[^\/]\w+:\//) {
     if ($save_file =~ /^(\w+):\/\/\w/) {
         $mode = 'url';
         $proto = lc($1);
-	if ($proto eq "scp") {}
+	if ($proto eq "ftp") {}
+	elsif ($proto eq "ftps") {}
+	elsif ($proto eq "http") {}
+	elsif ($proto eq "https") {}
+	elsif ($proto eq "scp") {}
 	elsif ($proto eq "sftp") {}
-	elsif ($proto eq "ftp") {}
+	elsif ($proto eq "ssh") {}
 	elsif ($proto eq "tftp") {}
 	else {
             print "Invalid URL protocol [$proto]\n";
