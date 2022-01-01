@@ -364,6 +364,12 @@ vyatta_compare_complete ()
       COMPREPLY=( "saved " )
       eval $restore_shopts
       return
+  elif [[ -n "$current_prefix" ]]  &&
+       [[ "commands" =~ "$current_prefix" ]] &&
+       [[ $COMP_CWORD -eq 1 ]]; then
+      COMPREPLY=( "commands " )
+      eval $restore_shopts
+      return
   elif [ $COMP_CWORD -eq 2 -a -z "${COMP_WORDS[2]}" ]; then
       if [[ "saved" =~ "${COMP_WORDS[1]}" ]]; then
         echo -e "\nPossible completions:"
