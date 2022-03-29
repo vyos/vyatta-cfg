@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <chrono>
 
 #include <cli_cstore.h>
 #include <commit/commit-algorithm.hpp>
@@ -24,6 +25,37 @@
 
 using namespace commit;
 using namespace std;
+using namespace chrono;
+
+////// debugging helpers
+bool debug_on = false;
+int stack_depth = 0;
+
+// You can display a file/function/line if required as follows
+// OUTPUT_USER("[%s:%d:%s]" __FILE__, __LINE__, __FUNCTION__)
+
+#define TRACE_RESET(fmt, ...) \
+  if (debug_on) { \
+    stack_depth++; \
+    OUTPUT_USER("%*s" fmt "\n", stack_depth, " ", ##__VA_ARGS__); \
+    start_time = high_resolution_clock::now(); \
+  }
+
+#define TRACE_INIT(fmt, ...) \
+  time_point<high_resolution_clock> start_time; \
+  TRACE_RESET(fmt, ##__VA_ARGS__);
+
+#define TRACE_DISPLAY(fmt, ...) \
+  if (debug_on) { \
+    time_point<high_resolution_clock> stop_time = high_resolution_clock::now(); \
+    int total_ms = duration_cast<milliseconds>(stop_time - start_time).count(); \
+    int sec_elapsed = total_ms / 1000; \
+    int ms_elapsed = total_ms % 1000; \
+    OUTPUT_USER("%*s" "Elapsed %d.%03d sec: " fmt "\n", \
+                stack_depth, " ", sec_elapsed, ms_elapsed, \
+                ##__VA_ARGS__); \
+    stack_depth--; \
+  }
 
 
 ////// static
@@ -278,11 +310,15 @@ _exec_tmpl_actions(Cstore& cs, CommitState s, char *at_str,
   default:
     break;
   }
+
+  TRACE_INIT("Executing the \"%s\" ...", disp_path.to_string().c_str());
   setenv("COMMIT_ACTION", aenv, 1);
   set_in_delete_action((act == delete_act));
   bool ret = cs.executeTmplActions(at_str, path, disp_path, actions, def);
   set_in_delete_action(false);
   unsetenv("COMMIT_ACTION");
+  TRACE_DISPLAY("");
+
   return ret;
 }
 
@@ -662,19 +698,33 @@ static bool
 _commit_exec_prio_subtree(Cstore& cs, PrioNode *proot)
 {
   CfgNode *cfg = proot->getCfgNode();
+  CommittedPathListT clist;
+  bool ret = false;
   if (cfg) {
     if (proot->getCommitState() == COMMIT_STATE_ADDED
         && proot->parentCreateFailed()) {
       // can't create if parent create failed
-      proot->setSucceeded(false);
-      return false;
+      goto commit_failed;
     }
-    CommittedPathListT clist;
-    if (!_commit_check_cfg_node(cs, cfg, clist)
-        || !_commit_exec_cfg_node(cs, cfg)) {
-      // subtree commit failed
-      proot->setSucceeded(false);
-      return false;
+
+    if (!debug_on) {
+      if (!_commit_check_cfg_node(cs, cfg, clist)
+          || !_commit_exec_cfg_node(cs, cfg)) {
+        // subtree commit failed
+        goto commit_failed;
+      }
+    } else {
+      TRACE_INIT("Entering the _commit_check_cfg_node");
+      ret = _commit_check_cfg_node(cs, cfg, clist);
+      TRACE_DISPLAY("_commit_check_cfg_node");
+      if (!ret)
+          goto commit_failed;
+
+      TRACE_RESET("Entering the _commit_exec_cfg_node");
+      ret = _commit_exec_cfg_node(cs, cfg);
+      TRACE_DISPLAY("_commit_exec_cfg_node");
+      if (!ret)
+          goto commit_failed;
     }
     // subtree succeeded, mark nodes committed
     for (size_t i = 0; i < clist.size(); i++) {
@@ -682,13 +732,16 @@ _commit_exec_prio_subtree(Cstore& cs, PrioNode *proot)
                                    (clist[i].first
                                     == COMMIT_STATE_DELETED))) {
         fprintf(stderr, "Failed to mark path committed\n");
-        proot->setSucceeded(false);
-        return false;
+        goto commit_failed;
       }
     }
   }
   proot->setSucceeded(true);
   return true;
+
+commit_failed:
+  proot->setSucceeded(false);
+  return false;
 }
 
 static CfgNode *
@@ -1248,7 +1301,9 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   DelPrioQueueT dpq;
   _get_commit_prio_queue(&proot, pq, dpq);
   size_t s = 0, f = 0;
-  
+
+  debug_on = !!getenv("VYOS_DEBUG");
+  TRACE_INIT("Processing the Priority Queue");
   while (!dpq.empty()) {
     PrioNode *p = dpq.top();
     if (!_commit_exec_prio_subtree(cs, p)) {
@@ -1275,6 +1330,7 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
     }
     pq.pop();
   }
+  TRACE_DISPLAY("Commit execute priority tree");
   bool ret = true;
   const char *cst = "SUCCESS";
   if (f > 0) {
