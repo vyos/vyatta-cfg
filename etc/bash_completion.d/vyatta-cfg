@@ -232,49 +232,15 @@ vyatta_loadsave_complete()
 
 vyatta_config_loadkey()
 {
-  # don't load if there are uncommitted changes.
-  if vyatta_cli_shell_api sessionChanged; then
-    echo "Cannot load: configuration modified."
-    echo "Commit or discard the changes before loading a config file."
-    return 1
-  fi
-  # return to top level.
-  reset_edit_level
-  ${vyatta_sbindir}/vyatta-load-user-key.pl "$@"
+    echo "Warning: The obsolete 'loadkey' command has been phased out."
+    echo "Instead, use the op-mode command 'generate public-key-command' to generate commands for manual addition:"
+    echo '$ generate public-key-command name <username> path <path-or-url>'
+    echo
 }
 
 vyatta_loadkey_complete()
 {
-
-  local restore_shopts=$( shopt -p extglob nullglob | tr \\n \; )
-  shopt -s extglob nullglob
-
-  if [[ $COMP_CWORD -eq 0 ]];then
-    vyatta_config_complete "$@"
-    eval $restore_shopts
-    return
-  fi
-
-  case "$COMP_CWORD" in
-      1) if [ -z "${COMP_WORDS[1]}" ]; then
-	  COMPREPLY=( $(getent passwd | awk -F: '$7 == "/bin/vbash" { print $1}') )
-	 else
-	  COMPREPLY=( $(compgen -u -- ${COMP_WORDS[1]} ) )
-         fi ;;
-      2) if [ -z "${COMP_WORDS[2]}" ]; then
-	  echo
-	  echo "Possible completions:"
-	  echo -e "  <file>\t\t\t\tLoad from file on local machine"
-	  echo -e "  scp://<user>@<host>:/<file>\tLoad from file on remote machine"
-	  echo -e "  sftp://<user>@<host>/<file>\tLoad from file on remote machine"
-	  echo -e "  ftp://<user>@<host>/<file>\tLoad from file on remote machine"
-	  echo -e "  http://<host>/<file>\t\t\tLoad from file on remote machine"
-	  echo -e "  tftp://<host>/<file>\t\t\tLoad from file on remote machine"
-	  COMPREPLY=( "" " " )
-	 else
-	  COMPREPLY=( $(compgen -f -- ${COMP_WORDS[2]} ) )
-	 fi ;;
-  esac
+    true
 }
 
 print_commit_log ()
