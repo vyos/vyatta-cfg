@@ -323,6 +323,7 @@ start ()
     ${vyos_conf_scripts_dir}/system-login-banner.py || log_failure_msg "could not reset motd and issue files"
     ${vyos_conf_scripts_dir}/system-option.py || log_failure_msg "could not reset system option files"
     ${vyos_conf_scripts_dir}/conntrack.py || log_failure_msg "could not reset conntrack subsystem"
+    ${vyos_conf_scripts_dir}/containers.py || log_failure_msg "could not reset conntrack subsystem"
 
     clear_or_override_config_files || log_failure_msg "could not reset config files"
 
