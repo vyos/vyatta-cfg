@@ -463,11 +463,13 @@ get_help_text ()
       fi
     fi
     if [ ${#_get_help_text_items[idx]} -lt $((6 - $node)) ]; then
+      vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t\\t"
+    elif [ ${#_get_help_text_items[idx]} -lt $((14 - $node)) ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t\\t"
-    elif [ ${#_get_help_text_items[idx]} -lt 13 ]; then
+    elif [ ${#_get_help_text_items[idx]} -lt 21 ]; then
       vyatta_help_text+="${_get_help_text_items[idx]}\\t"
     else
-      vyatta_help_text+="${_get_help_text_items[idx]}\\n\\x20\\x20\\x20\\t\\t"
+      vyatta_help_text+="${_get_help_text_items[idx]}\\n\\x20\\x20\\x20\\t\\t\\t"
     fi
     vyatta_help_text+="${_get_help_text_helps[idx]}"
   done
