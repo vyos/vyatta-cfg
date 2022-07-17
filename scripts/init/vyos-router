@@ -286,27 +286,6 @@ start ()
     # Generate DHCPv6 DUID
     gen_duid || log_failure_msg "could not generate DUID"
 
-    # Fixup for FRR
-    # In 5.1 master, zebra thinks existence of /var/run/netns is
-    # a requirement for netns support
-    mkdir -p /var/run/netns
-
-    # Fixup for FRR save configs T3217
-    mkdir -p /run/frr/config
-    echo "log syslog" > /run/frr/config/frr.conf
-    echo "log facility local7" >> /run/frr/config/frr.conf
-    chown -R root:frrvty /run/frr/config/frr.conf
-    chmod 775 /run/frr/config/frr.conf
-    mount --bind /run/frr/config/frr.conf /etc/frr/frr.conf
-
-    # chown the config dir to give all admins access
-    chown -R root:frrvty /etc/frr
-    chmod 775 /etc/frr
-
-    # Since systemd doesn't work without watchfrr and watchfrr restarts
-    # all daemons if just one failed, do the start manually
-    /usr/lib/frr/frrinit.sh start
-
     # Mount a temporary filesystem for container networks.
     # Configuration should be loaded from VyOS cli.
     cni_dir="/etc/cni/net.d"
