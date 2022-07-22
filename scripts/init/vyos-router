@@ -221,9 +221,13 @@ security_reset ()
 
     # PPPoE
     rm -f /etc/ppp/peers/pppoe* /etc/ppp/peers/wlm*
+
     # IPSec
     rm -rf /etc/ipsec.conf /etc/ipsec.secrets
     find /etc/swanctl -type f | xargs rm -f
+
+    # VRF
+    rm -f /etc/iproute2/rt_tables.d/vyos-vrf.conf
 }
 
 # XXX: T3885 - generate persistend DHCPv6 DUID (Type4 - UUID based)
