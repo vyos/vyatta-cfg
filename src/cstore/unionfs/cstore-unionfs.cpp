@@ -167,6 +167,14 @@ _unescape_path_name(const string& path)
   return npath;
 }
 
+// Fall-through for Boost's filesystem::copy_file "complexity"
+void stream_file( const char* srce_file, const char* dest_file )
+{
+    std::ifstream srce( srce_file, std::ios::binary ) ;
+    std::ofstream dest( dest_file, std::ios::binary ) ;
+    dest << srce.rdbuf() ;
+}
+
 vector<int> getActiveCommits()
 {
   string process_name = "vbash";
@@ -321,7 +329,6 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
 UnionfsCstore::~UnionfsCstore()
 {
 }
-
 
 ////// public virtual functions declared in base class
 bool
@@ -750,7 +757,12 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
       try {
         if (path_is_regular(s)) {
           // it's file
-          b_fs::copy_file(s.path_cstr(), d.path_cstr());
+          try {
+            b_fs::copy_file(s.path_cstr(), d.path_cstr());
+          } catch (const boost::filesystem::filesystem_error& e) {
+            output_internal("syncdir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
+            stream_file(s.path_cstr(), d.path_cstr());
+          }
         } else {
           // dir
           recursive_copy_dir(s, d, true);
@@ -1592,7 +1604,12 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
           }
         }
       }
-      b_fs::copy_file(di->path(), nname);
+      try {
+        b_fs::copy_file(di->path(), nname);
+      } catch (const b_fs::filesystem_error& e) {
+        output_internal("recursive_copy_dir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
+        stream_file(di->path().string().c_str(), nname.c_str());
+      }
     }
   }
 }
