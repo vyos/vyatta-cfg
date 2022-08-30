@@ -299,10 +299,15 @@ start ()
     # reset and clean config files
     security_reset || log_failure_msg "security reset failed"
 
+    # Init firewall
+    nfct helper add rpc inet tcp
+    nfct helper add rpc inet udp
+    nfct helper add tns inet tcp
+    nft -f /usr/share/vyos/vyos-firewall-init.conf || log_failure_msg "could not initiate firewall rules"
+
     # As VyOS does not execute commands that are not present in the CLI we call
     # the script by hand to have a single source for the login banner and MOTD
     ${vyos_conf_scripts_dir}/system_console.py || log_failure_msg "could not reset serial console"
-    ${vyos_conf_scripts_dir}/firewall.py || log_failure_msg "could not initiate firewall rules"
     ${vyos_conf_scripts_dir}/system-login-banner.py || log_failure_msg "could not reset motd and issue files"
     ${vyos_conf_scripts_dir}/system-option.py || log_failure_msg "could not reset system option files"
     ${vyos_conf_scripts_dir}/conntrack.py || log_failure_msg "could not reset conntrack subsystem"
