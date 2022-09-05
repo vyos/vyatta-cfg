@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -107,6 +108,21 @@ Cstore::createCstore(bool use_edit_level)
 {
   return (new unionfs::UnionfsCstore(use_edit_level));
 }
+
+// utility function
+bool
+Cstore::contains_whitespace(const char *name) {
+  int i = 0;
+  char c;
+  while (name[i]) {
+    c = name[i];
+    if (isspace(c)) return true;
+    i++;
+  }
+
+  return false;
+}
+// end utility function
 
 // for "specific session" (see UnionfsCstore constructor for details)
 Cstore *
@@ -337,6 +353,7 @@ Cstore::validateSetPath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
 
+  Cpath *pcomps = const_cast<Cpath *>(&path_comps);
   // if we can get parsed tmpl, path is valid
   string terr;
   tr1::shared_ptr<Ctemplate> def(get_parsed_tmpl(path_comps, true, terr));
@@ -350,6 +367,11 @@ Cstore::validateSetPath(const Cpath& path_comps)
   #else
   unique_ptr<SavePaths> save(create_save_paths());
   #endif
+  if (def->isTag() && contains_whitespace((*pcomps)[pcomps->size() - 1])) {
+    string output = "Tag node value name must not contain whitespace\n";
+    output_user(output.c_str());
+    return false;
+  }
   if (!def->isValue()) {
     if (!def->isTypeless()) {
       /* disallow setting value node without value
