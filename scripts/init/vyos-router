@@ -228,6 +228,9 @@ security_reset ()
 
     # VRF
     rm -f /etc/iproute2/rt_tables.d/vyos-vrf.conf
+    
+    # Container
+    rm -f /etc/containers/storage.conf /etc/containers/registries.conf
 }
 
 # XXX: T3885 - generate persistend DHCPv6 DUID (Type4 - UUID based)
