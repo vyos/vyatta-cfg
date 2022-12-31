@@ -173,6 +173,15 @@ bind_mount_boot ()
 	fi
 }
 
+# These are all the default security setting which are later
+# overridden when configuration is read. These are the values the
+# system defaults.
+security_reset ()
+{
+    # Container
+    rm -f /etc/containers/storage.conf /etc/containers/registries.conf
+}
+
 # XXX: T3885 - generate persistend DHCPv6 DUID (Type4 - UUID based)
 gen_duid ()
 {
@@ -222,6 +231,9 @@ start ()
     # Generate DHCPv6 DUID
     gen_duid || log_failure_msg "could not generate DUID"
 
+    # reset and clean config files
+    security_reset || log_failure_msg "security reset failed"
+
     # Fixup for FRR
 
     # In 5.1 master, zebra thinks existence of /var/run/netns is
@@ -248,6 +260,7 @@ start ()
     # the script by hand to have a single source for the login banner and MOTD
     ${vyos_conf_scripts_dir}/system_console.py || log_failure_msg "could not reset serial console"
     ${vyos_conf_scripts_dir}/system-login-banner.py || log_failure_msg "could not reset motd and issue files"
+    ${vyos_conf_scripts_dir}/container.py || log_failure_msg "could not reset container subsystem"
 
     # enable some debugging before loading the configuration
     if grep -q vyos-debug /proc/cmdline; then
