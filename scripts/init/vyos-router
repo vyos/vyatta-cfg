@@ -226,8 +226,8 @@ security_reset ()
     rm -rf /etc/ipsec.conf /etc/ipsec.secrets
     find /etc/swanctl -type f | xargs rm -f
 
-    # VRF/iproute2
-    rm -f /etc/iproute2/rt_tables.d/vyos-vrf.conf /etc/iproute2/rt_tables.d/vyos.conf
+    # iproute2 cleanup
+    rm -f /etc/iproute2/rt_tables.d/vyos-*.conf
 
     # Container
     rm -f /etc/containers/storage.conf /etc/containers/registries.conf
