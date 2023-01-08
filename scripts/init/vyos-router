@@ -231,6 +231,10 @@ security_reset ()
 
     # Container
     rm -f /etc/containers/storage.conf /etc/containers/registries.conf
+
+    # System Options (SSH/cURL)
+    rm -f /etc/ssh/ssh_config.d/*vyos*.conf
+    rm -f /etc/curlrc
 }
 
 # XXX: T3885 - generate persistend DHCPv6 DUID (Type4 - UUID based)
