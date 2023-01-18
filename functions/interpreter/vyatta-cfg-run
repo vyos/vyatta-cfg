@@ -34,7 +34,6 @@ _vyatta_cfg_cmds=( "confirm" \
                    "edit" \
                    "exit" \
                    "load" \
-                   "loadkey" \
                    "merge" \
                    "rename" \
                    "rollback" \
@@ -54,7 +53,6 @@ _vyatta_cfg_helps=( \
       "Edit a sub-element" \
       "Exit from this configuration level" \
       "Load configuration from a file and replace running configuration" \
-      "Load user SSH key from a file" \
       "Load configuration from a file and merge running configuration" \
       "Rename a configuration element" \
       "Rollback to a prior config revision (requires reboot)" \
@@ -570,7 +568,6 @@ vyatta_cfg_run ()
     compare) vyatta_config_compare "${@:2}";;
     save) vyatta_config_save "${@:2}" ;;
     merge) vyatta_config_merge "${@:2}" ;;
-    loadkey) vyatta_config_loadkey "${@:2}";;
     *) vyatta_cfg_cmd $fcmd "${@:2}" ;; # commands requiring path expansion must go through here
   esac
 }
@@ -612,8 +609,6 @@ _vyatta_cfg_init ()
                complete -F vyatta_single_word_complete ${cmd:0:$pos} ;; 
             run)
               complete -F vyatta_run_complete ${cmd:0:$pos} ;;
-            loadkey)
-              complete -F vyatta_loadkey_complete ${cmd:0:$pos} ;;
             compare)
               complete -F vyatta_compare_complete ${cmd:0:$pos} ;;
             rollback)
