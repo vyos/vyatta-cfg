@@ -152,17 +152,18 @@ vyatta_config_commit-confirm ()
       args[${#args[@]}]="$arg"    
     fi
   done
-  cmd="${vyatta_sbindir}/vyatta-config-mgmt.pl --action=commit-confirm \
-                                               --minutes=$minutes"
+  cmd="${vyos_bin_dir}/config-mgmt commit_confirm -t=$minutes"
   eval "sudo sg vyattacfg \"$cmd\" "
   if [ $? = 0 ]; then
+    export IN_COMMIT_CONFIRM=t
     vyatta_config_commit "$@"
+    unset IN_COMMIT_CONFIRM
   fi
 }
 
 vyatta_config_confirm ()
 {
-  ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=confirm
+  ${vyos_bin_dir}/config-mgmt confirm
 }
 
 vyatta_config_compare ()
@@ -171,9 +172,9 @@ vyatta_config_compare ()
   local -a filtered=()
   get_prefix_filtered_list $1 comp filtered
   if [[ "${filtered[0]}" == "saved" ]]; then
-     cli-shell-api showConfig --show-cfg1 /config/config.boot --show-cfg2 @WORKING --show-context-diff
+     ${vyos_bin_dir}/config-mgmt compare --saved
   else  
-     ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=diff "$@" | eval "${VYATTA_PAGER:-cat}"
+     ${vyos_bin_dir}/config-mgmt wrap_compare --options "$@" | eval "${VYATTA_PAGER:-cat}"
   fi 
 }
 
@@ -210,7 +211,7 @@ vyatta_config_rollback ()
     echo "Error: must include a revision # to rollback to"
     return 1;
   fi
-  sudo ${vyatta_sbindir}/vyatta-config-mgmt.pl --action=rollback --revnum "$@"
+  sudo ${vyos_bin_dir}/config-mgmt rollback --rev "$@"
 }
 
 shutdown ()
