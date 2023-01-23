@@ -444,6 +444,10 @@ private:
   };
   // end path modifiers
 
+  // utility function
+  bool contains_whitespace(const char *name);
+  // end utility function
+
   // these require full path
   // (note: get_parsed_tmpl also uses current tmpl path)
   tr1::shared_ptr<Ctemplate> get_parsed_tmpl(const Cpath& path_comps,
