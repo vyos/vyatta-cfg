@@ -39,6 +39,7 @@ our @EXPORT_OK = qw(generate_dhclient_intf_files
 use Vyatta::Config;
 use Vyatta::Interface;
 use NetAddr::IP;
+use NetAddr::IP::Lite;
 use Socket;
 Socket6->import(qw(inet_pton getaddrinfo));
 
@@ -211,27 +212,32 @@ sub getInterfaces {
 }
 
 # Test if IP address is local to the system.
-# Implemented by doing bind since by default
-# Linux will only allow binding to local addresses
+# Implemented by checking a local route table
 sub is_local_address {
     my $addr = shift;
-    my $ip = new NetAddr::IP $addr;
+    my $ip = new NetAddr::IP::Lite($addr);
     die "$addr: not a valid IP address"
         unless $ip;
 
-    my ($pf, $sockaddr);
+    # prepare an ip command
+    my $iproute_cmd;
     if ($ip->version() == 4) {
-        $pf = PF_INET;
-        $sockaddr = sockaddr_in(0, $ip->aton());
-    } else {
-        $pf = PF_INET6;
-        $sockaddr = sockaddr_in6(0, $ip->aton());
+        $iproute_cmd = "ip -N -4 route show table local match $ip 2> /dev/null";
+    }
+    if ($ip->version() == 6) {
+        $iproute_cmd = "ip -N -6 route show table local match $ip 2> /dev/null";
     }
 
-    socket( my $sock, $pf, SOCK_STREAM, 0)
-        or die "socket failed\n";
+    # execute the command and check output
+    my $iproute_output = qx/$iproute_cmd/;
 
-    return bind($sock, $sockaddr);
+    if ($iproute_output) {
+        # return true if a route exists
+        return 1;
+    } else {
+        # return false if address is not in a local routing table
+        return undef;
+    }
 }
 
 # Test if the given port is currently in use by attempting
