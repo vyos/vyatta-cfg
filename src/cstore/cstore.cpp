@@ -2901,7 +2901,7 @@ Cstore::validate_val(const tr1::shared_ptr<Ctemplate>& def, const char *value)
   #if __GNUC__ < 6
   auto_ptr<char> vbuf(strdup(value));
   #else
-  unique_ptr<char> vbuf(strdup(value));
+  unique_ptr<char, decltype(&std::free)> vbuf { strdup(value), &std::free };
   #endif
 
   /* set the handle to be used during validate_value() for var ref
