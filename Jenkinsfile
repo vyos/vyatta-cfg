@@ -20,4 +20,5 @@
 @Library('vyos-build@current')_
 
 // Start package build using library function from https://github.com/vyos/vyos-build
-buildPackage(null, null, null, true)
+def buildCmd = './build.sh'
+buildPackage(null, null, buildCmd, true)
