@@ -230,7 +230,9 @@ security_reset ()
     rm -f /etc/iproute2/rt_tables.d/vyos-*.conf
 
     # Container
-    rm -f /etc/containers/storage.conf /etc/containers/registries.conf
+    rm -f /etc/containers/storage.conf /etc/containers/registries.conf /etc/containers/containers.conf
+    # Clean all networks and re-create them from our CLI
+    rm -f /etc/containers/networks/*
 
     # System Options (SSH/cURL)
     rm -f /etc/ssh/ssh_config.d/*vyos*.conf
