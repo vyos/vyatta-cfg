@@ -230,19 +230,6 @@ vyatta_loadsave_complete()
   eval $restore_shopts
 }
 
-vyatta_config_loadkey()
-{
-    echo "Warning: The obsolete 'loadkey' command has been phased out."
-    echo "Instead, use the op-mode command 'generate public-key-command' to generate commands for manual addition:"
-    echo '$ generate public-key-command name <username> path <path-or-url>'
-    echo
-}
-
-vyatta_loadkey_complete()
-{
-    true
-}
-
 print_commit_log ()
 {
   ${vyos_op_scripts_dir}/config_mgmt.py show_commit_log_brief
