@@ -95,35 +95,22 @@ vninc_HEADERS += src/cnode/cnode-algorithm.hpp
 vpincdir = $(vincludedir)/cparse
 vpinc_HEADERS = src/cparse/cparse.hpp
 
-src_ipset_check_member_SOURCES = utils/ipset-check-member.c
-src_ipset_check_member_SOURCES += utils/misc.c
-src_ipset_check_member_SOURCES += utils/type_check.c
-src_vyatta_validate_type_SOURCES = utils/vyatta-validate-type.c
-src_vyatta_validate_type_SOURCES += utils/misc.c
-src_vyatta_validate_type_SOURCES += utils/type_check.c
-
 sbin_PROGRAMS = src/priority
 sbin_PROGRAMS += src/exe_action
 sbin_PROGRAMS += src/dump
-sbin_PROGRAMS += src/check_tmpl
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
-sbin_PROGRAMS += src/ipset-check-member
-sbin_PROGRAMS += src/vyatta-validate-type
 
 src_priority_SOURCES = src/priority.c
 src_exe_action_SOURCES = src/exe_action.c
 src_dump_SOURCES = src/dump_session.c
-src_check_tmpl_SOURCES = src/check_tmpl.c
 src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
-sbin_SCRIPTS += scripts/vyatta-validate-type.pl
 sbin_SCRIPTS += scripts/priority.pl
 sbin_SCRIPTS  += scripts/vyatta-save-config.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
-sbin_SCRIPTS  += scripts/vyatta-check-typeless-node.pl
 sbin_SCRIPTS  += scripts/vyatta-log-commit.pl
 sbin_SCRIPTS  += scripts/vyos-user-precommit-hooks.sh
 sbin_SCRIPTS  += scripts/vyos-user-postcommit-hooks.sh
