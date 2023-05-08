@@ -20,7 +20,7 @@ debian/files
 debian/tmp
 debian/vyatta-cfg
 debian/vyatta-cfg.postinst
-debian/vyatta-cfg.postrm
+debian/vyatta-cfg.prerm
 debian/libvyatta-cfg-dev
 debian/libvyatta-cfg1
 debian/*.log
