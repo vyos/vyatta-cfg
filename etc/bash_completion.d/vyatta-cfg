@@ -520,6 +520,9 @@ get_value_format_string ()
     filename)
       echo -n '<filename>'
       ;;
+    path)
+      echo -n '<path>'
+      ;;
     *)
       echo -n "$vtype"
       ;;
