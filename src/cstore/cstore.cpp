@@ -3080,7 +3080,8 @@ Cstore::get_shell_prompt(const string& level)
   if (lvl.length() > 0) {
     lvl = " " + lvl;
   }
-  return ("[edit" + lvl + "]\\n\\u@\\H# ");
+  // show VRF name on prompt and add : if VRF name is not none
+  return ("[edit" + lvl + "]\\n\\u@\\H${VRF:+:$VRF}# ");
 }
 
 // escape the single quotes in the string for shell
