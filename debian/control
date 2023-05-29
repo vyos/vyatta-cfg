@@ -2,8 +2,8 @@ Source: vyatta-cfg
 Section: contrib/net
 Priority: extra
 Maintainer: VyOS Package Maintainers <maintainers@vyos.net>
-Build-Depends: debhelper (>= 5), autotools-dev, libglib2.0-dev,
- libboost-filesystem-dev (>= 1.55), libapt-pkg-dev, libtool, flex,
+Build-Depends: debhelper (>= 10), autotools-dev, libglib2.0-dev,
+ libboost-filesystem-dev, libapt-pkg-dev, libtool, flex,
  bison, libperl-dev, autoconf, automake, pkg-config, cpio, dh-autoreconf
 Standards-Version: 3.9.1
 
@@ -14,19 +14,17 @@ Depends: sed (>= 4.1.5),
  coreutils (>= 5.97-5.3),
  vyatta-bash | bash (>= 4.1),
  bsdutils (>=1:2.13),
- curl,
  libsocket6-perl,
  libvyatta-cfg1 (>=${binary:Version}),
  unionfs-fuse,
  systemd,
  uuid-runtime,
- libboost-filesystem1.67.0 | libboost-filesystem1.74.0,
+ libboost-filesystem1.74.0,
  libapt-pkg4.12 | libapt-pkg5.0 | libapt-pkg6.0,
  ${perl:Depends}, ${shlibs:Depends}
 Suggests: util-linux (>= 2.13-5),
  net-tools,
  ncurses-bin (>= 5.5-5),
- ntpdate
 Description: VyOS configuration system
  This package provides the VyOS configuration system, including the base
  configuration templates and the config-mode CLI completion mechanism.
@@ -45,7 +43,7 @@ Architecture: any
 Priority: optional
 Section: libdevel
 Depends: libvyatta-cfg1 (>=${binary:Version}),
- libboost-filesystem1.67.0 | libboost-filesystem1.74.0
+ libboost-filesystem1.74.0
 Description: libvyatta-cfg development package
  Development header and library files for the Vyatta configuration back-end
  library.
