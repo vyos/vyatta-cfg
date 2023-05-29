@@ -3080,8 +3080,8 @@ Cstore::get_shell_prompt(const string& level)
   if (lvl.length() > 0) {
     lvl = " " + lvl;
   }
-  // show VRF name on prompt and add : if VRF name is not none
-  return ("[edit" + lvl + "]\\n\\u@\\H${VRF:+:$VRF}# ");
+  // show VRF and Network Namespace name on console
+  return ("[edit" + lvl + "]\\n\\u@\\H${VRF:+(vrf:$VRF)}${NETNS:+(ns:$NETNS)}# ");
 }
 
 // escape the single quotes in the string for shell
