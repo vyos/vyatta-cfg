@@ -226,6 +226,9 @@ security_reset ()
     rm -rf /etc/ipsec.conf /etc/ipsec.secrets
     find /etc/swanctl -type f | xargs rm -f
 
+    # limit cleanup
+    rm -f /etc/security/limits.d/10-vyos.conf
+
     # iproute2 cleanup
     rm -f /etc/iproute2/rt_tables.d/vyos-*.conf
 
