@@ -317,7 +317,7 @@ start ()
     nfct helper add tns inet tcp
     nft -f /usr/share/vyos/vyos-firewall-init.conf || log_failure_msg "could not initiate firewall rules"
 
-    rm /etc/hostname
+    rm -f /etc/hostname
     ${vyos_conf_scripts_dir}/host_name.py || log_failure_msg "could not reset host-name"
     systemctl start frr.service
 
