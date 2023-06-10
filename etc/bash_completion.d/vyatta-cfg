@@ -523,6 +523,9 @@ get_value_format_string ()
     path)
       echo -n '<path>'
       ;;
+    vrf)
+      echo -n '<vrf>'
+      ;;
     *)
       echo -n "$vtype"
       ;;
