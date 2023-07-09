@@ -28,19 +28,6 @@ interp_DATA = functions/interpreter/vyatta-cfg-run
 wrapperdir = /opt/vyatta/etc/functions/
 wrapper_DATA = functions/wrapper/script-template
 
-systemdinitdir = /usr/libexec/vyos/init/
-systemdinit_SCRIPTS = scripts/init/vyos-router
-systemdinit_SCRIPTS += scripts/init/vyos-config
-
-systemdgeneratordir = /lib/systemd/system-generators/
-systemdgenerator_SCRIPTS = scripts/system-generators/vyos-generator
-
-systemdgettydir = /lib/systemd/system/getty@.service.d/
-systemdgetty_DATA = lib/systemd/aftervyos.conf
-
-systemdserialgettydir = /lib/systemd/system/serial-getty@.service.d/
-systemdserialgetty_DATA = lib/systemd/serial/aftervyos.conf
-
 src/cparse/cparse.cpp: src/cparse/cparse.ypp src/cparse/cparse_def.h
 	bison -p cparse_ --defines=src/cparse/cparse.h -o $@ $<
 
