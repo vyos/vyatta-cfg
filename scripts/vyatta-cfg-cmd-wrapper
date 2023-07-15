@@ -25,6 +25,7 @@
 # some env variables are needed
 export vyatta_sysconfdir=/opt/vyatta/etc
 export vyatta_sbindir=/opt/vyatta/sbin
+export vyos_libexec_dir=/usr/libexec/vyos
 
 LOGFILE=/var/log/vyatta/vyatta-commit.log
 
