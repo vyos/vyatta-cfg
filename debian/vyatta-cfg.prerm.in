@@ -1,5 +1,0 @@
-#!/bin/bash -e
-
-if [ "$1" = "purge" ]; then
-  systemctl disable vyos-router.service >/dev/null || exit $?
-fi

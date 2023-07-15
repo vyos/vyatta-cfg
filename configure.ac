@@ -41,8 +41,7 @@ AM_CONDITIONAL([USE_UNIONFSFUSE], [test "$enable_unionfsfuse" != no])
 AC_CONFIG_FILES(
 	[Makefile]
 	[perl_dmod/Makefile]
-  [debian/vyatta-cfg.postinst]
-  [debian/vyatta-cfg.prerm])
+  [debian/vyatta-cfg.postinst])
 
 AC_SUBST(NOSTRIP)
 PKG_CHECK_MODULES(GOBJECT, [gobject-2.0])
