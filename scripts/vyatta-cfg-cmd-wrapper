@@ -79,7 +79,7 @@ case "$1" in
     exec ${vyatta_sbindir}/my_commit
     ;;
   save)
-    exec ${vyatta_sbindir}/vyatta-save-config.pl "${@:2}"
+    exec ${vyos_libexec_dir}/vyos-save-config.py "${@:2}"
     ;;
   load)
     exec ${vyos_libexec_dir}/vyos-load-config.py "${@:2}"

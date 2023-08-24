@@ -124,7 +124,7 @@ function save ()
   reset_edit_level
   # transform individual args into quoted strings
   local arg=''
-  local save_cmd="${vyatta_sbindir}/vyatta-save-config.pl"
+  local save_cmd="${vyos_libexec_dir}/vyos-save-config.py"
   for arg in "$@"; do
     save_cmd+=" '$arg'"
   done
