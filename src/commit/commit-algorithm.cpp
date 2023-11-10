@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include <cstdio>
 #include <vector>
 #include <string>
@@ -1301,6 +1303,8 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   if (ret) {
     ret = cs.markSessionUnsaved();
   }
+
+  sync();
 
   setenv("COMMIT_STATUS", cst, 1);
   _execute_hooks(POST_COMMIT);
