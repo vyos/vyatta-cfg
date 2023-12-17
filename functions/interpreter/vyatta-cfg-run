@@ -37,6 +37,7 @@ _vyatta_cfg_cmds=( "confirm" \
                    "merge" \
                    "rename" \
                    "rollback" \
+                   "rollback-soft" \
                    "run" \
                    "save" \
                    "set" \
@@ -56,6 +57,7 @@ _vyatta_cfg_helps=( \
       "Load configuration from a file and merge running configuration" \
       "Rename a configuration element" \
       "Rollback to a prior config revision (requires reboot)" \
+      "Rollback to a prior config revision (without reboot)" \
       "Run an operational-mode command" \
       "Save configuration to a file" \
       "Set the value of a parameter or create a new element" \
@@ -210,6 +212,15 @@ vyatta_config_rollback ()
     return 1;
   fi
   sudo ${vyos_bin_dir}/config-mgmt rollback --rev "$@"
+}
+
+vyatta_config_rollback-soft ()
+{
+  if [ $# != 1 ]; then
+    echo "Error: must include a revision # to rollback to"
+    return 1;
+  fi
+  ${vyos_bin_dir}/config-mgmt rollback_soft --rev "$@"
 }
 
 shutdown ()
@@ -565,6 +576,7 @@ vyatta_cfg_run ()
     commit) vyatta_config_commit "${@:2}";;
     confirm) vyatta_config_confirm "${@:2}";;
     rollback) vyatta_config_rollback "${@:2}";;
+    rollback-soft) vyatta_config_rollback-soft "${@:2}";;
     commit-confirm) vyatta_config_commit-confirm "${@:2}";;
     compare) vyatta_config_compare "${@:2}";;
     save) vyatta_config_save "${@:2}" ;;
@@ -613,6 +625,8 @@ _vyatta_cfg_init ()
             compare)
               complete -F vyatta_compare_complete ${cmd:0:$pos} ;;
             rollback)
+              complete -F vyatta_rollback_complete ${cmd:0:$pos} ;;
+            rollback-soft)
               complete -F vyatta_rollback_complete ${cmd:0:$pos} ;;
             commit|commit-confirm)
                complete -F vyatta_commit_complete ${cmd:0:$pos} ;;
