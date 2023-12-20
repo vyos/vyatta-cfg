@@ -457,7 +457,7 @@ get_help_text ()
     local hstr=${vyatta_cfg_comp_help//\'/\'\\\\\\\'\'}
     vyatta_help_text+="\\n\\nDetailed information:\\n"
     local sIFS=$IFS
-    IFS=''
+    IFS=$'\n'
     local chstr=$(echo -en "$hstr\n" \
                   | while read comp_help_line; do
                       echo "vyatta_help_text+='  $comp_help_line\\n';"
@@ -513,6 +513,9 @@ get_value_format_string ()
       ;;
     macaddr)
       echo -n '<h:h:h:h:h:h>'
+      ;;
+    duid)
+      echo -n '<h[[:h]...]>'
       ;;
     hostname)
       echo -n '<hostname>'
