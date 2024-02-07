@@ -314,6 +314,10 @@ start ()
     chmod g-w,o-w /
 
     run_postconfig_scripts
+    tmp=$(${vyos_libexec_dir}/read-saved-value.py --path "protocols rpki cache")
+    if [[ ! -z "$tmp" ]]; then
+        vtysh -c "rpki start"
+    fi
 }
 
 stop()
