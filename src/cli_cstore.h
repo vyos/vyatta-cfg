@@ -142,6 +142,8 @@ int restore_output(void);
 /* functions from cli_objects */
 char *get_at_string(void);
 void set_in_commit(boolean b);
+void set_if_last(int);
+void clear_last(void);
 void set_at_string(char* s);
 void set_in_delete_action(boolean b);
 
