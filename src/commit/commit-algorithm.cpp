@@ -1306,8 +1306,11 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
 
   debug_on = !!getenv("VYOS_DEBUG");
   TRACE_INIT("Processing the Priority Queue");
+  clear_last();
+  int num = pq.size();
   while (!dpq.empty()) {
     PrioNode *p = dpq.top();
+    set_if_last(num+dpq.size());
     if (!_commit_exec_prio_subtree(cs, p)) {
       // prio subtree failed
       OUTPUT_USER("delete [ %s ] failed\n", 
@@ -1321,6 +1324,7 @@ commit::doCommit(Cstore& cs, CfgNode& cfg1, CfgNode& cfg2)
   }
   while (!pq.empty()) {
     PrioNode *p = pq.top();
+    set_if_last(pq.size());
     if (!_commit_exec_prio_subtree(cs, p)) {
       // prio subtree failed
       OUTPUT_USER("[[%s]] failed\n",

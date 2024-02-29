@@ -34,6 +34,7 @@ static first_seg f_seg_m;
 
 static char *in_commit_file = "/var/tmp/in_commit";
 static char *initial_file = "/var/tmp/initial_in_commit";
+static char *last_in_queue_file = "/var/tmp/last_in_queue";
 
 static int mark_by_file(char *p) {
     int ret = mknod(p, S_IFREG|0664, 0);
@@ -94,6 +95,16 @@ void set_in_commit(boolean b) {
   } else {
       remove_mark(in_commit_file);
   }
+}
+
+void set_if_last(int n) {
+  if (n == 1) {
+    mark_by_file(last_in_queue_file);
+  }
+}
+
+void clear_last(void) {
+  remove_mark(last_in_queue_file);
 }
 
 boolean is_in_exec(void) {
