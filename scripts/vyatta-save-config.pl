@@ -22,7 +22,7 @@
 use strict;
 use lib "/opt/vyatta/share/perl5";
 use Vyatta::ConfigOutput;
-use File::Sync qw(fsync);
+use File::Sync qw(sync);
 use FileHandle;
 use IO::Prompt;
 use Vyatta::Misc qw(get_short_config_path);
@@ -118,8 +118,8 @@ close($show_fd);
 print $version_str;
 select STDOUT;
 
-fsync $save;
 close $save;
+sync();
 
 if ($mode eq 'url') {
     system("python3 -c 'from vyos.remote import upload; upload(\"$url_tmp_file\", \"$save_file\")'");
