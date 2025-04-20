@@ -285,6 +285,10 @@ up ()
 
 really_exit()
 {
+  if test -f "/var/run/vyconf_backend"; then
+    local exit_cmd="${vyos_libexec_dir}/teardown-config-session.py $$"
+    eval "sudo sg vyattacfg \"$exit_cmd\""
+  fi
 
   if vyatta_cli_shell_api sessionUnsaved; then
     echo "Warning: configuration changes have not been saved."
