@@ -103,9 +103,17 @@ vyatta_config_show ()
 
 vyatta_config_commit ()
 {
-  if ! vyatta_cli_shell_api sessionChanged; then
-    echo "No configuration changes to commit"
-    return 1;
+  if test -f "/var/run/vyconf_backend"; then
+    echo $$
+    if ! /usr/libexec/vyos/vyconf/bin/vy_session_changed; then
+      echo "No configuration changes to commit"
+      return 1;
+    fi
+  else
+    if ! vyatta_cli_shell_api sessionChanged; then
+      echo "No configuration changes to commit"
+      return 1;
+    fi
   fi
   local comment="commit"
   local next=0
@@ -126,16 +134,28 @@ vyatta_config_commit ()
 
   export COMMIT_COMMENT="$comment"
   export COMMIT_VIA=cli
-  /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1
+  if test -f "/var/run/vyconf_backend"; then
+    /usr/libexec/vyos/vyconf/bin/vy_commit "${args[@]}" 2>&1
+  else
+    /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1
+  fi
   unset COMMIT_VIA
   unset COMMIT_COMMENT
 }
 
 vyatta_config_commit-confirm ()
 {
-  if ! vyatta_cli_shell_api sessionChanged; then
-    echo "No configuration changes to commit"
-    return 1;
+  if test -f "/var/run/vyconf_backend"; then
+    echo $$
+    if ! /usr/libexec/vyos/vyconf/bin/vy_session_changed; then
+      echo "No configuration changes to commit"
+      return 1;
+    fi
+  else
+    if ! vyatta_cli_shell_api sessionChanged; then
+      echo "No configuration changes to commit"
+      return 1;
+    fi
   fi
   local -a args=()
   local first=1
@@ -358,7 +378,11 @@ vyatta_cfg_cmd_run ()
     elif [[ "$cmd" == "show" ]]; then 
       vyatta_config_show "${@:2}"
     else 
-      cmd="/opt/vyatta/sbin/my_$cmd"
+      if test -f "/var/run/vyconf_backend"; then
+        cmd="${vyconf_bin_dir}/vy_$cmd"
+      else
+        cmd="/opt/vyatta/sbin/my_$cmd"
+      fi
       output=$($cmd "${@:2}")
     fi   
     vyatta_cfg_print_output "$output"
