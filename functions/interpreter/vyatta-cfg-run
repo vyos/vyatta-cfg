@@ -141,6 +141,7 @@ vyatta_config_commit ()
   fi
   unset COMMIT_VIA
   unset COMMIT_COMMENT
+  eval "${vyos_libexec_dir}/reset_section.py vpp --pid $$"
 }
 
 vyatta_config_commit-confirm ()
