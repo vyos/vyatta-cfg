@@ -16,6 +16,7 @@
 
 #ifndef _CSTORE_UNIONFS_H_
 #define _CSTORE_UNIONFS_H_
+#include <algorithm>
 #include <vector>
 #include <string>
 
