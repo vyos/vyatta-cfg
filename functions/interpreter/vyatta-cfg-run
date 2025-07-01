@@ -115,29 +115,28 @@ vyatta_config_commit ()
       return 1;
     fi
   fi
+
   local comment="commit"
-  local next=0
-  local -a args=()
-  for arg in "$@"; do
-    if [ "$next" == "1" ]; then
-      comment=$arg
-      next=0;
-    elif [ "$arg" == "comment" ]; then
-      next=1
-    elif [ "$arg" == "confirm" ]; then
-      echo Use commit-confirm command
+  if [ $# -gt 0 ] ; then
+    if [ $# = 1 ] || [ $# -gt 2 ] || [ "$1" != "comment" ]; then
+      if [ "$1" == "confirm" ]; then
+        echo "Use commit-confirm command"
+        return 1
+      fi
+      echo "Error: commit accepts either no arguments, or optional 'comment'" \
+           "with comment text as second argument."
+      echo -e "\tUsage: 'commit [comment COMMENTTEXT]'"
       return 1;
-    else
-      args[${#args[@]}]="$arg"    
     fi
-  done
+    comment="$2"
+  fi
 
   export COMMIT_COMMENT="$comment"
   export COMMIT_VIA=cli
   if test -f "/var/run/vyconf_backend"; then
-    /usr/libexec/vyos/vyconf/bin/vy_commit "${args[@]}" 2>&1
+    /usr/libexec/vyos/vyconf/bin/vy_commit 2>&1
   else
-    /opt/vyatta/sbin/my_commit "${args[@]}" 2>&1
+    /opt/vyatta/sbin/my_commit 2>&1
   fi
   unset COMMIT_VIA
   unset COMMIT_COMMENT
