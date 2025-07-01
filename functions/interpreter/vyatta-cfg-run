@@ -116,13 +116,14 @@ vyatta_config_commit ()
     fi
   fi
 
+  local comment="commit"
   if [ $# -gt 0 ] ; then
     if [ $# = 1 ] || [ $# -gt 2 ] || [ "$1" != "comment" ]; then
       if [ "$1" == "confirm" ]; then
         echo "Use commit-confirm command"
         return 1
       fi
-      echo "Error: commit accepts either no arugments, or optional 'comment'" \
+      echo "Error: commit accepts either no arguments, or optional 'comment'" \
            "with comment text as second argument."
       echo -e "\tUsage: 'commit [comment COMMENTTEXT]'"
       return 1;
