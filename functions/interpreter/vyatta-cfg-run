@@ -176,7 +176,7 @@ vyatta_config_commit-confirm ()
   eval "sudo sg vyattacfg \"$cmd\" "
   if [ $? = 0 ]; then
     export IN_COMMIT_CONFIRM=t
-    vyatta_config_commit "$@"
+    vyatta_config_commit "${args[@]}"
     unset IN_COMMIT_CONFIRM
   fi
 }
