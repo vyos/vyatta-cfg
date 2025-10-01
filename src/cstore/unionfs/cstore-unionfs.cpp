@@ -1775,7 +1775,7 @@ UnionfsCstore::path_is_regular(const char *path)
   if (!b_fs_get_file_status(path, result)) {
     return false;
   }
-  return b_fs::is_regular(result);
+  return b_fs::is_regular_file(result);
 }
 
 bool
