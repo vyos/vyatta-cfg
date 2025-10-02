@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <chrono>
@@ -473,7 +474,7 @@ _exec_multi_node_actions(Cstore& cs, const CfgNode& node, vtw_act_type act,
     #if __GNUC__ < 6
     auto_ptr<char> at_str(strdup(v.c_str()));
     #else
-    unique_ptr<char> at_str(strdup(v.c_str()));
+    unique_ptr<char, decltype(&free)> at_str(strdup(v.c_str()), &free);
     #endif
     tr1::shared_ptr<Cpath> pdisp(new Cpath(pcomps));
     pdisp->push(v);
