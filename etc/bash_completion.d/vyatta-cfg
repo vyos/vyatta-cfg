@@ -101,6 +101,25 @@ vyatta_cli_shell_api ()
   return 0
 }
 
+# compat function for shell api
+vyos_cli_shell_api ()
+{
+  local outstr
+  if ! outstr=$(${vyconf_bin_dir}/vyconf_cli_compat "$@"); then
+    # display the error output (if any) and then fail
+    if [ -n "$outstr" ]; then
+      echo "$outstr"
+    fi
+    return 1
+  fi
+  # eval the output (if any)
+  if [ -n "$outstr" ]; then
+    eval "$outstr"
+  fi
+  return 0
+}
+
+
 # set up the session environment
 ## note: this can not use vyatta_cli_shell_api() above since it "declares"
 ##       env vars.
@@ -456,7 +475,12 @@ get_help_text ()
 {
   vyatta_help_text="\\nPossible completions:"
   local print_node_type=$1
-  local editlvl=$(cli-shell-api getEditLevelStr)
+  if test -f "/var/run/vyconf_backend"; then
+    local editlvl=$(${vyconf_bin_dir}/vyconf_cli_compat getEditLevelStr)
+  else
+    local editlvl=$(cli-shell-api getEditLevelStr)
+  fi
+
   local node=0;
   for (( idx = 0; idx < ${#_get_help_text_items[@]}; idx++ )); do
     vyatta_help_text+="\\n"
@@ -771,7 +795,12 @@ vyatta_config_invalid_comp ()
 {
   local cmd=$1
   local -a expanded_api_args=( "$@" )
-  local editlvl=$(cli-shell-api getEditLevelStr)
+  if test -f "/var/run/vyconf_backend"; then
+    local editlvl=$(${vyconf_bin_dir}/vyconf_cli_compat getEditLevelStr)
+  else
+    local editlvl=$(cli-shell-api getEditLevelStr)
+  fi
+
   local path=''
   local opath=''
   local failed=false
