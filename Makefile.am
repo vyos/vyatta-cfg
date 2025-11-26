@@ -93,7 +93,6 @@ src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
-sbin_SCRIPTS += scripts/priority.pl
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
 sbin_SCRIPTS  += scripts/vyatta-log-commit.pl
 sbin_SCRIPTS  += scripts/vyos-user-precommit-hooks.sh
