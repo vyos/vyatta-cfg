@@ -97,15 +97,19 @@ vyatta_config_show ()
       args+=("$arg")
     fi
   done
-  cli-shell-api "${opts[@]}" -- showCfg "${args[@]}" \
-    | eval "${VYATTA_PAGER:-cat}"
+  if test -f "/var/run/vyconf_backend"; then
+    ${vyconf_bin_dir}/vyconf_cli_compat showCfg "${args[@]}" \
+      | eval "${VYATTA_PAGER:-cat}"
+  else
+    cli-shell-api "${opts[@]}" -- showCfg "${args[@]}" \
+      | eval "${VYATTA_PAGER:-cat}"
+  fi
 }
 
 vyatta_config_commit ()
 {
   if test -f "/var/run/vyconf_backend"; then
-    echo $$
-    if ! /usr/libexec/vyos/vyconf/bin/vy_session_changed; then
+    if ! vyos_cli_shell_api sessionChanged; then
       echo "No configuration changes to commit"
       return 1;
     fi
@@ -146,8 +150,7 @@ vyatta_config_commit ()
 vyatta_config_commit-confirm ()
 {
   if test -f "/var/run/vyconf_backend"; then
-    echo $$
-    if ! /usr/libexec/vyos/vyconf/bin/vy_session_changed; then
+    if ! vyos_cli_shell_api sessionChanged; then
       echo "No configuration changes to commit"
       return 1;
     fi
@@ -157,6 +160,7 @@ vyatta_config_commit-confirm ()
       return 1;
     fi
   fi
+
   local -a args=()
   local first=1
   local minutes=10
@@ -200,9 +204,16 @@ vyatta_config_compare ()
 
 vyatta_config_save ()
 {
-  if vyatta_cli_shell_api sessionChanged; then
-    echo -e "Warning: you have uncommitted changes that will not be saved.\n"
+  if test -f "/var/run/vyconf_backend"; then
+    if vyos_cli_shell_api sessionChanged; then
+      echo -e "Warning: you have uncommitted changes that will not be saved.\n"
+    fi
+  else
+    if vyatta_cli_shell_api sessionChanged; then
+      echo -e "Warning: you have uncommitted changes that will not be saved.\n"
+    fi
   fi
+
   # return to top level.
   reset_edit_level
   # transform individual args into quoted strings
@@ -250,17 +261,30 @@ shutdown ()
 
 reset_edit_level ()
 {
-  vyatta_cli_shell_api getEditResetEnv
-  return $?
+  if test -f "/var/run/vyconf_backend"; then
+    vyos_cli_shell_api getEditResetEnv
+    return $?
+  else
+    vyatta_cli_shell_api getEditResetEnv
+    return $?
+  fi
 }
 
 vyatta_config_load ()
 {
   # don't load if there are uncommitted changes.
-  if vyatta_cli_shell_api sessionChanged; then
-    echo "Cannot load: configuration modified."
-    echo "Commit or discard the changes before loading a config file."
-    return 1
+  if test -f "/var/run/vyconf_backend"; then
+    if vyos_cli_shell_api sessionChanged; then
+      echo "Cannot load: configuration modified."
+      echo "Commit or discard the changes before loading a config file."
+      return 1
+    fi
+  else
+    if vyatta_cli_shell_api sessionChanged; then
+      echo "Cannot load: configuration modified."
+      echo "Commit or discard the changes before loading a config file."
+      return 1
+    fi
   fi
   # return to top level.
   reset_edit_level
@@ -270,10 +294,18 @@ vyatta_config_load ()
 vyatta_config_merge ()
 {
   # don't load if there are uncommitted changes.
-  if vyatta_cli_shell_api sessionChanged; then
-    echo "Cannot merge: configuration modified."
-    echo "Commit or discard the changes before merging a config file."
-    return 1
+  if test -f "/var/run/vyconf_backend"; then
+    if vyos_cli_shell_api sessionChanged; then
+      echo "Cannot merge: configuration modified."
+      echo "Commit or discard the changes before merging a config file."
+      return 1
+    fi
+  else
+    if vyatta_cli_shell_api sessionChanged; then
+      echo "Cannot merge: configuration modified."
+      echo "Commit or discard the changes before merging a config file."
+      return 1
+    fi
   fi
   # return to top level.
   reset_edit_level
@@ -282,9 +314,17 @@ vyatta_config_merge ()
 
 top ()
 {
-  if vyatta_cli_shell_api editLevelAtRoot; then
-    echo "Already at the top level"
-    return 0
+
+  if test -f "/var/run/vyconf_backend"; then
+    if vyos_cli_shell_api editLevelAtRoot; then
+      echo "Already at the top level"
+      return 0
+    fi
+  else
+    if vyatta_cli_shell_api editLevelAtRoot; then
+      echo "Already at the top level"
+      return 0
+    fi
   fi
 
   # go to the top level.
@@ -293,14 +333,24 @@ top ()
 
 vyatta_config_edit ()
 {
-  vyatta_cli_shell_api getEditEnv "$@"
-  return $?
+  if test -f "/var/run/vyconf_backend"; then
+    vyos_cli_shell_api getEditEnv "$@"
+    return $?
+  else
+    vyatta_cli_shell_api getEditEnv "$@"
+    return $?
+  fi
 }
 
 up ()
 {
-  vyatta_cli_shell_api getEditUpEnv "$@"
-  return $?
+  if test -f "/var/run/vyconf_backend"; then
+    vyos_cli_shell_api getEditUpEnv "$@"
+    return $?
+  else
+    vyatta_cli_shell_api getEditUpEnv "$@"
+    return $?
+  fi
 }
 
 really_exit()
@@ -308,12 +358,12 @@ really_exit()
   if test -f "/var/run/vyconf_backend"; then
     local exit_cmd="${vyos_libexec_dir}/teardown-config-session.py $$"
     eval "sudo sg vyattacfg \"$exit_cmd\""
+  else
+    if vyatta_cli_shell_api sessionUnsaved; then
+      echo "Warning: configuration changes have not been saved."
+    fi
+    vyatta_cli_shell_api teardownSession
   fi
-
-  if vyatta_cli_shell_api sessionUnsaved; then
-    echo "Warning: configuration changes have not been saved."
-  fi
-  vyatta_cli_shell_api teardownSession
   unset _OFR_CONFIGURE
   builtin exit 0
 }
@@ -333,16 +383,30 @@ vyatta_config_exit ()
     return 1
   fi
 
-  if vyatta_cli_shell_api editLevelAtRoot; then
-    # we are at the root level. check if we can really exit.
-    if vyatta_cli_shell_api sessionChanged; then
-      if (( ! discard )); then
-        echo "Cannot exit: configuration modified."
-        echo "Use 'exit discard' to discard the changes and exit."
-        return 1
+  if test -f "/var/run/vyconf_backend"; then
+    if vyos_cli_shell_api editLevelAtRoot; then
+      # we are at the root level. check if we can really exit.
+      if vyos_cli_shell_api sessionChanged; then
+        if (( ! discard )); then
+          echo "Cannot exit: configuration modified."
+          echo "Use 'exit discard' to discard the changes and exit."
+          return 1
+        fi
       fi
+      really_exit
     fi
-    really_exit
+  else
+    if vyatta_cli_shell_api editLevelAtRoot; then
+      # we are at the root level. check if we can really exit.
+      if vyatta_cli_shell_api sessionChanged; then
+        if (( ! discard )); then
+          echo "Cannot exit: configuration modified."
+          echo "Use 'exit discard' to discard the changes and exit."
+          return 1
+        fi
+      fi
+      really_exit
+    fi
   fi
 
   # "exit" to the root level.
@@ -401,7 +465,11 @@ vyatta_cfg_validate_cmd ()
 {
     local cmd=$1 
     local -a expanded_api_args=( "$@" )
-    local editlvl=$(cli-shell-api getEditLevelStr)
+    if test -f "/var/run/vyconf_backend"; then
+      local editlvl=$(${vyconf_bin_dir}/vyconf_cli_compat getEditLevelStr)
+    else
+      local editlvl=$(cli-shell-api getEditLevelStr)
+    fi
     local path=''
     local opath=''
     for arg in "${expanded_api_args[@]:1}"; do
@@ -528,7 +596,11 @@ vyatta_cfg_cmd ()
   fi
   local -a args=( "$@" )
   local -a expanded_api_args=()
-  local editlvl=$(cli-shell-api getEditLevelStr)
+  if test -f "/var/run/vyconf_backend"; then
+    local editlvl=$(${vyconf_bin_dir}/vyconf_cli_compat getEditLevelStr)
+  else
+    local editlvl=$(cli-shell-api getEditLevelStr)
+  fi
   vyatta_config_expand_compwords "${args[@]}"
   if [[ "${expanded_api_args[@]:$[${#expanded_api_args[@]}-1]}" == "-all" ]] &&
      [[ "${expanded_api_args[0]}" == "show" ]]; then
