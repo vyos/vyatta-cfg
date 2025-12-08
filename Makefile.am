@@ -80,12 +80,10 @@ vninc_HEADERS += src/cnode/cnode-algorithm.hpp
 vpincdir = $(vincludedir)/cparse
 vpinc_HEADERS = src/cparse/cparse.hpp
 
-sbin_PROGRAMS = src/exe_action
-sbin_PROGRAMS += src/dump
+sbin_PROGRAMS = src/dump
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
 
-src_exe_action_SOURCES = src/exe_action.c
 src_dump_SOURCES = src/dump_session.c
 src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
