@@ -489,7 +489,11 @@ get_help_text ()
       vyatta_help_text+="\\x20\\x20"
     else
       if [[ $print_node_type -ne 0 ]]; then
-        local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} "${_get_help_text_items[idx]}")
+        if test -f "/var/run/vyconf_backend"; then
+          local nodeType=$(${vyconf_bin_dir}/vyconf_cli_compat getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} "${_get_help_text_items[idx]}")
+        else
+          local nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]} "${_get_help_text_items[idx]}")
+        fi
         case  "$nodeType" in
           tag) vyatta_help_text+="+> " ;;
           non-leaf) vyatta_help_text+=" > " ;;
@@ -777,7 +781,11 @@ vyatta_config_expand_compwords ()
         else
             path=( "${expanded_api_args[@]}" "$arg" )
         fi
-        vyatta_cli_shell_api getCompletionEnv "${path[@]}"
+        if test -f "/var/run/vyconf_backend"; then
+          vyos_cli_shell_api getCompletionEnv "${path[@]}"
+        else
+          vyatta_cli_shell_api getCompletionEnv "${path[@]}"
+        fi
         if [[ "${#_cli_shell_api_comp_values[@]}" == "1" ]]; then
           if [[ "$_cli_shell_api_last_comp_val" == 'true' ]]; then
             arg=$arg
@@ -804,7 +812,11 @@ vyatta_config_invalid_comp ()
   local path=''
   local opath=''
   local failed=false
-  local validate="cli-shell-api validateTmplPath -- $editlvl"
+  if test -f "/var/run/vyconf_backend"; then
+    local validate="${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath $editlvl"
+  else
+    local validate="cli-shell-api validateTmplPath -- $editlvl"
+  fi
   for elem in "${expanded_api_args[@]:1}"; do
     if [[ -z "$elem" ]]; then
       continue
@@ -827,34 +839,66 @@ vyatta_config_invalid_comp ()
       else
         path="$path $arg"
       fi
-      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then
-        _cli_shell_api_comp_values=()
-        vyatta_cli_shell_api getCompletionEnv $cmd ${path}
-        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
-           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
-          local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
-          local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
-          local vyatta_help_text=''
-          if [[ $opath == '' ]]; then
-            echo -ne "\n\n  Configuration path: [$arg] is ambiguous\n"
+      if test -f "/var/run/vyconf_backend"; then
+        if ! ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl} ${path}; then
+          _cli_shell_api_comp_values=()
+          vyos_cli_shell_api getCompletionEnv $cmd ${path}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+            local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+            local vyatta_help_text=''
+            if [[ $opath == '' ]]; then
+              echo -ne "\n\n  Configuration path: [$arg] is ambiguous\n"
+            else
+              echo -ne "\n\n  Configuration path: $opath [$arg] is ambiguous\n"
+            fi
+            get_help_text 0
+            echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
+            failed=true
+            break
           else
-            echo -ne "\n\n  Configuration path: $opath [$arg] is ambiguous\n"
+            if [[ $opath == '' ]]; then
+              echo -ne "\n\n  Configuration path: [$arg] is not valid"
+            else
+              echo -ne "\n\n  Configuration path: $opath [$arg] is not valid"
+            fi
+            failed=true
+            break
           fi
-          get_help_text 0
-          echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
-          failed=true
-          break
         else
-          if [[ $opath == '' ]]; then
-            echo -ne "\n\n  Configuration path: [$arg] is not valid"
-          else
-            echo -ne "\n\n  Configuration path: $opath [$arg] is not valid"
-          fi
-          failed=true
-          break
+          opath=$path
         fi
       else
-        opath=$path
+        if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then
+          _cli_shell_api_comp_values=()
+          vyatta_cli_shell_api getCompletionEnv $cmd ${path}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+            local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+            local vyatta_help_text=''
+            if [[ $opath == '' ]]; then
+              echo -ne "\n\n  Configuration path: [$arg] is ambiguous\n"
+            else
+              echo -ne "\n\n  Configuration path: $opath [$arg] is ambiguous\n"
+            fi
+            get_help_text 0
+            echo -ne "$vyatta_help_text\n" | sed 's/^P/  P/'
+            failed=true
+            break
+          else
+            if [[ $opath == '' ]]; then
+              echo -ne "\n\n  Configuration path: [$arg] is not valid"
+            else
+              echo -ne "\n\n  Configuration path: $opath [$arg] is not valid"
+            fi
+            failed=true
+            break
+          fi
+        else
+          opath=$path
+        fi
       fi
     done
   fi
@@ -1009,7 +1053,11 @@ vyatta_config_complete ()
   # only do this for the second comp
   local nodeType="non-leaf"
   if [[ ${#api_args[@]} -gt 2 ]]; then
-    nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]})
+    if test -f "/var/run/vyconf_backend"; then
+      nodeType=$(${vyconf_bin_dir}/vyconf_cli_compat getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]})
+    else
+      nodeType=$(cli-shell-api getNodeType ${editlvl} ${api_args[@]:1:$[${comp_cword}-1]})
+    fi
   fi
 
   # Change the api arguments when we are dealing with a non last word
@@ -1024,12 +1072,22 @@ vyatta_config_complete ()
        api_args=( "${api_args[@]:0:$comp_cword}" "" )
      fi
   fi
-  if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
-    # invalid completion
-    vyatta_config_invalid_comp "${expanded_api_args[@]}"
-    COMPREPLY=( "" " " )
-    eval $restore_shopts
-    return
+  if test -f "/var/run/vyconf_backend"; then
+    if ! vyos_cli_shell_api getCompletionEnv "${api_args[@]}"; then
+      # invalid completion
+      vyatta_config_invalid_comp "${expanded_api_args[@]}"
+      COMPREPLY=( "" " " )
+      eval $restore_shopts
+      return
+    fi
+  else
+    if ! vyatta_cli_shell_api getCompletionEnv "${api_args[@]}"; then
+      # invalid completion
+      vyatta_config_invalid_comp "${expanded_api_args[@]}"
+      COMPREPLY=( "" " " )
+      eval $restore_shopts
+      return
+    fi
   fi
   vyatta_cfg_comp_help=$_cli_shell_api_comp_help
   if [[ $exists_only == 1 ]] &&
