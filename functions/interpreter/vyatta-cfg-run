@@ -475,39 +475,70 @@ vyatta_cfg_validate_cmd ()
     local path=''
     local opath=''
     for arg in "${expanded_api_args[@]:1}"; do
-      if [[ "$path" == '' ]]; then 
+      if [[ "$path" == '' ]]; then
         path="$arg"
       else 
         path="$path $arg"
-      fi   
-      if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then 
-        _cli_shell_api_comp_values=()
-        vyatta_cli_shell_api getCompletionEnv $cmd ${path} 
-        if [[ "${#_cli_shell_api_comp_values[@]}" != "1"  
-           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then 
-          local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
-          local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
-          local vyatta_help_text=''
-          if [[ $opath == '' ]]; then 
-            echo -ne "\n  Configuration path: [$arg] is ambiguous\n" >&2
+      fi
+      if test -f "/var/run/vyconf_backend"; then
+        if ! ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl} ${path}; then
+          _cli_shell_api_comp_values=()
+          vyos_cli_shell_api getCompletionEnv $cmd ${path}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+            local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+            local vyatta_help_text=''
+            if [[ $opath == '' ]]; then
+              echo -ne "\n  Configuration path: [$arg] is ambiguous\n" >&2
+            else
+              echo -ne "\n  Configuration path: $opath [$arg] is ambiguous\n" >&2
+            fi
+            get_help_text
+            echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
+            echo -e "  ${cmd^} failed\n"
+            break
           else
-            echo -ne "\n  Configuration path: $opath [$arg] is ambiguous\n" >&2
+            if [[ $opath == '' ]]; then
+              echo -ne "\n  Configuration path: [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
+            else
+              echo -ne "\n  Configuration path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
+            fi
+            break
           fi
-          get_help_text
-          echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
-          echo -e "  ${cmd^} failed\n"
-          break
         else
-          if [[ $opath == '' ]]; then 
-            echo -ne "\n  Configuration path: [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
-          else
-            echo -ne "\n  Configuration path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
-          fi
-          break
+          opath=$path
         fi
-      else 
-        opath=$path
-      fi   
+      else
+        if ! cli-shell-api validateTmplPath -- ${editlvl} ${path}; then
+          _cli_shell_api_comp_values=()
+          vyatta_cli_shell_api getCompletionEnv $cmd ${path}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            local -a _get_help_text_items=( "${_cli_shell_api_hitems[@]}" )
+            local -a _get_help_text_helps=( "${_cli_shell_api_hstrs[@]}" )
+            local vyatta_help_text=''
+            if [[ $opath == '' ]]; then
+              echo -ne "\n  Configuration path: [$arg] is ambiguous\n" >&2
+            else
+              echo -ne "\n  Configuration path: $opath [$arg] is ambiguous\n" >&2
+            fi
+            get_help_text
+            echo -e "$vyatta_help_text\n" | sed 's/^P/  P/'
+            echo -e "  ${cmd^} failed\n"
+            break
+          else
+            if [[ $opath == '' ]]; then
+              echo -ne "\n  Configuration path: [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
+            else
+              echo -ne "\n  Configuration path: $opath [$arg] is not valid\n  ${cmd^} failed\n\n" >&2
+            fi
+            break
+          fi
+        else
+          opath=$path
+        fi
+      fi
     done 
 }
 
@@ -604,21 +635,40 @@ vyatta_cfg_cmd ()
     local editlvl=$(cli-shell-api getEditLevelStr)
   fi
   vyatta_config_expand_compwords "${args[@]}"
-  if [[ "${expanded_api_args[@]:$[${#expanded_api_args[@]}-1]}" == "-all" ]] &&
-     [[ "${expanded_api_args[0]}" == "show" ]]; then
-    if [[ $[${#expanded_api_args[@]}-2] -eq 0 ]]; then
-      vyatta_cfg_cmd_run "${expanded_api_args[@]}"
-    elif cli-shell-api validateTmplPath -- ${editlvl[*]} \
-         "${expanded_api_args[@]:1:$[${#expanded_api_args[@]}-2]}"; then
+  if test -f "/var/run/vyconf_backend"; then
+    if [[ "${expanded_api_args[@]:$[${#expanded_api_args[@]}-1]}" == "-all" ]] &&
+       [[ "${expanded_api_args[0]}" == "show" ]]; then
+      if [[ $[${#expanded_api_args[@]}-2] -eq 0 ]]; then
+        vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+      elif ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} \
+           "${expanded_api_args[@]:1:$[${#expanded_api_args[@]}-2]}"; then
+        vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+      else
+        vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+      fi
+    elif ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} "${expanded_api_args[@]:1}"; then
       vyatta_cfg_cmd_run "${expanded_api_args[@]}"
     else
+      # find broken portion of command
       vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
     fi
-  elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${expanded_api_args[@]:1}"; then
-    vyatta_cfg_cmd_run "${expanded_api_args[@]}"
   else
-    # find broken portion of command
-    vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+    if [[ "${expanded_api_args[@]:$[${#expanded_api_args[@]}-1]}" == "-all" ]] &&
+       [[ "${expanded_api_args[0]}" == "show" ]]; then
+      if [[ $[${#expanded_api_args[@]}-2] -eq 0 ]]; then
+        vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+      elif cli-shell-api validateTmplPath -- ${editlvl[*]} \
+           "${expanded_api_args[@]:1:$[${#expanded_api_args[@]}-2]}"; then
+        vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+      else
+        vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+      fi
+    elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${expanded_api_args[@]:1}"; then
+      vyatta_cfg_cmd_run "${expanded_api_args[@]}"
+    else
+      # find broken portion of command
+      vyatta_cfg_validate_cmd "${expanded_api_args[@]}"
+    fi
   fi
 }
 ### Top level wrappers ###
