@@ -91,7 +91,14 @@ private:
   /* max size for a file.
    * currently this includes value file and comment file.
    */
-  static const size_t C_UNIONFS_MAX_FILE_SIZE = 262144;
+  /* The limit for file size is mostly relevant for node.val files
+       of multi-value nodes such as firewall groups.
+       
+       XXX: The value of 2^20 is arbitrarily chosen to accommodate configs
+       seen in real life.
+       May need to be raised further is larger configs turn out to exist.
+    */  
+  static const size_t C_UNIONFS_MAX_FILE_SIZE = 1048576;
 
   // root dirs (constant)
   FsPath work_root;   // working root (union)
