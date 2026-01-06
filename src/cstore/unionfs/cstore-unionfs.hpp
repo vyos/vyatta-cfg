@@ -91,7 +91,10 @@ private:
   /* max size for a file.
    * currently this includes value file and comment file.
    */
-  /* XXX: The value of 2^20 is arbitrarily chosen to accommodate configs
+  /* The limit for file size is mostly relevant for node.val files
+       of multi-value nodes such as firewall groups.
+       
+       XXX: The value of 2^20 is arbitrarily chosen to accommodate configs
        seen in real life.
        May need to be raised further is larger configs turn out to exist.
     */  
