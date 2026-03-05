@@ -552,45 +552,86 @@ vyatta_config_copy ()
     local -a args=( "$@" )
     local -a param1=( "$cmd" ${args[@]:1:2} )
     local -a param2=( "$cmd" ${args[@]:4:5} )
-    local editlvl=$(cli-shell-api getEditLevelStr)
+    if test -f "/var/run/vyconf_backend"; then
+      local editlvl=$(${vyconf_bin_dir}/vyconf_cli_compat getEditLevelStr)
+    else
+      local editlvl=$(cli-shell-api getEditLevelStr)
+    fi
     expanded_api_args=( )
     vyatta_config_expand_compwords "${param1[@]}"
     param1=( "${expanded_api_args[@]}" )
     expanded_api_args=( )
     vyatta_config_expand_compwords "${param2[@]}"
     param2=( "${expanded_api_args[@]}" )
-    if [[ "${args[3]}" != "to" ]]; then
-        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n" >&2
-    elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}" &&
-       cli-shell-api validateTmplPath -- ${editlvl[*]} "${param2[@]:1}" ; then
-      cmd="/opt/vyatta/sbin/my_$cmd"
-      output=$(eval "$cmd ${param1[@]:1} to ${param2[@]:1} | sed -e 's/^/  /'")
-      if [[ ! -z "${output}" ]];then
-        echo -ne "\n${output}\n\n"
-      fi
-    else
-      if ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}"; then
-        _cli_shell_api_comp_values=()
-        vyatta_cli_shell_api getCompletionEnv $cmd ${param1[1]}
-        if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
-           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
-          echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n" >&2
-          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
-        else
-          echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n" >&2
-        fi
-      elif ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:2}"; then
-        _cli_shell_api_comp_values=()
-        vyatta_cli_shell_api getCompletionEnv $cmd "${param2[1]}" 
-        if [[ "${#_cli_shell_api_comp_values[@]}" != "1" 
-           && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
-          echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n" >&2
-          echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
-        else
-          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n" >&2
+    if test -f "/var/run/vyconf_backend"; then
+      if [[ "${args[3]}" != "to" ]]; then
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n" >&2
+      elif ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} "${param1[@]:1}" &&
+         ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} "${param2[@]:1}" ; then
+        cmd="${vyconf_bin_dir}/vy_$cmd"
+        output=$(eval "$cmd ${param1[@]:1} to ${param2[@]:1} | sed -e 's/^/  /'")
+        if [[ ! -z "${output}" ]];then
+          echo -ne "\n${output}\n\n"
         fi
       else
-        echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n" >&2
+        if ! ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} "${param1[@]:1}"; then
+          _cli_shell_api_comp_values=()
+          vyos_cli_shell_api getCompletionEnv $cmd ${param1[1]}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n" >&2
+            echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
+          else
+            echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n" >&2
+          fi
+        elif ! ${vyconf_bin_dir}/vyconf_cli_compat validateTmplPath ${editlvl[*]} "${param1[@]:2}"; then
+          _cli_shell_api_comp_values=()
+          vyos_cli_shell_api getCompletionEnv $cmd "${param2[1]}"
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n" >&2
+            echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
+          else
+            echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n" >&2
+          fi
+        else
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n" >&2
+        fi
+      fi
+    else
+      if [[ "${args[3]}" != "to" ]]; then
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} ${args[3]} ${param2[@]:1}\n\n" >&2
+      elif cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}" &&
+         cli-shell-api validateTmplPath -- ${editlvl[*]} "${param2[@]:1}" ; then
+        cmd="/opt/vyatta/sbin/my_$cmd"
+        output=$(eval "$cmd ${param1[@]:1} to ${param2[@]:1} | sed -e 's/^/  /'")
+        if [[ ! -z "${output}" ]];then
+          echo -ne "\n${output}\n\n"
+        fi
+      else
+        if ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:1}"; then
+          _cli_shell_api_comp_values=()
+          vyatta_cli_shell_api getCompletionEnv $cmd ${param1[1]}
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            echo -ne "\n  Ambiguous command: $cmd [${param1[1]}]\n" >&2
+            echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
+          else
+            echo -ne "\n  Invalid command: $cmd [${param1[1]}]\n\n" >&2
+          fi
+        elif ! cli-shell-api validateTmplPath -- ${editlvl[*]} "${param1[@]:2}"; then
+          _cli_shell_api_comp_values=()
+          vyatta_cli_shell_api getCompletionEnv $cmd "${param2[1]}"
+          if [[ "${#_cli_shell_api_comp_values[@]}" != "1"
+             && "${#_cli_shell_api_comp_values[@]}" != "0" ]]; then
+            echo -ne "\n  Ambiguous command: $cmd ${param2[@]:1} to [${param2[1]}]\n" >&2
+            echo -ne "\n  Possible completions: ${_cli_shell_api_comp_values[@]}\n\n" >&2
+          else
+            echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to [${param2[1]}]\n\n" >&2
+          fi
+        else
+          echo -ne "\n  Invalid command: $cmd ${param1[@]:1} to ${param2[@]:1}\n\n" >&2
+        fi
       fi
     fi
 }
