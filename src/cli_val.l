@@ -228,16 +228,20 @@ false	{
 	}
 
 [0-9]+	{
-        long long int cval = 0;
+        unsigned long long ucval = 0;
         char *endp = NULL;
         errno = 0;
-        cval = strtoll(yytext, &endp, 10);
-        if ((errno == ERANGE && (cval == LLONG_MAX || cval == LLONG_MIN))
-            || (errno != 0 && cval == 0)
-            || (*endp != '\0') || (cval < 0) || (cval > UINT_MAX)) {
+        ucval = strtoull(yytext, &endp, 10);
+        if ((errno == ERANGE && ucval == ULLONG_MAX)
+            || (errno != 0 && ucval == 0)
+            || (*endp != '\0')) {
           return SYNTAX_ERROR;
         }
-        make_val_value(INT_TYPE);
+        if (ucval > (unsigned long long)UINT_MAX) {
+          make_val_value(INT64_TYPE);
+        } else {
+          make_val_value(INT_TYPE);
+        }
 	return VALUE;
 	}
 
