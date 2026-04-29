@@ -35,11 +35,12 @@ typedef enum {
   IPV6_TYPE,
   IPV6NET_TYPE,
   MACADDR_TYPE,
-  INT64_TYPE,
   DOMAIN_TYPE,  /*end of addr types */
   TEXT_TYPE,
   BOOL_TYPE,
-  PRIORITY_TYPE
+  PRIORITY_TYPE,
+  INT64_TYPE    /* u64; appended last to preserve ABI stability
+                   against out-of-tree consumers. */
 } vtw_type_e;
 
 typedef struct {
