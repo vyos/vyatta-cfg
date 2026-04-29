@@ -170,7 +170,19 @@ help_cause:	HELP STRING
 
 default_cause:  DEFAULT VALUE 
 		{
-		   if ($2.val_type != parse_defp->def_type)
+		   /* Accept the default if its type matches either declared
+		    * type. Additionally, a u32 literal is accepted in a u64
+		    * context (u32 values are a subset of u64), mirroring the
+		    * runtime check in validate_value(). */
+		   vtw_type_e vt = $2.val_type;
+		   vtw_type_e dt1 = parse_defp->def_type;
+		   vtw_type_e dt2 = parse_defp->def_type2;
+		   int ok = (vt == dt1)
+		       || (dt1 == INT64_TYPE && vt == INT_TYPE)
+		       || (dt2 != ERROR_TYPE
+			   && (vt == dt2
+			       || (dt2 == INT64_TYPE && vt == INT_TYPE)));
+		   if (!ok)
 		     yy_cli_parse_error((const char *)"Bad default\n");
 		   parse_defp->def_default = $2.val;
 		}

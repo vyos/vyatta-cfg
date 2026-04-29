@@ -456,13 +456,18 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|enumera
 
 <INITIAL,expression>{RE_VAL_PRIORITY} { return return_value(PRIORITY_TYPE); }
 <INITIAL,expression>{RE_VAL_U32}  {
-    /* classify integer literal as u32 if it fits in unsigned int,
-     * otherwise as u64 (cli_parse.y / validators may further range-check). */
+    /* Classify integer literal as u32 if it fits in unsigned int,
+     * as u64 if it exceeds UINT_MAX but fits in unsigned long long,
+     * otherwise reject as a syntax error so out-of-range constants
+     * don't silently get treated as u32. */
     unsigned long long ullv = 0;
     char *endp = NULL;
     errno = 0;
     ullv = strtoull(yy_cli_def_text, &endp, 10);
-    if (errno == 0 && endp && *endp == '\0' && ullv > (unsigned long long)UINT_MAX) {
+    if (errno == ERANGE || endp == yy_cli_def_text || (endp && *endp != '\0')) {
+      return SYNTAX_ERROR;
+    }
+    if (ullv > (unsigned long long)UINT_MAX) {
       return return_value(INT64_TYPE);
     }
     return return_value(INT_TYPE);
