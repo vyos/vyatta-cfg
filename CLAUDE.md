@@ -39,7 +39,3 @@ Live consumer of the gen-1 PR mirror pipeline (`pr-mirror-repo-sync.yml`). Mirro
 - Treat as maintenance-only. New features go to `vyos-1x`. Touch this repo only for bug fixes on LTS trains or to keep templates compatible with current Debian.
 - The `pr-mirror-repo-sync.yml` workflow runs serially per merged PR; expect a downstream PR opened in `VyOS-Networks/vyatta-cfg` after merge. If `mirror-failed` label appears, see `vyos/.github` PRMirrorOnboarding.md.
 - Authoritative build set is `VyOS-Networks/vyos-build-packages/repos.toml`.
-
----
-
-This file is mirrored on Confluence: [`vyos/vyatta-cfg`](https://internal.confluence.vyos.com/wiki/spaces/VYOS/pages/817889665). The Confluence page also carries the per-repo audit data (settings, workflows, secret counts, hygiene) that complements this CLAUDE.md. Edit either side; resync via the documentation pipeline.
