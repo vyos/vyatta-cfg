@@ -55,9 +55,6 @@ void *var_ref_handle = NULL;
 static vtw_node *vtw_free_nodes; /* linked via left */
 static int cond1[TOP_COND] ={5, 0,-1,-1, 0, 1, 0, 0};
 static int cond2[TOP_COND] ={5, 0, 1,-1,-1, 1, 1, 0};
-/* Indexed by vtw_type_e for types <= MACADDR_TYPE only. INT64_TYPE sits
- * past DOMAIN_TYPE in the enum and is handled via its own branch in
- * val_cmp(); it must never be used as an index into these tables. */
 static char const *cond_formats[DOMAIN_TYPE] = 
   {
     0, 
@@ -66,7 +63,8 @@ static char const *cond_formats[DOMAIN_TYPE] =
     "%u.%u.%u.%u/%u",             /* IPV4NET_TYPE */ 
     "%x:%x:%x:%x:%x:%x:%x:%x",    /* IPV6NET      */ 
     "%x:%x:%x:%x:%x:%x:%x:%x/%u", /* IPV6NET_TYPE */ 
-    "%x:%x:%x:%x:%x:%x"           /* MACADDR_TYPE */
+    "%x:%x:%x:%x:%x:%x",          /* MACADDR_TYPE */
+    "%llu"                        /* INT64_TYPE   */
   };
 
 static int cond_format_lens[DOMAIN_TYPE] = 
@@ -77,7 +75,8 @@ static int cond_format_lens[DOMAIN_TYPE] =
      5, /* IPV4NET_TYPE */ 
     16, /* IPV6_TYPE    */ 
     17, /* IPV6NET_TYPE */ 
-     6  /* MACADDR_TYPE */
+     6, /* MACADDR_TYPE */
+     1  /* INT64_TYPE   */
   };
 
 static int cli_val_len;
@@ -111,38 +110,6 @@ static int set_reference_environment(const char* var_reference,
 				     clind_path_ref *n_tmpl_path,
 				     clind_path_ref *n_cmd_path,
 				     int active);
-
-/* Integer type helpers: u32 values are a subset of u64 values, so allow
- * using an INT_TYPE literal where an INT64_TYPE is expected, and permit
- * comparisons between u32 and u64 operands. The reverse (INT64_TYPE
- * value in an INT_TYPE context) is rejected because it would exceed
- * u32 range. */
-static inline boolean
-is_int_like(vtw_type_e t)
-{
-  return (t == INT_TYPE || t == INT64_TYPE);
-}
-
-/* Returns TRUE if a value of type `val_type` is acceptable in a context
- * declaring `expected`. Strict equality, except a u32 value is accepted
- * in a u64 context. */
-static inline boolean
-type_accepts_val(vtw_type_e expected, vtw_type_e val_type)
-{
-  if (expected == val_type) return TRUE;
-  if (expected == INT64_TYPE && val_type == INT_TYPE) return TRUE;
-  return FALSE;
-}
-
-/* Returns TRUE if two types may be meaningfully compared: equal types, or
- * any pair among {u32, u64}. */
-static inline boolean
-types_comparable(vtw_type_e a, vtw_type_e b)
-{
-  if (a == b) return TRUE;
-  if (is_int_like(a) && is_int_like(b)) return TRUE;
-  return FALSE;
-}
 
 /*************************************************
      GLOBAL FUNCTIONS
@@ -639,9 +606,8 @@ int char2val_notext(const vtw_def *def, int my_type, int my_type2,
       }
       return 0;
     }
-    if (!type_accepts_val(my_type, get_cli_value_ptr()->val_type) &&
-	(my_type2 == ERROR_TYPE
-	 || !type_accepts_val(my_type2, get_cli_value_ptr()->val_type))) {
+    if (my_type != get_cli_value_ptr()->val_type &&
+	(my_type2 != ERROR_TYPE && my_type2 != get_cli_value_ptr()->val_type)) {
       if (def->def_type_help){
 	set_at_string(value);
 	(void)expand_string(def->def_type_help);
@@ -785,14 +751,10 @@ val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 	rval = right->vals[rcur];
 
       //don't bother comparing if these are different types.
-      if ((rcur || right->cnt)
+      if ((rcur || right->cnt) 
 	  && right->val_types != NULL
 	  && right->val_types[rcur] != ERROR_TYPE) {
-	/* Skip if the per-element right type is incompatible with the
-	 * left type. u32 and u64 are treated as mutually compatible so
-	 * mixed integer comparisons (e.g. u32 value vs u64 literal) are
-	 * evaluated correctly via the 64-bit path below. */
-	if (!types_comparable(val_type, right->val_types[rcur])) {
+	if (right->val_types[rcur] != val_type) {
 	  continue;
 	}
       }
@@ -811,6 +773,7 @@ val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
       case IPV4_TYPE:
       case IPV4NET_TYPE:
       case MACADDR_TYPE:
+      case INT_TYPE:
 	format = cond_formats[val_type];
 	parts_num = cond_format_lens[val_type];
 	(void) sscanf(lval, format, left_parts, left_parts+1, 
@@ -826,24 +789,10 @@ val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 		      right_parts+2, right_parts+3, right_parts+4,
 		      right_parts+5); 
 	break;
-      case INT_TYPE:
       case INT64_TYPE: {
-	/* Unified integer comparison: parse both sides as unsigned long
-	 * long so that u32 and u64 operands can be mixed without loss. */
 	unsigned long long lv = 0, rv = 0;
-	char *endp = NULL;
-	errno = 0;
-	lv = strtoull(lval, &endp, 10);
-	if (errno != 0 || endp == lval || (endp && *endp != '\0')) {
-	  /* unparseable left operand: skip this comparison */
-	  continue;
-	}
-	errno = 0;
-	rv = strtoull(rval, &endp, 10);
-	if (errno != 0 || endp == rval || (endp && *endp != '\0')) {
-	  /* unparseable right operand: skip this comparison */
-	  continue;
-	}
+	(void) sscanf(lval, "%llu", &lv);
+	(void) sscanf(rval, "%llu", &rv);
 	if (lv > rv) res = 1;
 	else if (lv < rv) res = -1;
 	else res = 0;
@@ -921,7 +870,7 @@ static boolean check_comp(vtw_node *cur)
          status, right.val_type, right.cnt, right.val); 
   if (status)
     goto free_and_return;
-  if (!types_comparable(left.val_type, right.val_type)) {
+  if(left.val_type != right.val_type) {
     printf("Different types in comparison\n");
     goto free_and_return;
   }
@@ -1968,9 +1917,9 @@ boolean validate_value(const vtw_def *def, char *cp)
   if (status != VTWERR_OK) {
     return FALSE;
   }
-  if ((def->def_type!=ERROR_TYPE) &&
-      !type_accepts_val(def->def_type, validate_value_val.val_type) &&
-      !type_accepts_val(def->def_type2, validate_value_val.val_type)) {
+  if ((def->def_type!=ERROR_TYPE) && 
+      ((validate_value_val.val_type != def->def_type) &&
+       (validate_value_val.val_type != def->def_type2))) {
     if (def->def_type_help){
       (void)expand_string(def->def_type_help);
       OUTPUT_USER("%s\n", exe_string);
