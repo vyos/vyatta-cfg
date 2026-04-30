@@ -3,9 +3,6 @@
 %x str
 %option noyywrap
 %{
-#include <errno.h>
-#include <limits.h>
-#include <stdlib.h>
 #include "cli_val.h"
 #include "cli_parse.h"
 
@@ -46,11 +43,9 @@ static int act_types[] = { -1, -1, -1,
 
 static char *type_names[] = { "txt", "u32", "ipv4", "ipv4net",
                               "ipv6", "ipv6net", "bool", "macaddr",
-                              "u64",
                               NULL };
 static int type_t[] = { TEXT_TYPE, INT_TYPE, IPV4_TYPE, IPV4NET_TYPE,
-                        IPV6_TYPE, IPV6NET_TYPE, BOOL_TYPE, MACADDR_TYPE,
-                        INT64_TYPE, 0 };
+                        IPV6_TYPE, IPV6NET_TYPE, BOOL_TYPE, MACADDR_TYPE, 0 };
 
 static char *op_cond_strs[] = { "in", "==", "!=", "<", ">", "<=", ">=", NULL };
 static int op_cond_types[] = { IN_COND, EQ_COND, NE_COND, LT_COND,
@@ -261,7 +256,7 @@ RE_URL_DIGITS	{RE_URL_DIGIT}{1,}
 RE_URL_SUBDELIMS "!"|"$"|"&"|"'"|"("|")"|"*"|"+"|","|";"|"="
 
 /* type names */
-RE_TYPE_NAME (txt|u32|u64|ipv4|ipv4net|ipv6|ipv6net|bool|macaddr)
+RE_TYPE_NAME (txt|u32|ipv4|ipv4net|ipv6|ipv6net|bool|macaddr)
 
 /* values */
 RE_VAL_U32 [0-9]+
@@ -455,18 +450,7 @@ RE_ACT_FIELD (help|syntax|commit|delete|update|activate|create|begin|end|enumera
   }
 
 <INITIAL,expression>{RE_VAL_PRIORITY} { return return_value(PRIORITY_TYPE); }
-<INITIAL,expression>{RE_VAL_U32}  {
-    /* classify integer literal as u32 if it fits in unsigned int,
-     * otherwise as u64 (cli_parse.y / validators may further range-check). */
-    unsigned long long ullv = 0;
-    char *endp = NULL;
-    errno = 0;
-    ullv = strtoull(yy_cli_def_text, &endp, 10);
-    if (errno == 0 && endp && *endp == '\0' && ullv > (unsigned long long)UINT_MAX) {
-      return return_value(INT64_TYPE);
-    }
-    return return_value(INT_TYPE);
-  }
+<INITIAL,expression>{RE_VAL_U32}  { return return_value(INT_TYPE); }
 <INITIAL,expression>{RE_IPV4}     { return return_value(IPV4_TYPE); }
 <INITIAL,expression>{RE_IPV4NET}  { return return_value(IPV4NET_TYPE); }
 <INITIAL,expression>{RE_IPV6}     { return return_value(IPV6_TYPE); }
