@@ -520,12 +520,6 @@ get_value_format_string ()
     u32:*)
       echo -n "<${vtype##u32:}>"
       ;;
-    u64)
-      echo -n '<0-18446744073709551615>'
-      ;;
-    u64:*)
-      echo -n "<${vtype##u64:}>"
-      ;;
     range)
       echo -n "<start>-<end>"
       ;;

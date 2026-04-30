@@ -63,8 +63,7 @@ static char const *cond_formats[DOMAIN_TYPE] =
     "%u.%u.%u.%u/%u",             /* IPV4NET_TYPE */ 
     "%x:%x:%x:%x:%x:%x:%x:%x",    /* IPV6NET      */ 
     "%x:%x:%x:%x:%x:%x:%x:%x/%u", /* IPV6NET_TYPE */ 
-    "%x:%x:%x:%x:%x:%x",          /* MACADDR_TYPE */
-    "%llu"                        /* INT64_TYPE   */
+    "%x:%x:%x:%x:%x:%x"           /* MACADDR_TYPE */
   };
 
 static int cond_format_lens[DOMAIN_TYPE] = 
@@ -75,8 +74,7 @@ static int cond_format_lens[DOMAIN_TYPE] =
      5, /* IPV4NET_TYPE */ 
     16, /* IPV6_TYPE    */ 
     17, /* IPV6NET_TYPE */ 
-     6, /* MACADDR_TYPE */
-     1  /* INT64_TYPE   */
+     6  /* MACADDR_TYPE */
   };
 
 static int cli_val_len;
@@ -789,15 +787,6 @@ val_cmp(const valstruct *left, const valstruct *right, vtw_cond_e cond)
 		      right_parts+2, right_parts+3, right_parts+4,
 		      right_parts+5); 
 	break;
-      case INT64_TYPE: {
-	unsigned long long lv = 0, rv = 0;
-	(void) sscanf(lval, "%llu", &lv);
-	(void) sscanf(rval, "%llu", &rv);
-	if (lv > rv) res = 1;
-	else if (lv < rv) res = -1;
-	else res = 0;
-	goto done_comp;
-      }
       case TEXT_TYPE:
       case BOOL_TYPE:
 	res = strcmp(lval, rval);
@@ -1983,7 +1972,6 @@ touch(void)
 const char *type_to_name(vtw_type_e type) {
   switch(type) {
   case INT_TYPE: return("u32");
-  case INT64_TYPE: return("u64");
   case IPV4_TYPE: return("ipv4");
   case IPV4NET_TYPE: return("ipv4net");
   case IPV6_TYPE: return("ipv6");
