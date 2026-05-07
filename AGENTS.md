@@ -23,7 +23,7 @@ No upstream test harness — validation happens at the integration level inside 
 - `configure.ac`, `Makefile.am` — autotools.
 
 ## Cross-repo context
-Pulled into ISO builds via `vyos/vyos-build` (listed in `VyOS-Networks/vyos-build-packages/repos.toml`). Pairs at runtime with `vyos/vyatta-bash` (the patched bash that hosts the CLI). Functionality has been progressively rewritten into `vyos/vyos-1x` (Python conf-mode/op-mode scripts) and `vyos/vyconf` (future OCaml session daemon).
+Pulled into ISO builds via `vyos/vyos-build` (listed in an internal repository). Pairs at runtime with `vyos/vyatta-bash` (the patched bash that hosts the CLI). Functionality has been progressively rewritten into `vyos/vyos-1x` (Python conf-mode/op-mode scripts) and `vyos/vyconf` (future OCaml session daemon).
 
 ## Conventions
 - Commit/PR title: `component: T12345: description` (Phorge task ID at https://vyos.dev). Enforced by `vyos/.github/.github/workflows/check-pr-message.yml@current`.
@@ -32,10 +32,6 @@ Pulled into ISO builds via `vyos/vyos-build` (listed in `VyOS-Networks/vyos-buil
 - Reusable workflows pinned to `vyos/.github/.github/workflows/<name>.yml@current` — changes ship immediately on merge.
 - Mergify config (single rule, adds `conflicts` label) lives in this repo.
 
-## Mirror relationship
-Live consumer of the gen-1 PR mirror pipeline (`pr-mirror-repo-sync.yml`). Mirror twin is `VyOS-Networks/vyatta-cfg` — only edit this canonical side; the mirror is force-pushed downstream automatically.
-
 ## Notes for future contributors
 - Treat as maintenance-only. New features go to `vyos-1x`. Touch this repo only for bug fixes on LTS trains or to keep templates compatible with current Debian.
-- The `pr-mirror-repo-sync.yml` workflow runs serially per merged PR; expect a downstream PR opened in `VyOS-Networks/vyatta-cfg` after merge. If `mirror-failed` label appears, see `vyos/.github` PRMirrorOnboarding.md.
-- Authoritative build set is `VyOS-Networks/vyos-build-packages/repos.toml`.
+- The `pr-mirror-repo-sync.yml` workflow runs serially per merged PR; expect a downstream PR opened in an internal repository after merge. If `mirror-failed` label appears, see `vyos/.github` PRMirrorOnboarding.md.
