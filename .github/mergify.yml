@@ -23,3 +23,5 @@
 # https://vyos.atlassian.net/wiki/spaces/VYOS/pages/849477640.
 
 extends: mergify
+merge_protections_settings:
+  reporting_method: check-runs
