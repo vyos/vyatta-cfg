@@ -10,7 +10,7 @@ Legacy Vyatta configuration system: config back-end, base configuration template
 
 ## Build / test / run
 ```
-autoreconf -i &&./configure && make
+autoreconf -i && ./configure && make
 # or, in tree:
 dpkg-buildpackage -uc -us -tc -b
 ```
