@@ -26,10 +26,10 @@ No upstream test harness — validation happens at the integration level inside 
 Pulled into ISO builds via `vyos/vyos-build` (listed in an internal repository). Pairs at runtime with `vyos/vyatta-bash` (the patched bash that hosts the CLI). Functionality has been progressively rewritten into `vyos/vyos-1x` (Python conf-mode/op-mode scripts) and `vyos/vyconf` (future OCaml session daemon).
 
 ## Conventions
-- Commit/PR title: `component: T12345: description` (Phorge task ID at https://vyos.dev). Enforced by `vyos/.github/.github/workflows/check-pr-message.yml@current`.
-- Release-train branches: `current` (rolling), `circinus` (1.5 LTS), `sagitta` (1.4 LTS), `equuleus` (1.3 LTS).
+- Commit/PR title: `component: T12345: description` (Phorge task ID at https://vyos.dev). Enforced by `vyos/.github/.github/workflows/check-pr-message.yml@production`.
+- Release-train branches: `rolling`, `circinus` (1.5 LTS), `sagitta` (1.4 LTS), `equuleus` (1.3 LTS).
 - Backports via `@Mergifyio backport <branch>` (Mergify built-in command).
-- Reusable workflows pinned to `vyos/.github/.github/workflows/<name>.yml@current` — changes ship immediately on merge.
+- Reusable workflows pinned to `vyos/.github/.github/workflows/<name>.yml@production` — changes ship immediately on merge.
 - Mergify config (single rule, adds `conflicts` label) lives in this repo.
 
 ## Notes for future contributors
