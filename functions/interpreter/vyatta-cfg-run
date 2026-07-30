@@ -163,7 +163,16 @@ vyatta_config_commit-confirm ()
   local -a args=()
   local first=1
   local minutes=10
+  local yes_flag=""
+  local in_comment=0
   for arg in "$@"; do
+    if [ "$arg" = "no-prompt" ] && [ "$in_comment" = "0" ]; then
+      yes_flag="-y"
+      continue
+    fi
+    if [ "$arg" = "comment" ]; then
+      in_comment=1
+    fi
     if [ "$first" = "1" ]; then
       if [[ $arg = *[[:digit:]]* ]]; then
         minutes=$arg
@@ -175,7 +184,7 @@ vyatta_config_commit-confirm ()
       args[${#args[@]}]="$arg"    
     fi
   done
-  cmd="${vyos_bin_dir}/config-mgmt commit_confirm -t=$minutes"
+  cmd="${vyos_bin_dir}/config-mgmt commit_confirm -t=$minutes $yes_flag"
   eval "sudo sg vyattacfg \"$cmd\" "
   if [ $? = 0 ]; then
     export IN_COMMIT_CONFIRM=t
