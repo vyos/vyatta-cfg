@@ -723,7 +723,7 @@ vyatta_simple_complete ()
   # If we didn't need ambiguity and there is only one element
   # in the compreply array then its the only available word,
   # append a space to finish the completion.
-  if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+  if [[ ${#COMPREPLY[@]} -eq 1 ]] && ! [[ "$cur" == \"* ]]; then
     COMPREPLY=( "${COMPREPLY[0]} " )
   fi
 
