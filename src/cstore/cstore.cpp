@@ -2925,8 +2925,13 @@ Cstore::add_tag(unsigned int tlimit)
   string t;
   pop_cfg_path(t);
   vector<string> cnodes;
-  // get child nodes, excluding deactivated ones.
-  get_all_child_node_names(cnodes, false, false);
+  /* get child nodes, excluding deactivated ones, only when there is a limit
+   * to check: listing them for every added value made adding n values to a
+   * tag node O(n^2) (loading a 10,000-entry prefix-list took 50 minutes).
+   */
+  if (tlimit > 0) {
+    get_all_child_node_names(cnodes, false, false);
+  }
   bool ret = false;
   do {
     if (tlimit > 0 && tlimit <= cnodes.size()) {
