@@ -7,7 +7,7 @@ etc_shell_leveldir = $(sysconfdir)/shell/level
 AM_CFLAGS = -I src -Wall $(GOBJECT_CFLAGS)
 AM_CXXFLAGS = -I src -Wall -Werror -std=gnu++17
 AM_CXXFLAGS += $(GOBJECT_CFLAGS)
-AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
+AM_YFLAGS = -d -Wno-yacc --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 ACLOCAL_AMFLAGS = -I m4
