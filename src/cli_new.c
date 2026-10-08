@@ -1920,7 +1920,7 @@ boolean validate_value(const vtw_def *def, char *cp)
     goto  validate_value_free_and_return;
   }
   ret = TRUE;
-  if (def->actions  && def->actions[syntax_act].vtw_list_head){
+  if (def->actions[syntax_act].vtw_list_head){
     in_validate_val = TRUE;
     ret = check_syn(def->actions[syntax_act].vtw_list_head,(const char *)NULL,FALSE);
     in_validate_val = FALSE;
