@@ -5,6 +5,8 @@ defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 
 AM_CFLAGS = -I src -Wall $(GOBJECT_CFLAGS)
+AM_CFLAGS += -Werror=format-overflow=1 -Werror=format-truncation=1
+AM_CFLAGS += -Werror=address -Werror=unused-function
 AM_CXXFLAGS = -I src -Wall -Werror -std=gnu++17
 AM_CXXFLAGS += $(GOBJECT_CFLAGS)
 AM_YFLAGS = -d -Wno-yacc --name-prefix=yy_`basename $* .y`_
