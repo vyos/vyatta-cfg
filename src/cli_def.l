@@ -2,6 +2,7 @@
 %x expression
 %x str
 %option noyywrap
+%option noinput
 %{
 #include "cli_val.h"
 #include "cli_parse.h"
