@@ -32,7 +32,8 @@
 #include <sys/stat.h>
 #include <grp.h>
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <system_error>
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -42,8 +43,7 @@
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
 
-namespace b_fs = boost::filesystem;
-namespace b_s = boost::system;
+namespace fs = std::filesystem;
 
 ////// constants
 // environment vars defining root dirs
@@ -187,7 +187,9 @@ _unescape_path_name(const string& path)
   return npath;
 }
 
-// Fall-through for Boost's filesystem::copy_file "complexity"
+/* Fall-through for copy_file: it has been seen to fail across a union mount
+ * where a plain read/write copy succeeds.
+ */
 void stream_file( const char* srce_file, const char* dest_file )
 {
     std::ifstream srce( srce_file, std::ios::binary ) ;
@@ -388,7 +390,7 @@ UnionfsCstore::unmarkSessionUnsaved()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark unsaved [%s]\n", marker.path_cstr());
     return false;
@@ -429,8 +431,8 @@ UnionfsCstore::setupSession()
   work_base = work_string.erase(work_string.find_last_of("/"));
 
   try {
-    b_fs::directory_iterator di(work_base.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(work_base.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       old_config = di->path().string().c_str();
       if (path_is_directory(old_config)) {
         directories.push_back(old_config);
@@ -445,12 +447,12 @@ UnionfsCstore::setupSession()
   if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
-      b_fs::create_directories(work_root.path_cstr());
-      b_fs::create_directories(change_root.path_cstr());
-      b_fs::create_directories(tmp_root.path_cstr());
+      fs::create_directories(work_root.path_cstr());
+      fs::create_directories(change_root.path_cstr());
+      fs::create_directories(tmp_root.path_cstr());
       if (!path_exists(active_root)) {
         // this should only be needed on boot
-        b_fs::create_directories(active_root.path_cstr());
+        fs::create_directories(active_root.path_cstr());
       }
     } catch (...) {
       output_internal("setup session failed to create session directories\n");
@@ -526,7 +528,11 @@ UnionfsCstore::setupSession()
 
       if (std::find(old_pids.begin(), old_pids.end(), current_pid) != old_pids.end()) {
         try {
-          if (b_fs::remove_all(directories[i].path_cstr()) == 0) {
+          /* the throwing overload is deliberate here and everywhere else the
+           * removal count is tested: the error_code overload reports failure
+           * as a count of -1, which would read as success.
+           */
+          if (fs::remove_all(directories[i].path_cstr()) == 0) {
             failed = true;
           }
         } catch (...) {
@@ -567,9 +573,9 @@ UnionfsCstore::teardownSession()
   // remove session directories
   bool ret = false;
   try {
-    if (b_fs::remove_all(work_root.path_cstr()) != 0
-        && b_fs::remove_all(change_root.path_cstr()) != 0
-        && b_fs::remove_all(tmp_root.path_cstr()) != 0) {
+    if (fs::remove_all(work_root.path_cstr()) != 0
+        && fs::remove_all(change_root.path_cstr()) != 0
+        && fs::remove_all(tmp_root.path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -596,7 +602,7 @@ bool
 UnionfsCstore::clearCommittedMarkers()
 {
   try {
-    b_fs::remove(commit_marker_file.path_cstr());
+    fs::remove(commit_marker_file.path_cstr());
   } catch (...) {
     output_internal("failed to clear committed markers\n");
     return false;
@@ -622,7 +628,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
 
   if (path_exists(tap)) {
     output_internal("rm[%s]\n", tap.path_cstr());
-    if (b_fs::remove_all(tap.path_cstr()) < 1) {
+    if (fs::remove_all(tap.path_cstr()) < 1) {
       output_internal("rm ta failed\n");
       return false;
     }
@@ -632,7 +638,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       p.pop();
       if (is_directory_empty(p)) {
         output_internal("rm[%s]\n", p.path_cstr());
-        if (b_fs::remove_all(p.path_cstr()) < 1) {
+        if (fs::remove_all(p.path_cstr()) < 1) {
           output_internal("rm tag failed\n");
           return false;
         }
@@ -647,7 +653,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", wp.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(wp, tap, true);
-      } catch (const b_fs::filesystem_error& e) {
+      } catch (const fs::filesystem_error& e) {
         output_internal("cp w->ta failed[%s]\n", e.what());
         return false;
       } catch (...) {
@@ -668,7 +674,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", ap.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(ap, tap, false);
-      } catch (const b_fs::filesystem_error& e) {
+      } catch (const fs::filesystem_error& e) {
         output_internal("cp a->ta failed[%s]\n", e.what());
         return false;
       } catch (...) {
@@ -745,7 +751,7 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
         return false;
       }
       push_path(d, dentries[i].c_str());
-      if (b_fs::remove_all(d.path_cstr()) < 1) {
+      if (fs::remove_all(d.path_cstr()) < 1) {
         return false;
       }
     } else {
@@ -798,8 +804,8 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
         if (path_is_regular(s)) {
           // it's file
           try {
-            b_fs::copy_file(s.path_cstr(), d.path_cstr());
-          } catch (const boost::filesystem::filesystem_error& e) {
+            fs::copy_file(s.path_cstr(), d.path_cstr());
+          } catch (const fs::filesystem_error& e) {
             output_internal("syncdir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
             stream_file(s.path_cstr(), d.path_cstr());
           }
@@ -828,7 +834,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   try {
     if (path_exists(tmp_work_root)) {
       output_internal("rm[%s]\n", tmp_work_root.path_cstr());
-      if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1) {
+      if (fs::remove_all(tmp_work_root.path_cstr()) < 1) {
         output_internal("rm tw failed\n");
         return false;
       }
@@ -837,7 +843,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
                     tmp_work_root.path_cstr());
 
     recursive_copy_dir(work_root, tmp_work_root, true);
-  } catch (const b_fs::filesystem_error& e) {
+  } catch (const fs::filesystem_error& e) {
     output_internal("cp w->tw failed[%s]\n", e.what());
     return false;
   } catch (...) {
@@ -874,7 +880,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   try {
     recursive_copy_dir(tmp_active_root, new_active, true);
     staged = true;
-  } catch (const b_fs::filesystem_error& e) {
+  } catch (const fs::filesystem_error& e) {
     output_internal("cp ta->na failed[%s]\n", e.what());
   } catch (...) {
     output_internal("cp ta->na failed[unknown exception]\n");
@@ -895,7 +901,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   if (!staged) {
     // never swapped in, so nothing can be stacked on it
     try {
-      b_fs::remove_all(new_active.path_cstr());
+      fs::remove_all(new_active.path_cstr());
     } catch (...) {
     }
     return false;
@@ -910,7 +916,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   }
   bool cleared = false;
   try {
-    cleared = (b_fs::remove_all(change_root.path_cstr()) >= 1);
+    cleared = (fs::remove_all(change_root.path_cstr()) >= 1);
   } catch (...) {
   }
   if (!cleared) {
@@ -918,7 +924,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     return invalidate_session("commit");
   }
   try {
-    b_fs::create_directories(change_root.path_cstr());
+    fs::create_directories(change_root.path_cstr());
   } catch (...) {
     output_internal("failed to create [%s]\n", change_root.path_cstr());
     return invalidate_session("commit");
@@ -934,14 +940,14 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   if (!sync_dir(tmp_work_root, work_root, work_root)) {
     return false;
   }
-  if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1
-      || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
+  if (fs::remove_all(tmp_work_root.path_cstr()) < 1
+      || fs::remove_all(tmp_active_root.path_cstr()) < 1) {
     output_user("failed to remove temp directories\n");
     return false;
   }
   if (restacked) {
     try {
-      b_fs::remove_all(new_active.path_cstr());
+      fs::remove_all(new_active.path_cstr());
     } catch (...) {
       output_internal("failed to remove previous active config [%s]\n",
                       new_active.path_cstr());
@@ -1035,7 +1041,7 @@ UnionfsCstore::add_node()
 {
   bool ret = true;
   try {
-    if (!b_fs::create_directory(get_work_path().path_cstr())) {
+    if (!fs::create_directory(get_work_path().path_cstr())) {
       // already exists. shouldn't call this function.
       ret = false;
     }
@@ -1060,7 +1066,7 @@ UnionfsCstore::remove_node()
   }
   bool ret = false;
   try {
-    if (b_fs::remove_all(get_work_path().path_cstr()) != 0) {
+    if (fs::remove_all(get_work_path().path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -1178,13 +1184,13 @@ UnionfsCstore::rename_child_node(const char *oname, const char *nname)
   }
   bool ret = true;
   try {
-    /* somehow b_fs::rename() can't be used here as it considers the operation
+    /* somehow fs::rename() can't be used here as it considers the operation
      * "Invalid cross-device link" and fails with an exception, probably due
      * to unionfs in some way.
      * do it the hard way.
      */
     recursive_copy_dir(opath, npath);
-    if (b_fs::remove_all(opath.path_cstr()) == 0) {
+    if (fs::remove_all(opath.path_cstr()) == 0) {
       ret = false;
     }
   } catch (...) {
@@ -1247,7 +1253,7 @@ UnionfsCstore::unmark_display_default()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark default [%s]\n",
                     get_work_path().path_cstr());
@@ -1299,7 +1305,7 @@ UnionfsCstore::unmark_deactivated()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark deactivated [%s]\n",
                     get_work_path().path_cstr());
@@ -1319,9 +1325,9 @@ UnionfsCstore::unmark_deactivated_descendants()
     }
 
     try {
-      vector<b_fs::path> markers;
-      b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
-      for (; di != b_fs::recursive_directory_iterator(); ++di) {
+      vector<fs::path> markers;
+      fs::recursive_directory_iterator di(get_work_path().path_cstr());
+      for (; di != fs::recursive_directory_iterator(); ++di) {
         if (!path_is_regular(di->path().string().c_str())
             || di->path().filename() != C_MARKER_DEACTIVATE) {
           // not marker
@@ -1338,7 +1344,7 @@ UnionfsCstore::unmark_deactivated_descendants()
         markers.push_back(di->path());
       }
       for (size_t i = 0; i < markers.size(); i++) {
-        b_fs::remove(markers[i]);
+        fs::remove(markers[i]);
       }
     } catch (...) {
       break;
@@ -1390,9 +1396,9 @@ bool
 UnionfsCstore::unmark_changed_with_descendants()
 {
   try {
-    vector<b_fs::path> markers;
-    b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
-    for (; di != b_fs::recursive_directory_iterator(); ++di) {
+    vector<fs::path> markers;
+    fs::recursive_directory_iterator di(get_work_path().path_cstr());
+    for (; di != fs::recursive_directory_iterator(); ++di) {
       if (!path_is_regular(di->path().string().c_str())
           || di->path().filename() != C_MARKER_CHANGED) {
         // not marker
@@ -1401,7 +1407,7 @@ UnionfsCstore::unmark_changed_with_descendants()
       markers.push_back(di->path());
     }
     for (size_t i = 0; i < markers.size(); i++) {
-      b_fs::remove(markers[i]);
+      fs::remove(markers[i]);
     }
   } catch (...) {
     output_internal("failed to unmark changed with descendants [%s]\n",
@@ -1421,7 +1427,7 @@ UnionfsCstore::remove_comment()
     return false;
   }
   try {
-    b_fs::remove(cfile.path_cstr());
+    fs::remove(cfile.path_cstr());
   } catch (...) {
     output_internal("failed to remove comment [%s]\n", cfile.path_cstr());
     return false;
@@ -1457,12 +1463,12 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     return false;
   }
 
-  vector<b_fs::path> files;
-  vector<b_fs::path> directories;
+  vector<fs::path> files;
+  vector<fs::path> directories;
   try {
     // iterate through all entries in change root
-    b_fs::directory_iterator di(change_root.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(change_root.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       if (path_is_directory(di->path().string().c_str())) {
         directories.push_back(di->path());
       } else {
@@ -1473,11 +1479,11 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     // remove and count
     num_removed = 0;
     for (size_t i = 0; i < files.size(); i++) {
-      b_fs::remove(files[i]);
+      fs::remove(files[i]);
       num_removed++;
     }
     for (size_t i = 0; i < directories.size(); i++) {
-      num_removed += b_fs::remove_all(directories[i]);
+      num_removed += fs::remove_all(directories[i]);
     }
   } catch (...) {
     output_internal("discard failed [%s]\n", change_root.path_cstr());
@@ -1600,8 +1606,8 @@ UnionfsCstore::check_dir_entries(const FsPath& root, vector<string> *cnodes,
   }
   bool found = false;
   try {
-    b_fs::directory_iterator di(root.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(root.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       string cname = di->path().filename().string();
       if (filter_nodes) {
         // must be directory
@@ -1641,7 +1647,7 @@ UnionfsCstore::write_file(const char *file, const string& data, bool append)
     // make sure the path exists
     FsPath ppath(file);
     ppath.pop();
-    b_fs::create_directories(ppath.path_cstr());
+    fs::create_directories(ppath.path_cstr());
 
     // write the file
     std::ofstream fout;
@@ -1668,7 +1674,7 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
     return false;
   }
   try {
-    if (b_fs::file_size(fpath.path_cstr()) > C_UNIONFS_MAX_FILE_SIZE) {
+    if (fs::file_size(fpath.path_cstr()) > C_UNIONFS_MAX_FILE_SIZE) {
       output_internal("read_whole_file too large\n");
       return false;
     }
@@ -1692,7 +1698,7 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
 }
 
 /* recursively copy source directory to destination.
- * will throw exception (from b_fs) if fail.
+ * will throw exception (from the filesystem library) if fail.
  */
 void
 UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
@@ -1700,10 +1706,10 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
 {
   string src_str = src.path_cstr();
   string dst_str = dst.path_cstr();
-  b_fs::create_directories(dst.path_cstr());
+  fs::create_directories(dst.path_cstr());
 
-  b_fs::recursive_directory_iterator di(src_str);
-  for (; di != b_fs::recursive_directory_iterator(); ++di) {
+  fs::recursive_directory_iterator di(src_str);
+  for (; di != fs::recursive_directory_iterator(); ++di) {
     /* hold the string: path::string() returns by value under
      * std::filesystem, so c_str() of the temporary would dangle.
      */
@@ -1711,7 +1717,7 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
     string nname = oname;
     nname.replace(0, src_str.length(), dst_str);
     if (path_is_directory(oname.c_str())) {
-      b_fs::create_directory(nname);
+      fs::create_directory(nname);
     } else {
       if (filter_dot_entries) {
         string of = di->path().filename().string();
@@ -1723,8 +1729,8 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
         }
       }
       try {
-        b_fs::copy_file(di->path(), nname);
-      } catch (const b_fs::filesystem_error& e) {
+        fs::copy_file(di->path(), nname);
+      } catch (const fs::filesystem_error& e) {
         output_internal("recursive_copy_dir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
         stream_file(di->path().string().c_str(), nname.c_str());
       }
@@ -1812,7 +1818,7 @@ UnionfsCstore::prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir)
    * that is recreated on boot in any case.
    */
   try {
-    b_fs::create_directories(wbase.path_cstr());
+    fs::create_directories(wbase.path_cstr());
     for (unsigned int gen = 0; gen < C_OVLWORK_MAX_GEN; gen++) {
       char buf[32];
       snprintf(buf, sizeof(buf), "%u", gen);
@@ -1821,11 +1827,11 @@ UnionfsCstore::prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir)
       if (path_exists(cand)) {
         continue;
       }
-      b_fs::create_directories(cand.path_cstr());
+      fs::create_directories(cand.path_cstr());
       wdir = cand;
       return true;
     }
-  } catch (const b_fs::filesystem_error& e) {
+  } catch (const fs::filesystem_error& e) {
     output_internal("failed to prepare overlay workdir [%s][%s]\n",
                     wbase.path_cstr(), e.what());
     return false;
@@ -1939,7 +1945,7 @@ bool
 UnionfsCstore::invalidate_session(const char *after)
 {
   try {
-    b_fs::remove_all(work_root.path_cstr());
+    fs::remove_all(work_root.path_cstr());
   } catch (...) {
     output_internal("failed to invalidate session [%s]\n",
                     work_root.path_cstr());
@@ -1981,7 +1987,7 @@ UnionfsCstore::do_umount(const FsPath& mdir)
   if (have_wdir && !detached) {
     try {
       if (path_exists(wdir)) {
-        b_fs::remove_all(wdir.path_cstr());
+        fs::remove_all(wdir.path_cstr());
       }
     } catch (...) {
       // not fatal: the config root is a tmpfs and is recreated on boot
@@ -2009,8 +2015,8 @@ UnionfsCstore::normalize_active_perms(const FsPath& root)
   try {
     vector<string> paths;
     paths.push_back(root.path_cstr());
-    b_fs::recursive_directory_iterator di(root.path_cstr());
-    for (; di != b_fs::recursive_directory_iterator(); ++di) {
+    fs::recursive_directory_iterator di(root.path_cstr());
+    for (; di != fs::recursive_directory_iterator(); ++di) {
       paths.push_back(di->path().string());
     }
     for (size_t i = 0; i < paths.size(); i++) {
@@ -2028,7 +2034,7 @@ UnionfsCstore::normalize_active_perms(const FsPath& root)
         output_internal("chmod failed [%s][%s]\n", strerror(errno), cp);
       }
     }
-  } catch (const b_fs::filesystem_error& e) {
+  } catch (const fs::filesystem_error& e) {
     output_internal("normalize_active_perms failed [%s]\n", e.what());
     return false;
   } catch (...) {
@@ -2049,10 +2055,10 @@ UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
   string work_base_str = C_DEF_WORK_PREFIX;
   work_base_str.erase(work_base_str.find_last_of("/"));
 
-  vector<b_fs::path> sessions;
+  vector<fs::path> sessions;
   try {
-    b_fs::directory_iterator di(work_base_str.c_str());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(work_base_str.c_str());
+    for (; di != fs::directory_iterator(); ++di) {
       sessions.push_back(di->path());
     }
   } catch (...) {
@@ -2099,15 +2105,15 @@ UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
          * superblock owns its workdir until the last reference drops.
          */
         try {
-          vector<b_fs::path> old_gens;
-          b_fs::directory_iterator di(swork.path_cstr());
-          for (; di != b_fs::directory_iterator(); ++di) {
+          vector<fs::path> old_gens;
+          fs::directory_iterator di(swork.path_cstr());
+          for (; di != fs::directory_iterator(); ++di) {
             if (di->path().string() != sgen.path_cstr()) {
               old_gens.push_back(di->path());
             }
           }
           for (size_t j = 0; j < old_gens.size(); j++) {
-            b_fs::remove_all(old_gens[j]);
+            fs::remove_all(old_gens[j]);
           }
         } catch (...) {
           // not fatal: the config root is a tmpfs and is recreated on boot
@@ -2136,41 +2142,41 @@ UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
  * an error and yields a "not found" status.
  */
 static bool
-get_file_status(const char *path, b_fs::file_status& fstat)
+get_file_status(const char *path, fs::file_status& fstat)
 {
-  b_s::error_code ec;
-  fstat = b_fs::status(path, ec);
+  std::error_code ec;
+  fstat = fs::status(path, ec);
   return (!ec);
 }
 
 bool
 UnionfsCstore::path_exists(const char *path)
 {
-  b_fs::file_status result;
+  fs::file_status result;
   if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::exists(result);
+  return fs::exists(result);
 }
 
 bool
 UnionfsCstore::path_is_directory(const char *path)
 {
-  b_fs::file_status result;
+  fs::file_status result;
   if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::is_directory(result);
+  return fs::is_directory(result);
 }
 
 bool
 UnionfsCstore::path_is_regular(const char *path)
 {
-  b_fs::file_status result;
+  fs::file_status result;
   if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::is_regular_file(result);
+  return fs::is_regular_file(result);
 }
 
 bool
@@ -2180,9 +2186,9 @@ UnionfsCstore::remove_dir_content(const char *path)
     return false;
   }
 
-  b_fs::directory_iterator di(path);
-  for (; di != b_fs::directory_iterator(); ++di) {
-    if (b_fs::remove_all(di->path()) < 1) {
+  fs::directory_iterator di(path);
+  for (; di != fs::directory_iterator(); ++di) {
+    if (fs::remove_all(di->path()) < 1) {
       return false;
     }
   }
