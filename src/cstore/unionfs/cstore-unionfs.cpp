@@ -1322,8 +1322,11 @@ UnionfsCstore::unmark_deactivated_descendants()
           // not marker
           continue;
         }
-        const char *ppath = di->path().parent_path().string().c_str();
-        if (strcmp(ppath, get_work_path().path_cstr()) == 0) {
+        /* hold the string: path::string() returns by value under
+         * std::filesystem, so c_str() of the temporary would dangle.
+         */
+        const string ppath = di->path().parent_path().string();
+        if (strcmp(ppath.c_str(), get_work_path().path_cstr()) == 0) {
           // don't unmark the node itself
           continue;
         }
@@ -1696,10 +1699,13 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
 
   b_fs::recursive_directory_iterator di(src_str);
   for (; di != b_fs::recursive_directory_iterator(); ++di) {
-    const char *oname = di->path().string().c_str();
+    /* hold the string: path::string() returns by value under
+     * std::filesystem, so c_str() of the temporary would dangle.
+     */
+    const string oname = di->path().string();
     string nname = oname;
     nname.replace(0, src_str.length(), dst_str);
-    if (path_is_directory(oname)) {
+    if (path_is_directory(oname.c_str())) {
       b_fs::create_directory(nname);
     } else {
       if (filter_dot_entries) {
