@@ -17,10 +17,23 @@ for dir in $sysconfdir/config $prefix/config; do
 done
 
 # capability stuff
+#
+# The config session is a kernel overlayfs mount performed by these binaries
+# running as the (unprivileged) CLI user:
+#   cap_sys_admin   mount(2)/umount2(2) and the trusted.overlay.* xattrs
+#   cap_chown       copy-up reproduces the lower file's owner (ovl_set_attr)
+#   cap_mknod       deleting a committed node creates a 0:0 whiteout device
+#   cap_fowner      chmod/utimes on copied-up files we do not own
+#   cap_fsetid      preserve the setgid bit on copied-up directories
+#   cap_dac_override  read the lower tree and write the overlay workdir
 for bin in my_cli_bin my_cli_shell_api; do
   touch -ac $sbindir/$bin
-  setcap cap_sys_admin=pe $sbindir/$bin
+  setcap cap_sys_admin,cap_chown,cap_mknod,cap_fowner,cap_fsetid,cap_dac_override=pe $sbindir/$bin
 done
+
+# the overlayfs workdir root; must be on the same filesystem as the session
+# upper dirs, and outside of $prefix/config/tmp which is reaped per session
+mkdir -m 0755 -p $prefix/config/ovl_work
 
 # commit hooks
 mkdir -p /etc/commit/pre-hooks.d
