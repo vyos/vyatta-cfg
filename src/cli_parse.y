@@ -26,6 +26,12 @@ static  void cli_deferror(const char *);
 #define YYDEBUG 1
 #define yy_cli_parse_lex yy_cli_def_lex
 %}
+/* at the start of input, an end-of-line can either be shifted into
+ * "EOL input" or end an empty tag. shifting keeps a following tag/multi
+ * line parseable; reducing commits to otherinput, which rejects one. the
+ * default shift is the wanted choice, in both states this arises in.
+ */
+%expect 2
 %token EOL
 %token MULTI
 %token TAG
