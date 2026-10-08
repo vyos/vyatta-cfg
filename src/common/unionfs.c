@@ -67,92 +67,20 @@ sys_cp(const char *src_file, const char *dst_file)
 static inline void
 sys_umount_session(void)
 {
-#ifdef USE_UNIONFSFUSE
-  const char *fusermount_path, *fusermount_prog;
-  const char *fusermount_umount;
-
-  fusermount_path = "/usr/bin/fusermount";
-  fusermount_prog = "fusermount";
-  fusermount_umount = "-u";
-
-  if(pipe(commpipe)){
-    fprintf(stderr,"Pipe error!\n");
-    perror("pipe");
-  }
-
-  if((pid = fork()) == -1) {
-    perror("pid");
-  }
-
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
-  }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    if (execl(fusermount_path, fusermount_prog, fusermount_umount, get_mdirp(), NULL) != 0) {
-      perror("execl");
-    }
-  }
-#else
-  if (umount(get_mdirp()) != 0) {
-    perror("umount");
-  }
-#endif
+  /* no-op.
+   *
+   * the config session overlay is owned exclusively by the CStore backend
+   * (UnionfsCstore::do_mount()/do_umount()); the legacy commit engine in this
+   * file is no longer built into any shipped binary and must not touch the
+   * mount. historically this called umount(2) on the union mount, which has
+   * been failing silently for years.
+   */
 }
 
 static inline void
 sys_mount_session(void)
 {
-#ifdef USE_UNIONFSFUSE
-  char mopts[MAX_LENGTH_DIR_PATH * 2];
-  const char *fusepath, *fuseprog;
-  const char *fuseoptinit;
-  const char *fuseopt1, *fuseopt2;
-  const char *moptfmt;
-
-  fusepath = "/usr/bin/unionfs-fuse";
-  fuseprog = "unionfs-fuse";
-  fuseoptinit = "-o";
-  fuseopt1 = "cow";
-  fuseopt2 = "allow_other";
-  moptfmt = "%s=RW:%s=RO";
-
-  if(pipe(commpipe)){
-    fprintf(stderr,"Pipe error!\n");
-    perror("pipe");
-  }
-
-  if((pid = fork()) == -1) {
-    perror("pid");
-  }
-
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
-  }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, moptfmt,
-             get_cdirp(), get_adirp());
-    if (execl(fusepath, fuseprog, fuseoptinit, fuseopt1, fuseoptinit, fuseopt2, mopts, get_mdirp(), NULL) != 0) {
-      perror("execl");
-    }
-  }
-#else
-  char mopts[MAX_LENGTH_DIR_PATH * 2];
-  snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
-           get_cdirp(), get_adirp());
-  if (mount("unionfs", get_mdirp(), "unionfs", 0, mopts) != 0) {
-    perror("mount");
-  }
-#endif
+  /* no-op, see sys_umount_session() above. */
 }
 
 void

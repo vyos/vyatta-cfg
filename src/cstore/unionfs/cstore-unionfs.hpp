@@ -46,7 +46,7 @@ namespace b_s = boost::system;
 class UnionfsCstore : public Cstore {
 public:
   UnionfsCstore(bool use_edit_level);
-  UnionfsCstore(const string& session_id, string& env);
+  UnionfsCstore(const string& sid, string& env);
   virtual ~UnionfsCstore();
 
   ////// public virtual functions declared in base class
@@ -75,12 +75,12 @@ private:
   static const string C_DEF_CHANGE_PREFIX;
   static const string C_DEF_WORK_PREFIX;
   static const string C_DEF_TMP_PREFIX;
+  static const string C_DEF_OVLWORK_PREFIX;
 
   static const string C_MARKER_DEF_VALUE;
   static const string C_MARKER_DEACTIVATE;
   static const string C_MARKER_CHANGED;
   static const string C_MARKER_UNSAVED;
-  static const string C_MARKER_UNIONFS;
   static const string C_COMMITTED_MARKER_FILE;
   static const string C_COMMENT_FILE;
   static const string C_TAG_NAME;
@@ -100,12 +100,31 @@ private:
     */  
   static const size_t C_UNIONFS_MAX_FILE_SIZE = 1048576;
 
-  // root dirs (constant)
-  FsPath work_root;   // working root (union)
-  FsPath active_root; // active root (readonly part of union)
-  FsPath change_root; // change root (r/w part of union)
-  FsPath tmp_root;    // temp root
-  FsPath tmpl_root;   // template root
+  /* how many workdir generations one session may allocate before its next
+   * teardown; each mount takes a fresh one and teardown reclaims them all. */
+  static const unsigned int C_OVLWORK_MAX_GEN = 4096;
+
+  /* root dirs (constant)
+   *
+   * the config session is a kernel overlayfs mount. mapping of the names
+   * used here onto overlayfs terminology:
+   *
+   *   active_root   -> lowerdir  (shared between all sessions, read-only)
+   *   change_root   -> upperdir  (per session, holds this session's changes)
+   *   ovl_work_root -> workdir   (per session, kernel-internal scratch)
+   *   work_root     -> the merged mount point, i.e. the "working config"
+   *
+   * note that work_root is the *working config* in Cstore vocabulary and has
+   * nothing to do with the overlayfs "workdir", which is ovl_work_root.
+   */
+  FsPath work_root;     // working root (merged overlay mount point)
+  FsPath active_root;   // active root (overlay lowerdir)
+  FsPath change_root;   // change root (overlay upperdir)
+  FsPath ovl_work_root; // overlay workdir (kernel-internal, never read by us)
+  FsPath tmp_root;      // temp root
+  FsPath tmpl_root;     // template root
+
+  string session_id;    // config session ID (the vbash PPID)
 
   // path buffers
   FsPath mutable_cfg_path;  // mutable part of config path
@@ -301,7 +320,18 @@ private:
   void get_committed_marker(bool is_delete, string& marker);
   bool find_line_in_file(const FsPath& file, const string& line);
   bool do_mount(const FsPath& rwdir, const FsPath& rdir, const FsPath& mdir);
+  static bool ovl_mount(const FsPath& lower, const FsPath& upper,
+                        const FsPath& work, const FsPath& mdir);
   bool do_umount(const FsPath& mdir);
+  // overlayfs helpers
+  void set_session_id(const string& sid);
+  bool prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir);
+  bool is_mount_point(const FsPath& p);
+  bool restack_other_sessions(const FsPath& prev_active);
+  bool invalidate_session(const char *after);
+  bool normalize_active_perms(const FsPath& root);
+  static FsPath ovl_work_root_for(const string& sid);
+  static bool session_id_from_work_root(const FsPath& wroot, string& sid);
 
   // boost fs operations wrappers
   bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {
