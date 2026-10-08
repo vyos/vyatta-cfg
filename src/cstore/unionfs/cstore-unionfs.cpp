@@ -32,6 +32,8 @@
 #include <sys/stat.h>
 #include <grp.h>
 
+#include <boost/filesystem.hpp>
+
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
 #include <cnode/cnode.hpp>
@@ -39,6 +41,9 @@
 
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
+
+namespace b_fs = boost::filesystem;
+namespace b_s = boost::system;
 
 ////// constants
 // environment vars defining root dirs
@@ -2126,11 +2131,23 @@ UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
   return ret;
 }
 
+/* query the status of a path without throwing. returns false if the status
+ * could not be determined at all; a path that simply does not exist is not
+ * an error and yields a "not found" status.
+ */
+static bool
+get_file_status(const char *path, b_fs::file_status& fstat)
+{
+  b_s::error_code ec;
+  fstat = b_fs::status(path, ec);
+  return (!ec);
+}
+
 bool
 UnionfsCstore::path_exists(const char *path)
 {
   b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  if (!get_file_status(path, result)) {
     return false;
   }
   return b_fs::exists(result);
@@ -2140,7 +2157,7 @@ bool
 UnionfsCstore::path_is_directory(const char *path)
 {
   b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  if (!get_file_status(path, result)) {
     return false;
   }
   return b_fs::is_directory(result);
@@ -2150,7 +2167,7 @@ bool
 UnionfsCstore::path_is_regular(const char *path)
 {
   b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  if (!get_file_status(path, result)) {
     return false;
   }
   return b_fs::is_regular_file(result);

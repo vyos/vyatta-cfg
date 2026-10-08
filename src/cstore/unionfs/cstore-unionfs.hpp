@@ -25,8 +25,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <boost/filesystem.hpp>
-
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/unionfs/fspath.hpp>
@@ -35,13 +33,8 @@
 namespace commit {
 class PrioNode;
 }
-using namespace boost::filesystem;
-
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
-
-namespace b_fs = boost::filesystem;
-namespace b_s = boost::system;
 
 class UnionfsCstore : public Cstore {
 public:
@@ -333,13 +326,6 @@ private:
   static FsPath ovl_work_root_for(const string& sid);
   static bool session_id_from_work_root(const FsPath& wroot, string& sid);
 
-  // boost fs operations wrappers
-  bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {
-    b_s::error_code ec;
-    file_status s = status(path, ec);
-    fs = s;
-    return (!ec);
-  };
   bool path_exists(const char *path);
   bool path_exists(const FsPath& path) {
     return path_exists(path.path_cstr());
