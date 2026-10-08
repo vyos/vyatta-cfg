@@ -17,6 +17,9 @@ extern "C" {
 #define DELETED_NODE ".wh."
 
 #define MAX_LENGTH_DIR_PATH 4096
+/* a command line interpolates several such paths plus a literal; writes
+ * are bounded, so an implausibly long path truncates rather than overruns */
+#define MAX_LENGTH_CMD (MAX_LENGTH_DIR_PATH * 2 + 256)
 #define MAX_LENGTH_HELP_STR 4096
 
 boolean
