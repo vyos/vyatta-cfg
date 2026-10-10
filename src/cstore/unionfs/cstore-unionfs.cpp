@@ -24,11 +24,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mount.h>
+#include <sys/syscall.h>
 #include <wait.h>
 #include <dirent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <grp.h>
+
+#include <filesystem>
+#include <system_error>
 
 #include <cli_cstore.h>
 #include <cstore/unionfs/cstore-unionfs.hpp>
@@ -37,6 +42,8 @@
 
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
+
+namespace fs = std::filesystem;
 
 ////// constants
 // environment vars defining root dirs
@@ -60,13 +67,21 @@ const string UnionfsCstore::C_DEF_WORK_PREFIX
   = UnionfsCstore::C_DEF_CFG_ROOT + "/tmp/new_config_";
 const string UnionfsCstore::C_DEF_TMP_PREFIX
   = UnionfsCstore::C_DEF_CFG_ROOT + "/tmp/tmp_";
+/* the overlayfs workdir must live on the same filesystem as the upperdir but
+ * must NOT be inside it. it is deliberately kept outside of
+ * <cfg_root>/tmp as well: setupSession() enumerates and removes everything
+ * under that directory when reaping stale sessions, and the kernel creates a
+ * root-owned "work" subdirectory in here that an unprivileged session cannot
+ * remove.
+ */
+const string UnionfsCstore::C_DEF_OVLWORK_PREFIX
+  = UnionfsCstore::C_DEF_CFG_ROOT + "/ovl_work/";
 
 // markers
 const string UnionfsCstore::C_MARKER_DEF_VALUE  = "def";
 const string UnionfsCstore::C_MARKER_DEACTIVATE = ".disable";
 const string UnionfsCstore::C_MARKER_CHANGED = ".modified";
 const string UnionfsCstore::C_MARKER_UNSAVED = ".unsaved";
-const string UnionfsCstore::C_MARKER_UNIONFS = ".unionfs-fuse";
 const string UnionfsCstore::C_COMMITTED_MARKER_FILE = ".changes";
 const string UnionfsCstore::C_COMMENT_FILE = ".comment";
 const string UnionfsCstore::C_TAG_NAME = "node.tag";
@@ -74,9 +89,6 @@ const string UnionfsCstore::C_VAL_NAME = "node.val";
 const string UnionfsCstore::C_DEF_NAME = "node.def";
 const string UnionfsCstore::C_COMMIT_LOCK_FILE = "/opt/vyatta/config/.lock";
 
-pid_t pid;
-int status;
-int commpipe[2];
 
 ////// static
 static MapT<char, string> _fs_escape_chars;
@@ -127,6 +139,14 @@ _escape_path_name(const string& path)
   return npath;
 }
 
+// an unset variable matches: not every caller exports every root
+static bool
+env_root_matches(const string& var, const string& expected)
+{
+  const char *val = getenv(var.c_str());
+  return (!val || FsPath(val) == FsPath(expected));
+}
+
 static MapT<string, string> _unescape_path_name_cache;
 
 static string
@@ -167,7 +187,9 @@ _unescape_path_name(const string& path)
   return npath;
 }
 
-// Fall-through for Boost's filesystem::copy_file "complexity"
+/* Fall-through for copy_file: it has been seen to fail across a union mount
+ * where a plain read/write copy succeeds.
+ */
 void stream_file( const char* srce_file, const char* dest_file )
 {
     std::ifstream srce( srce_file, std::ios::binary ) ;
@@ -235,20 +257,30 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
     tmpl_path = C_DEF_TMPL_ROOT;
   }
   tmpl_root = tmpl_path; // save a copy of tmpl root
-  if ((val = getenv(C_ENV_WORK_ROOT.c_str()))) {
-    work_root = val;
-  }
-  if ((val = getenv(C_ENV_TMP_ROOT.c_str()))) {
-    tmp_root = val;
-    init_commit_data();
-  }
-  if ((val = getenv(C_ENV_ACTIVE_ROOT.c_str()))) {
-    active_root = val;
-  } else {
-    active_root = C_DEF_ACTIVE_ROOT;
-  }
-  if ((val = getenv(C_ENV_CHANGE_ROOT.c_str()))) {
-    change_root = val;
+  /* the session roots are what the capability-holding binaries mount,
+   * rename and remove, so they are derived from the session ID rather than
+   * taken from the environment. an environment that disagrees with the
+   * derived roots does not get a session.
+   */
+  active_root = C_DEF_ACTIVE_ROOT;
+  string sid;
+  if ((val = getenv(C_ENV_WORK_ROOT.c_str()))
+      && session_id_from_work_root(FsPath(val), sid)
+      && env_root_matches(C_ENV_CHANGE_ROOT, C_DEF_CHANGE_PREFIX + sid)
+      && env_root_matches(C_ENV_TMP_ROOT, C_DEF_TMP_PREFIX + sid)
+      && env_root_matches(C_ENV_ACTIVE_ROOT, C_DEF_ACTIVE_ROOT)) {
+    work_root = (C_DEF_WORK_PREFIX + sid);
+    set_session_id(sid);
+    if (getenv(C_ENV_CHANGE_ROOT.c_str())) {
+      change_root = (C_DEF_CHANGE_PREFIX + sid);
+    }
+    if (getenv(C_ENV_TMP_ROOT.c_str())) {
+      tmp_root = (C_DEF_TMP_PREFIX + sid);
+      init_commit_data();
+    }
+  } else if (val) {
+    output_internal("ignoring invalid config session environment [%s]\n",
+                    val);
   }
   /* note: the original perl API module does not use the edit levels
    *       from environment. only the actual CLI operations use them.
@@ -299,6 +331,7 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
   work_root = (C_DEF_WORK_PREFIX + sid);
   change_root = (C_DEF_CHANGE_PREFIX + sid);
   tmp_root = (C_DEF_TMP_PREFIX + sid);
+  set_session_id(sid);
   init_commit_data();
 
   string declr = " declare -x -r "; // readonly vars
@@ -357,7 +390,7 @@ UnionfsCstore::unmarkSessionUnsaved()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark unsaved [%s]\n", marker.path_cstr());
     return false;
@@ -398,8 +431,8 @@ UnionfsCstore::setupSession()
   work_base = work_string.erase(work_string.find_last_of("/"));
 
   try {
-    b_fs::directory_iterator di(work_base.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(work_base.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       old_config = di->path().string().c_str();
       if (path_is_directory(old_config)) {
         directories.push_back(old_config);
@@ -414,19 +447,28 @@ UnionfsCstore::setupSession()
   if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
-      b_fs::create_directories(work_root.path_cstr());
-      b_fs::create_directories(change_root.path_cstr());
-      b_fs::create_directories(tmp_root.path_cstr());
+      fs::create_directories(work_root.path_cstr());
+      fs::create_directories(change_root.path_cstr());
+      fs::create_directories(tmp_root.path_cstr());
       if (!path_exists(active_root)) {
         // this should only be needed on boot
-        b_fs::create_directories(active_root.path_cstr());
+        fs::create_directories(active_root.path_cstr());
       }
     } catch (...) {
       output_internal("setup session failed to create session directories\n");
       return false;
     }
 
-    // union mount
+    /* guard against stacking a second overlay on top of a session that was
+     * not cleanly torn down and whose directories were removed underneath
+     * a live mount.
+     */
+    if (is_mount_point(work_root)) {
+      output_internal("session already mounted [%s]\n", work_root.path_cstr());
+      return false;
+    }
+
+    // overlay mount
     if (!do_mount(change_root, active_root, work_root)) {
       return false;
     }
@@ -486,7 +528,11 @@ UnionfsCstore::setupSession()
 
       if (std::find(old_pids.begin(), old_pids.end(), current_pid) != old_pids.end()) {
         try {
-          if (b_fs::remove_all(directories[i].path_cstr()) == 0) {
+          /* the throwing overload is deliberate here and everywhere else the
+           * removal count is tested: the error_code overload reports failure
+           * as a count of -1, which would read as success.
+           */
+          if (fs::remove_all(directories[i].path_cstr()) == 0) {
             failed = true;
           }
         } catch (...) {
@@ -527,9 +573,9 @@ UnionfsCstore::teardownSession()
   // remove session directories
   bool ret = false;
   try {
-    if (b_fs::remove_all(work_root.path_cstr()) != 0
-        && b_fs::remove_all(change_root.path_cstr()) != 0
-        && b_fs::remove_all(tmp_root.path_cstr()) != 0) {
+    if (fs::remove_all(work_root.path_cstr()) != 0
+        && fs::remove_all(change_root.path_cstr()) != 0
+        && fs::remove_all(tmp_root.path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -556,7 +602,7 @@ bool
 UnionfsCstore::clearCommittedMarkers()
 {
   try {
-    b_fs::remove(commit_marker_file.path_cstr());
+    fs::remove(commit_marker_file.path_cstr());
   } catch (...) {
     output_internal("failed to clear committed markers\n");
     return false;
@@ -582,7 +628,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
 
   if (path_exists(tap)) {
     output_internal("rm[%s]\n", tap.path_cstr());
-    if (b_fs::remove_all(tap.path_cstr()) < 1) {
+    if (fs::remove_all(tap.path_cstr()) < 1) {
       output_internal("rm ta failed\n");
       return false;
     }
@@ -592,7 +638,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       p.pop();
       if (is_directory_empty(p)) {
         output_internal("rm[%s]\n", p.path_cstr());
-        if (b_fs::remove_all(p.path_cstr()) < 1) {
+        if (fs::remove_all(p.path_cstr()) < 1) {
           output_internal("rm tag failed\n");
           return false;
         }
@@ -607,7 +653,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", wp.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(wp, tap, true);
-      } catch (const b_fs::filesystem_error& e) {
+      } catch (const fs::filesystem_error& e) {
         output_internal("cp w->ta failed[%s]\n", e.what());
         return false;
       } catch (...) {
@@ -628,7 +674,7 @@ UnionfsCstore::construct_commit_active(commit::PrioNode& node)
       output_internal("cp[%s]->[%s]\n", ap.path_cstr(), tap.path_cstr());
       try {
         recursive_copy_dir(ap, tap, false);
-      } catch (const b_fs::filesystem_error& e) {
+      } catch (const fs::filesystem_error& e) {
         output_internal("cp a->ta failed[%s]\n", e.what());
         return false;
       } catch (...) {
@@ -705,7 +751,7 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
         return false;
       }
       push_path(d, dentries[i].c_str());
-      if (b_fs::remove_all(d.path_cstr()) < 1) {
+      if (fs::remove_all(d.path_cstr()) < 1) {
         return false;
       }
     } else {
@@ -758,8 +804,8 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
         if (path_is_regular(s)) {
           // it's file
           try {
-            b_fs::copy_file(s.path_cstr(), d.path_cstr());
-          } catch (const boost::filesystem::filesystem_error& e) {
+            fs::copy_file(s.path_cstr(), d.path_cstr());
+          } catch (const fs::filesystem_error& e) {
             output_internal("syncdir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
             stream_file(s.path_cstr(), d.path_cstr());
           }
@@ -784,14 +830,11 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
 bool
 UnionfsCstore::commitConfig(commit::PrioNode& node)
 {
-  FsPath active_unionfs = active_root;
-  active_unionfs.push(C_MARKER_UNIONFS);
-  
   // make a copy of current "work" dir
   try {
     if (path_exists(tmp_work_root)) {
       output_internal("rm[%s]\n", tmp_work_root.path_cstr());
-      if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1) {
+      if (fs::remove_all(tmp_work_root.path_cstr()) < 1) {
         output_internal("rm tw failed\n");
         return false;
       }
@@ -800,7 +843,7 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
                     tmp_work_root.path_cstr());
 
     recursive_copy_dir(work_root, tmp_work_root, true);
-  } catch (const b_fs::filesystem_error& e) {
+  } catch (const fs::filesystem_error& e) {
     output_internal("cp w->tw failed[%s]\n", e.what());
     return false;
   } catch (...) {
@@ -812,53 +855,111 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     return false;
   }
 
+  /* build the replacement active tree beside the current one and swap it in
+   * atomically.
+   *
+   * the active tree is the overlay lowerdir of EVERY live config session.
+   * rewriting it in place would be a modification of a live lower layer,
+   * which the kernel leaves undefined. with RENAME_EXCHANGE the old tree
+   * stays fully intact behind the other sessions' mounts until we re-stack
+   * them below, so there is no instant at which anybody observes a partially
+   * written active config.
+   */
+  /* a unique name per commit: a previous tree kept behind by an incomplete
+   * re-stack may still be some session's lowerdir and must not be reused.
+   */
+  string na = active_root.path_cstr();
+  na += ".new.XXXXXX";
+  if (!mkdtemp(&na[0])) {
+    output_internal("failed to create staging dir [%s][%s]\n",
+                    strerror(errno), na.c_str());
+    return false;
+  }
+  FsPath new_active(na);
+  bool staged = false;
+  try {
+    recursive_copy_dir(tmp_active_root, new_active, true);
+    staged = true;
+  } catch (const fs::filesystem_error& e) {
+    output_internal("cp ta->na failed[%s]\n", e.what());
+  } catch (...) {
+    output_internal("cp ta->na failed[unknown exception]\n");
+  }
+  if (staged && !normalize_active_perms(new_active)) {
+    output_internal("failed to normalize permissions on [%s]\n",
+                    new_active.path_cstr());
+    staged = false;
+  }
+
+  if (staged
+      && syscall(SYS_renameat2, AT_FDCWD, new_active.path_cstr(),
+                 AT_FDCWD, active_root.path_cstr(), RENAME_EXCHANGE) != 0) {
+    output_internal("failed to swap in new active config [%s][%s]\n",
+                    strerror(errno), new_active.path_cstr());
+    staged = false;
+  }
+  if (!staged) {
+    // never swapped in, so nothing can be stacked on it
+    try {
+      fs::remove_all(new_active.path_cstr());
+    } catch (...) {
+    }
+    return false;
+  }
+  /* new_active now refers to the *previous* active tree. other sessions are
+   * still stacked on it, so every return below leaves it in place unless
+   * they have all been re-stacked.
+   */
+
   if (!do_umount(work_root)) {
     return false;
   }
-  if (b_fs::remove_all(change_root.path_cstr()) < 1) {
-    output_internal("failed to remove [%s]\n", change_root.path_cstr());
-    return false;
+  bool cleared = false;
+  try {
+    cleared = (fs::remove_all(change_root.path_cstr()) >= 1);
+  } catch (...) {
   }
-  /* note: unionfs can't cope with whole directory being removed, so just
-   * remove the content.
-   */
-  if (!remove_dir_content(active_root.path_cstr())) {
-    output_internal("failed to remove [%s] content\n",
-                    active_root.path_cstr());
-    return false;
+  if (!cleared) {
+    output_internal("failed to remove [%s]\n", change_root.path_cstr());
+    return invalidate_session("commit");
   }
   try {
-    b_fs::create_directories(change_root.path_cstr());
-    recursive_copy_dir(tmp_active_root, active_root, true);
-  } catch (const b_fs::filesystem_error& e) {
-    output_internal("cp ta->a failed[%s]\n", e.what());
-    return false;
+    fs::create_directories(change_root.path_cstr());
   } catch (...) {
-    output_internal("cp ta->a failed[unknown exception]\n");
-    return false;
+    output_internal("failed to create [%s]\n", change_root.path_cstr());
+    return invalidate_session("commit");
   }
   if (!do_mount(change_root, active_root, work_root)) {
-    return false;
+    return invalidate_session("commit");
   }
+
+  /* point every other live session at the new active tree. only once that
+   * has succeeded is the old tree unreferenced and safe to remove.
+   */
+  bool restacked = restack_other_sessions(new_active);
   if (!sync_dir(tmp_work_root, work_root, work_root)) {
     return false;
   }
-  if (b_fs::remove_all(tmp_work_root.path_cstr()) < 1
-      || b_fs::remove_all(tmp_active_root.path_cstr()) < 1) {
+  if (fs::remove_all(tmp_work_root.path_cstr()) < 1
+      || fs::remove_all(tmp_active_root.path_cstr()) < 1) {
     output_user("failed to remove temp directories\n");
     return false;
   }
-  try {
-    b_fs::remove_all(active_unionfs.path_cstr());
-  } catch (const b_fs::filesystem_error& e) {
-    output_internal("rm active unionfs failed[%s]\n", e.what());
-    return false;
-  } catch (...) {
-    output_internal("rm active unionfs[unknown exception]\n");
-    return false;
-  }
-  if (path_exists(active_unionfs)) {
-    output_internal("failed to remove unionfs directories from active config\n");
+  if (restacked) {
+    try {
+      fs::remove_all(new_active.path_cstr());
+    } catch (...) {
+      output_internal("failed to remove previous active config [%s]\n",
+                      new_active.path_cstr());
+    }
+  } else {
+    /* a session could not be re-stacked and may still be using the old tree.
+     * leave it alone: the config root is a tmpfs and is reclaimed on reboot,
+     * whereas pulling it out from under a live overlay is not recoverable.
+     */
+    output_internal("keeping previous active config [%s], "
+                    "not all sessions could be re-stacked\n",
+                    new_active.path_cstr());
   }
   // all done
   return true;
@@ -940,7 +1041,7 @@ UnionfsCstore::add_node()
 {
   bool ret = true;
   try {
-    if (!b_fs::create_directory(get_work_path().path_cstr())) {
+    if (!fs::create_directory(get_work_path().path_cstr())) {
       // already exists. shouldn't call this function.
       ret = false;
     }
@@ -965,7 +1066,7 @@ UnionfsCstore::remove_node()
   }
   bool ret = false;
   try {
-    if (b_fs::remove_all(get_work_path().path_cstr()) != 0) {
+    if (fs::remove_all(get_work_path().path_cstr()) != 0) {
       ret = true;
     }
   } catch (...) {
@@ -1083,13 +1184,13 @@ UnionfsCstore::rename_child_node(const char *oname, const char *nname)
   }
   bool ret = true;
   try {
-    /* somehow b_fs::rename() can't be used here as it considers the operation
+    /* somehow fs::rename() can't be used here as it considers the operation
      * "Invalid cross-device link" and fails with an exception, probably due
      * to unionfs in some way.
      * do it the hard way.
      */
     recursive_copy_dir(opath, npath);
-    if (b_fs::remove_all(opath.path_cstr()) == 0) {
+    if (fs::remove_all(opath.path_cstr()) == 0) {
       ret = false;
     }
   } catch (...) {
@@ -1152,7 +1253,7 @@ UnionfsCstore::unmark_display_default()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark default [%s]\n",
                     get_work_path().path_cstr());
@@ -1204,7 +1305,7 @@ UnionfsCstore::unmark_deactivated()
     return true;
   }
   try {
-    b_fs::remove(marker.path_cstr());
+    fs::remove(marker.path_cstr());
   } catch (...) {
     output_internal("failed to unmark deactivated [%s]\n",
                     get_work_path().path_cstr());
@@ -1224,23 +1325,26 @@ UnionfsCstore::unmark_deactivated_descendants()
     }
 
     try {
-      vector<b_fs::path> markers;
-      b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
-      for (; di != b_fs::recursive_directory_iterator(); ++di) {
+      vector<fs::path> markers;
+      fs::recursive_directory_iterator di(get_work_path().path_cstr());
+      for (; di != fs::recursive_directory_iterator(); ++di) {
         if (!path_is_regular(di->path().string().c_str())
             || di->path().filename() != C_MARKER_DEACTIVATE) {
           // not marker
           continue;
         }
-        const char *ppath = di->path().parent_path().string().c_str();
-        if (strcmp(ppath, get_work_path().path_cstr()) == 0) {
+        /* hold the string: path::string() returns by value under
+         * std::filesystem, so c_str() of the temporary would dangle.
+         */
+        const string ppath = di->path().parent_path().string();
+        if (strcmp(ppath.c_str(), get_work_path().path_cstr()) == 0) {
           // don't unmark the node itself
           continue;
         }
         markers.push_back(di->path());
       }
       for (size_t i = 0; i < markers.size(); i++) {
-        b_fs::remove(markers[i]);
+        fs::remove(markers[i]);
       }
     } catch (...) {
       break;
@@ -1292,9 +1396,9 @@ bool
 UnionfsCstore::unmark_changed_with_descendants()
 {
   try {
-    vector<b_fs::path> markers;
-    b_fs::recursive_directory_iterator di(get_work_path().path_cstr());
-    for (; di != b_fs::recursive_directory_iterator(); ++di) {
+    vector<fs::path> markers;
+    fs::recursive_directory_iterator di(get_work_path().path_cstr());
+    for (; di != fs::recursive_directory_iterator(); ++di) {
       if (!path_is_regular(di->path().string().c_str())
           || di->path().filename() != C_MARKER_CHANGED) {
         // not marker
@@ -1303,7 +1407,7 @@ UnionfsCstore::unmark_changed_with_descendants()
       markers.push_back(di->path());
     }
     for (size_t i = 0; i < markers.size(); i++) {
-      b_fs::remove(markers[i]);
+      fs::remove(markers[i]);
     }
   } catch (...) {
     output_internal("failed to unmark changed with descendants [%s]\n",
@@ -1323,7 +1427,7 @@ UnionfsCstore::remove_comment()
     return false;
   }
   try {
-    b_fs::remove(cfile.path_cstr());
+    fs::remove(cfile.path_cstr());
   } catch (...) {
     output_internal("failed to remove comment [%s]\n", cfile.path_cstr());
     return false;
@@ -1348,12 +1452,23 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
   bool unsaved = sessionUnsaved();
   bool ret = true;
 
-  vector<b_fs::path> files;
-  vector<b_fs::path> directories;
+  /* the change root is the overlay upperdir. modifying a layer of a live
+   * overlay is undefined, so unmount first and remount afterwards.
+   *
+   * note that discarding cannot be done through the merged mount: removing a
+   * node there creates a whiteout rather than exposing the active config
+   * again, which would leave an empty config instead of the active one.
+   */
+  if (!do_umount(work_root)) {
+    return false;
+  }
+
+  vector<fs::path> files;
+  vector<fs::path> directories;
   try {
     // iterate through all entries in change root
-    b_fs::directory_iterator di(change_root.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(change_root.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       if (path_is_directory(di->path().string().c_str())) {
         directories.push_back(di->path());
       } else {
@@ -1364,19 +1479,25 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     // remove and count
     num_removed = 0;
     for (size_t i = 0; i < files.size(); i++) {
-      b_fs::remove(files[i]);
+      fs::remove(files[i]);
       num_removed++;
     }
     for (size_t i = 0; i < directories.size(); i++) {
-      num_removed += b_fs::remove_all(directories[i]);
+      num_removed += fs::remove_all(directories[i]);
     }
   } catch (...) {
     output_internal("discard failed [%s]\n", change_root.path_cstr());
     ret = false;
   }
 
+  if (!do_mount(change_root, active_root, work_root)) {
+    return invalidate_session("discard");
+  }
+
   if (unsaved) {
-    // restore unsaved marker
+    /* restore unsaved marker. must happen after the remount: the marker is
+     * written through the merged mount.
+     */
     num_removed--;
     markSessionUnsaved();
   }
@@ -1485,8 +1606,8 @@ UnionfsCstore::check_dir_entries(const FsPath& root, vector<string> *cnodes,
   }
   bool found = false;
   try {
-    b_fs::directory_iterator di(root.path_cstr());
-    for (; di != b_fs::directory_iterator(); ++di) {
+    fs::directory_iterator di(root.path_cstr());
+    for (; di != fs::directory_iterator(); ++di) {
       string cname = di->path().filename().string();
       if (filter_nodes) {
         // must be directory
@@ -1526,7 +1647,7 @@ UnionfsCstore::write_file(const char *file, const string& data, bool append)
     // make sure the path exists
     FsPath ppath(file);
     ppath.pop();
-    b_fs::create_directories(ppath.path_cstr());
+    fs::create_directories(ppath.path_cstr());
 
     // write the file
     std::ofstream fout;
@@ -1553,7 +1674,7 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
     return false;
   }
   try {
-    if (b_fs::file_size(fpath.path_cstr()) > C_UNIONFS_MAX_FILE_SIZE) {
+    if (fs::file_size(fpath.path_cstr()) > C_UNIONFS_MAX_FILE_SIZE) {
       output_internal("read_whole_file too large\n");
       return false;
     }
@@ -1577,7 +1698,7 @@ UnionfsCstore::read_whole_file(const FsPath& fpath, string& data)
 }
 
 /* recursively copy source directory to destination.
- * will throw exception (from b_fs) if fail.
+ * will throw exception (from the filesystem library) if fail.
  */
 void
 UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
@@ -1585,15 +1706,18 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
 {
   string src_str = src.path_cstr();
   string dst_str = dst.path_cstr();
-  b_fs::create_directories(dst.path_cstr());
+  fs::create_directories(dst.path_cstr());
 
-  b_fs::recursive_directory_iterator di(src_str);
-  for (; di != b_fs::recursive_directory_iterator(); ++di) {
-    const char *oname = di->path().string().c_str();
+  fs::recursive_directory_iterator di(src_str);
+  for (; di != fs::recursive_directory_iterator(); ++di) {
+    /* hold the string: path::string() returns by value under
+     * std::filesystem, so c_str() of the temporary would dangle.
+     */
+    const string oname = di->path().string();
     string nname = oname;
     nname.replace(0, src_str.length(), dst_str);
-    if (path_is_directory(oname)) {
-      b_fs::create_directory(nname);
+    if (path_is_directory(oname.c_str())) {
+      fs::create_directory(nname);
     } else {
       if (filter_dot_entries) {
         string of = di->path().filename().string();
@@ -1605,8 +1729,8 @@ UnionfsCstore::recursive_copy_dir(const FsPath& src, const FsPath& dst,
         }
       }
       try {
-        b_fs::copy_file(di->path(), nname);
-      } catch (const b_fs::filesystem_error& e) {
+        fs::copy_file(di->path(), nname);
+      } catch (const fs::filesystem_error& e) {
         output_internal("recursive_copy_dir failed due to %s in copy_file. Falling back to internal stream_file\n", e.what());
         stream_file(di->path().string().c_str(), nname.c_str());
       }
@@ -1642,140 +1766,417 @@ UnionfsCstore::find_line_in_file(const FsPath& file, const string& line)
   return ret;
 }
 
+/* derive the overlayfs workdir path for a given session ID. */
+FsPath
+UnionfsCstore::ovl_work_root_for(const string& sid)
+{
+  return FsPath((C_DEF_OVLWORK_PREFIX + sid).c_str());
+}
+
+/* recover the session ID from a working root path, i.e. the "1234" in
+ * "<cfg_root>/tmp/new_config_1234". returns false if the path does not look
+ * like a session working root.
+ */
+bool
+UnionfsCstore::session_id_from_work_root(const FsPath& wroot, string& sid)
+{
+  string wstr = wroot.path_cstr();
+  if (wstr.find(C_DEF_WORK_PREFIX) != 0) {
+    return false;
+  }
+  sid = wstr.substr(C_DEF_WORK_PREFIX.length());
+  if (sid.empty() || sid.find_first_not_of("0123456789") != string::npos) {
+    return false;
+  }
+  return true;
+}
+
+void
+UnionfsCstore::set_session_id(const string& sid)
+{
+  session_id = sid;
+  ovl_work_root = ovl_work_root_for(sid);
+}
+
+/* the overlayfs workdir must exist and be empty. the kernel maintains a
+ * root-owned "work" subdirectory inside it, so always start from scratch
+ * rather than inheriting whatever a crashed session left behind.
+ */
+bool
+UnionfsCstore::prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir)
+{
+  /* Allocate a fresh generation directory under the session's workdir base
+   * rather than reusing one path.
+   *
+   * Re-stacking a session detaches its overlay with MNT_DETACH, which keeps
+   * the old superblock alive until the last reference to it goes away. That
+   * superblock still owns its workdir, so wiping and recreating the same
+   * path underneath it would be a modification of a live overlay layer -
+   * exactly what we restructured commitConfig() to avoid. Leave the previous
+   * generation alone; it is disposed of together with the whole base
+   * directory when the session is torn down, and the config root is a tmpfs
+   * that is recreated on boot in any case.
+   */
+  try {
+    fs::create_directories(wbase.path_cstr());
+    for (unsigned int gen = 0; gen < C_OVLWORK_MAX_GEN; gen++) {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%u", gen);
+      FsPath cand(wbase);
+      cand.push(buf);
+      if (path_exists(cand)) {
+        continue;
+      }
+      fs::create_directories(cand.path_cstr());
+      wdir = cand;
+      return true;
+    }
+  } catch (const fs::filesystem_error& e) {
+    output_internal("failed to prepare overlay workdir [%s][%s]\n",
+                    wbase.path_cstr(), e.what());
+    return false;
+  } catch (...) {
+    output_internal("failed to prepare overlay workdir [%s]\n",
+                    wbase.path_cstr());
+    return false;
+  }
+  output_internal("exhausted overlay workdir generations [%s]\n",
+                  wbase.path_cstr());
+  return false;
+}
+
+/* whether the given path is a mount point, per /proc/self/mountinfo.
+ * used to avoid stacking a second overlay on a session that was not cleanly
+ * torn down, and to decide whether another session actually needs unmounting.
+ */
+bool
+UnionfsCstore::is_mount_point(const FsPath& p)
+{
+  bool ret = false;
+  string target = p.path_cstr();
+  std::ifstream fin("/proc/self/mountinfo");
+  if (!fin.is_open()) {
+    /* cannot tell; report mounted so a caller does not stack a second
+     * overlay on a path that may already carry one.
+     */
+    output_internal("cannot read the mount table\n");
+    return true;
+  }
+  string line;
+  while (getline(fin, line)) {
+    /* mountinfo field 5 is the mount point. fields are space separated and
+     * the mount point is octal-escaped, but our paths contain no characters
+     * that would be escaped.
+     */
+    std::istringstream iss(line);
+    string fld;
+    for (int i = 0; i < 5; i++) {
+      if (!(iss >> fld)) {
+        fld.clear();
+        break;
+      }
+    }
+    if (fld == target) {
+      ret = true;
+      break;
+    }
+  }
+  return ret;
+}
+
+/* the single place an overlay is mounted:
+ *   lowerdir  = active config (shared, read-only)
+ *   upperdir  = this session's changes
+ *   workdir   = per-session kernel scratch
+ *   mountpoint= the working config
+ *
+ * the feature flags are pinned explicitly rather than inherited from the
+ * kernel defaults. in particular metacopy and redirect_dir must stay off:
+ * enabling either forfeits the documented allowance for offline changes to
+ * the lower tree, which replacing the active config relies on.
+ */
+bool
+UnionfsCstore::ovl_mount(const FsPath& lower, const FsPath& upper,
+                         const FsPath& work, const FsPath& mdir)
+{
+  string mopts = "lowerdir=";
+  mopts += lower.path_cstr();
+  mopts += ",upperdir=";
+  mopts += upper.path_cstr();
+  mopts += ",workdir=";
+  mopts += work.path_cstr();
+  mopts += ",index=off,metacopy=off,redirect_dir=off,xino=off";
+
+  if (mount("overlay", mdir.path_cstr(), "overlay", 0, mopts.c_str()) != 0) {
+    if (errno == ENODEV) {
+      output_internal("overlay mount failed: overlay filesystem not "
+                      "available (is the overlay module loaded?)\n");
+    }
+    output_internal("overlay mount failed [%s][%s][%s]\n",
+                    strerror(errno), mdir.path_cstr(), mopts.c_str());
+    return false;
+  }
+  return true;
+}
+
 bool
 UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                         const FsPath& mdir)
 {
-#ifdef USE_UNIONFSFUSE
-  const char *fusepath, *fuseprog;
-  const char *fuseoptinit;
-  const char *fuseopt1, *fuseopt2;
-  string mopts;
-
-  fusepath = "/usr/bin/unionfs-fuse";
-  fuseprog = "unionfs-fuse";
-  fuseoptinit = "-o";
-  fuseopt1 = "cow";
-  fuseopt2 = "allow_other";
-  mopts = rwdir.path_cstr();
-  mopts += "=RW:";
-  mopts += rdir.path_cstr();
-  mopts += "=RO";
-
-  if(pipe(commpipe)){
-    output_internal("Pipe error!\n");
+  if (session_id.empty()) {
+    /* constructed from an environment whose working root did not carry a
+     * usable session ID, so there is nowhere to put the workdir.
+     */
+    output_internal("no overlay workdir for [%s]\n", mdir.path_cstr());
     return false;
   }
-
-  if((pid = fork()) == -1) {
-    output_internal("*** ERROR: forking child process failed\n");
+  FsPath wgen;
+  if (!prepare_ovl_workdir(ovl_work_root, wgen)) {
     return false;
   }
+  return ovl_mount(rdir, rwdir, wgen, mdir);
+}
 
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
+/* once unmounted and not remounted, the working root is a bare empty
+ * directory that still counts as a session. a later commit would read it as
+ * an empty config and delete everything, so remove it to end the session.
+ */
+bool
+UnionfsCstore::invalidate_session(const char *after)
+{
+  try {
+    fs::remove_all(work_root.path_cstr());
+  } catch (...) {
+    output_internal("failed to invalidate session [%s]\n",
+                    work_root.path_cstr());
   }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    if (execl(fusepath, fuseprog, fuseoptinit, fuseopt1, fuseoptinit, fuseopt2, mopts.c_str(), mdir.path_cstr(), NULL) != 0) {
-        output_internal("union mount failed [%s][%s][%s]\n",
-                   strerror(errno), mdir.path_cstr(), mopts.c_str());
-        return false;
-    }
-  }
-#else
-  string mopts = "dirs=";
-  mopts += rwdir.path_cstr();
-  mopts += "=rw:";
-  mopts += rdir.path_cstr();
-  mopts += "=ro";
-  if (mount("unionfs", mdir.path_cstr(), "unionfs", 0, mopts.c_str()) != 0) {
-    output_internal("union mount failed [%s][%s]\n",
-                    strerror(errno), mdir.path_cstr());
-    return false;
-  }
-#endif
-  return true;
+  output_user("config session lost after %s, "
+              "please leave and re-enter configuration mode\n", after);
+  return false;
 }
 
 bool
 UnionfsCstore::do_umount(const FsPath& mdir)
 {
-#ifdef USE_UNIONFSFUSE
-  const char *fusermount_path, *fusermount_prog;
-  const char *fusermount_umount;
-
-  fusermount_path = "/bin/fusermount";
-  fusermount_prog = "fusermount";
-  fusermount_umount = "-u";
-
-  if(pipe(commpipe)){
-    output_internal("Pipe error!\n");
-    return false;
+  string sid;
+  FsPath wdir;
+  bool have_wdir = session_id_from_work_root(mdir, sid);
+  if (have_wdir) {
+    wdir = ovl_work_root_for(sid);
   }
 
-  if((pid = fork()) == -1) {
-    output_internal("*** ERROR: forking child process failed\n");
-    return false;
+  bool detached = false;
+  if (umount2(mdir.path_cstr(), 0) != 0) {
+    /* a session with a command in flight can keep the mount busy. a lazy
+     * unmount always frees the mount point for a fresh mount, and anything
+     * still holding an open file descriptor keeps working against the old
+     * superblock until it closes.
+     */
+    if (errno != EBUSY || umount2(mdir.path_cstr(), MNT_DETACH) != 0) {
+      output_internal("overlay umount failed [%s][%s]\n",
+                      strerror(errno), mdir.path_cstr());
+      return false;
+    }
+    detached = true;
   }
 
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
-  }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    if (execl(fusermount_path, fusermount_prog, fusermount_umount, mdir.path_cstr(), NULL) != 0) {
-        output_internal("union umount failed [%s][%s]\n",
-                   strerror(errno), mdir.path_cstr());
-        return false;
+  /* only safe once the mount is really gone: a lazily detached one still
+   * owns its work directory until the last reference to it drops. what is
+   * left behind goes when the config tmpfs is recreated on boot.
+   */
+  if (have_wdir && !detached) {
+    try {
+      if (path_exists(wdir)) {
+        fs::remove_all(wdir.path_cstr());
+      }
+    } catch (...) {
+      // not fatal: the config root is a tmpfs and is recreated on boot
+      output_internal("failed to remove overlay workdir [%s]\n",
+                      wdir.path_cstr());
     }
   }
-#else
-  if (umount(mdir.path_cstr()) != 0) {
-    output_internal("union umount failed [%s][%s]\n",
-                    strerror(errno), mdir.path_cstr());
+  return true;
+}
+
+/* overlayfs, unlike unionfs-fuse, enforces the real DAC of the lower layer:
+ * a copy-up is refused outright if the caller may not write the underlying
+ * file. the active config must therefore stay group-writable by vyattacfg.
+ *
+ * recursive_copy_dir() preserves the source mode, so a single stray 0644 file
+ * anywhere in the pipeline would become permanently unwritable for a
+ * non-root session. normalize the whole tree instead of trusting umask.
+ */
+bool
+UnionfsCstore::normalize_active_perms(const FsPath& root)
+{
+  struct group *grp = getgrnam("vyattacfg");
+  gid_t gid = (grp ? grp->gr_gid : (gid_t) -1);
+
+  try {
+    vector<string> paths;
+    paths.push_back(root.path_cstr());
+    fs::recursive_directory_iterator di(root.path_cstr());
+    for (; di != fs::recursive_directory_iterator(); ++di) {
+      paths.push_back(di->path().string());
+    }
+    for (size_t i = 0; i < paths.size(); i++) {
+      const char *cp = paths[i].c_str();
+      bool is_dir = path_is_directory(cp);
+      // ignore failures: we may not own every node, and the mode may already
+      // be correct, in which case there is nothing to fix up.
+      if (gid != (gid_t) -1) {
+        if (chown(cp, (uid_t) -1, gid) != 0 && errno != EPERM) {
+          output_internal("chgrp failed [%s][%s]\n", strerror(errno), cp);
+        }
+      }
+      mode_t mode = (is_dir ? (S_ISGID | 02775) : 0664);
+      if (chmod(cp, mode) != 0 && errno != EPERM) {
+        output_internal("chmod failed [%s][%s]\n", strerror(errno), cp);
+      }
+    }
+  } catch (const fs::filesystem_error& e) {
+    output_internal("normalize_active_perms failed [%s]\n", e.what());
+    return false;
+  } catch (...) {
     return false;
   }
-#endif
   return true;
+}
+
+/* after the active config has been replaced, every OTHER live session is
+ * still stacked on the previous lower tree. re-stack them so that their view
+ * of the active config matches reality, which is the behaviour users expect:
+ * once somebody commits, "compare" in a concurrent session reflects it.
+ */
+bool
+UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
+{
+  bool ret = true;
+  string work_base_str = C_DEF_WORK_PREFIX;
+  work_base_str.erase(work_base_str.find_last_of("/"));
+
+  vector<fs::path> sessions;
+  try {
+    fs::directory_iterator di(work_base_str.c_str());
+    for (; di != fs::directory_iterator(); ++di) {
+      sessions.push_back(di->path());
+    }
+  } catch (...) {
+    // nothing to re-stack
+    return true;
+  }
+
+  for (size_t i = 0; i < sessions.size(); i++) {
+    FsPath sdir(sessions[i].string().c_str());
+    string sid;
+    if (!session_id_from_work_root(sdir, sid) || sid == session_id) {
+      continue;
+    }
+    if (!is_mount_point(sdir)) {
+      continue;
+    }
+    FsPath schange((C_DEF_CHANGE_PREFIX + sid).c_str());
+    FsPath swork(ovl_work_root_for(sid));
+    if (!path_is_directory(schange)) {
+      continue;
+    }
+
+    // prepare first, so a failure leaves the session mounted as it was
+    FsPath sgen;
+    if (!prepare_ovl_workdir(swork, sgen)) {
+      ret = false;
+      continue;
+    }
+    // as in do_umount(): detach lazily only if the session is busy
+    bool detached = false;
+    if (umount2(sdir.path_cstr(), 0) != 0) {
+      if (errno != EBUSY || umount2(sdir.path_cstr(), MNT_DETACH) != 0) {
+        output_internal("failed to detach session overlay [%s][%s]\n",
+                        strerror(errno), sdir.path_cstr());
+        ret = false;
+        continue;
+      }
+      detached = true;
+    }
+    if (ovl_mount(active_root, schange, sgen, sdir)) {
+      if (!detached) {
+        /* drop every older generation, as do_umount() does after a normal
+         * unmount. after a lazy detach they are kept: the detached
+         * superblock owns its workdir until the last reference drops.
+         */
+        try {
+          vector<fs::path> old_gens;
+          fs::directory_iterator di(swork.path_cstr());
+          for (; di != fs::directory_iterator(); ++di) {
+            if (di->path().string() != sgen.path_cstr()) {
+              old_gens.push_back(di->path());
+            }
+          }
+          for (size_t j = 0; j < old_gens.size(); j++) {
+            fs::remove_all(old_gens[j]);
+          }
+        } catch (...) {
+          // not fatal: the config root is a tmpfs and is recreated on boot
+          output_internal("failed to remove old overlay workdirs [%s]\n",
+                          swork.path_cstr());
+        }
+      }
+    } else {
+      output_internal("failed to re-stack session [%s]\n", sdir.path_cstr());
+      ret = false;
+      /* put the session back on the tree it was using rather than leave it
+       * unmounted. the caller keeps that tree since we report failure.
+       */
+      FsPath pgen;
+      if (!prepare_ovl_workdir(swork, pgen)
+          || !ovl_mount(prev_active, schange, pgen, sdir)) {
+        output_internal("session left unmounted [%s]\n", sdir.path_cstr());
+      }
+    }
+  }
+  return ret;
+}
+
+/* query the status of a path without throwing. returns false if the status
+ * could not be determined at all; a path that simply does not exist is not
+ * an error and yields a "not found" status.
+ */
+static bool
+get_file_status(const char *path, fs::file_status& fstat)
+{
+  std::error_code ec;
+  fstat = fs::status(path, ec);
+  return (!ec);
 }
 
 bool
 UnionfsCstore::path_exists(const char *path)
 {
-  b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  fs::file_status result;
+  if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::exists(result);
+  return fs::exists(result);
 }
 
 bool
 UnionfsCstore::path_is_directory(const char *path)
 {
-  b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  fs::file_status result;
+  if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::is_directory(result);
+  return fs::is_directory(result);
 }
 
 bool
 UnionfsCstore::path_is_regular(const char *path)
 {
-  b_fs::file_status result;
-  if (!b_fs_get_file_status(path, result)) {
+  fs::file_status result;
+  if (!get_file_status(path, result)) {
     return false;
   }
-  return b_fs::is_regular_file(result);
+  return fs::is_regular_file(result);
 }
 
 bool
@@ -1785,9 +2186,9 @@ UnionfsCstore::remove_dir_content(const char *path)
     return false;
   }
 
-  b_fs::directory_iterator di(path);
-  for (; di != b_fs::directory_iterator(); ++di) {
-    if (b_fs::remove_all(di->path()) < 1) {
+  fs::directory_iterator di(path);
+  for (; di != fs::directory_iterator(); ++di) {
+    if (fs::remove_all(di->path()) < 1) {
       return false;
     }
   }

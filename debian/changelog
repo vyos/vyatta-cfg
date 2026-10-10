@@ -1,3 +1,11 @@
+vyatta-cfg (0.103.0+vyos1) unstable; urgency=medium
+
+  * Use kernel overlayfs for config sessions instead of unionfs-fuse.
+  * Use the standard filesystem library and drop the Boost dependency.
+  * Build without warnings and treat the cleaned warning classes as errors.
+
+ -- Christian Breunig <christian@breunig.cc>  Sat, 10 Oct 2026 19:33:07 +0000
+
 vyatta-cfg (0.102.0+vyos2+current6) unstable; urgency=medium
 
   * Raise unionfs node.val max file size from 2^18 to 2^20.

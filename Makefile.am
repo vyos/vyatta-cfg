@@ -4,14 +4,12 @@ logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 
-if USE_UNIONFSFUSE
-USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
-endif
-
 AM_CFLAGS = -I src -Wall $(GOBJECT_CFLAGS)
-AM_CXXFLAGS = -I src -Wall -Werror $(USE_UNIONFSFUSE)
+AM_CFLAGS += -Werror=format-overflow=1 -Werror=format-truncation=1
+AM_CFLAGS += -Werror=address -Werror=unused-function
+AM_CXXFLAGS = -I src -Wall -Werror -std=gnu++17
 AM_CXXFLAGS += $(GOBJECT_CFLAGS)
-AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
+AM_YFLAGS = -d -Wno-yacc --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 ACLOCAL_AMFLAGS = -I m4
@@ -35,8 +33,6 @@ lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LIBADD = -lglib-2.0
 src_libvyatta_cfg_la_LIBADD += -lgio-2.0
 src_libvyatta_cfg_la_LIBADD += -lgobject-2.0
-src_libvyatta_cfg_la_LIBADD += -lboost_system
-src_libvyatta_cfg_la_LIBADD += -lboost_filesystem
 src_libvyatta_cfg_la_LIBADD += -lapt-pkg
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
 src_libvyatta_cfg_la_SOURCES = src/cli_parse.y src/cli_def.l src/cli_val.l
