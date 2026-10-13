@@ -188,8 +188,10 @@ vyatta_config_commit-confirm ()
   eval "sudo sg vyattacfg \"$cmd\" "
   if [ $? = 0 ]; then
     export IN_COMMIT_CONFIRM=t
+    export COMMIT_CONFIRM_TIME=$minutes
     vyatta_config_commit "${args[@]}"
     unset IN_COMMIT_CONFIRM
+    unset COMMIT_CONFIRM_TIME
   fi
 }
 
