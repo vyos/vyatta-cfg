@@ -926,6 +926,7 @@ vyatta_config_complete ()
 
   local current_word=$3
   local current_prefix=$2
+  current_prefix=${current_prefix#\"}; current_prefix=${current_prefix%\"}
   local comp_cword=$COMP_CWORD #mutable copy of COMP_CWORD so we can modify it for copy and rename
   local -a tmp_comp_list
   local exists_only=0
