@@ -1144,6 +1144,19 @@ vyatta_config_complete ()
         fi
       fi
     done
+    # if current word in phrase counts as completion, add quotes, for fair
+    # comparison of a common prefix
+    if [[ "${vyatta_completions[*]}" == *\"* ]]; then
+      for i in "${!vyatta_completions[@]}"; do
+        local v=${vyatta_completions[i]}
+        [[ -n "$v" && "$v" != \"* ]] && vyatta_completions[i]="\"$v\""
+      done
+      # and for the items of the help display
+      for i in "${!tmp_comp_list[@]}"; do
+        local v=${tmp_comp_list[i]}
+        [[ -n "$v" && "$v" != \"* ]] && tmp_comp_list[i]="\"$v\""
+      done
+    fi
     local -a tmp_comp_list_sorted=()
     readarray -t tmp_comp_list_sorted < <( printf '%s\n' "${tmp_comp_list[@]}" | LC_ALL=C sort -u )
     _get_help_text_items+=( "${tmp_comp_list_sorted[@]}" )
