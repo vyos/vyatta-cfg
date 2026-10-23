@@ -26,6 +26,7 @@
 #include <sys/mount.h>
 #include <sys/syscall.h>
 #include <wait.h>
+#include <sys/wait.h>
 #include <dirent.h>
 
 #include <sys/types.h>
@@ -76,6 +77,9 @@ const string UnionfsCstore::C_DEF_TMP_PREFIX
  */
 const string UnionfsCstore::C_DEF_OVLWORK_PREFIX
   = UnionfsCstore::C_DEF_CFG_ROOT + "/ovl_work/";
+/* the only privileged component; the CLI itself holds no capabilities */
+const string UnionfsCstore::C_OVL_HELPER
+  = "/opt/vyatta/sbin/vyos-cfg-overlay-helper";
 
 // markers
 const string UnionfsCstore::C_MARKER_DEF_VALUE  = "def";
@@ -1884,36 +1888,34 @@ UnionfsCstore::is_mount_point(const FsPath& p)
   return ret;
 }
 
-/* the single place an overlay is mounted:
- *   lowerdir  = active config (shared, read-only)
- *   upperdir  = this session's changes
- *   workdir   = per-session kernel scratch
- *   mountpoint= the working config
+/* run the privileged helper for one overlay operation.
  *
- * the feature flags are pinned explicitly rather than inherited from the
- * kernel defaults. in particular metacopy and redirect_dir must stay off:
- * enabling either forfeits the documented allowance for offline changes to
- * the lower tree, which replacing the active config relies on.
+ * mounting an overlay needs privilege this process must not hold: granting
+ * it here would mean granting the right to disregard file permissions, and
+ * those permissions are what keep a user outside the configuration group out
+ * of the config store. the helper refuses to act on a session the caller
+ * does not already own, so that boundary survives.
  */
 bool
-UnionfsCstore::ovl_mount(const FsPath& lower, const FsPath& upper,
-                         const FsPath& work, const FsPath& mdir)
+UnionfsCstore::run_ovl_helper(const char *op, const string& sid)
 {
-  string mopts = "lowerdir=";
-  mopts += lower.path_cstr();
-  mopts += ",upperdir=";
-  mopts += upper.path_cstr();
-  mopts += ",workdir=";
-  mopts += work.path_cstr();
-  mopts += ",index=off,metacopy=off,redirect_dir=off,xino=off";
-
-  if (mount("overlay", mdir.path_cstr(), "overlay", 0, mopts.c_str()) != 0) {
-    if (errno == ENODEV) {
-      output_internal("overlay mount failed: overlay filesystem not "
-                      "available (is the overlay module loaded?)\n");
-    }
-    output_internal("overlay mount failed [%s][%s][%s]\n",
-                    strerror(errno), mdir.path_cstr(), mopts.c_str());
+  if (sid.empty()) {
+    output_internal("no session for overlay %s\n", op);
+    return false;
+  }
+  pid_t p = fork();
+  if (p < 0) {
+    output_internal("cannot run the overlay helper [%s]\n", strerror(errno));
+    return false;
+  }
+  if (p == 0) {
+    execl(C_OVL_HELPER.c_str(), "vyos-cfg-overlay-helper", op, sid.c_str(),
+          (char *) NULL);
+    _exit(127);
+  }
+  int st = 0;
+  if (waitpid(p, &st, 0) < 0 || !WIFEXITED(st) || WEXITSTATUS(st) != 0) {
+    output_internal("overlay %s failed for session %s\n", op, sid.c_str());
     return false;
   }
   return true;
@@ -1923,18 +1925,8 @@ bool
 UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
                         const FsPath& mdir)
 {
-  if (session_id.empty()) {
-    /* constructed from an environment whose working root did not carry a
-     * usable session ID, so there is nowhere to put the workdir.
-     */
-    output_internal("no overlay workdir for [%s]\n", mdir.path_cstr());
-    return false;
-  }
-  FsPath wgen;
-  if (!prepare_ovl_workdir(ovl_work_root, wgen)) {
-    return false;
-  }
-  return ovl_mount(rdir, rwdir, wgen, mdir);
+  (void) rwdir; (void) rdir; (void) mdir;
+  return run_ovl_helper("mount", session_id);
 }
 
 /* once unmounted and not remounted, the working root is a bare empty
@@ -1959,43 +1951,11 @@ bool
 UnionfsCstore::do_umount(const FsPath& mdir)
 {
   string sid;
-  FsPath wdir;
-  bool have_wdir = session_id_from_work_root(mdir, sid);
-  if (have_wdir) {
-    wdir = ovl_work_root_for(sid);
+  if (!session_id_from_work_root(mdir, sid)) {
+    output_internal("not a session working root [%s]\n", mdir.path_cstr());
+    return false;
   }
-
-  bool detached = false;
-  if (umount2(mdir.path_cstr(), 0) != 0) {
-    /* a session with a command in flight can keep the mount busy. a lazy
-     * unmount always frees the mount point for a fresh mount, and anything
-     * still holding an open file descriptor keeps working against the old
-     * superblock until it closes.
-     */
-    if (errno != EBUSY || umount2(mdir.path_cstr(), MNT_DETACH) != 0) {
-      output_internal("overlay umount failed [%s][%s]\n",
-                      strerror(errno), mdir.path_cstr());
-      return false;
-    }
-    detached = true;
-  }
-
-  /* only safe once the mount is really gone: a lazily detached one still
-   * owns its work directory until the last reference to it drops. what is
-   * left behind goes when the config tmpfs is recreated on boot.
-   */
-  if (have_wdir && !detached) {
-    try {
-      if (path_exists(wdir)) {
-        fs::remove_all(wdir.path_cstr());
-      }
-    } catch (...) {
-      // not fatal: the config root is a tmpfs and is recreated on boot
-      output_internal("failed to remove overlay workdir [%s]\n",
-                      wdir.path_cstr());
-    }
-  }
-  return true;
+  return run_ovl_helper("umount", sid);
 }
 
 /* overlayfs, unlike unionfs-fuse, enforces the real DAC of the lower layer:
@@ -2043,98 +2003,21 @@ UnionfsCstore::normalize_active_perms(const FsPath& root)
   return true;
 }
 
-/* after the active config has been replaced, every OTHER live session is
- * still stacked on the previous lower tree. re-stack them so that their view
- * of the active config matches reality, which is the behaviour users expect:
- * once somebody commits, "compare" in a concurrent session reflects it.
+/* point every other live session at the replacement active tree.
+ *
+ * the privileged helper does the work; it walks the session directories
+ * itself rather than being handed paths, so nothing here can steer it.
  */
 bool
 UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
 {
-  bool ret = true;
-  string work_base_str = C_DEF_WORK_PREFIX;
-  work_base_str.erase(work_base_str.find_last_of("/"));
-
-  vector<fs::path> sessions;
-  try {
-    fs::directory_iterator di(work_base_str.c_str());
-    for (; di != fs::directory_iterator(); ++di) {
-      sessions.push_back(di->path());
-    }
-  } catch (...) {
-    // nothing to re-stack
-    return true;
-  }
-
-  for (size_t i = 0; i < sessions.size(); i++) {
-    FsPath sdir(sessions[i].string().c_str());
-    string sid;
-    if (!session_id_from_work_root(sdir, sid) || sid == session_id) {
-      continue;
-    }
-    if (!is_mount_point(sdir)) {
-      continue;
-    }
-    FsPath schange((C_DEF_CHANGE_PREFIX + sid).c_str());
-    FsPath swork(ovl_work_root_for(sid));
-    if (!path_is_directory(schange)) {
-      continue;
-    }
-
-    // prepare first, so a failure leaves the session mounted as it was
-    FsPath sgen;
-    if (!prepare_ovl_workdir(swork, sgen)) {
-      ret = false;
-      continue;
-    }
-    // as in do_umount(): detach lazily only if the session is busy
-    bool detached = false;
-    if (umount2(sdir.path_cstr(), 0) != 0) {
-      if (errno != EBUSY || umount2(sdir.path_cstr(), MNT_DETACH) != 0) {
-        output_internal("failed to detach session overlay [%s][%s]\n",
-                        strerror(errno), sdir.path_cstr());
-        ret = false;
-        continue;
-      }
-      detached = true;
-    }
-    if (ovl_mount(active_root, schange, sgen, sdir)) {
-      if (!detached) {
-        /* drop every older generation, as do_umount() does after a normal
-         * unmount. after a lazy detach they are kept: the detached
-         * superblock owns its workdir until the last reference drops.
-         */
-        try {
-          vector<fs::path> old_gens;
-          fs::directory_iterator di(swork.path_cstr());
-          for (; di != fs::directory_iterator(); ++di) {
-            if (di->path().string() != sgen.path_cstr()) {
-              old_gens.push_back(di->path());
-            }
-          }
-          for (size_t j = 0; j < old_gens.size(); j++) {
-            fs::remove_all(old_gens[j]);
-          }
-        } catch (...) {
-          // not fatal: the config root is a tmpfs and is recreated on boot
-          output_internal("failed to remove old overlay workdirs [%s]\n",
-                          swork.path_cstr());
-        }
-      }
-    } else {
-      output_internal("failed to re-stack session [%s]\n", sdir.path_cstr());
-      ret = false;
-      /* put the session back on the tree it was using rather than leave it
-       * unmounted. the caller keeps that tree since we report failure.
-       */
-      FsPath pgen;
-      if (!prepare_ovl_workdir(swork, pgen)
-          || !ovl_mount(prev_active, schange, pgen, sdir)) {
-        output_internal("session left unmounted [%s]\n", sdir.path_cstr());
-      }
-    }
-  }
-  return ret;
+  /* PROTOTYPE GAP: the helper always re-stacks onto the current active
+   * tree, so a session it fails to move is left unmounted rather than put
+   * back on the previous one. Restoring that needs the helper to be able to
+   * name the superseded tree, which it deliberately cannot do today.
+   */
+  (void) prev_active;
+  return run_ovl_helper("restack", session_id);
 }
 
 /* query the status of a path without throwing. returns false if the status

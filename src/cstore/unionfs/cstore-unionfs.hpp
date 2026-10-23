@@ -69,6 +69,7 @@ private:
   static const string C_DEF_WORK_PREFIX;
   static const string C_DEF_TMP_PREFIX;
   static const string C_DEF_OVLWORK_PREFIX;
+  static const string C_OVL_HELPER;
 
   static const string C_MARKER_DEF_VALUE;
   static const string C_MARKER_DEACTIVATE;
@@ -313,8 +314,7 @@ private:
   void get_committed_marker(bool is_delete, string& marker);
   bool find_line_in_file(const FsPath& file, const string& line);
   bool do_mount(const FsPath& rwdir, const FsPath& rdir, const FsPath& mdir);
-  static bool ovl_mount(const FsPath& lower, const FsPath& upper,
-                        const FsPath& work, const FsPath& mdir);
+  static bool run_ovl_helper(const char *op, const string& sid);
   bool do_umount(const FsPath& mdir);
   // overlayfs helpers
   void set_session_id(const string& sid);

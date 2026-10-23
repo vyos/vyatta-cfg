@@ -79,10 +79,15 @@ vpinc_HEADERS = src/cparse/cparse.hpp
 sbin_PROGRAMS = src/dump
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
+sbin_PROGRAMS += src/vyos-cfg-overlay-helper
 
 src_dump_SOURCES = src/dump_session.c
 src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
+# the one privileged binary: no library, nothing but libc
+src_vyos_cfg_overlay_helper_SOURCES = src/vyos-cfg-overlay-helper.c
+src_vyos_cfg_overlay_helper_CFLAGS = -I src -Wall -Wextra -Werror
+src_vyos_cfg_overlay_helper_LDADD =
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
