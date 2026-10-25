@@ -739,6 +739,15 @@ vyatta_simple_complete ()
   if [ -z "$cur" ]; then
     vyatta_do_help=true
   fi
+  # phrase completion: when TAB cannot extend the quoted word any further,
+  # show the help display right away instead of readline's own match list
+  if [[ "$cur" == \"* ]] && [ ${#f_comps[@]} -gt 1 ] && ! $vyatta_do_help; then
+    local lcp="${f_comps[0]}" c
+    for c in "${f_comps[@]:1}"; do
+      while [[ -n "$lcp" && "${c#"$lcp"}" == "$c" ]]; do lcp=${lcp%?}; done
+    done
+    [ ${#lcp} -le ${#cur} ] && vyatta_do_help=true
+  fi
   # don't show help text if its the same word
   # keeps completions from getting stuck
   if [ ${#f_comps[@]} -eq 1 ] &&
