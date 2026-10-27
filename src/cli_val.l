@@ -9,6 +9,7 @@ static void make_val_value(vtw_type_e type);
 %}
 %option noyywrap
 %option nounput
+%option noinput
 %option never-interactive
 
 /*

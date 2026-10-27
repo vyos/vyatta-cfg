@@ -16,11 +16,23 @@ for dir in $sysconfdir/config $prefix/config; do
   chgrp vyattacfg $dir 2>/dev/null
 done
 
-# capability stuff
+# The CLI binaries hold no privilege at all. Mounting a config session needs
+# more than the kernel will give an ordinary process, and granting it here
+# would mean granting the right to disregard file permissions - which is
+# precisely what keeps a user outside the vyattacfg group out of the config
+# store. That privilege lives in one small program that does nothing else,
+# and only members of the group may run it.
 for bin in my_cli_bin my_cli_shell_api; do
   touch -ac $sbindir/$bin
-  setcap cap_sys_admin=pe $sbindir/$bin
+  setcap -r $sbindir/$bin 2>/dev/null || true
 done
+
+chown root:vyattacfg $sbindir/vyos-cfg-overlay-helper
+chmod 4750 $sbindir/vyos-cfg-overlay-helper
+
+# the overlayfs workdir root; must be on the same filesystem as the session
+# upper dirs, and outside of $prefix/config/tmp which is reaped per session
+mkdir -m 0755 -p $prefix/config/ovl_work
 
 # commit hooks
 mkdir -p /etc/commit/pre-hooks.d

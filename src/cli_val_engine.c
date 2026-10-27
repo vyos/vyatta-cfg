@@ -881,7 +881,7 @@ static int clind_path_shift_cmd(clind_path_ref path,clind_cmd *cmd) {
       int i=0;
       int done=0;
       
-      while(cmd_parse_definitions[i].text!=NULL && cmd_parse_definitions[i].text[0]!=NULL) {
+      while(cmd_parse_definitions[i].text[0]!=NULL) {
 
 	int j=0;
 
