@@ -75,6 +75,23 @@ static int caller_owns_session(const char *sid)
   return st.st_uid == getuid();
 }
 
+/* the config root is a fresh tmpfs on every boot, so the work root has to be
+ * created here. the config root is writable by the whole configuration group,
+ * so whatever is found there must be our own directory and not, say, a
+ * symlink planted to aim the removals below somewhere else.
+ */
+static int ensure_work_root(void)
+{
+  struct stat st;
+  if (mkdir(WORK_ROOT, 0755) != 0 && errno != EEXIST) return -1;
+  if (lstat(WORK_ROOT, &st) != 0) return -1;
+  if (!S_ISDIR(st.st_mode) || st.st_uid != geteuid()) {
+    errno = EPERM;
+    return -1;
+  }
+  return 0;
+}
+
 /* allocate an unused work directory for this mount. a lazily unmounted
  * overlay still owns the one it was given, so they are never reused.
  */
@@ -200,6 +217,10 @@ int main(int argc, char **argv)
   if (geteuid() == 0 && getuid() != 0 && setuid(0) != 0) {
     fprintf(stderr, "cannot acquire privilege: %s\n", strerror(errno));
     return 2;
+  }
+  if (ensure_work_root() != 0) {
+    fprintf(stderr, "cannot set up %s: %s\n", WORK_ROOT, strerror(errno));
+    return 1;
   }
   if (!strcmp(op, "mount"))   return ovl_mount(sid);
   if (!strcmp(op, "umount"))  return ovl_umount(sid);
