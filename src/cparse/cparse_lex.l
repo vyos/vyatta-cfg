@@ -28,12 +28,16 @@ static void
 prepare_buffers(size_t add_len)
 {
   size_t slen = str_ptr - str_buf;
-  if (str_buf && (slen + add_len) < str_buf_len) {
+  size_t need = slen + add_len + 1;
+  if (str_buf && need <= str_buf_len) {
     // nothing to do
     return;
   }
 
-  str_buf_len += STR_BUF_INC;
+  // a single token can exceed STR_BUF_INC, e.g. a long base64 value
+  while (str_buf_len < need) {
+    str_buf_len += STR_BUF_INC;
+  }
   str_buf = realloc(str_buf, str_buf_len);
   out_buf = realloc(out_buf, str_buf_len);
   if (!str_buf || !out_buf) {
