@@ -122,6 +122,27 @@ Cstore::contains_whitespace(const char *name) {
 
   return false;
 }
+
+/* report the first component longer than MAX_PATH_COMP_SIZE by its parent
+ * path only, the value itself can be arbitrarily large.
+ */
+bool
+Cstore::exceeds_path_comp_size(const Cpath& path_comps) {
+  for (size_t i = 0; i < path_comps.size(); i++) {
+    if (strlen(path_comps[i]) > MAX_PATH_COMP_SIZE) {
+      Cpath parent;
+      for (size_t j = 0; j < i; j++) {
+        parent.push(path_comps[j]);
+      }
+      output_user("Configuration path: [%s] value exceeds the maximum length "
+                  "of %zu characters\n", parent.to_string().c_str(),
+                  MAX_PATH_COMP_SIZE);
+      return true;
+    }
+  }
+
+  return false;
+}
 // end utility function
 
 // for "specific session" (see UnionfsCstore constructor for details)
@@ -352,6 +373,11 @@ bool
 Cstore::validateSetPath(const Cpath& path_comps)
 {
   ASSERT_IN_SESSION;
+
+  // before get_parsed_tmpl(), which hands values to the validators
+  if (exceeds_path_comp_size(path_comps)) {
+    return false;
+  }
 
   Cpath *pcomps = const_cast<Cpath *>(&path_comps);
   // if we can get parsed tmpl, path is valid
@@ -1972,6 +1998,10 @@ Cstore::loadFile(const char *filename)
     }
   }
   for (size_t i = 0; i < set_list.size(); i++) {
+    // already reported without the value, do not echo the full path
+    if (exceeds_path_comp_size(set_list[i])) {
+      continue;
+    }
     if (!validateSetPath(set_list[i]) || !setCfgPath(set_list[i])) {
       print_path_vec("Set [", "] failed\n", set_list[i], "'");
     }

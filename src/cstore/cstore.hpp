@@ -85,6 +85,9 @@ public:
   static const string C_LOGFILE_STDOUT;
 
   static const size_t MAX_CMD_OUTPUT_SIZE = 40960;
+  // longest single path component (node, tag or value) accepted by "set",
+  // fits an 8192 bit RSA private key in any of its encodings
+  static const size_t MAX_PATH_COMP_SIZE = 8192;
 
   // for sorting
   /* apparently unordered_map template does not work with "enum" type, so
@@ -446,6 +449,7 @@ private:
 
   // utility function
   bool contains_whitespace(const char *name);
+  bool exceeds_path_comp_size(const Cpath& path_comps);
   // end utility function
 
   // these require full path
