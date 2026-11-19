@@ -2,8 +2,9 @@ name: "Perform CodeQL Analysis"
 
 on:
   push:
-    branches: 
+    branches:
       - rolling
+      - scutum
       - circinus
       - sagitta
     paths:
@@ -12,8 +13,9 @@ on:
       - '!**/*.md'
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: 
+    branches:
       - rolling
+      - scutum
       - circinus
       - sagitta
     paths:
