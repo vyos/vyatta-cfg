@@ -723,7 +723,7 @@ vyatta_simple_complete ()
   # If we didn't need ambiguity and there is only one element
   # in the compreply array then its the only available word,
   # append a space to finish the completion.
-  if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+  if [[ ${#COMPREPLY[@]} -eq 1 ]] && ! [[ "$cur" == \"* ]]; then
     COMPREPLY=( "${COMPREPLY[0]} " )
   fi
 
@@ -738,6 +738,15 @@ vyatta_simple_complete ()
   # non-completion values first
   if [ -z "$cur" ]; then
     vyatta_do_help=true
+  fi
+  # phrase completion: when TAB cannot extend the quoted word any further,
+  # show the help display right away instead of readline's own match list
+  if [[ "$cur" == \"* ]] && [ ${#f_comps[@]} -gt 1 ] && ! $vyatta_do_help; then
+    local lcp="${f_comps[0]}" c
+    for c in "${f_comps[@]:1}"; do
+      while [[ -n "$lcp" && "${c#"$lcp"}" == "$c" ]]; do lcp=${lcp%?}; done
+    done
+    [ ${#lcp} -le ${#cur} ] && vyatta_do_help=true
   fi
   # don't show help text if its the same word
   # keeps completions from getting stuck
@@ -926,6 +935,7 @@ vyatta_config_complete ()
 
   local current_word=$3
   local current_prefix=$2
+  current_prefix=${current_prefix#\"}; current_prefix=${current_prefix%\"}
   local comp_cword=$COMP_CWORD #mutable copy of COMP_CWORD so we can modify it for copy and rename
   local -a tmp_comp_list
   local exists_only=0
@@ -1143,6 +1153,19 @@ vyatta_config_complete ()
         fi
       fi
     done
+    # if current word in phrase counts as completion, add quotes, for fair
+    # comparison of a common prefix
+    if [[ "${vyatta_completions[*]}" == *\"* ]]; then
+      for i in "${!vyatta_completions[@]}"; do
+        local v=${vyatta_completions[i]}
+        [[ -n "$v" && "$v" != \"* ]] && vyatta_completions[i]="\"$v\""
+      done
+      # and for the items of the help display
+      for i in "${!tmp_comp_list[@]}"; do
+        local v=${tmp_comp_list[i]}
+        [[ -n "$v" && "$v" != \"* ]] && tmp_comp_list[i]="\"$v\""
+      done
+    fi
     local -a tmp_comp_list_sorted=()
     readarray -t tmp_comp_list_sorted < <( printf '%s\n' "${tmp_comp_list[@]}" | LC_ALL=C sort -u )
     _get_help_text_items+=( "${tmp_comp_list_sorted[@]}" )
