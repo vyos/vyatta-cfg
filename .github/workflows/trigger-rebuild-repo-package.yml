@@ -5,6 +5,7 @@ on:
     types:
       - closed
     branches:
+      - scutum
       - rolling
       - circinus
       - sagitta
