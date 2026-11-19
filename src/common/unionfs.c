@@ -67,92 +67,20 @@ sys_cp(const char *src_file, const char *dst_file)
 static inline void
 sys_umount_session(void)
 {
-#ifdef USE_UNIONFSFUSE
-  const char *fusermount_path, *fusermount_prog;
-  const char *fusermount_umount;
-
-  fusermount_path = "/usr/bin/fusermount";
-  fusermount_prog = "fusermount";
-  fusermount_umount = "-u";
-
-  if(pipe(commpipe)){
-    fprintf(stderr,"Pipe error!\n");
-    perror("pipe");
-  }
-
-  if((pid = fork()) == -1) {
-    perror("pid");
-  }
-
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
-  }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    if (execl(fusermount_path, fusermount_prog, fusermount_umount, get_mdirp(), NULL) != 0) {
-      perror("execl");
-    }
-  }
-#else
-  if (umount(get_mdirp()) != 0) {
-    perror("umount");
-  }
-#endif
+  /* no-op.
+   *
+   * the config session overlay is owned exclusively by the CStore backend
+   * (UnionfsCstore::do_mount()/do_umount()); the legacy commit engine in this
+   * file is no longer built into any shipped binary and must not touch the
+   * mount. historically this called umount(2) on the union mount, which has
+   * been failing silently for years.
+   */
 }
 
 static inline void
 sys_mount_session(void)
 {
-#ifdef USE_UNIONFSFUSE
-  char mopts[MAX_LENGTH_DIR_PATH * 2];
-  const char *fusepath, *fuseprog;
-  const char *fuseoptinit;
-  const char *fuseopt1, *fuseopt2;
-  const char *moptfmt;
-
-  fusepath = "/usr/bin/unionfs-fuse";
-  fuseprog = "unionfs-fuse";
-  fuseoptinit = "-o";
-  fuseopt1 = "cow";
-  fuseopt2 = "allow_other";
-  moptfmt = "%s=RW:%s=RO";
-
-  if(pipe(commpipe)){
-    fprintf(stderr,"Pipe error!\n");
-    perror("pipe");
-  }
-
-  if((pid = fork()) == -1) {
-    perror("pid");
-  }
-
-  if(pid) {
-    dup2(commpipe[1],1);
-    close(commpipe[0]);
-    setvbuf(stdout,(char*)NULL,_IONBF,0);
-    wait(&status);
-  }
-  else {
-    dup2(commpipe[0],0);
-    close(commpipe[1]);
-    snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, moptfmt,
-             get_cdirp(), get_adirp());
-    if (execl(fusepath, fuseprog, fuseoptinit, fuseopt1, fuseoptinit, fuseopt2, mopts, get_mdirp(), NULL) != 0) {
-      perror("execl");
-    }
-  }
-#else
-  char mopts[MAX_LENGTH_DIR_PATH * 2];
-  snprintf(mopts, MAX_LENGTH_DIR_PATH * 2, "dirs=%s=rw:%s=ro",
-           get_cdirp(), get_adirp());
-  if (mount("unionfs", get_mdirp(), "unionfs", 0, mopts) != 0) {
-    perror("mount");
-  }
-#endif
+  /* no-op, see sys_umount_session() above. */
 }
 
 void
@@ -620,8 +548,8 @@ common_get_local_session_data(void)
 boolean
 value_exists(const char *path)
 {
-  char buf[MAX_LENGTH_DIR_PATH];
-  sprintf(buf, "%s/%s",path,VAL_NAME);
+  char buf[MAX_LENGTH_DIR_PATH + sizeof(VAL_NAME) + 1];
+  snprintf(buf, sizeof(buf), "%s/%s",path,VAL_NAME);
   struct stat stat_buf;
   return !stat(buf,&stat_buf);
 }
@@ -775,7 +703,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
     cstore_free(cs);
   }
 
-  char *command = malloc(MAX_LENGTH_DIR_PATH);
+  char *command = malloc(MAX_LENGTH_CMD);
   /* XXX must ... remove ... this ... */
   static const char format0[]="mkdir -p %s ; /bin/true";
   static const char formatpoint5[]="rm -fr '%s'"; /*tmpp*/
@@ -803,7 +731,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
 
   //only operate on path if it exists
   //have to clean out tbuf before copying
-  sprintf(command, formatpoint5, tbuf);
+  snprintf(command, MAX_LENGTH_CMD, formatpoint5, tbuf);
   if (g_debug) {
     printf("%s\n",command);
     syslog(LOG_DEBUG,"%s\n",command);
@@ -814,7 +742,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
   }
 
   //mkdir temp merge
-  sprintf(command,format0,tbuf);
+  snprintf(command, MAX_LENGTH_CMD, format0,tbuf);
   if (g_debug) {
     printf("%s\n",command);
     syslog(LOG_DEBUG,"%s\n",command);
@@ -827,7 +755,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
 
 
   //cp merge to temp merge
-  sprintf(command, format1, mbuf, tbuf);
+  snprintf(command, MAX_LENGTH_CMD, format1, mbuf, tbuf);
   if (g_debug) {
     printf("%s\n",command);
     syslog(LOG_DEBUG,"%s\n",command);
@@ -843,7 +771,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
   }
 
   if (suppress_piecewise_copy) {
-    sprintf(command, format1point5, abuf_root);
+    snprintf(command, MAX_LENGTH_CMD, format1point5, abuf_root);
     if (g_debug) {
       printf("%s\n",command);
       syslog(LOG_DEBUG,"%s\n",command);
@@ -852,7 +780,7 @@ common_commit_copy_to_live_config(GNode *node, boolean suppress_piecewise_copy,
     if (test_mode == FALSE) {
       if(system(command));
     }
-    sprintf(command, format1point1, tbuf_root, abuf_root);
+    snprintf(command, MAX_LENGTH_CMD, format1point1, tbuf_root, abuf_root);
     if (g_debug) {
       printf("%s\n",command);
       syslog(LOG_DEBUG,"%s\n",command);
@@ -895,7 +823,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
   }
   
   char *command;
-  command = malloc(MAX_LENGTH_DIR_PATH);
+  command = malloc(MAX_LENGTH_CMD);
   /* XXX must ... remove ... this ... */
   static const char format5[]="rm -fr '%s'/{.*,*} >&/dev/null ; /bin/true"; /*cdirp*/
 
@@ -941,7 +869,7 @@ common_commit_clean_temp_config(GNode *root_node, boolean test_mode)
    * subtree-by-subtree (and also remove the markers from any descendants).
    */
 
-  sprintf(command, format5, cbuf);
+  snprintf(command, MAX_LENGTH_CMD, format5, cbuf);
   if (g_debug) {
     printf("%s\n",command);
     syslog(LOG_DEBUG,"%s\n",command);
@@ -1303,7 +1231,7 @@ delete_func(GNode *node, gpointer data)
 
   struct SrcDst *sd = (struct SrcDst*)data;
 
-  char *command = malloc(MAX_LENGTH_DIR_PATH);
+  char *command = malloc(MAX_LENGTH_CMD);
 
   //DONT HAVE THE COMMAND BELOW BLOW AWAY WHITEOUT FILES!!!!!
   // need to remove opaque file.
@@ -1332,7 +1260,7 @@ delete_func(GNode *node, gpointer data)
    * SHOULDN'T BE)
    */
   if (!IS_DELETE(((struct VyattaNode*)(node->data))->_data._operation)) {
-    sprintf(command,format,sd->_src,path,sd->_src,path);
+    snprintf(command, MAX_LENGTH_CMD, format,sd->_src,path,sd->_src,path);
     if (g_debug) {
       printf("%s\n",command);
       syslog(LOG_DEBUG,"%s\n",command);
@@ -1351,7 +1279,7 @@ delete_func(GNode *node, gpointer data)
      * whiteout file)
      */
     //remove .whiteout file in c directory if encountered in walk.
-    sprintf(command, delete_format, sd->_src, path,
+    snprintf(command, MAX_LENGTH_CMD, delete_format, sd->_src, path,
             ((struct VyattaNode*)(node->data))->_data._name);
     if (g_debug) {
       printf("%s\n",command);
@@ -1362,7 +1290,7 @@ delete_func(GNode *node, gpointer data)
       if(system(command));
     }
     //if delete then remove entry in active configuration!
-    sprintf(command,format_force_delete,sd->_dst,path,sd->_dst,path);
+    snprintf(command, MAX_LENGTH_CMD, format_force_delete,sd->_dst,path,sd->_dst,path);
     if (g_debug) {
       printf("%s\n",command);
       syslog(LOG_DEBUG,"%s\n",command);
@@ -1408,8 +1336,8 @@ delete_wh_func(GNode *node, gpointer data)
       char *path = ((struct VyattaNode*)(node->data))->_data._path;
       sprintf(abuf,"%s%s",get_adirp(),path);
       //mkdir temp merge
-      char command[MAX_LENGTH_DIR_PATH];
-      sprintf(command,format0,abuf);
+      char command[MAX_LENGTH_CMD];
+      snprintf(command, MAX_LENGTH_CMD, format0,abuf);
       if (g_debug) {
         printf("%s\n",command);
         syslog(LOG_DEBUG,"%s\n",command);
@@ -1427,8 +1355,8 @@ delete_wh_func(GNode *node, gpointer data)
       char *path = ((struct VyattaNode*)(node->data))->_data._path;
       sprintf(abuf,"%s%s",get_adirp(),path);
       //mkdir temp merge
-      char command[MAX_LENGTH_DIR_PATH];
-      sprintf(command,format0,abuf);
+      char command[MAX_LENGTH_CMD];
+      snprintf(command, MAX_LENGTH_CMD, format0,abuf);
       if (g_debug) {
         printf("%s\n",command);
         syslog(LOG_DEBUG,"%s\n",command);
