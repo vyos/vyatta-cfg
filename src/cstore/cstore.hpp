@@ -181,6 +181,12 @@ public:
   virtual bool clearCommittedMarkers() = 0;
   virtual bool commitConfig(commit::PrioNode& pnode) = 0;
   virtual bool getCommitLock() = 0;
+  /* last check before a commit reads the working config. a backend that has
+   * nothing to verify accepts. */
+  virtual bool prepareCommit() { return true; }
+  /* whether the working config is based on the current active config,
+   * bringing it up to date where the backend keeps them apart */
+  virtual bool sessionCurrent() { return true; }
     /* note: the getCommitLock() function must guarantee lock release/cleanup
      * upon process termination (either normally or abnormally). there is no
      * separate call for releasing the lock.

@@ -53,6 +53,8 @@ public:
   bool clearCommittedMarkers();
   bool commitConfig(commit::PrioNode& pnode);
   bool getCommitLock();
+  bool prepareCommit();
+  bool sessionCurrent();
 
 private:
   // constants
@@ -94,10 +96,6 @@ private:
     */  
   static const size_t C_UNIONFS_MAX_FILE_SIZE = 1048576;
 
-  /* how many workdir generations one session may allocate before its next
-   * teardown; each mount takes a fresh one and teardown reclaims them all. */
-  static const unsigned int C_OVLWORK_MAX_GEN = 4096;
-
   /* root dirs (constant)
    *
    * the config session is a kernel overlayfs mount. mapping of the names
@@ -114,7 +112,8 @@ private:
   FsPath work_root;     // working root (merged overlay mount point)
   FsPath active_root;   // active root (overlay lowerdir)
   FsPath change_root;   // change root (overlay upperdir)
-  FsPath ovl_work_root; // overlay workdir (kernel-internal, never read by us)
+  FsPath ovl_work_root; // per-session base of the overlay workdirs, also
+                        // holds the helper's record of the lower layer
   FsPath tmp_root;      // temp root
   FsPath tmpl_root;     // template root
 
@@ -315,13 +314,24 @@ private:
   bool find_line_in_file(const FsPath& file, const string& line);
   bool do_mount(const FsPath& rwdir, const FsPath& rdir, const FsPath& mdir);
   static bool run_ovl_helper(const char *op, const string& sid);
+  static int ovl_helper_status(const char *op, const string& sid);
   bool do_umount(const FsPath& mdir);
   // overlayfs helpers
   void set_session_id(const string& sid);
-  bool prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir);
   bool is_mount_point(const FsPath& p);
-  bool restack_other_sessions(const FsPath& prev_active);
+  bool session_mounted();
+  bool session_current();
+  bool refresh_session(int timeout_ms);
+  void open_session_lock(int timeout_ms);
+  bool session_locked();
+  void close_session_lock();
+  bool lock_session_exclusive(int timeout_ms);
+  void unlock_session_exclusive();
+  void remove_unused_active_trees();
   bool invalidate_session(const char *after);
+  bool session_lost;    // gone after the active config was already replaced
+  bool holds_session_lock;
+  int last_refresh_status;
   bool normalize_active_perms(const FsPath& root);
   static FsPath ovl_work_root_for(const string& sid);
   static bool session_id_from_work_root(const FsPath& wroot, string& sid);

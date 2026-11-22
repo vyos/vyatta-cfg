@@ -19,6 +19,7 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <set>
 
 #include <unistd.h>
 #include <errno.h>
@@ -31,7 +32,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <grp.h>
+#include <time.h>
 
 #include <filesystem>
 #include <system_error>
@@ -203,9 +206,12 @@ void stream_file( const char* srce_file, const char* dest_file )
     dest << srce.rdbuf() ;
 }
 
+/* session IDs whose process still runs. a session is normally held by a
+ * vbash, but programs keep sessions of their own too (vyos.configsession),
+ * so the process name says nothing about whether the session is in use.
+ */
 vector<int> getActiveCommits()
 {
-  string process_name = "vbash";
   vector<int> pids;
 
   DIR *dp = opendir("/proc");
@@ -214,28 +220,11 @@ vector<int> getActiveCommits()
     while ((dirp = readdir(dp))) {
       int pid = atoi(dirp->d_name);
       if (pid > 0) {
-        string command_path = string("/proc/") + dirp->d_name + "/cmdline";
-        std::ifstream command_file(command_path.c_str());
-        string command_line;
-        getline(command_file, command_line);
-        if (!command_line.empty()) {
-          size_t pos = command_line.find('\0');
-          if (pos != string::npos) {
-            command_line = command_line.substr(0, pos);
-          }
-          pos = command_line.rfind('/');
-          if (pos != string::npos) {
-            command_line = command_line.substr(pos + 1);
-          }
-          if (process_name == command_line) {
-            pids.push_back(pid);
-          }
-        }
+        pids.push_back(pid);
       }
     }
+    closedir(dp);
   }
-
-  closedir(dp);
 
   return pids;
 }
@@ -263,6 +252,9 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
     tmpl_path = C_DEF_TMPL_ROOT;
   }
   tmpl_root = tmpl_path; // save a copy of tmpl root
+  session_lost = false;
+  holds_session_lock = false;
+  last_refresh_status = 0;
   /* the session roots are what the capability-holding binaries mount,
    * rename and remove, so they are derived from the session ID rather than
    * taken from the environment. an environment that disagrees with the
@@ -310,6 +302,17 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
   orig_mutable_cfg_path = mutable_cfg_path;
   orig_tmpl_path = tmpl_path;
   _init_fs_escape_chars();
+
+  /* everything working on this session holds its lock for as long as it
+   * runs, so that moving the session onto a new active config never pulls
+   * the mount from under an operation in progress. a session behind the
+   * active config is moved first - best effort; a commit and a load insist.
+   */
+  open_session_lock(30000);
+  if (holds_session_lock && inSession() && !session_current()) {
+    // one attempt; this may well be a child of something holding the lock
+    refresh_session(0);
+  }
 }
 
 /* "specific session" constructor.
@@ -333,6 +336,9 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
 {
   tmpl_root = C_DEF_TMPL_ROOT;
   tmpl_path = tmpl_root;
+  session_lost = false;
+  holds_session_lock = false;
+  last_refresh_status = 0;
   active_root = C_DEF_ACTIVE_ROOT;
   work_root = (C_DEF_WORK_PREFIX + sid);
   change_root = (C_DEF_CHANGE_PREFIX + sid);
@@ -367,12 +373,17 @@ UnionfsCstore::UnionfsCstore(const string& sid, string& env)
 
 UnionfsCstore::~UnionfsCstore()
 {
+  close_session_lock();
 }
 
 ////// public virtual functions declared in base class
 bool
 UnionfsCstore::markSessionUnsaved()
 {
+  if (session_lost) {
+    // nothing left to mark, and the commit itself went through
+    return true;
+  }
   FsPath marker = work_root;
   marker.push(C_MARKER_UNSAVED);
   if (path_exists(marker)) {
@@ -450,6 +461,27 @@ UnionfsCstore::setupSession()
     }
   }
 
+  /* what an invalidated session leaves behind (see invalidate_session()) is
+   * cleared away, so this ID can start afresh */
+  if (path_exists(work_root)
+      && !path_is_directory((C_DEF_TMP_PREFIX + session_id).c_str())) {
+    if (session_mounted()) {
+      run_ovl_helper("umount", session_id);
+    }
+    if (session_mounted()) {
+      output_internal("cannot reset session [%s]\n", work_root.path_cstr());
+      return false;
+    }
+    run_ovl_helper("clear", session_id);
+    try {
+      fs::remove_all(work_root.path_cstr());
+      fs::remove_all(change_root.path_cstr());
+    } catch (...) {
+      output_internal("cannot reset session [%s]\n", work_root.path_cstr());
+      return false;
+    }
+  }
+
   if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
@@ -474,16 +506,38 @@ UnionfsCstore::setupSession()
       return false;
     }
 
-    // overlay mount
-    if (!do_mount(change_root, active_root, work_root)) {
+    /* a session that ended without being torn down can leave its upper
+     * layer behind, and a new session can get the same ID */
+    if (!run_ovl_helper("clear", session_id)
+        || !do_mount(change_root, active_root, work_root)) {
       return false;
     }
   } else if (!path_is_directory(work_root)) {
     output_internal("setup session not dir [%s]\n", work_root.path_cstr());
     return false;
+  } else {
+    /* a session ID is a process ID and gets reused. a session left behind by
+     * somebody else is not to be taken over. */
+    struct stat ws;
+    if (stat(work_root.path_cstr(), &ws) != 0
+        || (geteuid() != 0 && ws.st_uid != geteuid())) {
+      output_internal("session [%s] belongs to somebody else\n",
+                      work_root.path_cstr());
+      return false;
+    }
+    if (!session_mounted()) {
+      // see session_mounted()
+      if (!do_mount(change_root, active_root, work_root)) {
+        return false;
+      }
+    } else {
+      // best effort, a commit insists on it
+      refresh_session(0);
+    }
   }
 
   pids = getActiveCommits();
+  vector<int> reaped_fds;
 
   struct stat config_info;
   stat(work_root.path_cstr(), &config_info);
@@ -512,11 +566,39 @@ UnionfsCstore::setupSession()
         // umount only inactive config session directory, don't touch active sessions
 
         if (std::find(pids.begin(), pids.end(), current_pid) == pids.end()) {
-          old_pids.push_back(current_pid);
           output_internal("found inactive config [%d]\n", current_pid);
+          /* its process is gone, but others may still work on the session
+           * (they hold its lock), and it is removed only once unmounted:
+           * removing through the mount would delete every node in it */
+          string lf = C_DEF_TMP_PREFIX + std::to_string(current_pid)
+                      + "/.session.lock";
+          string gf = C_DEF_TMP_PREFIX + std::to_string(current_pid)
+                      + "/.session.gate";
+          int lfd = open(lf.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+          int gfd = open(gf.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+          /* the gate as well: somebody converting their lock does not hold
+           * the lock itself for a moment, but holds the gate */
+          if ((gfd >= 0 && flock(gfd, LOCK_EX | LOCK_NB) != 0)
+              || (lfd >= 0 && flock(lfd, LOCK_EX | LOCK_NB) != 0)) {
+            output_internal("inactive config [%d] still in use\n", current_pid);
+            if (lfd >= 0) close(lfd);
+            if (gfd >= 0) close(gfd);
+            continue;
+          }
           output_internal("umount [%s]\n", directories[i].path_cstr());
-          if (!do_umount(directories[i])) {
+          struct stat ms, ps;
+          do_umount(directories[i]);
+          if (stat(directories[i].path_cstr(), &ms) == 0
+              && stat(work_base.path_cstr(), &ps) == 0
+              && ms.st_dev == ps.st_dev) {
+            old_pids.push_back(current_pid);
+            // held until its directories are gone
+            reaped_fds.push_back(lfd);
+            reaped_fds.push_back(gfd);
+          } else {
             failed = true;
+            if (lfd >= 0) close(lfd);
+            if (gfd >= 0) close(gfd);
           }
         }
       }
@@ -533,6 +615,13 @@ UnionfsCstore::setupSession()
       current_pid = atoi(current_path.erase(0, (current_path.find_last_of("_")) + 1).c_str());
 
       if (std::find(old_pids.begin(), old_pids.end(), current_pid) != old_pids.end()) {
+        struct stat ds, ps;
+        if (stat(directories[i].path_cstr(), &ds) == 0
+            && stat(work_base.path_cstr(), &ps) == 0 && ds.st_dev != ps.st_dev) {
+          // mounted again meanwhile: removing would delete through it
+          failed = true;
+          continue;
+        }
         try {
           /* the throwing overload is deliberate here and everywhere else the
            * removal count is tested: the error_code overload reports failure
@@ -548,6 +637,11 @@ UnionfsCstore::setupSession()
     }
   }
 
+  for (size_t i = 0; i < reaped_fds.size(); i++) {
+    if (reaped_fds[i] >= 0) {
+      close(reaped_fds[i]);
+    }
+  }
   if (failed) {
     output_internal("failed to remove old config session directories\n");
   }
@@ -571,9 +665,23 @@ UnionfsCstore::teardownSession()
     return false;
   }
 
-  // unmount the work root (union)
-  if (!do_umount(work_root)) {
+  /* never remove a session something still works on; it is left for the
+   * clean-up of abandoned sessions in setupSession() */
+  if (!lock_session_exclusive(10000)) {
+    output_internal("session in use, not torn down [%s]\n", wstr.c_str());
     return false;
+  }
+
+  /* unmount the work root (union). one that lost its mount already, e.g.
+   * after a failed remount, is still removed */
+  if ((session_mounted() && !do_umount(work_root)) || session_mounted()) {
+    unlock_session_exclusive();
+    return false;
+  }
+
+  // see commitConfig() for why this goes through the helper
+  if (!run_ovl_helper("clear", session_id)) {
+    output_internal("failed to clear [%s]\n", change_root.path_cstr());
   }
 
   // remove session directories
@@ -584,7 +692,8 @@ UnionfsCstore::teardownSession()
         && fs::remove_all(tmp_root.path_cstr()) != 0) {
       ret = true;
     }
-  } catch (...) {
+  } catch (const fs::filesystem_error& e) {
+    output_internal("teardown: %s\n", e.what());
   }
   if (!ret) {
     output_internal("failed to remove session directories\n");
@@ -601,7 +710,265 @@ UnionfsCstore::inSession()
 {
   string wstr = work_root.path_cstr();
   return (!wstr.empty() && wstr.find(C_DEF_WORK_PREFIX) == 0
-          && path_exists(work_root) && path_is_directory(work_root));
+          && path_exists(work_root) && path_is_directory(work_root)
+          && session_mounted()
+          && path_is_directory((C_DEF_TMP_PREFIX + session_id).c_str())
+          && session_locked());
+}
+
+
+/* a session directory without its overlay reads as an empty configuration,
+ * and committing from it deletes everything else. it must never count as a
+ * session.
+ */
+bool
+UnionfsCstore::session_mounted()
+{
+  struct stat ws, ps;
+  string parent = work_root.path_cstr();
+  parent.erase(parent.find_last_of("/"));
+  return (stat(work_root.path_cstr(), &ws) == 0
+          && stat(parent.c_str(), &ps) == 0 && ws.st_dev != ps.st_dev);
+}
+
+/* whether the session is stacked on the current active tree, according to
+ * the helper's record of the tree it mounted. unknown counts as not current.
+ */
+bool
+UnionfsCstore::session_current()
+{
+  FsPath rec = ovl_work_root;
+  rec.push("lower");
+  string data;
+  struct stat as;
+  if (!read_whole_file(rec, data) || stat(active_root.path_cstr(), &as) != 0) {
+    return false;
+  }
+  char id[64];
+  snprintf(id, sizeof(id), "%lu:%lu", (unsigned long) as.st_dev,
+           (unsigned long) as.st_ino);
+  return (data == id);
+}
+
+/* the session lock. every process working on a session holds it shared for
+ * as long as it runs; moving the session onto another active tree, or
+ * removing it, needs it exclusive, so that no mount is pulled from under an
+ * operation in progress.
+ *
+ * a flock is per open file description, so one per process and session is
+ * shared by all objects in the process - two would conflict with each
+ * other. a second lock, the gate, is taken by whoever waits for the lock
+ * exclusively and briefly by everybody taking it shared, so that a steady
+ * stream of short operations cannot starve the wait.
+ *
+ * both live in the session's scratch directory, derived from the session ID
+ * rather than the environment: not every process working on the session is
+ * handed all of it.
+ */
+static struct {
+  string sid;
+  string path;
+  int lock_fd;
+  int gate_fd;
+  int refs;
+  bool exclusive;
+} _slock = { "", "", -1, -1, 0, false };
+
+static bool
+_flock_wait(int fd, int op, int timeout_ms)
+{
+  struct timespec pause = { 0, 50 * 1000 * 1000 };
+  for (int waited = 0; ; waited += 50) {
+    if (flock(fd, op | LOCK_NB) == 0) {
+      return true;
+    }
+    if (errno != EWOULDBLOCK || waited >= timeout_ms) {
+      return false;
+    }
+    nanosleep(&pause, NULL);
+  }
+}
+
+/* whether a lock descriptor still refers to the file at its path. a
+ * session's files are removed when it ends or is invalidated, and set up
+ * afresh under the same ID; a lock on the old file excludes nobody. */
+static bool
+_lock_is_current(int fd, const string& path)
+{
+  struct stat fs, ps;
+  return (fstat(fd, &fs) == 0 && stat(path.c_str(), &ps) == 0
+          && fs.st_dev == ps.st_dev && fs.st_ino == ps.st_ino);
+}
+
+void
+UnionfsCstore::open_session_lock(int timeout_ms)
+{
+  if (session_id.empty() || holds_session_lock) {
+    return;
+  }
+  if (_slock.refs > 0) {
+    if (_slock.sid == session_id) {
+      _slock.refs++;
+      holds_session_lock = true;
+    } else {
+      output_internal("already working on session %s\n", _slock.sid.c_str());
+    }
+    return;
+  }
+  string dir = C_DEF_TMP_PREFIX + session_id;
+  if (!path_is_directory(dir.c_str())) {
+    return;
+  }
+  string lpath = dir + "/.session.lock";
+  int fd = open(lpath.c_str(), O_RDONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                0664);
+  int gate = open((dir + "/.session.gate").c_str(),
+                  O_RDONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0664);
+  /* bounded: whoever holds it exclusively runs the helper meanwhile, and a
+   * helper that never returns must not hang every later command. without
+   * the lock this is no session (inSession()). */
+  if (fd < 0 || gate < 0 || !_flock_wait(gate, LOCK_SH, timeout_ms)
+      || !_flock_wait(fd, LOCK_SH, timeout_ms)
+      || !_lock_is_current(fd, lpath)) {
+    output_internal("cannot lock session %s [%s]\n", session_id.c_str(),
+                    strerror(errno));
+    if (fd >= 0) close(fd);
+    if (gate >= 0) close(gate);
+    return;
+  }
+  flock(gate, LOCK_UN);
+  _slock.sid = session_id;
+  _slock.path = lpath;
+  _slock.lock_fd = fd;
+  _slock.gate_fd = gate;
+  _slock.refs = 1;
+  _slock.exclusive = false;
+  holds_session_lock = true;
+}
+
+void
+UnionfsCstore::close_session_lock()
+{
+  if (!holds_session_lock) {
+    return;
+  }
+  holds_session_lock = false;
+  if (--_slock.refs == 0) {
+    close(_slock.lock_fd);
+    close(_slock.gate_fd);
+    _slock.lock_fd = _slock.gate_fd = -1;
+    _slock.sid.clear();
+  }
+}
+
+/* wait until nobody else works on the session. converting a flock is not
+ * atomic, so after giving up the shared lock is taken again. */
+bool
+UnionfsCstore::lock_session_exclusive(int timeout_ms)
+{
+  open_session_lock(timeout_ms);
+  if (!holds_session_lock) {
+    return false;
+  }
+  if (_slock.exclusive) {
+    return true;
+  }
+  if (!_flock_wait(_slock.gate_fd, LOCK_EX, timeout_ms)) {
+    return false;
+  }
+  bool ok = _flock_wait(_slock.lock_fd, LOCK_EX, timeout_ms);
+  if (!ok && flock(_slock.lock_fd, LOCK_SH) != 0) {
+    output_internal("lost session lock [%s]\n", strerror(errno));
+  }
+  flock(_slock.gate_fd, LOCK_UN);
+  _slock.exclusive = ok;
+  return ok;
+}
+
+void
+UnionfsCstore::unlock_session_exclusive()
+{
+  if (holds_session_lock && _slock.exclusive) {
+    flock(_slock.lock_fd, LOCK_SH);
+    _slock.exclusive = false;
+  }
+}
+
+/* working on a session without holding its lock could have the mount pulled
+ * from under the operation, so it does not count as being in the session.
+ * the session's directories may have been set up after this object was
+ * made, so try once more without waiting. */
+bool
+UnionfsCstore::session_locked()
+{
+  if (!holds_session_lock) {
+    open_session_lock(0);
+  }
+  return (holds_session_lock && _lock_is_current(_slock.lock_fd, _slock.path));
+}
+
+/* move the session onto the current active tree if a commit replaced it.
+ * with the session lock held exclusively nothing else is working on the
+ * session, so unmounting it cannot lose a change being made. a session is
+ * only ever moved by its own operations, never by another session's commit.
+ */
+bool
+UnionfsCstore::refresh_session(int timeout_ms)
+{
+  last_refresh_status = 0;
+  if (!inSession()) {
+    return false;
+  }
+  if (session_current()) {
+    return true;
+  }
+  if (!lock_session_exclusive(timeout_ms)) {
+    last_refresh_status = 3;
+    return false;
+  }
+  if (!session_current()) {
+    last_refresh_status = ovl_helper_status("refresh", session_id);
+  }
+  bool ok = (session_mounted() && session_current());
+  if (!session_mounted()) {
+    // unmounted, but not mounted again
+    invalidate_session("updating it");
+  }
+  unlock_session_exclusive();
+  return ok;
+}
+
+bool
+UnionfsCstore::sessionCurrent()
+{
+  return refresh_session(10000);
+}
+
+/* called with the commit lock held, before the working config is read.
+ * committing from a view of a superseded active tree would revert whatever
+ * replaced it.
+ */
+bool
+UnionfsCstore::prepareCommit()
+{
+  if (!inSession()) {
+    output_user("config session lost, "
+                "please leave and re-enter configuration mode\n");
+    return false;
+  }
+  if (refresh_session(30000)) {
+    return true;
+  }
+  if (last_refresh_status == 3) {
+    output_user("the active configuration was changed by another session, "
+                "and this session cannot be updated while it is in use; "
+                "retry when nothing is using it\n");
+  } else {
+    output_user("cannot update this session to the current active "
+                "configuration, please leave and re-enter configuration "
+                "mode\n");
+  }
+  return false;
 }
 
 bool
@@ -836,6 +1203,12 @@ UnionfsCstore::sync_dir(const FsPath& src, const FsPath& dst,
 bool
 UnionfsCstore::commitConfig(commit::PrioNode& node)
 {
+  /* the working config read for this commit must be this session's view of
+   * the current active config; anything else is a different diff */
+  if (!session_mounted() || !session_current()) {
+    output_user("config session changed during commit\n");
+    return false;
+  }
   // make a copy of current "work" dir
   try {
     if (path_exists(tmp_work_root)) {
@@ -912,72 +1285,134 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     }
     return false;
   }
-  /* new_active now refers to the *previous* active tree. other sessions are
-   * still stacked on it, so every return below leaves it in place unless
-   * they have all been re-stacked.
+  /* the new configuration is active from here on. whatever fails below
+   * concerns this session only and must not be reported as a failed commit:
+   * the configuration was applied, and the swap is not undone.
+   *
+   * other sessions stay stacked on the previous tree. they are moved onto
+   * this one by their own next change or commit (see refreshSession()); this
+   * commit never touches them, as unmounting a session can lose a change
+   * that is being written into it at that moment.
    */
-
+  bool restored = false;
+  /* the upper layer holds everything just committed. left in place it would
+   * be re-applied over later commits, so the session is remounted on a
+   * fresh one in any case - preferably once nothing else is working on it.
+   * something that is, concurrently with this commit, is racing it anyway. */
+  if (!lock_session_exclusive(30000)) {
+    output_internal("session still in use, remounting after commit anyway\n");
+  }
   if (!do_umount(work_root)) {
-    return false;
-  }
-  bool cleared = false;
-  try {
-    cleared = (fs::remove_all(change_root.path_cstr()) >= 1);
-  } catch (...) {
-  }
-  if (!cleared) {
-    output_internal("failed to remove [%s]\n", change_root.path_cstr());
-    return invalidate_session("commit");
-  }
-  try {
-    fs::create_directories(change_root.path_cstr());
-  } catch (...) {
-    output_internal("failed to create [%s]\n", change_root.path_cstr());
-    return invalidate_session("commit");
-  }
-  if (!do_mount(change_root, active_root, work_root)) {
-    return invalidate_session("commit");
-  }
-
-  /* point every other live session at the new active tree. only once that
-   * has succeeded is the old tree unreferenced and safe to remove.
-   */
-  bool restacked = restack_other_sessions(new_active);
-  if (!sync_dir(tmp_work_root, work_root, work_root)) {
-    return false;
-  }
-  if (fs::remove_all(tmp_work_root.path_cstr()) < 1
-      || fs::remove_all(tmp_active_root.path_cstr()) < 1) {
-    output_user("failed to remove temp directories\n");
-    return false;
-  }
-  if (restacked) {
-    try {
-      fs::remove_all(new_active.path_cstr());
-    } catch (...) {
-      output_internal("failed to remove previous active config [%s]\n",
-                      new_active.path_cstr());
-    }
-  } else {
-    /* a session could not be re-stacked and may still be using the old tree.
-     * leave it alone: the config root is a tmpfs and is reclaimed on reboot,
-     * whereas pulling it out from under a live overlay is not recoverable.
+    output_user("configuration committed, but ");
+    invalidate_session("commit");
+  } else if (!run_ovl_helper("clear", session_id)) {
+    /* the upper layer can hold nodes this user may not remove (anything
+     * written by root through the merged mount), hence the helper.
      */
-    output_internal("keeping previous active config [%s], "
-                    "not all sessions could be re-stacked\n",
-                    new_active.path_cstr());
+    output_internal("failed to clear [%s]\n", change_root.path_cstr());
+    output_user("configuration committed, but ");
+    invalidate_session("commit");
+  } else if (!do_mount(change_root, active_root, work_root)) {
+    output_user("configuration committed, but ");
+    invalidate_session("commit");
+  } else {
+    restored = sync_dir(tmp_work_root, work_root, work_root);
+    if (!restored) {
+      output_user("configuration committed, but ");
+      invalidate_session("commit");
+    }
   }
-  // all done
+  unlock_session_exclusive();
+  try {
+    fs::remove_all(tmp_work_root.path_cstr());
+    fs::remove_all(tmp_active_root.path_cstr());
+  } catch (const fs::filesystem_error& e) {
+    output_internal("failed to remove temp directories [%s]\n", e.what());
+  }
+  remove_unused_active_trees();
   return true;
+}
+
+/* superseded active trees are kept while a mounted session is stacked on one
+ * of them. the helper records which tree each mount uses; a mounted session
+ * without such a record could be on any of them, so then nothing is removed.
+ */
+void
+UnionfsCstore::remove_unused_active_trees()
+{
+  string root = C_DEF_CFG_ROOT;
+  string prefix = (active_root.path_cstr() + string(".new."));
+  vector<string> trees;
+  std::set<string> pinned;
+  try {
+    for (const auto& e : fs::directory_iterator(root)) {
+      string p = e.path().string();
+      if (p.compare(0, prefix.length(), prefix) == 0) {
+        trees.push_back(p);
+      }
+    }
+    if (trees.empty()) {
+      return;
+    }
+    string wprefix = C_DEF_WORK_PREFIX;
+    string wbase = wprefix.substr(0, wprefix.find_last_of("/"));
+    struct stat bs;
+    if (stat(wbase.c_str(), &bs) != 0) {
+      return;
+    }
+    for (const auto& e : fs::directory_iterator(wbase)) {
+      string p = e.path().string();
+      string sid;
+      struct stat ms;
+      if (!session_id_from_work_root(FsPath(p.c_str()), sid)
+          || lstat(p.c_str(), &ms) != 0 || !S_ISDIR(ms.st_mode)
+          || stat(p.c_str(), &ms) != 0 || ms.st_dev == bs.st_dev) {
+        continue; // not a mounted session
+      }
+      FsPath rec = ovl_work_root_for(sid);
+      rec.push("lower");
+      string data;
+      if (!read_whole_file(rec, data) || data.empty()) {
+        output_internal("session %s has no lower layer record, "
+                        "keeping old active trees\n", sid.c_str());
+        return;
+      }
+      pinned.insert(data);
+    }
+  } catch (const fs::filesystem_error& e) {
+    output_internal("cannot look for unused active trees [%s]\n", e.what());
+    return;
+  }
+  for (size_t i = 0; i < trees.size(); i++) {
+    struct stat ts;
+    if (lstat(trees[i].c_str(), &ts) != 0 || !S_ISDIR(ts.st_mode)) {
+      continue;
+    }
+    char id[64];
+    snprintf(id, sizeof(id), "%lu:%lu", (unsigned long) ts.st_dev,
+             (unsigned long) ts.st_ino);
+    if (pinned.count(id)) {
+      continue;
+    }
+    try {
+      fs::remove_all(trees[i]);
+    } catch (const fs::filesystem_error& e) {
+      output_internal("cannot remove unused active tree [%s]\n", e.what());
+    }
+  }
 }
 
 bool
 UnionfsCstore::getCommitLock()
 {
-  int fd;
+  /* one descriptor per process: a POSIX lock is released when any
+   * descriptor of the file is closed, so none may ever be closed, and
+   * opening one per attempt would leak them */
+  static int fd = -1;
 
-  fd = open(C_COMMIT_LOCK_FILE.c_str(),
-	    O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+  if (fd < 0) {
+    fd = open(C_COMMIT_LOCK_FILE.c_str(), O_WRONLY|O_CREAT|O_CLOEXEC, 0666);
+  }
   if (fd < 0) {
     // should not happen since all commit processes should have write access
     output_internal("getCommitLock() failed to open lock file\n");
@@ -1465,38 +1900,32 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
    * node there creates a whiteout rather than exposing the active config
    * again, which would leave an empty config instead of the active one.
    */
+  if (!lock_session_exclusive(10000)) {
+    output_user("cannot discard, the session is in use\n");
+    return false;
+  }
   if (!do_umount(work_root)) {
+    unlock_session_exclusive();
     return false;
   }
 
-  vector<fs::path> files;
-  vector<fs::path> directories;
+  num_removed = 0;
   try {
-    // iterate through all entries in change root
-    fs::directory_iterator di(change_root.path_cstr());
-    for (; di != fs::directory_iterator(); ++di) {
-      if (path_is_directory(di->path().string().c_str())) {
-        directories.push_back(di->path());
-      } else {
-        files.push_back(di->path());
-      }
-    }
-
-    // remove and count
-    num_removed = 0;
-    for (size_t i = 0; i < files.size(); i++) {
-      fs::remove(files[i]);
+    fs::recursive_directory_iterator di(change_root.path_cstr());
+    for (; di != fs::recursive_directory_iterator(); ++di) {
       num_removed++;
     }
-    for (size_t i = 0; i < directories.size(); i++) {
-      num_removed += fs::remove_all(directories[i]);
-    }
-  } catch (...) {
-    output_internal("discard failed [%s]\n", change_root.path_cstr());
-    ret = false;
+  } catch (const fs::filesystem_error& e) {
+    output_internal("discard: cannot count changes [%s]\n", e.what());
   }
-
-  if (!do_mount(change_root, active_root, work_root)) {
+  /* see commitConfig() for why this goes through the helper. without a
+   * fresh upper layer the session cannot be mounted again: a detached
+   * overlay may still be using the old one */
+  bool remounted = run_ovl_helper("clear", session_id)
+                   && do_mount(change_root, active_root, work_root);
+  unlock_session_exclusive();
+  if (!remounted) {
+    output_internal("discard failed [%s]\n", change_root.path_cstr());
     return invalidate_session("discard");
   }
 
@@ -1804,53 +2233,6 @@ UnionfsCstore::set_session_id(const string& sid)
   ovl_work_root = ovl_work_root_for(sid);
 }
 
-/* the overlayfs workdir must exist and be empty. the kernel maintains a
- * root-owned "work" subdirectory inside it, so always start from scratch
- * rather than inheriting whatever a crashed session left behind.
- */
-bool
-UnionfsCstore::prepare_ovl_workdir(const FsPath& wbase, FsPath& wdir)
-{
-  /* Allocate a fresh generation directory under the session's workdir base
-   * rather than reusing one path.
-   *
-   * Re-stacking a session detaches its overlay with MNT_DETACH, which keeps
-   * the old superblock alive until the last reference to it goes away. That
-   * superblock still owns its workdir, so wiping and recreating the same
-   * path underneath it would be a modification of a live overlay layer -
-   * exactly what we restructured commitConfig() to avoid. Leave the previous
-   * generation alone; it is disposed of together with the whole base
-   * directory when the session is torn down, and the config root is a tmpfs
-   * that is recreated on boot in any case.
-   */
-  try {
-    fs::create_directories(wbase.path_cstr());
-    for (unsigned int gen = 0; gen < C_OVLWORK_MAX_GEN; gen++) {
-      char buf[32];
-      snprintf(buf, sizeof(buf), "%u", gen);
-      FsPath cand(wbase);
-      cand.push(buf);
-      if (path_exists(cand)) {
-        continue;
-      }
-      fs::create_directories(cand.path_cstr());
-      wdir = cand;
-      return true;
-    }
-  } catch (const fs::filesystem_error& e) {
-    output_internal("failed to prepare overlay workdir [%s][%s]\n",
-                    wbase.path_cstr(), e.what());
-    return false;
-  } catch (...) {
-    output_internal("failed to prepare overlay workdir [%s]\n",
-                    wbase.path_cstr());
-    return false;
-  }
-  output_internal("exhausted overlay workdir generations [%s]\n",
-                  wbase.path_cstr());
-  return false;
-}
-
 /* whether the given path is a mount point, per /proc/self/mountinfo.
  * used to avoid stacking a second overlay on a session that was not cleanly
  * torn down, and to decide whether another session actually needs unmounting.
@@ -1901,14 +2283,21 @@ UnionfsCstore::is_mount_point(const FsPath& p)
 bool
 UnionfsCstore::run_ovl_helper(const char *op, const string& sid)
 {
+  return (ovl_helper_status(op, sid) == 0);
+}
+
+// exit status of the helper, -1 if it did not run to completion
+int
+UnionfsCstore::ovl_helper_status(const char *op, const string& sid)
+{
   if (sid.empty()) {
     output_internal("no session for overlay %s\n", op);
-    return false;
+    return -1;
   }
   pid_t p = fork();
   if (p < 0) {
     output_internal("cannot run the overlay helper [%s]\n", strerror(errno));
-    return false;
+    return -1;
   }
   if (p == 0) {
     execl(C_OVL_HELPER.c_str(), "vyos-cfg-overlay-helper", op, sid.c_str(),
@@ -1916,11 +2305,15 @@ UnionfsCstore::run_ovl_helper(const char *op, const string& sid)
     _exit(127);
   }
   int st = 0;
-  if (waitpid(p, &st, 0) < 0 || !WIFEXITED(st) || WEXITSTATUS(st) != 0) {
-    output_internal("overlay %s failed for session %s\n", op, sid.c_str());
-    return false;
+  if (waitpid(p, &st, 0) < 0 || !WIFEXITED(st)) {
+    output_internal("overlay %s did not complete for session %s\n", op,
+                    sid.c_str());
+    return -1;
   }
-  return true;
+  if (WEXITSTATUS(st) != 0) {
+    output_internal("overlay %s failed for session %s\n", op, sid.c_str());
+  }
+  return WEXITSTATUS(st);
 }
 
 bool
@@ -1938,14 +2331,35 @@ UnionfsCstore::do_mount(const FsPath& rwdir, const FsPath& rdir,
 bool
 UnionfsCstore::invalidate_session(const char *after)
 {
+  /* a session without its scratch directory is no session (inSession()),
+   * whether it could be unmounted or not: one that cannot is stacked with
+   * an upper layer that must never be used again. removing the working root
+   * through a live mount would delete every node in it, so it only goes once
+   * unmounted, with the upper layer. */
+  if (session_mounted()) {
+    run_ovl_helper("umount", session_id);
+  }
+  if (!session_mounted()) {
+    run_ovl_helper("clear", session_id);
+    try {
+      fs::remove_all(work_root.path_cstr());
+      fs::remove_all(change_root.path_cstr());
+    } catch (...) {
+      output_internal("failed to remove session [%s]\n",
+                      work_root.path_cstr());
+    }
+  } else {
+    output_internal("cannot unmount [%s]\n", work_root.path_cstr());
+  }
   try {
-    fs::remove_all(work_root.path_cstr());
+    fs::remove_all((C_DEF_TMP_PREFIX + session_id).c_str());
   } catch (...) {
     output_internal("failed to invalidate session [%s]\n",
                     work_root.path_cstr());
   }
   output_user("config session lost after %s, "
               "please leave and re-enter configuration mode\n", after);
+  session_lost = true;
   return false;
 }
 
@@ -2007,23 +2421,6 @@ UnionfsCstore::normalize_active_perms(const FsPath& root)
     return false;
   }
   return true;
-}
-
-/* point every other live session at the replacement active tree.
- *
- * the privileged helper does the work; it walks the session directories
- * itself rather than being handed paths, so nothing here can steer it.
- */
-bool
-UnionfsCstore::restack_other_sessions(const FsPath& prev_active)
-{
-  /* PROTOTYPE GAP: the helper always re-stacks onto the current active
-   * tree, so a session it fails to move is left unmounted rather than put
-   * back on the previous one. Restoring that needs the helper to be able to
-   * name the superseded tree, which it deliberately cannot do today.
-   */
-  (void) prev_active;
-  return run_ovl_helper("restack", session_id);
 }
 
 /* query the status of a path without throwing. returns false if the status

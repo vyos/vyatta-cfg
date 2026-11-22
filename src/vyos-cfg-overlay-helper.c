@@ -11,11 +11,13 @@
  * it to the CLI binaries would mean granting the right to ignore file
  * permissions, which is what keeps a user outside the configuration group out
  * of the config store in the first place. So the privilege lives here, in a
- * program that does nothing else, and the CLI runs with none.
+ * set-user-ID program that does nothing else, and the CLI runs with none.
  *
  * Everything this touches is derived from a session ID that must be a plain
  * number, joined to paths compiled in below. Nothing from the command line
- * reaches a path, a mount option, or a shell.
+ * reaches a path, a mount option, or a shell. Every operation acts on the
+ * caller's own session only; no session is ever mounted, unmounted or
+ * modified on behalf of another one.
  */
 
 #define _GNU_SOURCE
@@ -25,10 +27,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <sys/stat.h>
+#include <sys/file.h>
+#include <sys/mman.h>
 #include <sys/mount.h>
+#include <sys/random.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #define CFG_ROOT     "/opt/vyatta/config"
@@ -39,29 +46,38 @@
 #define WORK_PREFIX  "new_config_"
 #define UPPER_PREFIX "changes_only_"
 
-/* bounded so a session that is re-stacked repeatedly cannot grow without
- * limit; reset whenever the session is torn down */
+/* one lock per session serializes invocations for it. outside the
+ * configuration root, where no group member can replace it, and per session
+ * so that a stalled invocation holds up nobody else */
+#define LOCK_DIR     "/run/vyos-cfg-overlay-helper"
+
+/* per-session files in the session's work directory base */
+#define CURRENT_FILE "current"  /* work directory generation of the mount */
+#define LOWER_FILE   "lower"    /* identity of the active tree it stacks on */
+
+/* bounds the work directories of one session. a generation is removed again
+ * when its overlay is unmounted cleanly, so only lazily detached overlays -
+ * which still own theirs - accumulate */
 #define MAX_GEN 4096
 
 static const char *OVL_OPTS = "index=off,metacopy=off,redirect_dir=off,xino=off";
 
-/* every name here is a compiled-in prefix joined to a session id of at most
- * ten digits, and every layer is passed as a /proc/self/fd path. the sizes
- * are provably large enough for that rather than relying on paths staying
- * short.
- */
-#define NAMEBUF   32    /* a prefix plus a session id            */
-#define FDBUF     32    /* /proc/self/fd/ plus a descriptor      */
-#define OPTSBUF  256    /* three descriptor paths plus options   */
+/* every name is a compiled-in prefix joined to a session id of at most ten
+ * digits and at most a 17 character suffix; every layer is passed as a
+ * /proc/self/fd path */
+#define NAMEBUF   64
+#define FDBUF     32
+#define OPTSBUF  256
+#define RECBUF    64
 
 /* the config root is writable by the whole configuration group, so any entry
  * in it may be renamed or replaced by a symlink while we run. everything is
- * opened once, relative to the root and refusing symlinks, and from then on
- * used through these descriptors so that what was checked is what is used.
+ * opened relative to it and refusing symlinks, and from then on used through
+ * descriptors so that what was checked is what is used.
  */
-static int cfg_fd = -1, tmp_fd = -1, active_fd = -1, work_fd = -1;
+static int cfg_fd = -1, tmp_fd = -1, work_fd = -1, active_fd = -1;
 
-static int valid_sid(const char *s)
+static int valid_number(const char *s)
 {
   size_t i, n = strlen(s);
   if (n < 1 || n > 10) return 0;
@@ -81,23 +97,35 @@ static void close_keep_errno(int fd)
   errno = e;
 }
 
-static int open_roots(void)
+static int same_inode(int a, int b)
+{
+  struct stat sa, sb;
+  return (fstat(a, &sa) == 0 && fstat(b, &sb) == 0
+          && sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino);
+}
+
+/* a directory only we may write to: our own, and writable by nobody else.
+ * things are removed in here as root, so anything else is refused. */
+static int private_dir(int fd)
 {
   struct stat st;
-  cfg_fd = open(CFG_ROOT, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-  if (cfg_fd < 0) return -1;
-  if ((tmp_fd = open_dir_at(cfg_fd, SESSION_DIR)) < 0) return -1;
-  if ((active_fd = open_dir_at(cfg_fd, ACTIVE_DIR)) < 0) return -1;
-  /* the config root is a fresh tmpfs on every boot, so the work root has to
-   * be created here. only we may write to it, so it must be our own. */
-  if (mkdirat(cfg_fd, WORK_ROOT, 0755) != 0 && errno != EEXIST) return -1;
-  if ((work_fd = open_dir_at(cfg_fd, WORK_ROOT)) < 0) return -1;
-  if (fstat(work_fd, &st) != 0) return -1;
-  if (st.st_uid != geteuid()) {
+  if (fstat(fd, &st) != 0) return -1;
+  if (st.st_uid != geteuid() || (st.st_mode & 022)) {
     errno = EPERM;
     return -1;
   }
   return 0;
+}
+
+static int open_roots(void)
+{
+  cfg_fd = open(CFG_ROOT, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+  if (cfg_fd < 0) return -1;
+  if ((tmp_fd = open_dir_at(cfg_fd, SESSION_DIR)) < 0) return -1;
+  /* the config root is a fresh tmpfs on every boot */
+  if (mkdirat(cfg_fd, WORK_ROOT, 0755) != 0 && errno != EEXIST) return -1;
+  if ((work_fd = open_dir_at(cfg_fd, WORK_ROOT)) < 0) return -1;
+  return private_dir(work_fd);
 }
 
 /* open a session's mount point and upper layer. both must be real directories
@@ -127,26 +155,25 @@ fail:
   return -1;
 }
 
-/* allocate an unused work directory for this mount. a lazily unmounted
- * overlay still owns the one it was given, so they are never reused.
- */
-static int new_workdir(const char *sid)
+/* an overlay has a device of its own, so a mounted session differs from the
+ * directory it lives in */
+static int is_mounted(int mnt_fd)
 {
-  char gen_name[16];
-  unsigned int gen;
-  int base_fd, fd = -1;
-  if (mkdirat(work_fd, sid, 02775) != 0 && errno != EEXIST) return -1;
-  if ((base_fd = open_dir_at(work_fd, sid)) < 0) return -1;
-  for (gen = 0; gen < MAX_GEN; gen++) {
-    snprintf(gen_name, sizeof(gen_name), "%u", gen);
-    if (mkdirat(base_fd, gen_name, 0755) == 0) {
-      fd = open_dir_at(base_fd, gen_name);
-      break;
-    }
-    if (errno != EEXIST) break;
+  struct stat ms, ts;
+  if (fstat(mnt_fd, &ms) != 0 || fstat(tmp_fd, &ts) != 0) return -1;
+  return ms.st_dev != ts.st_dev;
+}
+
+/* the session's directory below the work root, created if need be */
+static int open_session_base(const char *sid, int create)
+{
+  int fd;
+  if (create && mkdirat(work_fd, sid, 0755) != 0 && errno != EEXIST) return -1;
+  if ((fd = open_dir_at(work_fd, sid)) < 0) return -1;
+  if (private_dir(fd) != 0) {
+    close_keep_errno(fd);
+    return -1;
   }
-  if (gen == MAX_GEN) errno = ENOSPC;
-  close_keep_errno(base_fd);
   return fd;
 }
 
@@ -169,38 +196,95 @@ static int rm_rf_at(int at, const char *name)
   return unlinkat(at, name, AT_REMOVEDIR);
 }
 
-static int ovl_mount(const char *sid, uid_t uid)
+static int write_small_file(int dfd, const char *name, const char *text)
 {
-  char target[FDBUF], opts[OPTSBUF];
-  int mnt_fd, upper_fd, work, rc = 0;
-  if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
-    fprintf(stderr, "not a usable session: %s\n", strerror(errno));
-    return 1;
+  int fd = openat(dfd, name, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW
+                  | O_CLOEXEC, 0644);
+  ssize_t n = (ssize_t) strlen(text);
+  if (fd < 0) return -1;
+  if (write(fd, text, n) != n) {
+    close_keep_errno(fd);
+    return -1;
   }
-  if ((work = new_workdir(sid)) < 0) {
-    fprintf(stderr, "cannot create a work directory: %s\n", strerror(errno));
-    rc = 1;
-  } else {
-    snprintf(opts, sizeof(opts),
-             "lowerdir=/proc/self/fd/%d,upperdir=/proc/self/fd/%d,"
-             "workdir=/proc/self/fd/%d,%s",
-             active_fd, upper_fd, work, OVL_OPTS);
-    snprintf(target, sizeof(target), "/proc/self/fd/%d", mnt_fd);
-    if (mount("overlay", target, "overlay", MS_NOSUID | MS_NODEV, opts) != 0) {
-      fprintf(stderr, "overlay mount failed: %s\n", strerror(errno));
-      rc = 1;
+  return close(fd);
+}
+
+static void read_small_file(int dfd, const char *name, char *buf, size_t size)
+{
+  ssize_t n = -1;
+  int fd = openat(dfd, name, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+  if (fd >= 0) {
+    n = read(fd, buf, size - 1);
+    close(fd);
+  }
+  buf[n > 0 ? n : 0] = '\0';
+}
+
+/* allocate an unused work directory for this mount and record it as the
+ * session's current one. a lazily detached overlay still owns the one it was
+ * given, so a directory is never reused while it exists.
+ */
+static int new_workdir(const char *sid)
+{
+  char gen_name[16];
+  unsigned int gen;
+  int base_fd, fd = -1;
+  if ((base_fd = open_session_base(sid, 1)) < 0) return -1;
+  for (gen = 0; gen < MAX_GEN; gen++) {
+    snprintf(gen_name, sizeof(gen_name), "%u", gen);
+    if (mkdirat(base_fd, gen_name, 0755) == 0) {
+      fd = open_dir_at(base_fd, gen_name);
+      break;
     }
-    close(work);
+    if (errno != EEXIST) break;
   }
-  close(mnt_fd);
-  close(upper_fd);
-  return rc;
+  if (gen == MAX_GEN) errno = ENOSPC;
+  if (fd >= 0 && write_small_file(base_fd, CURRENT_FILE, gen_name) != 0) {
+    close_keep_errno(fd);
+    fd = -1;
+  }
+  close_keep_errno(base_fd);
+  return fd;
+}
+
+/* release the work directory of an overlay that is gone, and the record of
+ * what it stacked on. with no detached overlays left, the base goes too. */
+static void drop_current_workdir(const char *sid)
+{
+  char gen_name[16];
+  int base = open_session_base(sid, 0);
+  if (base < 0) return;
+  read_small_file(base, CURRENT_FILE, gen_name, sizeof(gen_name));
+  if (valid_number(gen_name)) rm_rf_at(base, gen_name);
+  unlinkat(base, CURRENT_FILE, 0);
+  unlinkat(base, LOWER_FILE, 0);
+  close(base);
+  unlinkat(work_fd, sid, AT_REMOVEDIR);
+}
+
+/* a detached overlay keeps its work directory; it is no longer the session's */
+static void forget_current_workdir(const char *sid)
+{
+  int base = open_session_base(sid, 0);
+  if (base < 0) return;
+  unlinkat(base, CURRENT_FILE, 0);
+  unlinkat(base, LOWER_FILE, 0);
+  close(base);
+}
+
+static void format_identity(int fd, char *buf, size_t size)
+{
+  struct stat st;
+  buf[0] = '\0';
+  if (fstat(fd, &st) == 0)
+    snprintf(buf, size, "%lu:%lu", (unsigned long) st.st_dev,
+             (unsigned long) st.st_ino);
 }
 
 /* unmount by name relative to the session directory rather than through a
  * descriptor, which would itself keep the mount busy. the name cannot be
  * redirected: the directory is pinned, the last component is not followed,
- * and a mount point cannot be renamed into place.
+ * and a mount point cannot be renamed.
  */
 static int umount_session(const char *sid, int flags)
 {
@@ -210,91 +294,379 @@ static int umount_session(const char *sid, int flags)
   return umount2(name, flags | UMOUNT_NOFOLLOW);
 }
 
+/* stack the session on the active tree and record which tree that was.
+ * the tree can be replaced by a commit between opening and mounting it - and
+ * then be removed as unused - so it is checked afterwards and the mount
+ * redone on the replacement.
+ */
+static int ovl_mount(const char *sid, uid_t uid)
+{
+  char target[FDBUF], opts[OPTSBUF], rec[RECBUF];
+  int mnt_fd, upper_fd, active, cur, work, base, attempt, rc = 1;
+  if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
+    fprintf(stderr, "not a usable session: %s\n", strerror(errno));
+    return 1;
+  }
+  if (is_mounted(mnt_fd) != 0) {
+    fprintf(stderr, "session is already mounted\n");
+    goto out;
+  }
+  /* not mounted, yet a work directory may be on record: the previous overlay
+   * went away without us, e.g. unmounted by hand */
+  drop_current_workdir(sid);
+  for (attempt = 0; attempt < 3; attempt++) {
+    if ((active = open_dir_at(cfg_fd, ACTIVE_DIR)) < 0) {
+      fprintf(stderr, "cannot open the active configuration: %s\n",
+              strerror(errno));
+      break;
+    }
+    if ((work = new_workdir(sid)) < 0) {
+      fprintf(stderr, "cannot create a work directory: %s\n", strerror(errno));
+      close(active);
+      break;
+    }
+    snprintf(opts, sizeof(opts),
+             "lowerdir=/proc/self/fd/%d,upperdir=/proc/self/fd/%d,"
+             "workdir=/proc/self/fd/%d,%s",
+             active, upper_fd, work, OVL_OPTS);
+    snprintf(target, sizeof(target), "/proc/self/fd/%d", mnt_fd);
+    if (mount("overlay", target, "overlay", MS_NOSUID | MS_NODEV, opts) != 0) {
+      fprintf(stderr, "overlay mount failed: %s\n", strerror(errno));
+      close(work);
+      close(active);
+      drop_current_workdir(sid);
+      break;
+    }
+    close(work);
+    cur = open_dir_at(cfg_fd, ACTIVE_DIR);
+    if (cur >= 0 && same_inode(cur, active)) {
+      format_identity(active, rec, sizeof(rec));
+      base = open_session_base(sid, 0);
+      if (base >= 0 && write_small_file(base, LOWER_FILE, rec) == 0) rc = 0;
+      else fprintf(stderr, "cannot record the session's lower layer\n");
+      close_keep_errno(base);
+    }
+    close_keep_errno(cur);
+    close(active);
+    if (rc == 0) break;
+    /* replaced underneath us, or not recorded: do not leave it mounted */
+    if (umount_session(sid, 0) != 0) {
+      fprintf(stderr, "cannot undo the mount: %s\n", strerror(errno));
+      break;
+    }
+    drop_current_workdir(sid);
+  }
+out:
+  close(mnt_fd);
+  close(upper_fd);
+  return rc;
+}
+
 static int ovl_umount(const char *sid, uid_t uid)
 {
-  int mnt_fd, upper_fd, detached = 0;
+  int mnt_fd, upper_fd;
   if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
     fprintf(stderr, "not a usable session: %s\n", strerror(errno));
     return 1;
   }
   close(mnt_fd);
   close(upper_fd);
-  if (umount_session(sid, 0) != 0) {
-    if (errno != EBUSY || umount_session(sid, MNT_DETACH) != 0) {
-      fprintf(stderr, "overlay umount failed: %s\n", strerror(errno));
-      return 1;
-    }
-    detached = 1;
+  if (umount_session(sid, 0) == 0) {
+    drop_current_workdir(sid);
+    return 0;
   }
-  /* a lazily unmounted overlay still owns its work directory until the last
-   * reference to it goes away; what is left behind goes with the tmpfs on
-   * the next boot */
-  if (!detached) rm_rf_at(work_fd, sid);
+  /* a detached overlay keeps its upper layer, so callers that mount again
+   * must do so on a fresh one (see ovl_clear) */
+  if (errno != EBUSY || umount_session(sid, MNT_DETACH) != 0) {
+    fprintf(stderr, "overlay umount failed: %s\n", strerror(errno));
+    return 1;
+  }
+  forget_current_workdir(sid);
   return 0;
 }
 
-/* point every other live session at the replacement active tree */
-static int ovl_restack(const char *self)
+/* move a session that is stacked on a superseded active tree onto the
+ * current one. its upper layer - the pending changes - is kept. a session in
+ * use cannot be unmounted and is left where it is (exit status 3).
+ */
+static int ovl_refresh(const char *sid, uid_t uid)
 {
-  DIR *d;
+  char rec[RECBUF], now[RECBUF];
+  int mnt_fd, upper_fd, active, base, m;
+  if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
+    fprintf(stderr, "not a usable session: %s\n", strerror(errno));
+    return 1;
+  }
+  m = is_mounted(mnt_fd);
+  close(mnt_fd);
+  close(upper_fd);
+  if (m != 1) {
+    fprintf(stderr, "session is not mounted\n");
+    return 1;
+  }
+  rec[0] = now[0] = '\0';
+  if ((base = open_session_base(sid, 0)) >= 0) {
+    read_small_file(base, LOWER_FILE, rec, sizeof(rec));
+    close(base);
+  }
+  if ((active = open_dir_at(cfg_fd, ACTIVE_DIR)) >= 0) {
+    format_identity(active, now, sizeof(now));
+    close(active);
+  }
+  if (now[0] && !strcmp(rec, now)) return 0;
+  if (umount_session(sid, 0) != 0) {
+    fprintf(stderr, "cannot move the session: %s\n", strerror(errno));
+    return (errno == EBUSY) ? 3 : 1;
+  }
+  drop_current_workdir(sid);
+  return ovl_mount(sid, uid);
+}
+
+/* empty a tree the session's owner controls, as root. the owner can move
+ * directories into it while this runs, so never follow one onto another
+ * filesystem (a mounted session), into the configuration directories
+ * themselves, or into anybody else's - only the owner's own and those root
+ * wrote into the session through its mount. */
+static int clear_dir_at(int dfd, dev_t dev, uid_t owner)
+{
   struct dirent *e;
-  int rc = 0, fd = open_dir_at(tmp_fd, ".");
-  if (fd < 0 || !(d = fdopendir(fd))) {
-    close_keep_errno(fd);
-    return 0;
+  struct stat st;
+  DIR *d;
+  int rc = 0, fd, dup_fd = dup(dfd);
+  if (dup_fd < 0 || !(d = fdopendir(dup_fd))) {
+    close_keep_errno(dup_fd);
+    return -1;
   }
   while ((e = readdir(d))) {
-    const char *sid;
-    int mnt_fd, upper_fd;
-    if (strncmp(e->d_name, WORK_PREFIX, strlen(WORK_PREFIX))) continue;
-    sid = e->d_name + strlen(WORK_PREFIX);
-    if (!valid_sid(sid) || !strcmp(sid, self)) continue;
-    if (open_session(sid, (uid_t) -1, &mnt_fd, &upper_fd) != 0) {
-      rc = 1;
+    if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+    if (unlinkat(dfd, e->d_name, 0) == 0) continue;
+    if ((fd = open_dir_at(dfd, e->d_name)) < 0) { rc = -1; continue; }
+    if (fstat(fd, &st) != 0 || st.st_dev != dev
+        || (st.st_uid != owner && st.st_uid != 0) || same_inode(fd, tmp_fd)
+        || same_inode(fd, cfg_fd) || same_inode(fd, work_fd)
+        || same_inode(fd, active_fd)) {
+      close(fd);
+      rc = -1;
       continue;
     }
-    close(mnt_fd);
-    close(upper_fd);
-    if (umount_session(sid, MNT_DETACH) != 0) { rc = 1; continue; }
-    if (ovl_mount(sid, (uid_t) -1) != 0) rc = 1;
+    if (clear_dir_at(fd, dev, owner) != 0) rc = -1;
+    close(fd);
+    if (unlinkat(dfd, e->d_name, AT_REMOVEDIR) != 0) rc = -1;
   }
   closedir(d);
   return rc;
 }
 
-int main(int argc, char **argv)
+/* give an unmounted session an empty upper layer. it is a new directory
+ * rather than the old one emptied: a lazily detached overlay may still hold
+ * the old one, and two overlays sharing an upper layer is undefined. the old
+ * layer can also hold nodes its user cannot remove (written by root through
+ * the merged mount), which is why this is done here at all.
+ */
+static int ovl_clear(const char *sid, uid_t uid)
+{
+  char upper[NAMEBUF], fresh[NAMEBUF];
+  unsigned char rnd[8];
+  struct stat us, fs, cs;
+  int mnt_fd, upper_fd, fd, cur, m, rc = 1;
+  if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
+    fprintf(stderr, "not a usable session: %s\n", strerror(errno));
+    return 1;
+  }
+  m = is_mounted(mnt_fd);
+  if (m != 0 || fstat(upper_fd, &us) != 0) {
+    fprintf(stderr, "session is mounted or cannot be examined\n");
+    goto out;
+  }
+  active_fd = open_dir_at(cfg_fd, ACTIVE_DIR);
+  /* an unpredictable name, so nobody can occupy it beforehand */
+  if (getrandom(rnd, sizeof(rnd), 0) != (ssize_t) sizeof(rnd)) {
+    fprintf(stderr, "no randomness: %s\n", strerror(errno));
+    goto out;
+  }
+  snprintf(upper, sizeof(upper), "%s%s", UPPER_PREFIX, sid);
+  snprintf(fresh, sizeof(fresh), "%s%s.%02x%02x%02x%02x%02x%02x%02x%02x",
+           UPPER_PREFIX, sid, rnd[0], rnd[1], rnd[2], rnd[3], rnd[4], rnd[5],
+           rnd[6], rnd[7]);
+  /* the session directory is writable by the whole group, so the name may be
+   * replaced at any moment: set the new directory up through a descriptor,
+   * and only after making sure it is the one just created here */
+  if (mkdirat(tmp_fd, fresh, 0700) != 0
+      || (fd = open_dir_at(tmp_fd, fresh)) < 0) {
+    fprintf(stderr, "cannot create a new upper layer: %s\n", strerror(errno));
+    goto out;
+  }
+  if (fstat(fd, &fs) != 0 || fs.st_uid != geteuid() || fs.st_nlink != 2
+      || fchown(fd, us.st_uid, us.st_gid) != 0
+      || fchmod(fd, us.st_mode & 07777) != 0) {
+    fprintf(stderr, "cannot set up a new upper layer: %s\n", strerror(errno));
+    close(fd);
+    unlinkat(tmp_fd, fresh, AT_REMOVEDIR);
+    goto out;
+  }
+  if (renameat2(tmp_fd, fresh, tmp_fd, upper, RENAME_EXCHANGE) != 0) {
+    fprintf(stderr, "cannot swap in the new upper layer: %s\n", strerror(errno));
+    close(fd);
+    unlinkat(tmp_fd, fresh, AT_REMOVEDIR);
+    goto out;
+  }
+  /* swapped: make sure what is in place now is what was set up */
+  cur = open_dir_at(tmp_fd, upper);
+  if (cur < 0 || fstat(cur, &cs) != 0
+      || cs.st_dev != fs.st_dev || cs.st_ino != fs.st_ino) {
+    fprintf(stderr, "upper layer was replaced while swapping it\n");
+    close_keep_errno(cur);
+    close(fd);
+    goto out;
+  }
+  close(cur);
+  close(fd);
+  rc = 0;
+  /* the old layer is under the temporary name now, and still upper_fd -
+   * unless its owner moved it elsewhere meanwhile; then it is left alone */
+  cur = open_dir_at(tmp_fd, fresh);
+  if (cur >= 0 && same_inode(cur, upper_fd)) {
+    if (clear_dir_at(upper_fd, us.st_dev, us.st_uid) != 0
+        || unlinkat(tmp_fd, fresh, AT_REMOVEDIR) != 0)
+      fprintf(stderr, "cannot remove the old upper layer: %s\n",
+              strerror(errno));
+  }
+  close_keep_errno(cur);
+out:
+  close(mnt_fd);
+  close(upper_fd);
+  return rc;
+}
+
+/* the caller controls the environment this starts in. none of it may decide
+ * whether an operation runs to completion. */
+static int harden(void)
+{
+  static const int unlimited[] = { RLIMIT_FSIZE, RLIMIT_CPU, RLIMIT_AS,
+                                   RLIMIT_DATA, RLIMIT_STACK };
+  struct rlimit rl;
+  sigset_t all;
+  size_t i;
+  int fd;
+  /* descriptors the caller left open would count against our limit, and
+   * running out halfway through an operation leaves it half done */
+  if (close_range(3, ~0U, 0) != 0) return -1;
+  if (clearenv() != 0) return -1;
+  umask(022);
+  sigfillset(&all);
+  if (sigprocmask(SIG_BLOCK, &all, NULL) != 0) return -1;
+  /* nothing written below may land in a file the caller left open as one
+   * of the standard descriptors */
+  while ((fd = open("/dev/null", O_RDWR)) >= 0 && fd <= 2);
+  if (fd < 0) return -1;
+  close(fd);
+  for (i = 0; i < sizeof(unlimited) / sizeof(unlimited[0]); i++) {
+    rl.rlim_cur = rl.rlim_max = RLIM_INFINITY;
+    if (setrlimit(unlimited[i], &rl) != 0) return -1;
+  }
+  if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur < 1024) {
+    rl.rlim_cur = 1024;
+    if (rl.rlim_max < 1024) rl.rlim_max = 1024;
+    if (setrlimit(RLIMIT_NOFILE, &rl) != 0) return -1;
+  }
+  return 0;
+}
+
+/* the caller's stdout and stderr can be pipes nobody reads, and a write to
+ * one would then block with the locks below held - and with them every later
+ * call for the session, or every commit. output is kept in memory instead,
+ * and passed on once no lock is held any more (deliver_output()). */
+static int caller_fd[3] = { -1, -1, -1 };
+
+static int buffer_output(void)
+{
+  int fd, buf;
+  for (fd = 1; fd <= 2; fd++) {
+    if ((buf = memfd_create("output", MFD_CLOEXEC)) < 0) return -1;
+    caller_fd[fd] = fcntl(fd, F_DUPFD_CLOEXEC, 3);
+    if (caller_fd[fd] < 0 || dup2(buf, fd) < 0) {
+      close_keep_errno(buf);
+      return -1;
+    }
+    close(buf);
+  }
+  return 0;
+}
+
+static void deliver_output(void)
+{
+  char buf[4096];
+  ssize_t n, w, off;
+  int fd;
+  fflush(stdout);
+  fflush(stderr);
+  for (fd = 1; fd <= 2; fd++) {
+    if (caller_fd[fd] < 0 || lseek(fd, 0, SEEK_SET) != 0) continue;
+    while ((n = read(fd, buf, sizeof(buf))) > 0) {
+      for (off = 0; off < n; off += w) {
+        if ((w = write(caller_fd[fd], buf + off, n - off)) < 0) {
+          if (errno != EINTR) break;  // nobody to tell
+          w = 0;
+        }
+      }
+      if (off < n) break;
+    }
+  }
+}
+
+/* one invocation per session at a time, held until exit. only taken for a
+ * session the caller owns, so nobody can hold up another's. */
+static int session_lock = -1;
+
+static int lock_session(const char *sid)
+{
+  char name[NAMEBUF];
+  int dir;
+  if (mkdir(LOCK_DIR, 0700) != 0 && errno != EEXIST) return -1;
+  dir = open(LOCK_DIR, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+  if (dir < 0 || private_dir(dir) != 0) {
+    close_keep_errno(dir);
+    return -1;
+  }
+  snprintf(name, sizeof(name), "%s.lock", sid);
+  session_lock = openat(dir, name, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                        0600);
+  close(dir);
+  if (session_lock < 0) return -1;
+  return flock(session_lock, LOCK_EX);
+}
+
+static int run(int argc, char **argv)
 {
   const char *op, *sid;
   int mnt_fd, upper_fd;
   uid_t uid;
   if (argc != 3) {
-    fprintf(stderr, "usage: %s mount|umount|restack <session-id>\n", argv[0]);
+    fprintf(stderr, "usage: %s mount|umount|refresh|clear <session-id>\n",
+            argv[0]);
     return 2;
   }
   op = argv[1];
   sid = argv[2];
-  if (!valid_sid(sid)) {
+  if (!valid_number(sid)) {
     fprintf(stderr, "not a session id\n");
     return 2;
   }
-  /* the environment is not consulted for anything; drop it so nothing
-   * inherited can influence what happens below */
-  if (clearenv() != 0) return 2;
-
-  /* who asked, recorded before any of this can change it: acquiring the
-   * privilege set-user-ID way replaces the real uid with root's, and the
-   * session ownership check below would then pass for anybody
-   */
+  /* who asked, recorded before any of this can change it: becoming root
+   * replaces the real uid, and the session ownership checks below would then
+   * pass for anybody */
   uid = (getuid() == 0) ? (uid_t) -1 : getuid();
-
-  /* Two ways to hold the privilege this needs. Installed with file
-   * capabilities, the process never becomes root and carries only the two
-   * rights the mount requires. Installed set-user-ID, it becomes root
-   * outright. The former is preferred; the latter is the fallback for
-   * filesystems that cannot carry capabilities.
-   */
-  if (geteuid() == 0 && getuid() != 0 && setuid(0) != 0) {
+  if (geteuid() != 0 || setuid(0) != 0) {
     fprintf(stderr, "cannot acquire privilege: %s\n", strerror(errno));
+    return 2;
+  }
+  if (harden() != 0 || buffer_output() != 0) {
+    fprintf(stderr, "cannot set up a safe environment: %s\n", strerror(errno));
+    return 2;
+  }
+  if (strcmp(op, "mount") && strcmp(op, "umount") && strcmp(op, "refresh")
+      && strcmp(op, "clear")) {
+    fprintf(stderr, "unknown operation\n");
     return 2;
   }
   if (open_roots() != 0) {
@@ -308,9 +680,20 @@ int main(int argc, char **argv)
   }
   close(mnt_fd);
   close(upper_fd);
+  if (lock_session(sid) != 0) {
+    fprintf(stderr, "cannot lock the session: %s\n", strerror(errno));
+    return 2;
+  }
   if (!strcmp(op, "mount"))   return ovl_mount(sid, uid);
   if (!strcmp(op, "umount"))  return ovl_umount(sid, uid);
-  if (!strcmp(op, "restack")) return ovl_restack(sid);
-  fprintf(stderr, "unknown operation\n");
-  return 2;
+  if (!strcmp(op, "refresh")) return ovl_refresh(sid, uid);
+  return ovl_clear(sid, uid);
+}
+
+int main(int argc, char **argv)
+{
+  int rc = run(argc, argv);
+  if (session_lock >= 0) close(session_lock);
+  deliver_output();
+  return rc;
 }
