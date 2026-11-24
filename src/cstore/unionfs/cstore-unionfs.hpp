@@ -323,6 +323,14 @@ private:
   bool session_mounted();
   bool session_current();
   bool refresh_session(int timeout_ms);
+  bool remount_fresh(bool restore);
+  void finish_deferred_remount();
+  // set when a commit could not remount the session (see commitConfig())
+  FsPath remount_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.remount");
+    return m;
+  }
   // set when a refresh dropped edits a newer commit conflicts with
   FsPath dropped_marker() {
     FsPath m(tmp_root);

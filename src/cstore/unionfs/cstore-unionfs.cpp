@@ -956,7 +956,9 @@ UnionfsCstore::refresh_session(int timeout_ms)
     last_refresh_status = 3;
     return false;
   }
-  if (!session_current()) {
+  if (path_exists(remount_marker())) {
+    finish_deferred_remount();
+  } else if (!session_current()) {
     last_refresh_status = ovl_helper_status("refresh", session_id);
   }
   bool recorded = true;
@@ -980,6 +982,82 @@ UnionfsCstore::refresh_session(int timeout_ms)
   }
   unlock_session_exclusive();
   return ok;
+}
+
+/* remount the session on a fresh upper layer over the active tree, and with
+ * restore put back what the working copy taken beforehand (tmp_work_root)
+ * holds beyond it: what a commit left uncommitted. */
+bool
+UnionfsCstore::remount_fresh(bool restore)
+{
+  if (!do_umount(work_root)) {
+    return false;
+  }
+  /* the upper layer can hold nodes this user may not remove (anything
+   * written by root through the merged mount), hence the helper. */
+  if (!run_ovl_helper("clear", session_id)) {
+    output_internal("failed to clear [%s]\n", change_root.path_cstr());
+    return false;
+  }
+  if (!do_mount(change_root, active_root, work_root)) {
+    return false;
+  }
+  return (!restore || sync_dir(tmp_work_root, work_root, work_root));
+}
+
+/* the remount a commit had to leave, done with the session lock held
+ * exclusively. the session still stacks on the tree the commit replaced,
+ * with everything it committed in its upper layer, so its working view now
+ * differs from the committed tree only by what is still pending. that is
+ * kept - unless another commit came in between, as the view would then also
+ * revert that one. */
+void
+UnionfsCstore::finish_deferred_remount()
+{
+  string committed;
+  struct stat as;
+  char id[64] = "";
+  read_whole_file(remount_marker(), committed);
+  if (stat(active_root.path_cstr(), &as) == 0) {
+    snprintf(id, sizeof(id), "%lu:%lu", (unsigned long) as.st_dev,
+             (unsigned long) as.st_ino);
+  }
+  bool keep = (id[0] && committed == id);
+  bool ok = false;
+  try {
+    if (keep) {
+      if (path_exists(tmp_work_root)) {
+        fs::remove_all(tmp_work_root.path_cstr());
+      }
+      recursive_copy_dir(work_root, tmp_work_root, true);
+    }
+    ok = remount_fresh(false);
+    if (ok && keep) {
+      /* another commit can replace the committed tree before the mount, and
+       * the copy would then revert it: restore only onto the tree the helper
+       * recorded as mounted */
+      FsPath rec = ovl_work_root;
+      rec.push("lower");
+      string mounted;
+      keep = (read_whole_file(rec, mounted) && mounted == committed);
+      if (keep) {
+        ok = sync_dir(tmp_work_root, work_root, work_root);
+      }
+    }
+    if (path_exists(tmp_work_root)) {
+      fs::remove_all(tmp_work_root.path_cstr());
+    }
+  } catch (const fs::filesystem_error& e) {
+    output_internal("deferred remount failed [%s]\n", e.what());
+  }
+  unlink(remount_marker().path_cstr());
+  if (!ok) {
+    invalidate_session("commit");
+  } else if (!keep) {
+    output_user("this session was in use when it committed, and the active "
+                "configuration has changed since; its uncommitted edits were "
+                "discarded\n");
+  }
 }
 
 bool
@@ -1263,27 +1341,6 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     output_user("config session changed during commit\n");
     return false;
   }
-  // make a copy of current "work" dir
-  try {
-    if (path_exists(tmp_work_root)) {
-      output_internal("rm[%s]\n", tmp_work_root.path_cstr());
-      if (fs::remove_all(tmp_work_root.path_cstr()) < 1) {
-        output_internal("rm tw failed\n");
-        return false;
-      }
-    }
-    output_internal("cp[%s]->[%s]\n", work_root.path_cstr(),
-                    tmp_work_root.path_cstr());
-
-    recursive_copy_dir(work_root, tmp_work_root, true);
-  } catch (const fs::filesystem_error& e) {
-    output_internal("cp w->tw failed[%s]\n", e.what());
-    return false;
-  } catch (...) {
-    output_internal("cp w->tw failed[unknown exception]\n");
-    return false;
-  }
-
   if (!construct_commit_active(node)) {
     return false;
   }
@@ -1352,35 +1409,48 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
    * commit never touches them, as unmounting a session can lose a change
    * that is being written into it at that moment.
    */
-  bool restored = false;
   /* the upper layer holds everything just committed. left in place it would
    * be re-applied over later commits, so the session is remounted on a
-   * fresh one in any case - preferably once nothing else is working on it.
-   * something that is, concurrently with this commit, is racing it anyway. */
-  if (!lock_session_exclusive(30000)) {
-    output_internal("session still in use, remounting after commit anyway\n");
-  }
-  if (!do_umount(work_root)) {
-    output_user("configuration committed, but ");
-    invalidate_session("commit");
-  } else if (!run_ovl_helper("clear", session_id)) {
-    /* the upper layer can hold nodes this user may not remove (anything
-     * written by root through the merged mount), hence the helper.
-     */
-    output_internal("failed to clear [%s]\n", change_root.path_cstr());
-    output_user("configuration committed, but ");
-    invalidate_session("commit");
-  } else if (!do_mount(change_root, active_root, work_root)) {
-    output_user("configuration committed, but ");
-    invalidate_session("commit");
-  } else {
-    restored = sync_dir(tmp_work_root, work_root, work_root);
-    if (!restored) {
+   * fresh one - once nothing else is working on it: remounting under
+   * something that is would lose what it writes. failing that, the session
+   * is left as it is and remounted by its next operation (see
+   * finish_deferred_remount()). */
+  if (lock_session_exclusive(30000)) {
+    /* the copy to restore from is taken under the same lock as the remount,
+     * so nothing written to the session in between is lost. the session
+     * still stacks on the tree just replaced, and no other commit can come
+     * in meanwhile, so the copy differs from what was committed only by
+     * what is still pending */
+    bool copied = false;
+    try {
+      if (path_exists(tmp_work_root)) {
+        fs::remove_all(tmp_work_root.path_cstr());
+      }
+      recursive_copy_dir(work_root, tmp_work_root, true);
+      copied = true;
+    } catch (const fs::filesystem_error& e) {
+      output_internal("cp w->tw failed[%s]\n", e.what());
+    }
+    if (!copied || !remount_fresh(true)) {
       output_user("configuration committed, but ");
       invalidate_session("commit");
     }
+    unlock_session_exclusive();
+  } else {
+    struct stat as;
+    char id[64] = "";
+    if (stat(active_root.path_cstr(), &as) == 0) {
+      snprintf(id, sizeof(id), "%lu:%lu", (unsigned long) as.st_dev,
+               (unsigned long) as.st_ino);
+    }
+    if (!id[0] || !write_file(remount_marker(), id)) {
+      output_user("configuration committed, but this session is in use and "
+                  "could not be updated; please leave and re-enter "
+                  "configuration mode\n");
+    } else {
+      output_internal("session in use, remounting it on its next use\n");
+    }
   }
-  unlock_session_exclusive();
   try {
     fs::remove_all(tmp_work_root.path_cstr());
     fs::remove_all(tmp_active_root.path_cstr());
