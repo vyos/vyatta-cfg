@@ -482,12 +482,24 @@ UnionfsCstore::setupSession()
     }
   }
 
+  /* set while a new session's upper layer still has to be cleared. a session
+   * is only ever mounted once that is done, so a failed setup can be retried
+   * without mounting what a previous session of this ID left behind */
+  FsPath reset_marker(tmp_root);
+  reset_marker.push(".session.reset");
+
   if (!path_exists(work_root)) {
     // session doesn't exist. create dirs.
     try {
+      // the marker goes in before the working root, which a retry checks
+      fs::create_directories(tmp_root.path_cstr());
+      if (!create_file(reset_marker)) {
+        output_internal("cannot mark session for reset [%s]\n",
+                        reset_marker.path_cstr());
+        return false;
+      }
       fs::create_directories(work_root.path_cstr());
       fs::create_directories(change_root.path_cstr());
-      fs::create_directories(tmp_root.path_cstr());
       if (!path_exists(active_root)) {
         // this should only be needed on boot
         fs::create_directories(active_root.path_cstr());
@@ -512,6 +524,7 @@ UnionfsCstore::setupSession()
         || !do_mount(change_root, active_root, work_root)) {
       return false;
     }
+    unlink(reset_marker.path_cstr());
   } else if (!path_is_directory(work_root)) {
     output_internal("setup session not dir [%s]\n", work_root.path_cstr());
     return false;
@@ -526,14 +539,29 @@ UnionfsCstore::setupSession()
       return false;
     }
     if (!session_mounted()) {
-      // see session_mounted()
-      if (!do_mount(change_root, active_root, work_root)) {
+      /* see session_mounted(). an earlier setup that failed before its reset
+       * is completed now - having perhaps failed before even creating the
+       * upper layer, which the reset needs; otherwise the upper layer holds
+       * this session's pending edits and is kept */
+      bool reset = path_exists(reset_marker);
+      if (reset) {
+        try {
+          fs::create_directories(change_root.path_cstr());
+        } catch (...) {
+          output_internal("cannot create [%s]\n", change_root.path_cstr());
+          return false;
+        }
+      }
+      if ((reset && !run_ovl_helper("clear", session_id))
+          || !do_mount(change_root, active_root, work_root)) {
         return false;
       }
     } else {
       // best effort, a commit insists on it
       refresh_session(0);
     }
+    // mounted, so the reset is done
+    unlink(reset_marker.path_cstr());
   }
 
   pids = getActiveCommits();
