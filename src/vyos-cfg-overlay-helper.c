@@ -79,7 +79,7 @@ static const char *OVL_OPTS = "index=off,metacopy=off,redirect_dir=off,xino=off"
  * opened relative to it and refusing symlinks, and from then on used through
  * descriptors so that what was checked is what is used.
  */
-static int cfg_fd = -1, tmp_fd = -1, work_fd = -1, active_fd = -1;
+static int cfg_fd = -1, tmp_fd = -1, work_fd = -1;
 
 static int valid_number(const char *s)
 {
@@ -772,9 +772,10 @@ out:
 
 /* empty a tree the session's owner controls, as root. the owner can move
  * directories into it while this runs, so never follow one onto another
- * filesystem (a mounted session), into the configuration directories
- * themselves, or into anybody else's - only the owner's own and those root
- * wrote into the session through its mount. */
+ * filesystem (a mounted session), into the configuration root, session or
+ * work directories, or into anybody else's - only the owner's own and those
+ * root wrote into the session through its mount. active trees are not kept
+ * out: the configuration group may change them directly anyway. */
 static int clear_dir_at(int dfd, dev_t dev, uid_t owner)
 {
   struct dirent *e;
@@ -791,8 +792,7 @@ static int clear_dir_at(int dfd, dev_t dev, uid_t owner)
     if ((fd = open_dir_at(dfd, e->d_name)) < 0) { rc = -1; continue; }
     if (fstat(fd, &st) != 0 || st.st_dev != dev
         || (st.st_uid != owner && st.st_uid != 0) || same_inode(fd, tmp_fd)
-        || same_inode(fd, cfg_fd) || same_inode(fd, work_fd)
-        || same_inode(fd, active_fd)) {
+        || same_inode(fd, cfg_fd) || same_inode(fd, work_fd)) {
       close(fd);
       rc = -1;
       continue;
@@ -826,7 +826,6 @@ static int ovl_clear(const char *sid, uid_t uid)
     fprintf(stderr, "session is mounted or cannot be examined\n");
     goto out;
   }
-  active_fd = open_dir_at(cfg_fd, ACTIVE_DIR);
   /* an unpredictable name, so nobody can occupy it beforehand */
   if (getrandom(rnd, sizeof(rnd), 0) != (ssize_t) sizeof(rnd)) {
     fprintf(stderr, "no randomness: %s\n", strerror(errno));
