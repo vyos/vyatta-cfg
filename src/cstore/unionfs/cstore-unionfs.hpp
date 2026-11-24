@@ -83,6 +83,7 @@ private:
   static const string C_VAL_NAME;
   static const string C_DEF_NAME;
   static const string C_COMMIT_LOCK_FILE;
+  static const string C_TREE_LOCK_FILE;
 
   /* max size for a file.
    * currently this includes value file and comment file.
@@ -322,12 +323,19 @@ private:
   bool session_mounted();
   bool session_current();
   bool refresh_session(int timeout_ms);
+  // set when a refresh dropped edits a newer commit conflicts with
+  FsPath dropped_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.dropped");
+    return m;
+  }
   void open_session_lock(int timeout_ms);
   bool session_locked();
   void close_session_lock();
   bool lock_session_exclusive(int timeout_ms);
   void unlock_session_exclusive();
   void remove_unused_active_trees();
+  int lock_trees();
   bool invalidate_session(const char *after);
   bool session_lost;    // gone after the active config was already replaced
   bool holds_session_lock;

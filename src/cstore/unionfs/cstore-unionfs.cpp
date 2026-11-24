@@ -97,6 +97,7 @@ const string UnionfsCstore::C_TAG_NAME = "node.tag";
 const string UnionfsCstore::C_VAL_NAME = "node.val";
 const string UnionfsCstore::C_DEF_NAME = "node.def";
 const string UnionfsCstore::C_COMMIT_LOCK_FILE = "/opt/vyatta/config/.lock";
+const string UnionfsCstore::C_TREE_LOCK_FILE = "/opt/vyatta/config/.tree.lock";
 
 
 ////// static
@@ -272,10 +273,11 @@ UnionfsCstore::UnionfsCstore(bool use_edit_level)
     if (getenv(C_ENV_CHANGE_ROOT.c_str())) {
       change_root = (C_DEF_CHANGE_PREFIX + sid);
     }
-    if (getenv(C_ENV_TMP_ROOT.c_str())) {
-      tmp_root = (C_DEF_TMP_PREFIX + sid);
-      init_commit_data();
-    }
+    /* the scratch directory holds the session's markers, which every process
+     * of the session must find in the same place - also one whose
+     * environment lacks it, as vyos-configd's does */
+    tmp_root = (C_DEF_TMP_PREFIX + sid);
+    init_commit_data();
   } else if (val) {
     output_internal("ignoring invalid config session environment [%s]\n",
                     val);
@@ -957,10 +959,24 @@ UnionfsCstore::refresh_session(int timeout_ms)
   if (!session_current()) {
     last_refresh_status = ovl_helper_status("refresh", session_id);
   }
-  bool ok = (session_mounted() && session_current());
+  bool recorded = true;
+  if (last_refresh_status == 4) {
+    /* kept until the next commit, whatever ran into this, so that the
+     * commit can be refused once and the dropped edits reviewed first */
+    recorded = create_file(dropped_marker());
+    output_user("another session committed changes to the nodes listed "
+                "above, so this session's edits to them were dropped\n");
+  }
+  bool ok = (recorded && session_mounted() && session_current());
   if (!session_mounted()) {
     // unmounted, but not mounted again
     invalidate_session("updating it");
+  } else if (!recorded) {
+    /* nothing would stop the next commit before the dropped edits are
+     * reviewed, in this process or any other */
+    output_internal("cannot record dropped edits [%s]\n",
+                    dropped_marker().path_cstr());
+    invalidate_session("dropping edits to it");
   }
   unlock_session_exclusive();
   return ok;
@@ -985,7 +1001,17 @@ UnionfsCstore::prepareCommit()
     return false;
   }
   if (refresh_session(30000)) {
+    if (path_exists(dropped_marker())) {
+      unlink(dropped_marker().path_cstr());
+      output_user("edits to nodes another session changed were dropped; "
+                  "review and re-apply them, then commit again\n");
+      return false;
+    }
     return true;
+  }
+  if (session_lost) {
+    // already told
+    return false;
   }
   if (last_refresh_status == 3) {
     output_user("the active configuration was changed by another session, "
@@ -1298,12 +1324,16 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
     staged = false;
   }
 
+  int trees = staged ? lock_trees() : -1;
   if (staged
       && syscall(SYS_renameat2, AT_FDCWD, new_active.path_cstr(),
                  AT_FDCWD, active_root.path_cstr(), RENAME_EXCHANGE) != 0) {
     output_internal("failed to swap in new active config [%s][%s]\n",
                     strerror(errno), new_active.path_cstr());
     staged = false;
+  }
+  if (trees >= 0) {
+    close(trees);
   }
   if (!staged) {
     // never swapped in, so nothing can be stacked on it
@@ -1357,8 +1387,31 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   } catch (const fs::filesystem_error& e) {
     output_internal("failed to remove temp directories [%s]\n", e.what());
   }
-  remove_unused_active_trees();
+  // without the lock a refresh may be moving a session onto one of them
+  if ((trees = lock_trees()) >= 0) {
+    remove_unused_active_trees();
+    close(trees);
+  }
   return true;
+}
+
+/* held exclusively while the set of active trees changes: one swapped in,
+ * unused ones removed. the overlay helper holds it shared from comparing a
+ * session with the active tree until the session is mounted on it, so that
+ * the tree compared is the tree mounted. never held across a helper call. */
+int
+UnionfsCstore::lock_trees()
+{
+  int fd = open(C_TREE_LOCK_FILE.c_str(),
+                O_RDONLY | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0664);
+  if (fd < 0 || flock(fd, LOCK_EX) != 0) {
+    output_internal("cannot lock the active trees [%s]\n", strerror(errno));
+    if (fd >= 0) {
+      close(fd);
+    }
+    return -1;
+  }
+  return fd;
 }
 
 /* superseded active trees are kept while a mounted session is stacked on one
@@ -2322,15 +2375,43 @@ UnionfsCstore::ovl_helper_status(const char *op, const string& sid)
     output_internal("no session for overlay %s\n", op);
     return -1;
   }
-  pid_t p = fork();
-  if (p < 0) {
+  /* what the helper has for the user comes on its stdout, which while a CLI
+   * operation runs would otherwise go to the operation's log */
+  int out[2];
+  if (pipe2(out, O_CLOEXEC) != 0) {
     output_internal("cannot run the overlay helper [%s]\n", strerror(errno));
     return -1;
   }
+  pid_t p = fork();
+  if (p < 0) {
+    output_internal("cannot run the overlay helper [%s]\n", strerror(errno));
+    close(out[0]);
+    close(out[1]);
+    return -1;
+  }
   if (p == 0) {
+    if (dup2(out[1], STDOUT_FILENO) < 0) {
+      _exit(127);
+    }
     execl(C_OVL_HELPER.c_str(), "vyos-cfg-overlay-helper", op, sid.c_str(),
           (char *) NULL);
     _exit(127);
+  }
+  close(out[1]);
+  // read to the end before waiting, or a long message could block the helper
+  string message;
+  char buf[4096];
+  ssize_t n;
+  while ((n = read(out[0], buf, sizeof(buf))) != 0) {
+    if (n > 0) {
+      message.append(buf, n);
+    } else if (errno != EINTR) {
+      break;
+    }
+  }
+  close(out[0]);
+  if (!message.empty()) {
+    output_user("%s", message.c_str());
   }
   int st = 0;
   if (waitpid(p, &st, 0) < 0 || !WIFEXITED(st)) {

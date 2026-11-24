@@ -37,6 +37,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/xattr.h>
 
 #define CFG_ROOT     "/opt/vyatta/config"
 /* entries of the config root, only ever opened relative to it */
@@ -50,6 +51,9 @@
  * configuration root, where no group member can replace it, and per session
  * so that a stalled invocation holds up nobody else */
 #define LOCK_DIR     "/run/vyos-cfg-overlay-helper"
+
+/* held exclusively by a commit while the set of active trees changes */
+#define TREE_LOCK    ".tree.lock"
 
 /* per-session files in the session's work directory base */
 #define CURRENT_FILE "current"  /* work directory generation of the mount */
@@ -385,23 +389,326 @@ static int ovl_umount(const char *sid, uid_t uid)
   return 0;
 }
 
+static int clear_dir_at(int dfd, dev_t dev, uid_t owner);
+
+/* the active tree with the given identity: the current one, or a superseded
+ * one kept for the sessions still stacked on it */
+static int open_active_tree(const char *identity)
+{
+  char id[RECBUF];
+  struct dirent *e;
+  DIR *d;
+  int fd = -1, dup_fd = dup(cfg_fd);
+  if (dup_fd < 0 || !(d = fdopendir(dup_fd))) {
+    close_keep_errno(dup_fd);
+    return -1;
+  }
+  rewinddir(d);  // a dup shares its position with the original
+  while ((e = readdir(d))) {
+    if (strcmp(e->d_name, ACTIVE_DIR)
+        && strncmp(e->d_name, ACTIVE_DIR ".new.", strlen(ACTIVE_DIR) + 5))
+      continue;
+    if ((fd = open_dir_at(cfg_fd, e->d_name)) < 0) continue;
+    format_identity(fd, id, sizeof(id));
+    if (identity[0] && !strcmp(id, identity)) break;
+    close(fd);
+    fd = -1;
+  }
+  closedir(d);
+  if (fd < 0) errno = ENOENT;
+  return fd;
+}
+
+static int open_entry_at(int dfd, const char *name, int flags)
+{
+  if (dfd < 0) {
+    errno = ENOENT;
+    return -1;
+  }
+  return openat(dfd, name, flags | O_NOFOLLOW | O_CLOEXEC);
+}
+
+static int same_entry(int a, int b, const char *name);
+
+/* 1 if two directories hold the same entries with the same contents */
+static int same_dir(int a, int b)
+{
+  struct dirent *e;
+  struct stat st;
+  DIR *d;
+  int rc = 1, pass, dup_fd;
+  for (pass = 0; pass < 2 && rc == 1; pass++) {
+    int from = pass ? b : a, other = pass ? a : b;
+    if ((dup_fd = dup(from)) < 0 || !(d = fdopendir(dup_fd))) {
+      close_keep_errno(dup_fd);
+      return -1;
+    }
+    rewinddir(d);
+    while (rc == 1) {
+      errno = 0;
+      if (!(e = readdir(d))) {
+        // an entry that could not be read is not the end of the directory
+        if (errno) rc = -1;
+        break;
+      }
+      if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+      if (pass == 0)
+        rc = same_entry(a, b, e->d_name);
+      else if (fstatat(other, e->d_name, &st, AT_SYMLINK_NOFOLLOW) != 0)
+        rc = (errno == ENOENT) ? 0 : -1;
+    }
+    closedir(d);
+  }
+  return rc;
+}
+
+/* 1 if name is the same in both directories, either of which may be absent
+ * (-1): absent from both, or the same file contents, or directories holding
+ * the same. 0 if not, -1 if that cannot be told. the trees compared here are
+ * on the configuration filesystem, which is mounted nodev. */
+static int same_entry(int a, int b, const char *name)
+{
+  struct stat sa, sb;
+  char ba[4096], bb[4096];
+  int ea, eb, fa = -1, fb = -1, rc = 0;
+  ssize_t na, nb;
+  ea = (a >= 0 && fstatat(a, name, &sa, AT_SYMLINK_NOFOLLOW) == 0);
+  if (a >= 0 && !ea && errno != ENOENT) return -1;
+  eb = (b >= 0 && fstatat(b, name, &sb, AT_SYMLINK_NOFOLLOW) == 0);
+  if (b >= 0 && !eb && errno != ENOENT) return -1;
+  if (!ea || !eb) return (!ea && !eb);
+  if ((sa.st_mode & S_IFMT) != (sb.st_mode & S_IFMT)) return 0;
+  if (S_ISDIR(sa.st_mode)) {
+    if ((fa = open_entry_at(a, name, O_RDONLY | O_DIRECTORY)) >= 0
+        && (fb = open_entry_at(b, name, O_RDONLY | O_DIRECTORY)) >= 0)
+      rc = same_dir(fa, fb);
+    else
+      rc = -1;
+  } else if (S_ISREG(sa.st_mode)) {
+    if (sa.st_size != sb.st_size) return 0;
+    if ((fa = open_entry_at(a, name, O_RDONLY | O_NONBLOCK)) < 0
+        || (fb = open_entry_at(b, name, O_RDONLY | O_NONBLOCK)) < 0
+        || fstat(fa, &sa) != 0 || fstat(fb, &sb) != 0
+        || !S_ISREG(sa.st_mode) || !S_ISREG(sb.st_mode)) {
+      rc = -1;
+    } else {
+      rc = 1;
+      do {
+        na = read(fa, ba, sizeof(ba));
+        nb = read(fb, bb, sizeof(bb));
+        if (na < 0 || nb < 0) rc = -1;
+        else if (na != nb || memcmp(ba, bb, na)) rc = 0;
+      } while (rc == 1 && na > 0);
+    }
+  }
+  /* nothing else belongs in a configuration tree: never the same */
+  close_keep_errno(fa);
+  close_keep_errno(fb);
+  return rc;
+}
+
+/* an entry in the upper layer to be dropped, and whether the user had
+ * changed it - a file is copied up when written, even with what it held */
+struct conflict {
+  char *path;
+  int edited;
+};
+
+struct conflicts {
+  struct conflict *v;
+  size_t n, cap;
+};
+
+static int add_conflict(struct conflicts *c, const char *path, int edited)
+{
+  if (c->n == c->cap) {
+    size_t cap = c->cap ? 2 * c->cap : 16;
+    struct conflict *v = realloc(c->v, cap * sizeof(*v));
+    if (!v) return -1;
+    c->v = v;
+    c->cap = cap;
+  }
+  if (!(c->v[c->n].path = strdup(path))) return -1;
+  c->v[c->n++].edited = edited;
+  return 0;
+}
+
+static int is_opaque(int fd)
+{
+  char v;
+  return (fgetxattr(fd, "trusted.overlay.opaque", &v, 1) == 1 && v == 'y');
+}
+
+/* everything in the session's upper layer that hides something changed
+ * between the tree the session was based on and the current one: a file, a
+ * deletion (whiteout) or a replaced (opaque) directory over a changed
+ * subtree. left in place it would commit the session's stale view over the
+ * newer one. */
+static int find_conflicts(int up, int old, int now, const char *path,
+                          struct conflicts *out)
+{
+  struct dirent *e;
+  struct stat st;
+  DIR *d;
+  int rc = 0, dup_fd = dup(up);
+  if (dup_fd < 0 || !(d = fdopendir(dup_fd))) {
+    close_keep_errno(dup_fd);
+    return -1;
+  }
+  rewinddir(d);  // a dup shares its position with the original
+  while (rc == 0) {
+    char *p;
+    int same, fd = -1, o, n, edited = 1, descend = 0;
+    errno = 0;
+    if (!(e = readdir(d))) {
+      // a conflict list cut short by a read error is not a complete one
+      if (errno) rc = -1;
+      break;
+    }
+    if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+    if (fstatat(up, e->d_name, &st, AT_SYMLINK_NOFOLLOW) != 0
+        || asprintf(&p, "%s%s%s", path, path[0] ? "/" : "", e->d_name) < 0) {
+      rc = -1;
+      break;
+    }
+    if (S_ISDIR(st.st_mode)) {
+      struct stat os, ns;
+      if ((fd = open_dir_at(up, e->d_name)) < 0) {
+        rc = -1;
+      } else {
+        int in_old = (old >= 0
+                      && fstatat(old, e->d_name, &os, AT_SYMLINK_NOFOLLOW) == 0);
+        int in_now = (now >= 0
+                      && fstatat(now, e->d_name, &ns, AT_SYMLINK_NOFOLLOW) == 0);
+        /* merged with what is below: only its contents can hide anything -
+         * unless a commit removed it since, which whatever the session has in
+         * it would bring back */
+        descend = (!is_opaque(fd)
+                   && (!in_old || S_ISDIR(os.st_mode))
+                   && (!in_now || S_ISDIR(ns.st_mode))
+                   && (in_now || !in_old));
+      }
+    }
+    if (rc == 0 && descend) {
+      o = open_entry_at(old, e->d_name, O_RDONLY | O_DIRECTORY);
+      n = open_entry_at(now, e->d_name, O_RDONLY | O_DIRECTORY);
+      rc = find_conflicts(fd, o, n, p, out);
+      close_keep_errno(o);
+      close_keep_errno(n);
+    } else if (rc == 0 && (same = same_entry(old, now, e->d_name)) != 1) {
+      if (same < 0) {
+        rc = -1;
+      } else {
+        if (S_ISREG(st.st_mode) && same_entry(up, old, e->d_name) == 1)
+          edited = 0;
+        rc = add_conflict(out, p, edited);
+      }
+    }
+    close_keep_errno(fd);
+    free(p);
+  }
+  closedir(d);
+  return rc;
+}
+
+/* remove one entry from the session's upper layer, offline */
+static int drop_entry(int up, const char *path, dev_t dev, uid_t owner)
+{
+  char *copy, *name, *slash;
+  int dir = dup(up), next, rc = -1;
+  if (dir < 0 || !(copy = strdup(path))) {
+    close_keep_errno(dir);
+    return -1;
+  }
+  name = copy;
+  while ((slash = strchr(name, '/'))) {
+    *slash = '\0';
+    next = open_dir_at(dir, name);
+    close(dir);
+    if ((dir = next) < 0) goto out;
+    name = slash + 1;
+  }
+  if (unlinkat(dir, name, 0) == 0 || errno == ENOENT) {
+    rc = 0;
+  } else if ((next = open_dir_at(dir, name)) >= 0) {
+    struct stat st;
+    if (fstat(next, &st) == 0 && st.st_dev == dev
+        && clear_dir_at(next, dev, owner) == 0
+        && unlinkat(dir, name, AT_REMOVEDIR) == 0)
+      rc = 0;
+    close(next);
+  }
+out:
+  close_keep_errno(dir);
+  free(copy);
+  return rc;
+}
+
+/* shared, so that no active tree is swapped in or removed while it is held.
+ * the configuration root is writable by the group, so whatever has been put
+ * there under the name must be a plain file. */
+static int lock_trees(void)
+{
+  struct stat st;
+  int fd = openat(cfg_fd, TREE_LOCK, O_RDONLY | O_CREAT | O_NOFOLLOW
+                  | O_NONBLOCK | O_CLOEXEC, 0644);
+  if (fd < 0) return -1;
+  if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) {
+    close(fd);
+    errno = EINVAL;
+    return -1;
+  }
+  if (flock(fd, LOCK_SH) != 0) {
+    close_keep_errno(fd);
+    return -1;
+  }
+  return fd;
+}
+
+/* print an upper layer path as the configuration path it holds. this is for
+ * the user, on stdout: the CLI sends its own stderr to a log while working */
+static void print_config_path(const char *path)
+{
+  const char *last = strrchr(path, '/');
+  const char *leaf = last ? last + 1 : path;
+  size_t i, len = strlen(path);
+  if (!strcmp(leaf, "node.val") || !strcmp(leaf, ".comment")
+      || !strcmp(leaf, "def") || !strcmp(leaf, ".disable"))
+    len = last ? (size_t) (last - path) : 0;
+  fputs("  ", stdout);
+  for (i = 0; i < len; i++) {
+    if (path[i] == '/') fputc(' ', stdout);
+    else if (!strncmp(path + i, "%2F", 3)) { fputc('/', stdout); i += 2; }
+    else if (!strncmp(path + i, "%25", 3)) { fputc('%', stdout); i += 2; }
+    else if (!strncmp(path + i, "%%%", 3)) { fputs("''", stdout); i += 2; }
+    else fputc(path[i], stdout);
+  }
+  fputc('\n', stdout);
+}
+
 /* move a session that is stacked on a superseded active tree onto the
- * current one. its upper layer - the pending changes - is kept. a session in
- * use cannot be unmounted and is left where it is (exit status 3).
+ * current one. its upper layer - the pending changes - is kept, except where
+ * it hides what a commit changed since: those changes are dropped, so the
+ * newer configuration shows through, and listed (exit status 4). a session
+ * in use cannot be unmounted and is left where it is (exit status 3).
  */
 static int ovl_refresh(const char *sid, uid_t uid)
 {
   char rec[RECBUF], now[RECBUF];
-  int mnt_fd, upper_fd, active, base, m;
+  struct conflicts found = { NULL, 0, 0 };
+  struct stat us;
+  int mnt_fd, upper_fd, active = -1, base, old, m, edited = 0, rc = 1;
+  int trees = -1;
+  size_t i;
   if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
     fprintf(stderr, "not a usable session: %s\n", strerror(errno));
     return 1;
   }
   m = is_mounted(mnt_fd);
   close(mnt_fd);
-  close(upper_fd);
-  if (m != 1) {
+  if (m != 1 || fstat(upper_fd, &us) != 0) {
     fprintf(stderr, "session is not mounted\n");
+    close(upper_fd);
     return 1;
   }
   rec[0] = now[0] = '\0';
@@ -409,17 +716,58 @@ static int ovl_refresh(const char *sid, uid_t uid)
     read_small_file(base, LOWER_FILE, rec, sizeof(rec));
     close(base);
   }
+  /* held until the session is mounted again: the tree compared with below
+   * must be the one it is mounted on */
+  if ((trees = lock_trees()) < 0) {
+    fprintf(stderr, "cannot lock the active trees: %s\n", strerror(errno));
+    goto out;
+  }
   if ((active = open_dir_at(cfg_fd, ACTIVE_DIR)) >= 0) {
     format_identity(active, now, sizeof(now));
-    close(active);
   }
-  if (now[0] && !strcmp(rec, now)) return 0;
+  if (active < 0 || (now[0] && !strcmp(rec, now))) {
+    rc = (active < 0);
+    goto out;
+  }
+  /* while the session is still mounted on it, its tree is kept */
+  if ((old = open_active_tree(rec)) < 0) {
+    fprintf(stderr, "cannot find the configuration the session is based on\n");
+    goto out;
+  }
+  m = find_conflicts(upper_fd, old, active, "", &found);
+  close(old);
+  if (m != 0) {
+    fprintf(stderr, "cannot compare the session with the active "
+            "configuration: %s\n", strerror(errno));
+    goto out;
+  }
   if (umount_session(sid, 0) != 0) {
     fprintf(stderr, "cannot move the session: %s\n", strerror(errno));
-    return (errno == EBUSY) ? 3 : 1;
+    rc = (errno == EBUSY) ? 3 : 1;
+    goto out;
   }
   drop_current_workdir(sid);
-  return ovl_mount(sid, uid);
+  for (i = 0; i < found.n; i++) {
+    if (drop_entry(upper_fd, found.v[i].path, us.st_dev, us.st_uid) != 0) {
+      /* mounted again, it would still hide the newer configuration */
+      fprintf(stderr, "cannot drop a stale change: %s\n", strerror(errno));
+      goto out;
+    }
+    edited |= found.v[i].edited;
+  }
+  rc = ovl_mount(sid, uid);
+  if (rc == 0 && edited) {
+    for (i = 0; i < found.n; i++)
+      if (found.v[i].edited) print_config_path(found.v[i].path);
+    rc = 4;
+  }
+out:
+  for (i = 0; i < found.n; i++) free(found.v[i].path);
+  free(found.v);
+  close_keep_errno(active);
+  close_keep_errno(trees);
+  close(upper_fd);
+  return rc;
 }
 
 /* empty a tree the session's owner controls, as root. the owner can move
