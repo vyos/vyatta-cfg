@@ -2122,7 +2122,10 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     /* restore unsaved marker. must happen after the remount: the marker is
      * written through the merged mount.
      */
-    num_removed--;
+    if (num_removed > 0) {
+      // the marker itself was counted, unless counting failed
+      num_removed--;
+    }
     markSessionUnsaved();
   }
   return ret;
