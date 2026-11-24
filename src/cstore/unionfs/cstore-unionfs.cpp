@@ -198,13 +198,51 @@ _unescape_path_name(const string& path)
 }
 
 /* Fall-through for copy_file: it has been seen to fail across a union mount
- * where a plain read/write copy succeeds.
+ * where a plain read/write copy succeeds. Throws as copy_file does, so a copy
+ * short of its source is never taken for a complete one; stream extraction
+ * would report a read error as the end of the file.
  */
 void stream_file( const char* srce_file, const char* dest_file )
 {
-    std::ifstream srce( srce_file, std::ios::binary ) ;
-    std::ofstream dest( dest_file, std::ios::binary ) ;
-    dest << srce.rdbuf() ;
+  char buf[65536];
+  int err = 0;
+  int in = open(srce_file, O_RDONLY | O_CLOEXEC);
+  int out = (in < 0) ? -1 : open(dest_file, O_WRONLY | O_CREAT | O_TRUNC
+                                 | O_CLOEXEC, 0666);
+  if (in < 0 || out < 0) {
+    err = errno;
+  }
+  while (!err) {
+    ssize_t n = read(in, buf, sizeof(buf));
+    if (n == 0) {
+      break;
+    }
+    if (n < 0) {
+      if (errno != EINTR) {
+        err = errno;
+      }
+      continue;
+    }
+    for (ssize_t off = 0; off < n && !err; ) {
+      ssize_t w = write(out, buf + off, n - off);
+      if (w >= 0) {
+        off += w;
+      } else if (errno != EINTR) {
+        err = errno;
+      }
+    }
+  }
+  if (in >= 0) {
+    close(in);
+  }
+  // a delayed write error surfaces only here
+  if (out >= 0 && close(out) != 0 && !err) {
+    err = errno;
+  }
+  if (err) {
+    throw fs::filesystem_error("stream_file", srce_file, dest_file,
+                               std::error_code(err, std::generic_category()));
+  }
 }
 
 /* session IDs whose process still runs. a session is normally held by a
