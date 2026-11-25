@@ -325,6 +325,13 @@ private:
   bool refresh_session(int timeout_ms);
   bool remount_fresh(bool restore);
   void finish_deferred_remount();
+  bool restore_snapshot();
+  // set while a session is restored after a commit (see restore_snapshot())
+  FsPath restore_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.restoring");
+    return m;
+  }
   // set when a commit could not remount the session (see commitConfig())
   FsPath remount_marker() {
     FsPath m(tmp_root);

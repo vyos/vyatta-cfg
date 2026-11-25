@@ -502,9 +502,11 @@ UnionfsCstore::setupSession()
   }
 
   /* what an invalidated session leaves behind (see invalidate_session()) is
-   * cleared away, so this ID can start afresh */
+   * cleared away, so this ID can start afresh - as is one whose restoration
+   * after a commit did not complete (restore_snapshot()) */
   if (path_exists(work_root)
-      && !path_is_directory((C_DEF_TMP_PREFIX + session_id).c_str())) {
+      && (!path_is_directory((C_DEF_TMP_PREFIX + session_id).c_str())
+          || path_exists(restore_marker()))) {
     if (session_mounted()) {
       run_ovl_helper("umount", session_id);
     }
@@ -516,6 +518,7 @@ UnionfsCstore::setupSession()
     try {
       fs::remove_all(work_root.path_cstr());
       fs::remove_all(change_root.path_cstr());
+      fs::remove(restore_marker().path_cstr());
     } catch (...) {
       output_internal("cannot reset session [%s]\n", work_root.path_cstr());
       return false;
@@ -781,6 +784,7 @@ UnionfsCstore::inSession()
           && path_exists(work_root) && path_is_directory(work_root)
           && session_mounted()
           && path_is_directory((C_DEF_TMP_PREFIX + session_id).c_str())
+          && !path_exists(restore_marker())
           && session_locked());
 }
 
@@ -1040,7 +1044,29 @@ UnionfsCstore::remount_fresh(bool restore)
   if (!do_mount(change_root, active_root, work_root)) {
     return false;
   }
-  return (!restore || sync_dir(tmp_work_root, work_root, work_root));
+  return (!restore || restore_snapshot());
+}
+
+/* put back what the copy in tmp_work_root holds beyond the active tree. a
+ * session with only part of it put back is no session (inSession()), so the
+ * attempt is recorded before it starts and cleared once it went through. */
+bool
+UnionfsCstore::restore_snapshot()
+{
+  if (!create_file(restore_marker())) {
+    output_internal("cannot mark restoration [%s]\n",
+                    restore_marker().path_cstr());
+    return false;
+  }
+  bool ok = false;
+  try {
+    ok = sync_dir(tmp_work_root, work_root, work_root);
+  } catch (const fs::filesystem_error& e) {
+    output_internal("restoring the session failed [%s]\n", e.what());
+  } catch (...) {
+    output_internal("restoring the session failed\n");
+  }
+  return (ok && unlink(restore_marker().path_cstr()) == 0);
 }
 
 /* the remount a commit had to leave, done with the session lock held
@@ -1079,14 +1105,19 @@ UnionfsCstore::finish_deferred_remount()
       string mounted;
       keep = (read_whole_file(rec, mounted) && mounted == committed);
       if (keep) {
-        ok = sync_dir(tmp_work_root, work_root, work_root);
+        ok = restore_snapshot();
       }
     }
+  } catch (const fs::filesystem_error& e) {
+    output_internal("deferred remount failed [%s]\n", e.what());
+  }
+  try {
+    // only the copy: a session restored from it stays valid
     if (path_exists(tmp_work_root)) {
       fs::remove_all(tmp_work_root.path_cstr());
     }
   } catch (const fs::filesystem_error& e) {
-    output_internal("deferred remount failed [%s]\n", e.what());
+    output_internal("failed to remove [%s]\n", tmp_work_root.path_cstr());
   }
   unlink(remount_marker().path_cstr());
   if (!ok) {
@@ -1420,6 +1451,10 @@ UnionfsCstore::commitConfig(commit::PrioNode& node)
   }
 
   int trees = staged ? lock_trees() : -1;
+  if (staged && trees < 0) {
+    // unserialized, a refresh could check a session against the wrong tree
+    staged = false;
+  }
   if (staged
       && syscall(SYS_renameat2, AT_FDCWD, new_active.path_cstr(),
                  AT_FDCWD, active_root.path_cstr(), RENAME_EXCHANGE) != 0) {
@@ -1567,6 +1602,25 @@ UnionfsCstore::remove_unused_active_trees()
         return;
       }
       pinned.insert(data);
+    }
+    /* a lazily detached overlay keeps using its tree, for as long as
+     * anything still has it open - which cannot be told, so the helper keeps
+     * its record (lower.<generation>) and the tree stays until reboot */
+    string obase = C_DEF_OVLWORK_PREFIX;
+    obase.erase(obase.find_last_of("/"));
+    for (const auto& b : fs::directory_iterator(obase)) {
+      if (!b.is_directory()) {
+        continue;
+      }
+      for (const auto& r : fs::directory_iterator(b.path())) {
+        if (r.path().filename().string().compare(0, 6, "lower.") != 0) {
+          continue;
+        }
+        string data;
+        if (read_whole_file(FsPath(r.path().string()), data) && !data.empty()) {
+          pinned.insert(data);
+        }
+      }
     }
   } catch (const fs::filesystem_error& e) {
     output_internal("cannot look for unused active trees [%s]\n", e.what());
@@ -2078,8 +2132,6 @@ UnionfsCstore::set_comment(const string& comment)
 bool
 UnionfsCstore::discard_changes(unsigned long long& num_removed)
 {
-  // need to keep unsaved marker
-  bool unsaved = sessionUnsaved();
   bool ret = true;
 
   /* the change root is the overlay upperdir. modifying a layer of a live
@@ -2093,6 +2145,8 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
     output_user("cannot discard, the session is in use\n");
     return false;
   }
+  // kept across the discard; read and put back while nothing else can
+  bool unsaved = sessionUnsaved();
   if (!do_umount(work_root)) {
     unlock_session_exclusive();
     return false;
@@ -2112,8 +2166,8 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
    * overlay may still be using the old one */
   bool remounted = run_ovl_helper("clear", session_id)
                    && do_mount(change_root, active_root, work_root);
-  unlock_session_exclusive();
   if (!remounted) {
+    unlock_session_exclusive();
     output_internal("discard failed [%s]\n", change_root.path_cstr());
     return invalidate_session("discard");
   }
@@ -2126,8 +2180,13 @@ UnionfsCstore::discard_changes(unsigned long long& num_removed)
       // the marker itself was counted, unless counting failed
       num_removed--;
     }
-    markSessionUnsaved();
+    if (!markSessionUnsaved()) {
+      output_user("changes discarded, but the configuration is still not "
+                  "saved and this session no longer says so\n");
+      ret = false;
+    }
   }
+  unlock_session_exclusive();
   return ret;
 }
 

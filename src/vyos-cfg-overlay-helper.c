@@ -266,13 +266,19 @@ static void drop_current_workdir(const char *sid)
   unlinkat(work_fd, sid, AT_REMOVEDIR);
 }
 
-/* a detached overlay keeps its work directory; it is no longer the session's */
+/* a detached overlay keeps its work directory; it is no longer the session's.
+ * it keeps using its tree as well, so the record of that stays, per
+ * generation, and keeps the tree from being removed as unused */
 static void forget_current_workdir(const char *sid)
 {
+  char gen_name[16], kept[32];
   int base = open_session_base(sid, 0);
   if (base < 0) return;
+  read_small_file(base, CURRENT_FILE, gen_name, sizeof(gen_name));
+  snprintf(kept, sizeof(kept), "%s.%s", LOWER_FILE, gen_name);
+  if (!valid_number(gen_name) || renameat(base, LOWER_FILE, base, kept) != 0)
+    unlinkat(base, LOWER_FILE, 0);
   unlinkat(base, CURRENT_FILE, 0);
-  unlinkat(base, LOWER_FILE, 0);
   close(base);
 }
 
@@ -303,16 +309,25 @@ static int umount_session(const char *sid, int flags)
  * then be removed as unused - so it is checked afterwards and the mount
  * redone on the replacement.
  */
+static int lock_trees(void);
+
 static int ovl_mount(const char *sid, uid_t uid)
 {
   char target[FDBUF], opts[OPTSBUF], rec[RECBUF];
   int mnt_fd, upper_fd, active, cur, work, base, attempt, rc = 1;
+  int trees = -1;
   if (open_session(sid, uid, &mnt_fd, &upper_fd) != 0) {
     fprintf(stderr, "not a usable session: %s\n", strerror(errno));
     return 1;
   }
   if (is_mounted(mnt_fd) != 0) {
     fprintf(stderr, "session is already mounted\n");
+    goto out;
+  }
+  /* from opening the tree until it is recorded, or the mount undone, no
+   * commit may swap it out or remove it as unused */
+  if ((trees = lock_trees()) < 0) {
+    fprintf(stderr, "cannot lock the active trees: %s\n", strerror(errno));
     goto out;
   }
   /* not mounted, yet a work directory may be on record: the previous overlay
@@ -361,6 +376,7 @@ static int ovl_mount(const char *sid, uid_t uid)
     drop_current_workdir(sid);
   }
 out:
+  close_keep_errno(trees);
   close(mnt_fd);
   close(upper_fd);
   return rc;
@@ -578,21 +594,29 @@ static int find_conflicts(int up, int old, int now, const char *path,
       } else {
         int in_old = (old >= 0
                       && fstatat(old, e->d_name, &os, AT_SYMLINK_NOFOLLOW) == 0);
+        if (old >= 0 && !in_old && errno != ENOENT) rc = -1;
         int in_now = (now >= 0
                       && fstatat(now, e->d_name, &ns, AT_SYMLINK_NOFOLLOW) == 0);
+        if (now >= 0 && !in_now && errno != ENOENT) rc = -1;
         /* merged with what is below: only its contents can hide anything -
          * unless a commit removed it since, which whatever the session has in
          * it would bring back */
-        descend = (!is_opaque(fd)
+        descend = (rc == 0 && !is_opaque(fd)
                    && (!in_old || S_ISDIR(os.st_mode))
                    && (!in_now || S_ISDIR(ns.st_mode))
                    && (in_now || !in_old));
+        if (descend) {
+          // a directory that is there but cannot be opened is no absent one
+          o = in_old ? open_entry_at(old, e->d_name, O_RDONLY | O_DIRECTORY) : -1;
+          n = in_now ? open_entry_at(now, e->d_name, O_RDONLY | O_DIRECTORY) : -1;
+          if ((in_old && o < 0) || (in_now && n < 0)) rc = -1;
+        }
       }
     }
     if (rc == 0 && descend) {
-      o = open_entry_at(old, e->d_name, O_RDONLY | O_DIRECTORY);
-      n = open_entry_at(now, e->d_name, O_RDONLY | O_DIRECTORY);
       rc = find_conflicts(fd, o, n, p, out);
+    }
+    if (descend) {
       close_keep_errno(o);
       close_keep_errno(n);
     } else if (rc == 0 && (same = same_entry(old, now, e->d_name)) != 1) {
