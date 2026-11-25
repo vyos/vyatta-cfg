@@ -1,3 +1,17 @@
+vyatta-cfg (0.103.0+vyos1) unstable; urgency=medium
+
+  * Use kernel overlayfs for config sessions instead of unionfs-fuse. A
+    small set-user-ID helper mounts them; the CLI holds no capabilities.
+  * A commit never touches other sessions. Each session moves itself onto
+    the new active config, under a per-session lock, before it commits or
+    loads.
+  * Never edit or commit from a session without its overlay, and report a
+    commit as applied when only the session is lost afterwards.
+  * Use the standard filesystem library, drop the Boost dependency, and
+    build without warnings.
+
+ -- Christian Breunig <christian@breunig.cc>  Mon, 23 Nov 2026 05:13:08 +0000
+
 vyatta-cfg (0.102.0+vyos2+current6) unstable; urgency=medium
 
   * Raise unionfs node.val max file size from 2^18 to 2^20.

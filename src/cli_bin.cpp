@@ -196,6 +196,17 @@ doMove(Cstore& cstore, const Cpath& path_comps)
 static void
 doCommit(Cstore& cstore, const Cpath& path_comps)
 {
+  /* the lock is taken again by the commit itself, which is a no-op for the
+   * process holding it. taken here already so that no other commit can
+   * replace the active config while this one reads its working config. */
+  if (!cstore.getCommitLock()) {
+    fprintf(out_stream, "Configuration system temporarily locked "
+            "due to another commit in progress\n");
+    exit(1);
+  }
+  if (!cstore.prepareCommit()) {
+    exit(1);
+  }
   Cpath dummy;
   cnode::CfgNode aroot(cstore, dummy, true, true);
   cnode::CfgNode wroot(cstore, dummy, false, true);

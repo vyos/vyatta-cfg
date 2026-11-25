@@ -25,8 +25,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <boost/filesystem.hpp>
-
 #include <cli_cstore.h>
 #include <cstore/cstore.hpp>
 #include <cstore/unionfs/fspath.hpp>
@@ -35,18 +33,13 @@
 namespace commit {
 class PrioNode;
 }
-using namespace boost::filesystem;
-
 namespace cstore { // begin namespace cstore
 namespace unionfs { // begin namespace unionfs
-
-namespace b_fs = boost::filesystem;
-namespace b_s = boost::system;
 
 class UnionfsCstore : public Cstore {
 public:
   UnionfsCstore(bool use_edit_level);
-  UnionfsCstore(const string& session_id, string& env);
+  UnionfsCstore(const string& sid, string& env);
   virtual ~UnionfsCstore();
 
   ////// public virtual functions declared in base class
@@ -60,6 +53,8 @@ public:
   bool clearCommittedMarkers();
   bool commitConfig(commit::PrioNode& pnode);
   bool getCommitLock();
+  bool prepareCommit();
+  bool sessionCurrent();
 
 private:
   // constants
@@ -75,18 +70,20 @@ private:
   static const string C_DEF_CHANGE_PREFIX;
   static const string C_DEF_WORK_PREFIX;
   static const string C_DEF_TMP_PREFIX;
+  static const string C_DEF_OVLWORK_PREFIX;
+  static const string C_OVL_HELPER;
 
   static const string C_MARKER_DEF_VALUE;
   static const string C_MARKER_DEACTIVATE;
   static const string C_MARKER_CHANGED;
   static const string C_MARKER_UNSAVED;
-  static const string C_MARKER_UNIONFS;
   static const string C_COMMITTED_MARKER_FILE;
   static const string C_COMMENT_FILE;
   static const string C_TAG_NAME;
   static const string C_VAL_NAME;
   static const string C_DEF_NAME;
   static const string C_COMMIT_LOCK_FILE;
+  static const string C_TREE_LOCK_FILE;
 
   /* max size for a file.
    * currently this includes value file and comment file.
@@ -100,12 +97,28 @@ private:
     */  
   static const size_t C_UNIONFS_MAX_FILE_SIZE = 1048576;
 
-  // root dirs (constant)
-  FsPath work_root;   // working root (union)
-  FsPath active_root; // active root (readonly part of union)
-  FsPath change_root; // change root (r/w part of union)
-  FsPath tmp_root;    // temp root
-  FsPath tmpl_root;   // template root
+  /* root dirs (constant)
+   *
+   * the config session is a kernel overlayfs mount. mapping of the names
+   * used here onto overlayfs terminology:
+   *
+   *   active_root   -> lowerdir  (shared between all sessions, read-only)
+   *   change_root   -> upperdir  (per session, holds this session's changes)
+   *   ovl_work_root -> workdir   (per session, kernel-internal scratch)
+   *   work_root     -> the merged mount point, i.e. the "working config"
+   *
+   * note that work_root is the *working config* in Cstore vocabulary and has
+   * nothing to do with the overlayfs "workdir", which is ovl_work_root.
+   */
+  FsPath work_root;     // working root (merged overlay mount point)
+  FsPath active_root;   // active root (overlay lowerdir)
+  FsPath change_root;   // change root (overlay upperdir)
+  FsPath ovl_work_root; // per-session base of the overlay workdirs, also
+                        // holds the helper's record of the lower layer
+  FsPath tmp_root;      // temp root
+  FsPath tmpl_root;     // template root
+
+  string session_id;    // config session ID (the vbash PPID)
 
   // path buffers
   FsPath mutable_cfg_path;  // mutable part of config path
@@ -301,15 +314,51 @@ private:
   void get_committed_marker(bool is_delete, string& marker);
   bool find_line_in_file(const FsPath& file, const string& line);
   bool do_mount(const FsPath& rwdir, const FsPath& rdir, const FsPath& mdir);
+  static bool run_ovl_helper(const char *op, const string& sid);
+  static int ovl_helper_status(const char *op, const string& sid);
   bool do_umount(const FsPath& mdir);
+  // overlayfs helpers
+  void set_session_id(const string& sid);
+  bool is_mount_point(const FsPath& p);
+  bool session_mounted();
+  bool session_current();
+  bool refresh_session(int timeout_ms);
+  bool remount_fresh(bool restore);
+  void finish_deferred_remount();
+  bool restore_snapshot();
+  // set while a session is restored after a commit (see restore_snapshot())
+  FsPath restore_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.restoring");
+    return m;
+  }
+  // set when a commit could not remount the session (see commitConfig())
+  FsPath remount_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.remount");
+    return m;
+  }
+  // set when a refresh dropped edits a newer commit conflicts with
+  FsPath dropped_marker() {
+    FsPath m(tmp_root);
+    m.push(".session.dropped");
+    return m;
+  }
+  void open_session_lock(int timeout_ms);
+  bool session_locked();
+  void close_session_lock();
+  bool lock_session_exclusive(int timeout_ms);
+  void unlock_session_exclusive();
+  void remove_unused_active_trees();
+  int lock_trees();
+  bool invalidate_session(const char *after);
+  bool session_lost;    // gone after the active config was already replaced
+  bool holds_session_lock;
+  int last_refresh_status;
+  bool normalize_active_perms(const FsPath& root);
+  static FsPath ovl_work_root_for(const string& sid);
+  static bool session_id_from_work_root(const FsPath& wroot, string& sid);
 
-  // boost fs operations wrappers
-  bool b_fs_get_file_status(const char *path, b_fs::file_status& fs) {
-    b_s::error_code ec;
-    file_status s = status(path, ec);
-    fs = s;
-    return (!ec);
-  };
   bool path_exists(const char *path);
   bool path_exists(const FsPath& path) {
     return path_exists(path.path_cstr());

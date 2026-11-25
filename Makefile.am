@@ -4,14 +4,14 @@ logrotatedir = /etc/logrotate.d
 defaultdir = /etc/default
 etc_shell_leveldir = $(sysconfdir)/shell/level
 
-if USE_UNIONFSFUSE
-USE_UNIONFSFUSE = -DUSE_UNIONFSFUSE=1
-endif
-
 AM_CFLAGS = -I src -Wall $(GOBJECT_CFLAGS)
-AM_CXXFLAGS = -I src -Wall -Werror $(USE_UNIONFSFUSE)
+AM_CFLAGS += -Werror=format-overflow=1 -Werror=format-truncation=1
+AM_CFLAGS += -Werror=address -Werror=unused-function
+AM_CXXFLAGS = -I src -Wall -Werror -std=gnu++17
+# the CLI runs the overlay helper from wherever it is installed
+AM_CPPFLAGS = -DOVL_HELPER_PATH='"$(sbindir)/vyos-cfg-overlay-helper"'
 AM_CXXFLAGS += $(GOBJECT_CFLAGS)
-AM_YFLAGS = -d --name-prefix=yy_`basename $* .y`_
+AM_YFLAGS = -d -Wno-yacc --name-prefix=yy_`basename $* .y`_
 AM_LFLAGS = --prefix=yy_`basename $* .l`_ -olex.yy.c
 
 ACLOCAL_AMFLAGS = -I m4
@@ -35,8 +35,6 @@ lib_LTLIBRARIES = src/libvyatta-cfg.la
 src_libvyatta_cfg_la_LIBADD = -lglib-2.0
 src_libvyatta_cfg_la_LIBADD += -lgio-2.0
 src_libvyatta_cfg_la_LIBADD += -lgobject-2.0
-src_libvyatta_cfg_la_LIBADD += -lboost_system
-src_libvyatta_cfg_la_LIBADD += -lboost_filesystem
 src_libvyatta_cfg_la_LIBADD += -lapt-pkg
 src_libvyatta_cfg_la_LDFLAGS = -version-info 1:0:0
 src_libvyatta_cfg_la_SOURCES = src/cli_parse.y src/cli_def.l src/cli_val.l
@@ -83,10 +81,15 @@ vpinc_HEADERS = src/cparse/cparse.hpp
 sbin_PROGRAMS = src/dump
 sbin_PROGRAMS += src/my_cli_bin
 sbin_PROGRAMS += src/my_cli_shell_api
+sbin_PROGRAMS += src/vyos-cfg-overlay-helper
 
 src_dump_SOURCES = src/dump_session.c
 src_my_cli_bin_SOURCES = src/cli_bin.cpp
 src_my_cli_shell_api_SOURCES = src/cli_shell_api.cpp
+# the one privileged binary: no library, nothing but libc
+src_vyos_cfg_overlay_helper_SOURCES = src/vyos-cfg-overlay-helper.c
+src_vyos_cfg_overlay_helper_CFLAGS = -I src -Wall -Wextra -Werror
+src_vyos_cfg_overlay_helper_LDADD =
 
 sbin_SCRIPTS = scripts/vyatta-cfg-cmd-wrapper
 sbin_SCRIPTS  += scripts/vyatta-cfg-notify
@@ -100,6 +103,9 @@ default_DATA += etc/default/vyatta-load-boot
 cpiop = find  . ! -regex '\(.*~\|.*\.bak\|.*\.swp\|.*\#.*\#\)' -print0 | \
 	cpio -0pd
 
+# installed onto the system, the overlay helper gets its privilege here (chown
+# first, it clears set-user-ID). a staged install - a package build - may lack
+# root and the group; there the package's postinst sets it.
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(cfgdir)
 	mkdir -p $(DESTDIR)$(etc_shell_leveldir)
@@ -116,5 +122,9 @@ install-exec-hook:
 	mkdir -p $(DESTDIR)/bin
 	cd $(DESTDIR)/bin ; \
 	  $(LN_S) $(sbindir)/my_cli_shell_api cli-shell-api
+	if test -z "$(DESTDIR)"; then \
+	  chown root:vyattacfg $(sbindir)/vyos-cfg-overlay-helper && \
+	  chmod 4750 $(sbindir)/vyos-cfg-overlay-helper; \
+	fi
 
 

@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <algorithm>
 #include <sstream>
 #include <memory>
@@ -1965,6 +1966,23 @@ Cstore::loadFile(const char *filename)
     // exit handled by assert below
   }
   ASSERT_IN_SESSION;
+  /* the file is compared with the active config and the difference applied
+   * to the working config; both must be the same base, and stay it: no
+   * commit may replace the active config meanwhile */
+  bool locked = false;
+  // a commit can take minutes
+  for (int i = 0; i < 6000 && !(locked = getCommitLock()); i++) {
+    usleep(100 * 1000);
+  }
+  if (!locked) {
+    output_user("Cannot load config: another commit is in progress\n");
+    return false;
+  }
+  if (!sessionCurrent()) {
+    output_user("Cannot load config: the active configuration was changed "
+                "by another session and this session could not be updated\n");
+    return false;
+  }
 
   FILE *fin = fopen(filename, "r");
   if (!fin) {

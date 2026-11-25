@@ -5,7 +5,7 @@ Legacy Vyatta configuration system: config back-end, base configuration template
 
 ## Tech stack
 - C/C++. Autotools build (`configure.ac`, `Makefile.am`).
-- Build deps (`debian/control`): `debhelper (>= 10)`, `libglib2.0-dev`, `libboost-filesystem-dev`, `libapt-pkg-dev`, `libtool`, `flex`, `bison`, `autoconf`, `automake`, `pkg-config`, `cpio`, `dh-autoreconf`.
+- Build deps (`debian/control`): `debhelper (>= 10)`, `libglib2.0-dev`, `libapt-pkg-dev`, `libtool`, `flex`, `bison`, `autoconf`, `automake`, `pkg-config`, `cpio`, `dh-autoreconf`.
 - Debian packaging via `dpkg-buildpackage`.
 
 ## Build / test / run
